@@ -1760,7 +1760,22 @@ class PostgresBookProductionQuery:
                 )
             from .manuscript import AUTHOR_WORKFLOW, freeze_working_context
             from .manuscript import effective_workflow
-            working = freeze_working_context(uow, scope[4], chapter_number) if effective_workflow(uow.cursor, scope[4]) == AUTHOR_WORKFLOW else None
+            author_working = effective_workflow(uow.cursor, scope[4]) == AUTHOR_WORKFLOW
+            task_source_refs = [{"asset_version_id": str(row[0]), "content_hash": str(row[1])} for row in arc_rows]
+            if schedule_row is not None and author_working:
+                # WHY: Only Chapter planning consumes a parent Group; Group-generation freshness cannot depend on its own output.
+                uow.cursor.execute("""SELECT binding.asset_version_id, version.content_hash
+                    FROM active_story_plan_version active
+                    JOIN story_plan_binding binding ON binding.binding_id=active.binding_id
+                    JOIN authority_asset_version version ON version.asset_version_id=binding.asset_version_id
+                    WHERE binding.project_id=%s AND binding.book_id=%s AND binding.contract_type='CHAPTER_GROUP'
+                      AND binding.freshness='CURRENT' AND %s BETWEEN (version.content->'chapter_range'->>0)::integer
+                        AND (version.content->'chapter_range'->>1)::integer
+                    ORDER BY binding.asset_version_id""", [project_id, book_id, chapter_number])
+                task_source_refs.extend({"asset_version_id": str(row[0]), "content_hash": str(row[1])} for row in uow.cursor.fetchall())
+            working = freeze_working_context(uow, scope[4], chapter_number,
+                task_source_refs=task_source_refs,
+                task_stage="PLANNING") if author_working else None
             formal_chapter = int(scope[3]) if working else chapter_number - 1
             if formal_chapter == 0:
                 initial_story_state_id = str(scope[2] or "")

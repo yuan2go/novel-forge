@@ -30,6 +30,57 @@ def source_memory(uow, book, source):
         "asset_version_id": source.asset_version_id, "status": value.get("status", "MISSING")}
 
 
+def _frozen_memory_source(book, source, document, kind):
+    from novel_forge.modules.narrative_state.working_memory import FROZEN_MEMORY_SOURCE_VERSION
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    if kind == "MANUSCRIPT_MEMORY":
+        content = document.content
+        if (document.asset_type != "manuscript_memory" or not isinstance(content, dict)
+                or any(content.get(key) != value for key, value in {
+                    "book_run_id": book["book_run_id"], "project_id": book["project_id"], "book_id": book["book_id"],
+                    "chapter": source_draft_content(source)["chapter"],
+                    "source_asset_version_id": source.asset_version_id, "source_content_hash": source.content_hash}.items())
+                or not isinstance(content.get("source_kind"), str)
+                or content["source_kind"] not in {"AUTHOR_ANNOTATION", "ASSISTANT_ANALYSIS"}):
+            memory, provenance = None, {"status": "SOURCE_BINDING_INVALID"}
+        else:
+            memory = content.get("observations")
+            provenance = {"kind": content["source_kind"], "asset_version_id": document.asset_version_id,
+                "content_hash": document.content_hash}
+    else:
+        value = source_draft_content(document).get("working_memory", {})
+        if not isinstance(value, dict):
+            memory, provenance = None, {"status": "OBSERVATION_FORMAT_INVALID"}
+        else:
+            memory, provenance = value.get("observations"), {"kind": "WRITER_SELF_OBSERVATION",
+                "asset_version_id": document.asset_version_id, "status": value.get("status", "MISSING")}
+    reference = {"version": FROZEN_MEMORY_SOURCE_VERSION, "kind": kind,
+        "asset_version_id": document.asset_version_id, "content_hash": document.content_hash,
+        "observations_hash": canonical_hash(memory)}
+    return memory, provenance, reference
+
+
+def freeze_source_memory(uow, book, source):
+    from .manuscript import _optional_document
+    sidecar = _optional_document(uow, book["project_id"], memory_ref(book, source.asset_version_id))
+    return _frozen_memory_source(book, source, source if sidecar is None else sidecar,
+        "WRITER_SELF_OBSERVATION" if sidecar is None else "MANUSCRIPT_MEMORY")
+
+
+def replay_source_memory(uow, book, source, reference):
+    from novel_forge.modules.narrative_state.working_memory import validate_frozen_memory_source
+    validate_frozen_memory_source(reference)
+    if reference["kind"] == "WRITER_SELF_OBSERVATION":
+        document = source
+    else:
+        document = uow.repositories.asset_documents.require(project_id=book["project_id"],
+            asset_version_id=reference["asset_version_id"])
+    memory, provenance, expected = _frozen_memory_source(book, source, document, reference["kind"])
+    if expected != reference:
+        raise KernelError("WORKING_MEMORY_SOURCE_INVALID", "Frozen memory must replay its immutable version, binding and observations")
+    return memory, provenance
+
+
 def selected_working_craft_history(database_url: str, *, snapshot, mkaos, policy) -> list[dict[str, Any]]:
     from novel_forge.modules.mkaos_authority.craft_usage import WORKING_CRAFT_POLICY
     if policy == WORKING_CRAFT_POLICY:

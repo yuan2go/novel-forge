@@ -24,7 +24,7 @@ identity changes without a corresponding projection update.
 New Creation requests select `config/execution_templates/author_first.json` (v12).
 The default creation-input policy freezes `native-narrative-execution.v4`: Chapter Pack
 3.2.0 with prose Skill v5 and Template v15, event-first Planning Pack 2.19.0, and
-working-prose projection v8, Craft budget v5 and selected-working delivery v2.
+working-prose projection v9, Craft budget v5 and selected-working delivery v2.
 The original Formation policy remains the replay source;
 configurations without this selection retain their original Pack and prose projection.
 Creation v1/v2 installation uses the preserved Chapter 3.0.2 base manifest and Context
@@ -235,7 +235,7 @@ snapshot alongside the actual formal boundary, allowing subsequent ChapterGroups
 inventing accepted history. The source window is a bounded implementation policy; it does
 not prove long-form continuity or replace formal Canon. An omitted historical policy selects only
 the last four chapters' tails; earlier experience and an action's preceding cause can be
-absent even when their exact selected source remains saved. The default Memo receives the compiled
+absent even when their exact selected source remains saved. On that historical path, Memo receives the compiled
 ExecutionIntent before the later Draft Context and has no independent working-prose
 input. Optional `working_prose_policy` (`working-prose-projection.v2`) in the frozen
 production profile, or explicitly selected by the authenticated local author/operator
@@ -260,21 +260,73 @@ realized beats as premises, compresses incidental daily transitions, and asks ex
 scene goals, conflicts, beats and exit states to carry immediate friction, costly action
 and an irreversible ending that demands a next action. Missing source coverage or exceeded
 history/allocation closes input admission; literary interpretation remains a review concern.
-New Creation profiles select `working-prose-projection.v8`; frozen v5 profiles retain
-their historical character allocation. Book freezes every predecessor's
+New Creation profiles select `working-prose-projection.v9`; frozen v2-v8 profiles and
+requests retain their original selection, segmentation and replay semantics. Book freezes every predecessor's
 exact effective source, source hash and selection lineage in `working-source-history.v1`,
 separately from the bounded prose passages sent to Planning, Memo and Writer. The configured
-128-chapter passage window does not reject chapter 130 or discard earlier source identities.
+passage window limits local retrieval candidates without discarding earlier source identities
+or imposing a Chapter-number admission ceiling. The historical v8 default was 128 chapters;
+the current v9 template uses 10,000.
 Located observations and their causal passages can retrieve earlier material within the
 real character and complete-request capacity bounds. Omitted prose remains unknown.
 Frozen v6/v7 retains all eligible historical paragraphs when its configured history
-window permits them. New v8 selects complete recent chapters, exact older paragraphs
+window permits them. Frozen v8 selects complete recent chapters, exact older paragraphs
 matching explicit queries within that window, and the located original evidence for
 selected observations and their causal closure even outside that window. Memory keeps
 latest observations separately by subject, state key, perspective and knowledge owner;
 promises remain visible without inferring resolution, while other older observations
-require query relevance or causal support. An empty query does not select unrelated old
-prose. Missing, invalid or empty memory remains explicit coverage evidence, never a
+require query relevance or causal support. Its empty default query list is not automatically
+derived from the chapter goal, so an older paragraph without a selected observation or
+causal reference can be absent even when the task needs it.
+
+V9 freezes a `working-retrieval-task.v1` before selecting prose. Native Chapter submission
+and regeneration bind the exact current ChapterPlan. ChapterPlan generation and validation
+bind Planning's frozen Arc plans and the parent ChapterGroup's current Chapter-function
+row. ChapterGroup generation uses Arc inputs and the frozen Cast without referencing its
+own Group output. The task separates
+chapter and scene goals, explicit queries, event/object/place references and character
+scope. It records the stage, target Chapter, source versions, content hashes and exact
+field pointers. Only the current Chapter or a bound Arc window/segment contributes demand;
+an Arc without a verifiable current scope retains its source receipt without contributing
+its whole objective. Future plans are retrieval demand and cannot become past events or
+Character Knowledge. Book's frozen `CHARACTER_CAST` supplies unique exact names and aliases
+for characters already referenced by the task. Cast prose and unrelated characters do not
+become query text. The existing Book UoW checks source ownership and reconstructs the task
+from the same frozen Plan and Cast versions during verification.
+
+The deterministic local CJK/English passage selector can retrieve original prose without
+optional memory or manually populated policy queries. A character name alone does not
+supply a topical hit. V9 defaults to zero required complete recent chapters, the preceding
+chapter's last four natural paragraphs or long-paragraph source units, twelve ranked
+historical hits with at most three per chapter, and one adjacent source unit for support.
+Its configurable `passage_characters=512` bounds indexing units in Unicode codepoints.
+Single newlines and CRLF delimit paragraphs; an overlong paragraph is split at sentence
+endings or whitespace where available while retaining exact original ranges. Paragraph
+or unit boundaries do not establish complete scenes. These are selection settings, not
+generation-failure token quotas, and required located memory or causal support may add
+more passages. Full-request capacity admission remains the execution boundary.
+
+Selected passages and exact character scope drive relevant latest-state and promise
+observations; their recursive causes and original supporting ranges remain included.
+Belief, hearsay, reader-only information and knowledge-owner distinctions stay separate.
+V9 freezes each predecessor's exact memory sidecar version and content hash, or its prose
+source version when no sidecar exists, plus the observations hash, including sources and
+observations omitted from the visible selection. Replay rebuilds selected memory and its
+causal support from those recorded versions independently of later sidecar updates.
+The frozen selection receipt records task/policy hashes, source-unit identity, ranked hits,
+matched query references, omission counts and the reason for each delivered range. Changed
+task fields, Plan/Cast versions, predecessor text or selection lineage cannot silently reuse
+the former snapshot. This v9 source integration is `WIRED` through the existing Book,
+Planning and Chapter owners. The default author-first and single-interruption paths are
+`EXECUTABLE` in local PostgreSQL with a scripted transport: both completed eight chapters,
+editing, export and recovery, and the default path verified the same frozen task in the
+actual Writer input. The source-bound record is
+`architecture/live-evidence/inkos-context-adaptation-20261019/verification.json`.
+This evidence does not establish full repository `QUALIFIED` status, real Provider
+consumption or literary improvement. The integration adds no new database, LLM role or
+state owner.
+
+Missing, invalid or empty memory remains explicit coverage evidence, never a
 complete-history claim. Original prose remains available through exact-version manuscript
 read/export and prospective query selection. Neither lexical matching nor observation
 selection proves semantic completeness or long-form quality.
@@ -2856,8 +2908,14 @@ its dependent observations; rebuilding creates new annotations. Frozen requests 
 immutable annotation versions even when later notes change. v1/v2 frozen behavior remains
 unchanged. History depth, recent complete chapters and passage/annotation budgets are
 configurable policy, not literary invariants; complete-request admission still applies.
-The annotation allowance is at most one third of the declared passage-character budget,
-in addition to passages and provenance; it is not a total Provider-input limit.
+For policies with a finite passage-character budget, the annotation allowance is one third
+of that budget, in addition to passages and provenance; it is not a total Provider-input
+limit. V8 selects latest observations, promises, recent or query-relevant observations and
+their causal closure without a separate annotation-character quota. V9 scopes latest
+observations and promises to the frozen task and selected original ranges, then retains
+their causal closure; the absence of annotations does not disable original-passage retrieval
+or block saving complete prose. Full-request capacity
+still applies, and selected source coverage is distinct from semantic completeness.
 
 New Creation profiles also bind `working-story-schedule.v1`. When the accepted cursor
 lags selected working prose, Arc scheduling keeps accepted reality separately and marks

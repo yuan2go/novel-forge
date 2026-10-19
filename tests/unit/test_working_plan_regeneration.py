@@ -229,7 +229,10 @@ def test_regeneration_preparation_uses_the_actual_author_workflow_projection(mon
     cursor.fetchone.return_value = (False, False, False, False)
     supervisor = Mock()
     supervisor._active_plan.side_effect = [{'asset_version_id': 'group'}, {'asset_version_id': 'new-plan'}]
-    supervisor.prepare_chapter_command.return_value = make_dataclass('Prepared', ['preparation_report'])(None)
+    supervisor.prepare_chapter_command.return_value = make_dataclass('Prepared', [
+        'preparation_report', 'execution_chapter_plan_asset_version_id', 'execution_chapter_plan_content_hash',
+        'chapter_plan_asset_version_id', 'chapter_plan_content_hash',
+    ])(None, 'execution-plan', 'execution-hash', 'new-plan', 'plan-hash')
     reserved = Mock(return_value='native-prepared-request')
     monkeypatch.setattr(chapter_dispatch, 'reserved_chapter_command', reserved)
     request, retained = regeneration.prepare_regeneration(SimpleNamespace(database_url='db', application_build_id='build', commit_sha='sha'),
@@ -240,6 +243,8 @@ def test_regeneration_preparation_uses_the_actual_author_workflow_projection(mon
     assert prepared_book['author_workflow'] == manuscript.AUTHOR_WORKFLOW
     assert prepared_book['accepted_through_chapter'] == 0 and prepared_book['current_chapter'] == 16
     assert 'author_workflow' not in book
+    assert manuscript.freeze_working_context.call_args.kwargs['task_source_refs'] == [
+        {'asset_version_id': 'execution-plan', 'content_hash': 'execution-hash'}]
 
 
 @pytest.mark.parametrize('drift', ['', 'wrong-owner', 'wrong-proof', 'wrong-root-version', 'not-current'])

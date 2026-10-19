@@ -1,0 +1,180 @@
+{
+  "record_type": "SOURCE_RECONCILIATION",
+  "authority": "NOT_RUNTIME_AUTHORITY",
+  "reviewed_on": "2026-10-19",
+  "lifecycle": {
+    "status": "SOURCE_REVIEW_COMPLETE",
+    "scope": "Task-specific selected-working-prose preparation in existing Book, Planning and Chapter owners",
+    "reviewed_source_baseline": "215abd7d0abf4a158d7454ed72237486d201b040",
+    "implemented_references": [
+      {
+        "path": "src/novel_forge/modules/book_authority/working_task.py",
+        "symbol": "build_working_task"
+      },
+      {
+        "path": "src/novel_forge/modules/book_authority/task_retrieval.py",
+        "symbol": "select_task_passages"
+      },
+      {
+        "path": "src/novel_forge/modules/book_authority/working_selection.py",
+        "symbol": "task_passage_ranges"
+      },
+      {
+        "path": "src/novel_forge/modules/book_authority/working_selection.py",
+        "symbol": "select_working_context"
+      },
+      {
+        "path": "src/novel_forge/modules/book_authority/manuscript.py",
+        "symbol": "freeze_working_context"
+      },
+      {
+        "path": "src/novel_forge/modules/book_authority/manuscript.py",
+        "symbol": "verify_working_context"
+      }
+    ],
+    "followup_evidence": "Implementation is referenced as CODE_EXISTS in current documentation; execution and qualification require their separate actual-run evidence. This record is a completed source review, not an active proposal or runtime authority."
+  },
+  "baselines": {
+    "novel_forge": {
+      "repository": "yuan2go/novel-forge",
+      "ref": "main",
+      "sha": "215abd7d0abf4a158d7454ed72237486d201b040",
+      "retrieval": "Fixed GitHub source snapshot; no production database or Provider invocation"
+    },
+    "inkos": {
+      "repository": "Narcooo/inkos",
+      "ref": "master",
+      "sha": "56aa33b04a27c45cc7a91f3d018187a77aec54ea",
+      "package_version": "2.0.0",
+      "retrieval": "GitHub fixed-source reads and matching read-only local checkout"
+    }
+  },
+  "verified_source_findings": [
+    {
+      "paths": [
+        "config/execution_templates/creation_inputs.json",
+        "src/novel_forge/modules/book_authority/manuscript.py",
+        "src/novel_forge/modules/book_authority/working_prose.py"
+      ],
+      "fact": "Creation selects v8, history_chapters=128, recent_complete_chapters=2, max_characters=null and queries=[]. freeze_working_context consumes the policy queries without deriving them from the chapter task. v8 keeps complete recent chapters and older query or located-memory matches."
+    },
+    {
+      "paths": [
+        "src/novel_forge/modules/book_authority/manuscript_memory.py",
+        "src/novel_forge/modules/narrative_state/working_memory.py"
+      ],
+      "fact": "Missing, invalid and empty observations remain explicit source-coverage gaps. Current observations preserve perspective, knowledge owner and causal closure. With empty queries and no located memory, relevant older prose can remain unselected despite preserved source identity.",
+      "runtime_limit": "No current production coverage count was measured in this source review."
+    },
+    {
+      "paths": [
+        "src/novel_forge/modules/book_authority/working_prose.py",
+        "src/novel_forge/modules/book_authority/manuscript.py"
+      ],
+      "fact": "The complete selected-source manifest, source resolution and dependency checks are separate from the visible passage list. These are reusable provenance boundaries; retaining a manifest does not prove the model received or understood its prose."
+    }
+  ],
+  "reference_mechanisms": {
+    "adapt": [
+      {
+        "paths": [
+          "packages/core/src/utils/memory-retrieval.ts",
+          "packages/core/src/agents/composer.ts"
+        ],
+        "mechanism": "Retrieve event/state-change summaries and unresolved-thread history from the current task; refine selection after the chapter memo exists."
+      },
+      {
+        "paths": [
+          "packages/core/src/agents/composer.ts"
+        ],
+        "mechanism": "Select relevant current-state facts, roles and planning sections; retain the origin and latest meaningful change for explicitly referenced threads."
+      },
+      {
+        "paths": [
+          "packages/core/src/agents/writer.ts",
+          "packages/core/src/state/state-reducer.ts",
+          "packages/core/src/harness/artifact-reader.ts"
+        ],
+        "mechanism": "Derive source-bound memory from written events, preserve unrelated state, and reread exact source revisions when needed."
+      }
+    ],
+    "do_not_copy": [
+      "planning-materials.readPreviousEndingExcerpt currently returns the complete previous chapter, which Planner marks protected.",
+      "Composer's complete-within-half-window shortcut and semantic scan of all memory candidates are not proven scaling policies for this project.",
+      "InkOS state triples do not replace Novel Forge perspective, knowledge-owner, source-version or Canon boundaries.",
+      "Do not copy its code, Skills, extra roles, SQLite storage, universal craft rules or synchronous pre-save settlement dependency."
+    ]
+  },
+  "ownership": {
+    "selection_and_freeze": "Book Authority: production.submit_chapter, manuscript.freeze_working_context and its existing UoW",
+    "planning": "Existing Planning Context and frozen arc_working_set; preparation must receive the current task before freezing selected passages",
+    "chapter": "Existing Chapter ExecutionIntent, Memo and Context paths; preserve current source verification and consumer projection",
+    "observations": "Book-owned manuscript memory assets plus pure narrative_state.working_memory validation/projection; no accepted-state mutation",
+    "execution": "Existing Command Kernel, Provider and Context capacity/recovery owners",
+    "migration": "No new database, state owner or migration is introduced by this adaptation"
+  },
+  "documentation_reconciliation": {
+    "updated": [
+      "docs/current-system.md",
+      "docs/runtime-operations.md",
+      "architecture/reality-evidence.json"
+    ],
+    "corrections": [
+      "Qualify the no-working-prose Memo statement as the historical path",
+      "Correct two current Creation v7 references to verified v8",
+      "Explain empty default queries and missing-memory recall gaps",
+      "Qualify the historical one-third annotation budget; v8 uses located selection and causal closure",
+      "Separate the reviewed v8 baseline from current v9 source behavior and defaults",
+      "Document frozen task/Cast source reconstruction and configurable original-passage granularity",
+      "Preserve original capability owners, historical qualification evidence and the pending root-owned implementation identity update"
+    ],
+    "retained": "Historical drafts, source evidence, compatible policies, frozen requests and Skills",
+    "implementation_claim": "Current documentation describes the v9 source integration as CODE_EXISTS. The fixed baseline findings and reference mechanisms remain this source review; they are not runtime or literary qualification."
+  },
+  "necessary_verification": [
+    "A frozen task recalls an older CJK/English passage without memory; changed task identity does not reuse the wrong projection.",
+    "Ending continuity remains readable without requiring a full long predecessor chapter; a same-scene source can be expanded through explicit evidence needs.",
+    "Belief, hearsay, reader-only scope, exact source identity, quotation coverage and recursive causes survive selection.",
+    "Planning and Chapter native entry points actually freeze and deliver the intended task projection; replay preserves it and later source edits invalidate only their dependencies.",
+    "Frozen v2-v8 inputs retain original semantics and hashes; no saved draft, active plan, accepted frontier or cancelled/unknown execution is rewritten.",
+    "Measure identical consumer requests before and after, with retained relevant evidence, actual omitted ranges and full-request capacity; shorter text alone is not a semantic or literary pass."
+  ],
+  "evidence_ceiling": {
+    "kind": "SOURCE_REVIEW_ONLY",
+    "execution": "NOT_RUN_IN_THIS_SOURCE_REVIEW",
+    "new_capability": "CODE_EXISTS",
+    "real_provider": "NOT_RUN",
+    "production_mutation": "NOT_RUN",
+    "literary_improvement": "NOT_PROVEN",
+    "publication_or_author_acceptance": "NOT_GRANTED"
+  },
+  "verified_source_findings_scope": "These findings remain the original preimplementation review of Novel Forge 215abd7d0abf4a158d7454ed72237486d201b040; they do not describe the later v9 default.",
+  "review_recommendations": [
+    "Derive retrieval demand from the exact frozen stage task and bind stage, target and task/source hashes; do not mutate v2-v8 frozen requests or selected author policies.",
+    "Retrieve source-bound CJK and English relevant paragraphs even when optional memory is missing; keep explicit query support and honest unmatched/omitted evidence.",
+    "Use an attributed ending scene or paragraph window for immediate prose continuity instead of requiring recent chapters in full; do not infer scene semantics from punctuation alone.",
+    "Retain selected observations, knowledge boundaries and the full located causal support needed by those observations.",
+    "Keep full original manuscripts available for exact reread; keep summaries and retrieval metadata out of fictional duties and prose.",
+    "Preserve current active fictional plans. Expose any necessary story change to the existing authorized Planning/Plan Change owner rather than silently rewriting it."
+  ],
+  "implementation_followup": {
+    "status": "CODE_EXISTS",
+    "working_prose_policy": "working-prose-projection.v9",
+    "defaults": {
+      "history_chapters": 10000,
+      "recent_complete_chapters": 0,
+      "recent_tail_paragraphs": 4,
+      "passage_characters": 512,
+      "retrieval_passages": 12,
+      "retrieval_per_chapter": 3,
+      "neighbor_paragraphs": 1,
+      "max_characters": null,
+      "queries": []
+    },
+    "task_sources": "Exact current ChapterPlan for Chapter execution; frozen Arc inputs and the parent ChapterGroup current Chapter-function row for ChapterPlan generation/validation; Arc inputs without its own Group output for ChapterGroup generation. Each path also binds the Book input snapshot CHARACTER_CAST; only unique character tokens expand referenced subjects.",
+    "selection": "Deterministic local CJK/English retrieval, predecessor ending units, selected scoped observations and recursive original causal support. Single-newline/CRLF and overlong paragraphs retain exact Unicode source ranges; unit boundaries do not assert complete scenes.",
+    "ownership": "Existing Book freeze and verification UoW, Planning Arc Working Set, Chapter submission/regeneration and Context consumers; no new database, role or state owner.",
+    "compatibility": "Frozen v2-v8 requests retain their original policies, paragraph segmentation and source semantics.",
+    "limit": "Source integration does not prove PostgreSQL execution, real Provider consumption, complete semantic recall or literary improvement."
+  }
+}

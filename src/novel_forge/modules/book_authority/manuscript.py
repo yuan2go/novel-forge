@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from hashlib import sha256
 from json import dumps
-from typing import Any
+from typing import Any, Mapping
 
 from novel_forge.modules.chapter_authority.author_editor import _session_ref, source_draft_content, text_hash
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -545,9 +545,63 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
     return [(number, dependencies) for number, _, dependencies in deliveries], changes
 
 
+def _working_task_cast_ref(uow, book):
+    uow.cursor.execute("""SELECT foundation_set FROM authority_book_production_input_snapshot
+        WHERE snapshot_id=%s AND project_id=%s AND workspace_id=%s AND book_id=%s""",
+        [book["input_snapshot_id"], book["project_id"], book["workspace_id"], book["book_id"]])
+    row = uow.cursor.fetchone()
+    bindings = [binding for binding in (row[0].get("bindings", []) if row else [])
+        if isinstance(binding, Mapping) and binding.get("role") == "CHARACTER_CAST"]
+    if len(bindings) != 1:
+        raise KernelError("WORKING_TASK_CAST_INVALID", "Task character names require this Book's exact frozen Cast binding")
+    return {key: bindings[0][key] for key in ("asset_version_id", "content_hash")}
+
+
+def _working_task_sources(uow, book, pointers, *, require_current=True):
+    sources = []
+    for pointer in pointers:
+        if not isinstance(pointer, Mapping) or any(not isinstance(pointer.get(key), str) or not pointer[key]
+                for key in ("asset_version_id", "content_hash")):
+            raise KernelError("WORKING_TASK_SOURCE_INVALID", "Working task requires exact plan version pointers")
+        source = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=pointer["asset_version_id"])
+        cast = source.asset_type == "character_cast" or source.content.get("generator_operation_name") == "character.cast.generate"
+        if (source.content_hash != pointer["content_hash"] or require_current and (
+                (source.eligibility, source.governance) != ("ELIGIBLE", "CLEAR") or not cast and source.lifecycle != "ACTIVE")):
+            raise KernelError("WORKING_TASK_SOURCE_CHANGED", "Working task plan differs from its frozen eligible version")
+        uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM story_plan_binding binding
+            WHERE binding.project_id=%s AND binding.book_id=%s AND binding.asset_version_id=%s
+              AND (NOT %s OR binding.freshness='CURRENT' AND EXISTS(
+                SELECT 1 FROM active_story_plan_version active WHERE active.binding_id=binding.binding_id)))
+            OR EXISTS(SELECT 1 FROM authority_asset_version projection
+                JOIN authority_asset asset USING(asset_id)
+                JOIN story_plan_binding binding ON binding.asset_version_id=projection.content->>'source_planning_candidate_asset_version_id'
+                  AND binding.project_id=asset.project_id
+                JOIN authority_operation_output_asset output ON output.asset_version_id=projection.asset_version_id
+                  AND output.output_key='story_planning.chapter_plan_projection'
+                JOIN authority_operation operation USING(operation_id)
+                WHERE asset.project_id=%s AND binding.book_id=%s AND projection.asset_version_id=%s
+                  AND asset.asset_type='chapter_plan' AND operation.status='SUCCEEDED'
+                  AND (NOT %s OR binding.freshness='CURRENT' AND EXISTS(
+                    SELECT 1 FROM active_story_plan_version active WHERE active.binding_id=binding.binding_id)))
+            OR EXISTS(SELECT 1 FROM authority_book_production_input_snapshot snapshot,
+                jsonb_array_elements(snapshot.foundation_set->'bindings') binding
+                WHERE snapshot.snapshot_id=%s AND snapshot.project_id=%s AND snapshot.workspace_id=%s AND snapshot.book_id=%s
+                  AND binding->>'role'='CHARACTER_CAST' AND binding->>'asset_version_id'=%s AND binding->>'content_hash'=%s)""",
+            [book["project_id"], book["book_id"], source.asset_version_id, require_current,
+             book["project_id"], book["book_id"], source.asset_version_id, require_current,
+             book["input_snapshot_id"], book["project_id"], book["workspace_id"], book["book_id"], source.asset_version_id, source.content_hash])
+        if uow.cursor.fetchone() != (True,):
+            raise KernelError("WORKING_TASK_SOURCE_SCOPE_INVALID", "Working task sources must belong to this Book's governed plans")
+        sources.append({"asset_version_id": source.asset_version_id, "content_hash": source.content_hash,
+            "asset_type": source.asset_type, "content": source.content})
+    return sources
+
+
 def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
-                           projection_policy: Any = "FROM_PROFILE", scheduling_policy: Any = None) -> dict[str, Any]:
-    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, LONGFORM_POLICY_VERSIONS, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, RESOLVED_POLICY_VERSIONS, RETRIEVAL_POLICY_VERSION, WORKING_SCHEDULE_POLICY, freeze_source_history, project_working_sources, working_instruction, working_prose_policy
+                           projection_policy: Any = "FROM_PROFILE", scheduling_policy: Any = None,
+                           task_source_refs: list[dict[str, str]] | None = None,
+                           task_stage: str = "CHAPTER") -> dict[str, Any]:
+    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, LONGFORM_POLICY_VERSIONS, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, RESOLVED_POLICY_VERSIONS, RETRIEVAL_POLICY_VERSIONS, TASK_POLICY_VERSION, WORKING_SCHEDULE_POLICY, freeze_source_history, project_working_sources, working_instruction, working_prose_policy
 
     schedule_policy = scheduling_policy
     if projection_policy == "FROM_PROFILE":
@@ -561,8 +615,18 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     if schedule_policy is not None and (schedule_policy != WORKING_SCHEDULE_POLICY or not projection_policy
             or projection_policy["version"] not in MEMORY_POLICY_VERSIONS):
         raise KernelError("WORKING_SCHEDULE_POLICY_INVALID", "Working scheduling requires the exact versioned source projection policy")
+    task = None
+    if projection_policy and projection_policy["version"] == TASK_POLICY_VERSION:
+        from .working_task import build_working_task
+        if not task_source_refs:
+            raise KernelError("WORKING_TASK_REQUIRED", "Task projection requires the exact current planning input")
+        pointers = list(task_source_refs)
+        pointers.append(_working_task_cast_ref(uow, book))
+        task = build_working_task(sources=_working_task_sources(uow, book, pointers), book=book,
+            chapter=chapter, stage=task_stage, extra_queries=projection_policy["queries"])
     _, changes = working_dependency_changes(uow, book)
     rows = []
+    frozen_memory_sources = {} if task is not None else None
     memory_enabled = bool(projection_policy and projection_policy["version"] in MEMORY_POLICY_VERSIONS)
     history = projection_policy["history_chapters"] if projection_policy else 4
     if projection_policy and projection_policy["version"] == PROGRESSION_POLICY_VERSION and chapter - 1 > history:
@@ -586,22 +650,38 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
         if resolution is not None:
             rows[-1]["source_resolution"] = resolution
         if memory_enabled:
-            from .manuscript_memory import source_memory
-            memory, provenance = source_memory(uow, book, source)
+            if task is not None:
+                from .manuscript_memory import freeze_source_memory
+                memory, provenance, reference = freeze_source_memory(uow, book, source)
+                frozen_memory_sources[source.asset_version_id] = reference
+            else:
+                from .manuscript_memory import source_memory
+                memory, provenance = source_memory(uow, book, source)
             rows[-1].update(observations=memory, memory_provenance=provenance)
         if changes.get(number):
             rows[-1]["dependency_changes"] = changes[number]
-    memory_packet = None
+    memory_packet, selection = None, None
+    if task is not None:
+        from .working_selection import select_working_context, selected_memory_ranges
+        selection = select_working_context(rows, target_chapter=chapter, policy=projection_policy, task=task)
     if memory_enabled:
         from novel_forge.modules.narrative_state.working_memory import compile_working_memory, bind_packet_coverage
-        retrieval = projection_policy["version"] == RETRIEVAL_POLICY_VERSION
+        retrieval = projection_policy["version"] in RETRIEVAL_POLICY_VERSIONS
         memory_packet = compile_working_memory(rows, queries=projection_policy["queries"],
                                                max_characters=None if retrieval else projection_policy["max_characters"] // 3 if projection_policy["max_characters"] is not None else max(1, sum(len(row["text"]) for row in rows)),
-                                               dependency_closed=projection_policy["version"] in {"working-prose-projection.v7", RETRIEVAL_POLICY_VERSION},
-                                               recent_complete_from=chapter - projection_policy["recent_complete_chapters"] if retrieval else None)
+                                               dependency_closed=projection_policy["version"] in {"working-prose-projection.v7", *RETRIEVAL_POLICY_VERSIONS},
+                                               recent_complete_from=chapter - projection_policy["recent_complete_chapters"] if retrieval else None,
+                                               **({"task": task, "selected_ranges": selected_memory_ranges(selection),
+                                                   "frozen_sources": frozen_memory_sources} if task is not None else {}))
     source_history = None
     if projection_policy:
-        rows = project_working_sources(rows, target_chapter=chapter, policy=projection_policy, memory=memory_packet)
+        if task is not None:
+            selection = select_working_context(rows, target_chapter=chapter, policy=projection_policy, task=task, memory=memory_packet)
+            from .working_prose import _project_ranges
+            rows = _project_ranges(rows, {(row["chapter"], row["start"], row["end"]) for row in selection["passages"]},
+                passage_characters=projection_policy["passage_characters"])
+        else:
+            rows = project_working_sources(rows, target_chapter=chapter, policy=projection_policy, memory=memory_packet)
         if longform:
             source_history = freeze_source_history(rows, book=book, target_chapter=chapter)
     if memory_packet is not None:
@@ -616,8 +696,13 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
         **({"scheduling_policy": dict(schedule_policy)} if schedule_policy else {}),
         **({"working_memory": memory_packet} if memory_packet is not None else {}),
         **({"source_history": source_history} if source_history is not None else {}),
+        **({"retrieval_task": task, "context_selection": selection} if task is not None else {}),
         "instruction": working_instruction(projection_policy) if projection_policy else LEGACY_GUIDANCE["instruction"]}
-    return {**result, "snapshot_hash": canonical_hash(result)}
+    snapshot = {**result, "snapshot_hash": canonical_hash(result)}
+    if task is not None:
+        from .working_prose import validate_working_projection
+        validate_working_projection(snapshot, project_id=book["project_id"], book_id=book["book_id"], target_chapter=chapter)
+    return snapshot
 
 
 def _prose_source_lineage(uow, book, source):
@@ -782,7 +867,7 @@ def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any, *, li
 
 
 def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, Any], *, require_current: bool = True) -> None:
-    from .working_prose import CONTEXT_VERSION, MEMORY_POLICY_VERSIONS, RESOLVED_POLICY_VERSIONS, validate_working_projection, working_source_rows
+    from .working_prose import CONTEXT_VERSION, MEMORY_POLICY_VERSIONS, RESOLVED_POLICY_VERSIONS, TASK_POLICY_VERSION, validate_working_projection, working_source_rows
     enhanced = snapshot.get("projection_policy") is not None
     if enhanced:
         validate_working_projection(snapshot, project_id=book["project_id"], book_id=book["book_id"])
@@ -791,6 +876,12 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
             or snapshot.get("snapshot_hash") != canonical_hash(plain)
             or any(snapshot.get(key) != book[key] for key in ("project_id", "book_id", "book_run_id"))):
         raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Working context must bind its exact Book and immutable sources")
+    task = snapshot.get("retrieval_task") if (snapshot.get("projection_policy") or {}).get("version") == TASK_POLICY_VERSION else None
+    if task is not None:
+        from .working_task import validate_working_task
+        validate_working_task(task, book=book, chapter=snapshot["target_chapter"], stage=task["stage"],
+            sources=_working_task_sources(uow, book, task["sources"], require_current=require_current),
+            extra_queries=snapshot["projection_policy"]["queries"])
     history_sources = working_source_rows(snapshot)
     if require_current:
         def current_source(number):
@@ -820,7 +911,7 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
         source = source_documents[item["asset_version_id"]]
         if source.content_hash != item["content_hash"] or text_hash(source_draft_content(source)["text"]) != item["text_hash"]:
             raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working manuscript source failed its exact version binding")
-        if snapshot.get("working_memory"):
+        if snapshot.get("working_memory") and task is None:
             for entry in snapshot["working_memory"]["entries"]:
                 if entry["source"]["asset_version_id"] != source.asset_version_id:
                     continue
@@ -841,6 +932,38 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
         if enhanced and (len(source_draft_content(source)["text"]) != item["source_characters"]
                 or any(source_draft_content(source)["text"][p["start"]:p["end"]] != p["text"] for p in projected_sources.get(item["chapter"], {}).get("passages", []))):
             raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working passage does not match its exact source range")
+    if task is not None:
+        from .manuscript_memory import replay_source_memory
+        from .working_selection import select_working_context, selected_memory_ranges
+        from .working_prose import _project_ranges
+        from novel_forge.modules.narrative_state.working_memory import bind_packet_coverage, compile_working_memory
+        raw_sources = [{**row, "text": source_draft_content(source_documents[row["asset_version_id"]])["text"],
+            "status": "UNREVIEWED_WORKING_PROSE", "character_knowledge": "NOT_VERIFIED"} for row in history_sources]
+        coverage = snapshot["working_memory"]["source_coverage"]
+        if (len(coverage) != len(raw_sources) or any(not isinstance(row, dict)
+                or set(row) != {"chapter", "asset_version_id", "status", "memory_source"}
+                or row["chapter"] != source["chapter"] or row["asset_version_id"] != source["asset_version_id"]
+                for row, source in zip(coverage, raw_sources))):
+            raise KernelError("WORKING_MEMORY_SOURCE_INVALID", "Task replay requires every frozen observation source, including omissions")
+        frozen_memory_sources = {}
+        for row, source in zip(coverage, raw_sources, strict=True):
+            memory, provenance = replay_source_memory(uow, book, source_documents[source["asset_version_id"]], row["memory_source"])
+            source.update(observations=memory, memory_provenance=provenance)
+            frozen_memory_sources[source["asset_version_id"]] = row["memory_source"]
+        initial = select_working_context(raw_sources, target_chapter=snapshot["target_chapter"],
+            policy=snapshot["projection_policy"], task=task)
+        memory = compile_working_memory(raw_sources, queries=snapshot["projection_policy"]["queries"],
+            max_characters=None, dependency_closed=True,
+            recent_complete_from=snapshot["target_chapter"] - snapshot["projection_policy"]["recent_complete_chapters"],
+            task=task, selected_ranges=selected_memory_ranges(initial), frozen_sources=frozen_memory_sources)
+        expected = select_working_context(raw_sources, target_chapter=snapshot["target_chapter"],
+            policy=snapshot["projection_policy"], task=task, memory=memory)
+        ranges = {(row["chapter"], row["start"], row["end"]) for row in expected["passages"]}
+        projected = _project_ranges(raw_sources, ranges, passage_characters=snapshot["projection_policy"]["passage_characters"])
+        if bind_packet_coverage(memory, projected) != snapshot["working_memory"]:
+            raise KernelError("WORKING_MEMORY_SELECTION_CHANGED", "Working memory must replay every seed and causal source from its frozen observations")
+        if expected != snapshot["context_selection"] or [row for row in projected if row["passages"]] != snapshot["sources"]:
+            raise KernelError("WORKING_SELECTION_CHANGED", "Working context must replay the exact frozen task selection")
 
 
 def _current_planning_correction(uow, *, book, operation, request, refs, target):
