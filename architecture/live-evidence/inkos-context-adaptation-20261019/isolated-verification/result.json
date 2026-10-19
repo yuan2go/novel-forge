@@ -1,0 +1,56 @@
+{
+  "baseline": "215abd7d0abf4a158d7454ed72237486d201b040",
+  "implementation_identity": "sha256:de875adaefceb55a5c01984f0fd5d76447a4ef5ba5251654dd997ba3a912cf3d",
+  "verification": "FOCUSED_ONLY",
+  "unit": {
+    "passed": 508,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "ruff": "PASS_CHANGED_PYTHON",
+  "diff_check": "PASS",
+  "native_postgresql": "NOT_RERUN_IN_THIS_ISOLATED_CHECKOUT; prior scratch log records two scripted cases but is not relabeled as this run",
+  "full_documentation_check": "BLOCKED_PARTIAL_CHECKOUT_MISSING_HISTORICAL_FILES_AND_GIT_OBJECTS; projection fingerprint updated separately",
+  "real_provider": "NOT_RUN",
+  "production": "NOT_TOUCHED",
+  "author_acceptance": "NOT_CHANGED",
+  "full_release_matrix": "NOT_RUN",
+  "limits": [
+    "Synthetic selection measures selected Unicode prose, not complete Provider token cost or literary quality.",
+    "Lexical retrieval does not establish complete semantic memory or repair old missing observations.",
+    "Existing governed manuscript-memory annotations remain available; no paid automatic backfill was performed.",
+    "All source manifests and version identities are retained; omitted ranges remain unknown."
+  ],
+  "source_sha256": {
+    "config/execution_templates/creation_inputs.json": "a55d54661a3528701d1436c20595e2f9b8c7a286d37d27f4fca03ca03e546e8d",
+    "src/novel_forge/modules/book_authority/manuscript.py": "ff013e42c0355b5510a8923ae00f0f9712c1cd20a107b7eaafb6a4e4500b1637",
+    "src/novel_forge/modules/book_authority/manuscript_memory.py": "fa59582ffed20e2a86ea78641a340f7f2ac6dbf16d8bc46eeacbf6981037b187",
+    "src/novel_forge/modules/book_authority/production.py": "392a608378e025c3469f536792ec3232398df863c1dc616872f5ab32f25f50ba",
+    "src/novel_forge/modules/book_authority/queries.py": "d3a14c0ff901e2948593d1a53eac4fc18f88685b96816d32d4e0684a2743dfad",
+    "src/novel_forge/modules/book_authority/working_prose.py": "1754d7cc0e0ebd1784278d3362b6cb7e2492b3d6a8bd6b2c7fce4c9474561e93",
+    "src/novel_forge/modules/chapter_authority/capacity_continuation.py": "1223bd1f864def28c846e4c43d8c32a7387c2062b38173b6c6768e2b886ad8d4",
+    "src/novel_forge/modules/chapter_authority/handlers.py": "4f9e17751eb1de496a4c23516c5f97dacf46612f2a77728dd7cf58bcf330adf5",
+    "src/novel_forge/modules/chapter_authority/runtime.py": "dd0d6c49f65b2fa23d3d2b46a75ed76563727dcc8818a3edd5d9b15f06c457c5",
+    "src/novel_forge/modules/chapter_authority/scheduler.py": "408fad399e21fb4e105f76756ad2e995d9cef48c6a0b940de1b74b1beba3d4df",
+    "src/novel_forge/modules/chapter_authority/working_regeneration.py": "6cfddfc4556f56376f7f2e343cc6a94260d02fb3dcbba099b1c176a0c2f85bb9",
+    "src/novel_forge/modules/narrative_state/working_memory.py": "fc2e5f9568c8f15bf28bb7923d13a5fc05546cfc129e50706bed8a253106d7e7",
+    "src/novel_forge/modules/story_planning_runtime/application.py": "232e8ccede9da813bad67eafb8e25f393d6b7a41523ff7940cf9e0ecb6189a37",
+    "tests/integration/test_author_first_manuscript_postgres.py": "c4aa83c9dee3f464ce81f8a34139f805fbd7754ef382ec8a03738989e78f5cea",
+    "tests/integration/test_chapter_capacity_continuation_postgres.py": "51e54ac4803b24c5090b67806297b6410a9f99bfb5bab77e399c73d931c8e325",
+    "tests/integration/test_world_working_continuity_postgres.py": "c3f00f65a3be76e4ccb6518665f294244fa74e01cc39ccdd1dd3dd93234f1373",
+    "tests/unit/test_creation_coordination.py": "b894f7fe73259504ab2b9bb1cdea69a932e7a29ceaea98a1418c810025750904",
+    "tests/unit/test_longform_working_history.py": "2b78aca85eaac2fbf3254c8b65fb71d32e5b2340867a5c5911e909407ef40541",
+    "tests/unit/test_working_memory.py": "8701cf9f3ffae7265ce933e69dce2d7463d39b3c7ad573f349f1319a33b3194c",
+    "tests/unit/test_working_plan_regeneration.py": "2f406826aa43a35b7867fa76a6fb4ec86f7ee46b41d0ef6267ab2c838a456200",
+    "tests/unit/test_working_prose_projection.py": "3b935d39b1cbb588233b1fb436e1b96d7e43b6d68092a256927972b84cdeac4c",
+    "src/novel_forge/modules/book_authority/task_retrieval.py": "dd5907dacaa82519f78e1af528ebbe2547ae9d0e1b2839747bffa7f6ea31bf9c",
+    "src/novel_forge/modules/book_authority/working_selection.py": "b37a2360c11b24843592ca0072b3d9c0a74bb9a1744b05584c01706fac18c46e",
+    "src/novel_forge/modules/book_authority/working_task.py": "a7b5bd12ab125f86a987dc451f64b3f8bb396f6d58569dd666d66475570cda0f"
+  },
+  "artifact_sha256": {
+    "synthetic-selection.json": "73d6a99dcdc75368164c5a6db120b64bde2e72a5c091d99ab143f5c98bf896cb",
+    "ruff.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "focused-unit.xml": "9ef0696773a1ec7333a286991933486a02fafe3d37efccebc4ba38f35f414edf"
+  }
+}

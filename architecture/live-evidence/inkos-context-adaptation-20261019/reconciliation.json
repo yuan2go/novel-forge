@@ -1,0 +1,218 @@
+{
+  "record_type": "V9_PARALLEL_PR_RECONCILIATION",
+  "authority": "NOT_RUNTIME_AUTHORITY",
+  "reviewed_on": "2026-10-20",
+  "baseline": "215abd7d0abf4a158d7454ed72237486d201b040",
+  "source_heads": {
+    "pr185": "de10f4d8566cb5c61bbeba011cb6ca9fde7e0975",
+    "pr186": "cb12177f14c9ae7bd2181dea35bb250c5fbc0e0d"
+  },
+  "decision": {
+    "canonical_pr": 186,
+    "canonical_source": "cb12177f14c9ae7bd2181dea35bb250c5fbc0e0d",
+    "reason": "15 changed production Python files, 8 changed tests, Creation config and reality projection have identical Git blob identities on the same parent. Keep PR186 canonical docs with explicit scripted execution ceiling. Preserve PR185 evidence byte-for-byte; no second implementation is applied.",
+    "merge_readiness": "BLOCKED_NOT_QUALIFIED"
+  },
+  "comparison": {
+    "source": 15,
+    "tests": 8,
+    "identical": [
+      {
+        "path": "architecture/live-evidence/inkos-context-adaptation-20261019/synthetic-selection-benchmark.py",
+        "blob_sha": "0061e9ae2ded7d2e9b8c2a8e9d3fe460c3e5723c"
+      },
+      {
+        "path": "architecture/live-evidence/inkos-context-adaptation-20261019/synthetic-selection.json",
+        "blob_sha": "96ee1433e83d25fa1db7d145ae3f32ad62a95b8f"
+      },
+      {
+        "path": "architecture/reality-evidence.json",
+        "blob_sha": "8ec723cafaed72c6b8490492c96f710ac93a9078"
+      },
+      {
+        "path": "config/execution_templates/creation_inputs.json",
+        "blob_sha": "50bfee20baecafb446ac7834fe9b711de36f6d2f"
+      },
+      {
+        "path": "src/novel_forge/modules/book_authority/manuscript.py",
+        "blob_sha": "9cf269c8af5050210dbe9d2e7999d2a4f742e794"
+      },
+      {
+        "path": "src/novel_forge/modules/book_authority/manuscript_memory.py",
+        "blob_sha": "c20215b5c8f8066f0f840626afd098dbe17d5a1f"
+      },
+      {
+        "path": "src/novel_forge/modules/book_authority/production.py",
+        "blob_sha": "1dc8656be362159d240332c0804888c1e9a88d9d"
+      },
+      {
+        "path": "src/novel_forge/modules/book_authority/queries.py",
+        "blob_sha": "5629c6d0653a9ba6201b2aada3123f64e74e0e71"
+      },
+      {
+        "path": "src/novel_forge/modules/book_authority/task_retrieval.py",
+        "blob_sha": "34767a52b6034fd796aa1f95ca30febc3671cff1"
+      },
+      {
+        "path": "src/novel_forge/modules/book_authority/working_prose.py",
+        "blob_sha": "b908190e4c0570f8231d8fcc7bfd973eea821795"
+      },
+      {
+        "path": "src/novel_forge/modules/book_authority/working_selection.py",
+        "blob_sha": "11967165f55e7b1fe09350213b1b345b18c7f5b6"
+      },
+      {
+        "path": "src/novel_forge/modules/book_authority/working_task.py",
+        "blob_sha": "ad5ee72bb878e4cd64c88dd13c70bb66f7cbb041"
+      },
+      {
+        "path": "src/novel_forge/modules/chapter_authority/capacity_continuation.py",
+        "blob_sha": "13b0eb3de2d0754fcd09505cd6256003d485ddf3"
+      },
+      {
+        "path": "src/novel_forge/modules/chapter_authority/handlers.py",
+        "blob_sha": "8819f56ba21bdf2a637e722047853d2e84138f77"
+      },
+      {
+        "path": "src/novel_forge/modules/chapter_authority/runtime.py",
+        "blob_sha": "f7f75c0e3f36b2dd866fa4ee4169b98e68eb549f"
+      },
+      {
+        "path": "src/novel_forge/modules/chapter_authority/scheduler.py",
+        "blob_sha": "c0b5d59f71dba9d881c7773f7c2d1d486e7ce3e2"
+      },
+      {
+        "path": "src/novel_forge/modules/chapter_authority/working_regeneration.py",
+        "blob_sha": "7c51e20c3a26e934f799d130af0e251b5f83b011"
+      },
+      {
+        "path": "src/novel_forge/modules/narrative_state/working_memory.py",
+        "blob_sha": "8791a86150a93f72b1e848d6d3caca19e9f434e6"
+      },
+      {
+        "path": "src/novel_forge/modules/story_planning_runtime/application.py",
+        "blob_sha": "400b944c0a3d6b34fedb943fe340c1a900258300"
+      },
+      {
+        "path": "tests/integration/test_author_first_manuscript_postgres.py",
+        "blob_sha": "3bb006219f41198fc5a9b090024eeee9ca5bb88c"
+      },
+      {
+        "path": "tests/integration/test_chapter_capacity_continuation_postgres.py",
+        "blob_sha": "11d29871ffb7e9ec09ee9aea619f34819121a9c5"
+      },
+      {
+        "path": "tests/integration/test_world_working_continuity_postgres.py",
+        "blob_sha": "0dfbd842c0210ef5f71819e623506ae05113c742"
+      },
+      {
+        "path": "tests/unit/test_creation_coordination.py",
+        "blob_sha": "56097af57aae9b5918f810f713b980bd9cf0f589"
+      },
+      {
+        "path": "tests/unit/test_longform_working_history.py",
+        "blob_sha": "f8b864a0c96acab855d68ab9f8230958365d4085"
+      },
+      {
+        "path": "tests/unit/test_working_memory.py",
+        "blob_sha": "8c4cbc2c30aaf0617721488fda05b3f14a32f60a"
+      },
+      {
+        "path": "tests/unit/test_working_plan_regeneration.py",
+        "blob_sha": "e94ed56369ad23b00cf2a6dbe49cda962c182c32"
+      },
+      {
+        "path": "tests/unit/test_working_prose_projection.py",
+        "blob_sha": "fdda655b7c06e58126da07c69c34492193b57fee"
+      }
+    ],
+    "different": [
+      {
+        "path": "architecture/live-evidence/inkos-context-adaptation-20261019/preimplementation.json",
+        "pr185_blob": "20d2bb5d4decadb01581faa99afd052170e5e35e",
+        "pr186_blob": "13142fa6f71b6fc5eece7806de9993d20eb4dddd"
+      },
+      {
+        "path": "docs/current-system.md",
+        "pr185_blob": "a46e77aaaa68f70225ecae54334ecb1ecc55a528",
+        "pr186_blob": "a0a308414c9aea3c6a62a8956dd8ceac5c4c0b57"
+      },
+      {
+        "path": "docs/runtime-operations.md",
+        "pr185_blob": "522e8b2e0eadef301fba51537d5272ac1f03132c",
+        "pr186_blob": "aef75a77e973e0ca181d58bd843b56293f2faf87"
+      }
+    ]
+  },
+  "preserved_from_pr185": [
+    {
+      "path": "architecture/live-evidence/inkos-context-adaptation-20261019/isolated-verification/focused-unit.xml",
+      "blob_sha": "1cad4593133771b38ca8aadd9a7939d565cb2e14"
+    },
+    {
+      "path": "architecture/live-evidence/inkos-context-adaptation-20261019/isolated-verification/result.json",
+      "blob_sha": "a46f800cadc4c2ec78bb866607d591c6c3d5471e"
+    },
+    {
+      "path": "architecture/live-evidence/inkos-context-adaptation-20261019/isolated-verification/ruff.log",
+      "blob_sha": "1f5f344d054fae10f39140fb7199c99321d9190a"
+    },
+    {
+      "path": "architecture/live-evidence/inkos-context-adaptation-20261019/isolated-verification/synthetic-selection.json",
+      "blob_sha": "1d4177e1926b005a35b8e20a2f62d17f391db1df"
+    },
+    {
+      "path": "architecture/live-evidence/inkos-context-adaptation-20261019/pr185/preimplementation.json",
+      "blob_sha": "20d2bb5d4decadb01581faa99afd052170e5e35e"
+    }
+  ],
+  "documentation_resolution": {
+    "canonical": "PR186 docs/current-system.md and docs/runtime-operations.md retained",
+    "difference": "PR185 CODE_EXISTS wording versus PR186 WIRED / scoped scripted PostgreSQL EXECUTABLE. Neither establishes QUALIFIED. Original PR185 docs remain addressable at its immutable source commit.",
+    "preimplementation": "PR186 original retained in place; PR185 distinct original retained at pr185/preimplementation.json without rewriting either identity."
+  },
+  "historical_runs": [
+    {
+      "source_pr": 185,
+      "source_commit": "de10f4d8566cb5c61bbeba011cb6ca9fde7e0975",
+      "record": "architecture/live-evidence/inkos-context-adaptation-20261019/isolated-verification/result.json",
+      "reported_unit_passed": 508,
+      "native_postgresql": "NOT_RERUN",
+      "rerun_in_reconciliation": false
+    },
+    {
+      "source_pr": 186,
+      "source_commit": "cb12177f14c9ae7bd2181dea35bb250c5fbc0e0d",
+      "record": "architecture/live-evidence/inkos-context-adaptation-20261019/verification.json",
+      "reported_unit_passed": 387,
+      "reported_scripted_postgresql_passed": 2,
+      "rerun_in_reconciliation": false
+    }
+  ],
+  "evidence_rule": "The common reported implementation fingerprint is not a new integrated exact-SHA qualification. Historical counts overlap; never sum them or transfer PASS to this merge commit.",
+  "current_checks": {
+    "git_blob_equivalence": "PASS_CHANGED_IMPLEMENTATION_AND_TESTS",
+    "exact_blob_syntax_compile": "PASS_15_CHANGED_PRODUCTION_PYTHON_FILES",
+    "full_repository_checkout": "BLOCKED_PRIVATE_GIT_AUTHENTICATION_UNAVAILABLE",
+    "pr_governance": "NOT_RUN",
+    "focused_regression": "NOT_RUN",
+    "native_postgresql": "NOT_RUN",
+    "schema_qualification": "NOT_RUN",
+    "github_check_runs_on_original_pr186_head": 0
+  },
+  "remaining_required_verification": {
+    "environment": "Complete authenticated checkout including ancestor Git objects, historical evidence and disposable dependencies; API file extracts are insufficient.",
+    "governance": "Run canonical make pr-governance with PR_BASE_SHA=215abd7d0abf4a158d7454ed72237486d201b040 against the actual integrated HEAD; retain exact-SHA outputs outside repository. Do not waive required P0 or delete historic evidence to obtain PASS.",
+    "regression": "At the same integrated HEAD run the union of the focused test node IDs in retained PR185 XML and PR186 verification command, and the two scoped PostgreSQL cases from PR186. Run required schema/migration checks through canonical governance. Any implementation change invalidates the pending identity.",
+    "completion": "Keep PR186 Draft and do not merge main until required checks complete; this record is reconciliation evidence, not an active architecture proposal."
+  },
+  "boundaries": {
+    "real_provider": "NOT_RUN_NOT_AUTHORIZED",
+    "paid_creation": "NOT_STARTED",
+    "early_memory": "MISSING observations are not backfilled by lexical prose retrieval; exact old source identity is not complete semantic coverage.",
+    "literary_quality": "NOT_PROVEN",
+    "performance": "Synthetic excerpt counts and single-run scan timings are not full Provider token/cost, throughput or production latency evidence.",
+    "author_acceptance": "UNCHANGED",
+    "production": "NOT_TOUCHED"
+  }
+}
