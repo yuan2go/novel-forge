@@ -39,6 +39,8 @@ def test_main_upgrade_appends_convergence_and_rejects_both_foreign_and_discontin
         "20261019_0229_routing_observation_preparation_recovery",
         "20261019_0230_unsent_preparation_lineage",
         "20261019_0231_prepared_main_handoff",
+        "20261019_0232_first_isolated_preparation_custody",
+        "20261019_0233_acknowledged_preparation_routing",
     ]
     with pytest.raises(ValueError, match="MIGRATION_HISTORY_FOREIGN"):
         pending_migrations(applied | {"20261014_0205_source_observation_generation_isolation"})
@@ -99,7 +101,7 @@ def test_latest_published_fork_sources_remain_importable_without_becoming_active
         assert hashlib.sha256(Path(module.__file__).read_bytes()).hexdigest() == row["sha256"]
         assert module.MIGRATION_ID not in active
     from novel_forge.tools.architecture_manifest import check_migrations
-    assert check_migrations(root)["head"] == "20261019_0231_prepared_main_handoff"
+    assert check_migrations(root)["head"] == "20261019_0233_acknowledged_preparation_routing"
 
 
 def test_capacity_composition_retains_latest_world_delivery_and_inheritance_verbatim():

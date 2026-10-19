@@ -41,6 +41,31 @@ def pytest_collectreport(report: pytest.CollectReport) -> None:
     )
 
 
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
+    outcome = yield
+    report = outcome.get_result()
+    output = str(item.config.getoption(OPTION) or "").strip()
+    if not output or not report.failed:
+        return
+    from .backend_qualification_contract import sanitize_evidence
+
+    path = Path(output).resolve().with_suffix(".failures.jsonl")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    event = {
+        "schema_version": "novel-forge.pytest-failure-event.v1",
+        "node_id": str(report.nodeid),
+        "phase": str(report.when),
+        "failure": sanitize_evidence(report.longreprtext),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "process_id": os.getpid(),
+    }
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
 def _relative_source(item: pytest.Item, root: Path) -> str:
     source = Path(str(item.path)).resolve()
     try:
