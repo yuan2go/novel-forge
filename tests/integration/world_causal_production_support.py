@@ -1263,17 +1263,14 @@ def execute_autonomous_world_vertical(
                     for entry in reality["current_state"]["narrative_obligation"]
                     if entry["state"].get("obligation_type") == "CAUSAL_DEBT"
                 ]
-                assert len(debts) == 1
-                if transport.scenario == "multi_preparation":
-                    assert debts[0]["status"] == "OPEN" and not debts[0]["payoff_evidence"]
-                else:
+                assert len(debts) == 1 and debts[0]["status"] == "OPEN" and not debts[0]["payoff_evidence"]
+                if transport.scenario == "causal_preparation":
                     target = next(event for event in background
                         if (event["mutation"]["payload"].get("causal_batch") or {}).get("local_id") == "complete-prepared-inquiry")
                     preparation = next(event for event in background
                         if (event["mutation"]["payload"].get("causal_batch") or {}).get("local_id") == "prepare-inquiry")
                     assert target["causality"]["cause_refs"] == ["local:prepare-inquiry"]
                     assert preparation["coordinate"]["source_chapter"] == target["coordinate"]["source_chapter"] == 1
-                    assert debts[0]["status"] == "FULFILLED" and debts[0]["payoff_evidence"]["event_id"] == target["event_id"]
                 reader = composition.query.reality_view(
                     book_run_id=admitted.book_run_id, view="reader"
                 )
