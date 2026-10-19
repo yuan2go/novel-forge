@@ -10,8 +10,9 @@ from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 
 
 WORKING_TASK_VERSION = "working-retrieval-task.v1"
-CURRENT_WORKING_TASK_VERSION = "working-retrieval-task.v3"
-STATEFUL_WORKING_TASK_VERSIONS = frozenset({"working-retrieval-task.v2", CURRENT_WORKING_TASK_VERSION})
+CURRENT_WORKING_TASK_VERSION = "working-retrieval-task.v4"
+DELIVERY_WORKING_TASK_VERSIONS = frozenset({"working-retrieval-task.v3", CURRENT_WORKING_TASK_VERSION})
+STATEFUL_WORKING_TASK_VERSIONS = frozenset({"working-retrieval-task.v2", *DELIVERY_WORKING_TASK_VERSIONS})
 TASK_DELIVERY_CONTRACT = "source-bound-full-provider-request.v1"
 WORKING_TASK_AUTHORITY = "FROZEN_PLAN_RETRIEVAL_ONLY"
 _PLAN_TYPES = frozenset({"chapter_plan", "chapter_group_plan", "arc_plan"})
@@ -265,7 +266,7 @@ def build_working_task(*, sources: Sequence[Mapping[str, Any]], book: Mapping[st
                             "scenes": [], "sources": [binding for binding, _, _ in normalized], "field_sources": fields}
     if version in STATEFUL_WORKING_TASK_VERSIONS:
         task["handoff_predecessor"] = chapter - 1
-    if version == CURRENT_WORKING_TASK_VERSION:
+    if version in DELIVERY_WORKING_TASK_VERSIONS:
         task["delivery_contract"] = TASK_DELIVERY_CONTRACT
     task["queries"] = list(explicit_queries)
     current = [(binding, content, pointer, _current_rows(binding["plan_kind"], content, pointer, chapter))
@@ -333,10 +334,10 @@ def validate_working_task(task: Mapping[str, Any], *, book: Mapping[str, Any], c
     scope = _scope(book, chapter, stage)
     current = isinstance(task, Mapping) and task.get("contract_version") in STATEFUL_WORKING_TASK_VERSIONS
     source_types = _CURRENT_SOURCE_TYPES if current else _SOURCE_TYPES
-    keys = {"contract_version", "authority", *scope, "goal", *_LIST_FIELDS, "explicit_queries", "scenes", "sources", "field_sources", "task_hash"} | ({"handoff_predecessor"} if current else set()) | ({"delivery_contract"} if task.get("contract_version") == CURRENT_WORKING_TASK_VERSION else set())
+    keys = {"contract_version", "authority", *scope, "goal", *_LIST_FIELDS, "explicit_queries", "scenes", "sources", "field_sources", "task_hash"} | ({"handoff_predecessor"} if current else set()) | ({"delivery_contract"} if task.get("contract_version") in DELIVERY_WORKING_TASK_VERSIONS else set())
     if not isinstance(task, Mapping) or set(task) != keys or task.get("contract_version") not in {WORKING_TASK_VERSION, *STATEFUL_WORKING_TASK_VERSIONS} or task.get("authority") != WORKING_TASK_AUTHORITY:
         raise _invalid("working task requires the frozen retrieval-only contract")
-    if task.get("contract_version") == CURRENT_WORKING_TASK_VERSION and task.get("delivery_contract") != TASK_DELIVERY_CONTRACT:
+    if task.get("contract_version") in DELIVERY_WORKING_TASK_VERSIONS and task.get("delivery_contract") != TASK_DELIVERY_CONTRACT:
         raise _invalid("Current task requires its complete source-bound request delivery contract")
     if current and (type(task.get("handoff_predecessor")) is not int or task["handoff_predecessor"] != chapter - 1):
         raise _invalid("Working task handoff must bind the exact delivered predecessor")

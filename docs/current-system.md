@@ -346,7 +346,13 @@ returns the historical promise, its resolution and their recursive support. Unce
 status remains visible. Observations are fallible navigation, not accepted facts.
 For v10, an actor name alone does not seed every latest state or knowledge item.
 The Host ranks source-bound observation claims and quotes against each frozen task
-query, reuses its best support across queries, and records uncovered queries. Direct
+query and records uncovered queries. Task v1-v3 retain their best-support selection.
+New task v4 freezes observation relevance v2: for each query, keep the non-dominated
+frontier of lexical score and source chapter, reusing observation identities across
+queries. A more literal old registration must not by itself discard later completion
+evidence. Equal-score later sources dominate earlier ones; an equal chapter/score uses
+the earliest exact source location. This is evidence selection, never a declaration
+that a newer observation is true or grants another character knowledge. Direct
 passage matches and open participant promises remain seeds; recursive causes and promise
 resolutions are restored independently of ranking. The selection has no causal-depth
 cutoff and does not claim that lexical relevance proves semantic completeness.
@@ -361,8 +367,9 @@ historical Plan bindings are navigation hints, never proof that a planned event 
 or that a character knows it. Missing Plan bindings remain visible. Replay validates the
 original Plan versions and source digests before reusing a disposable locator index.
 Previously frozen selection v1-v2 requests retain their original algorithms.
-New v10 freezes use retrieval task v3 with an explicit full-request delivery contract.
-Task v2's demand and handoff rules remain supported for frozen replay. Native
+New v10 freezes use retrieval task v4 with observation relevance v2 and the explicit
+full-request delivery contract. Frozen task v3 retains relevance v1 and its original
+delivery contract; task v2 retains its original demand and handoff rules. Native
 Planning binds the exact current VolumePlan as well as Arc/Group inputs, selects its
 current narrative segment and the corresponding Arc segments, and resolves literal
 participant mentions against the frozen cast. The delivered predecessor is an explicit

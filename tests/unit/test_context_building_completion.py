@@ -468,3 +468,53 @@ def test_delivery_contract_requires_full_snapshot_without_reinterpreting_frozen_
     validate_working_task(current, book=book, chapter=3, stage='CHAPTER', sources=sources)
     assert request_snapshot_required('draft', {'frozen_task': current})
     assert not request_snapshot_required('draft', {'frozen_task': old})
+
+
+def test_versioned_observation_relevance_keeps_later_completion_beyond_literal_registration():
+    from novel_forge.modules.book_authority.task_retrieval import select_task_observations
+    texts = ["initial three course sessions registration payment", "three course sessions are completed",
+             "Mira moved quarry tools behind the ledge."]
+    rows, entries = [], []
+    for chapter, text in enumerate(texts, 1):
+        memory = normalize_observations([note(kind="KNOWLEDGE", subject="Mira", knowledge_owner="Mira",
+            state_key=f"reported-state-{chapter}", quote=text, claim=text)], text)
+        rows.append(source(chapter, text, memory))
+        entries.extend({**entry, "source": {"chapter": chapter}} for entry in memory["entries"])
+    task = {"subjects": ["Mira"], "queries": [
+        "initial three course sessions registration payment and followup guidance after completion"], "scenes": []}
+    old = select_task_observations(entries, task=task)
+    current = select_task_observations(entries, task=task, version="working-task-observation-relevance.v2")
+    registration, completion, unrelated = [entry["observation_id"] for entry in entries]
+    assert old["selected_ids"] == [registration]
+    assert set(current["selected_ids"]) == {registration, completion}
+    assert unrelated not in current["selected_ids"]
+    assert select_task_observations(entries, task=task) == old
+    assert select_task_observations(list(reversed(entries)), task=task,
+        version="working-task-observation-relevance.v2")["selected_ids"] == current["selected_ids"]
+    options = dict(queries=[], max_characters=None, dependency_closed=True, recent_complete_from=4,
+        lifecycle=True)
+    old_packet = compile_working_memory(rows, task={**task, "contract_version": "working-retrieval-task.v3"}, **options)
+    packet = compile_working_memory(rows, task={**task, "contract_version": "working-retrieval-task.v4"}, **options)
+    assert {entry["observation_id"] for entry in old_packet["entries"]} == {registration}
+    assert {entry["observation_id"] for entry in packet["entries"]} == {registration, completion}
+    actor_only = compile_working_memory(rows, task={"contract_version": "working-retrieval-task.v4",
+        "subjects": ["Mira"], "queries": [], "scenes": []}, **options)
+    assert actor_only["entries"] == []
+
+
+def test_new_task_versions_observation_selection_without_reinterpreting_task3():
+    from novel_forge.modules.book_authority.working_task import (
+        CURRENT_WORKING_TASK_VERSION, build_working_task, validate_working_task,
+    )
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    book = dict(project_id="project", book_id="book", book_run_id="run")
+    content = dict(project_id="project", book_id="book", chapter=3, chapter_intent="Return for guidance.")
+    sources = [dict(asset_type="chapter_plan", asset_version_id="plan", content_hash=canonical_hash(content), content=content)]
+    old = build_working_task(sources=sources, book=book, chapter=3, stage="CHAPTER", version="working-retrieval-task.v3")
+    current = build_working_task(sources=sources, book=book, chapter=3, stage="CHAPTER", version=CURRENT_WORKING_TASK_VERSION)
+    assert CURRENT_WORKING_TASK_VERSION == "working-retrieval-task.v4"
+    assert current["delivery_contract"] == old["delivery_contract"]
+    assert {k: v for k, v in current.items() if k not in {"contract_version", "task_hash"}} == {
+        k: v for k, v in old.items() if k not in {"contract_version", "task_hash"}}
+    for task in [old, current]:
+        validate_working_task(task, book=book, chapter=3, stage="CHAPTER", sources=sources)

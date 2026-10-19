@@ -214,7 +214,9 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
         from novel_forge.modules.book_authority.task_retrieval import select_task_observations
         task_selection = select_task_observations([entry for entry in entries
             if entry["kind"] not in {"CHARACTER_STATE", "KNOWLEDGE", "RELATIONSHIP"}
-            or entry["observation_id"] in current], task=task)
+            or entry["observation_id"] in current], task=task,
+            version="working-task-observation-relevance.v2" if task.get("contract_version") == "working-retrieval-task.v4"
+                else "working-task-observation-relevance.v1")
         task_related = set(task_selection["selected_ids"])
     ranked = sorted(entries, key=lambda row: (
         -sum(q.casefold() in (row["claim"] + row["subject"] + row["state_key"]).casefold() for q in queries),
@@ -317,7 +319,7 @@ def validate_memory_packet(packet: Any, sources: list[dict[str, Any]]) -> None:
     if isinstance(packet, Mapping) and packet.get("version") in {PACKET_V2, PROVIDER_PACKET_V2}:
         fields |= {"task_selection"}
         selection = packet.get("task_selection")
-        if selection is not None and (not isinstance(selection, Mapping) or selection.get("version") != "working-task-observation-relevance.v1"
+        if selection is not None and (not isinstance(selection, Mapping) or selection.get("version") not in {"working-task-observation-relevance.v1", "working-task-observation-relevance.v2"}
                 or selection.get("selection_hash") != canonical_hash({key: value for key, value in selection.items() if key != "selection_hash"})):
             raise failure
     if (not isinstance(packet, Mapping) or packet.get("version") not in {MEMORY_VERSION, PACKET_V2, *PROVIDER_MEMORY_VERSIONS}

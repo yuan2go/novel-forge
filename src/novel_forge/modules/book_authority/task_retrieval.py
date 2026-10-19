@@ -238,9 +238,28 @@ def select_task_passages(units: Sequence[tuple[int, int, int, str]], *, task: Ma
     return result
 
 
-def select_task_observations(entries: Sequence[Mapping[str, Any]], *, task: Mapping[str, Any]) -> dict[str, Any]:
+def _observation_query_support(matching, query, entries, *, version):
+    if not matching:
+        return []
+    if version == "working-task-observation-relevance.v1":
+        return [max(matching, key=lambda row: (row["scores"][query.identity], row["unit"][0],
+            -entries[row["unit"][1]]["location"]["start"]))]
+    ordered = sorted(matching, key=lambda row: (-row["unit"][0], -row["scores"][query.identity],
+        entries[row["unit"][1]]["location"]["start"], entries[row["unit"][1]]["observation_id"]))
+    selected, later_score = [], -1
+    for row in ordered:
+        score = row["scores"][query.identity]
+        if score > later_score:
+            selected.append(row)
+            later_score = score
+    return selected
+
+
+def select_task_observations(entries: Sequence[Mapping[str, Any]], *, task: Mapping[str, Any],
+                             version: str = "working-task-observation-relevance.v1") -> dict[str, Any]:
     from .derived_cache import task_selection_cache
-    version = "working-task-observation-relevance.v1"
+    if version not in {"working-task-observation-relevance.v1", "working-task-observation-relevance.v2"}:
+        raise KernelError("WORKING_TASK_RETRIEVAL_INVALID", "Unknown observation relevance algorithm")
     task_hash, input_hash = task.get("task_hash") or canonical_hash(task), canonical_hash(entries)
     key = (version, task_hash, input_hash)
     cached = task_selection_cache.get(key)
@@ -255,13 +274,10 @@ def select_task_observations(entries: Sequence[Mapping[str, Any]], *, task: Mapp
     selected, covered = set(), []
     for query in queries:
         matching = [row for row in candidates if query.identity in row["scores"]]
-        if not matching:
-            continue
-        best = max(matching, key=lambda row: (row["scores"][query.identity], row["unit"][0],
-            -entries[row["unit"][1]]["location"]["start"]))
-        identity = entries[best["unit"][1]]["observation_id"]
-        selected.add(identity)
-        covered.append({"query_id": query.identity, "observation_id": identity, "score": best["scores"][query.identity]})
+        for best in _observation_query_support(matching, query, entries, version=version):
+            identity = entries[best["unit"][1]]["observation_id"]
+            selected.add(identity)
+            covered.append({"query_id": query.identity, "observation_id": identity, "score": best["scores"][query.identity]})
     body = {"version": version, "task_hash": task_hash, "input_hash": input_hash,
         "candidate_count": len(entries), "selected_ids": sorted(selected), "query_support": covered,
         "unmatched_queries": [query.identity for query in queries if query.identity not in {row["query_id"] for row in covered}],
