@@ -690,6 +690,11 @@ knowledge record. Selection reuses the best ranked claim/quote support for each 
 query, then restores source passages and recursive causes/resolutions. Open participant
 promises remain visible; neither the rank receipt nor a coverage status asserts that
 the model understood every relevant event.
+New memory-extraction and v10 requests persist the full application-visible Provider
+envelope inside `novelos.provider_request_admission.v2`. Exact request readback returns
+that admission artifact with `FROZEN_APPLICATION_REQUEST`, validates its hash and Effect
+binding, and retains separate dispatches and receipt input bindings. Historical requests
+with only original hashes return `LEGACY_HASH_ONLY`, never a newly rendered preview.
 
 For changes to this path run `test_context_building_completion.py`,
 `test_memory_backfill_postgres.py`, existing working-memory/projection/history,

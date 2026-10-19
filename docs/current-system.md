@@ -363,6 +363,12 @@ it never substitutes today's preview for an old request. An Effect records an in
 its receipt and transport artifacts retain their own execution status. Reading sources
 or a preview does not prove that a model consumed or understood them.
 
+new memory-extraction and v10 requests additionally retain the complete application
+Provider envelope as `provider-request-snapshot.v1` within admission v2. Readback verifies
+its digest, frozen Effect identity and available receipt input hashes. A dispatch row
+is reported separately from an Effect intent. Older requests without this snapshot
+remain explicitly `LEGACY_HASH_ONLY`; their historical artifacts and receipts are retained.
+
 Passage segmentation and tokenization reuse immutable deterministic source results.
 A byte-bounded disposable rank cache keys exact task/source-unit hashes, algorithm and
 selection limits; cached JSON is hash-checked and returned without shared mutable

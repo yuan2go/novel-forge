@@ -149,3 +149,23 @@ def test_v10_selects_task_related_state_instead_of_every_state_of_the_same_chara
     assert [entry["state_key"] for entry in selected["entries"]] == ["timber handling"]
     assert len(compile_working_memory(rows, lifecycle=False, **options)["entries"]) == 2
     assert selected["task_selection"]["query_support"]
+
+
+def test_new_request_snapshot_keeps_complete_envelope_and_checks_effect_identity():
+    from novel_forge.modules.chapter_authority.request_snapshot import (
+        freeze_provider_request, request_snapshot_required, validate_provider_request_snapshot,
+    )
+    from novel_forge.modules.production_execution.provider_admission import ProviderRequestEnvelope
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    envelope = ProviderRequestEnvelope(provider="codex-cli", model="gpt-test", protocol="codex-cli-application-stdin-v1",
+        input_text="Exact source and frozen task.\nNo current preview substitution.", max_output_tokens=2000,
+        timeout_seconds=180, stable_idempotency_key="frozen-effect")
+    snapshot = freeze_provider_request(envelope)
+    assert validate_provider_request_snapshot(snapshot, identity=envelope.to_identity_dict(), envelope_hash=envelope.envelope_hash) == envelope
+    assert request_snapshot_required("working_memory_extract", {})
+    assert request_snapshot_required("draft", {"nested": [{"projection_policy": {"version": "working-prose-projection.v10"}}]})
+    assert not request_snapshot_required("draft", {"projection_policy": {"version": "working-prose-projection.v9"}})
+    snapshot["envelope"]["input_text"] += " Changed."
+    snapshot["snapshot_hash"] = canonical_hash({key: value for key, value in snapshot.items() if key != "snapshot_hash"})
+    with pytest.raises(ValueError, match="IDENTITY_DRIFT"):
+        validate_provider_request_snapshot(snapshot, identity=envelope.to_identity_dict(), envelope_hash=envelope.envelope_hash)

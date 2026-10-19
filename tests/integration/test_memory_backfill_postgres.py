@@ -87,6 +87,14 @@ def test_native_memory_extraction_keeps_receipts_replays_and_source_guards(tmp_p
                 uow.cursor.execute("""SELECT count(*),bool_and(status='SUCCEEDED') FROM authority_external_effect
                     WHERE project_id=%s AND request_payload->>'stage'='working_memory_extract'""", [book["project_id"]])
                 assert uow.cursor.fetchone() == (2, True)
+                uow.cursor.execute("SELECT request_payload#>'{_production_execution,capability_runtime}' FROM authority_external_effect WHERE operation_id=%s", [row["operation_id"]])
+                capability = uow.cursor.fetchone()[0]
+                admission = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=capability["provider_admission_asset_version_id"])
+                contract = admission.content["contract"]
+                assert contract["schema_version"] == "novelos.provider_request_admission.v2"
+                from novel_forge.modules.chapter_authority.request_snapshot import validate_provider_request_snapshot
+                actual = validate_provider_request_snapshot(contract["provider_request_snapshot"], identity=contract["provider_request_identity"], envelope_hash=capability["provider_request_envelope_hash"])
+                assert "Extract source-bound working observations" in actual.input_text
             with pytest.raises(KernelError, match="WORKING_MEMORY_CHECKPOINT_STALE"):
                 admit_backfill(app, followup, **{**options, "idempotency_key": options["idempotency_key"] + ":stale"})
             from novel_forge.modules.book_authority.memory_backfill import cancel_backfill
