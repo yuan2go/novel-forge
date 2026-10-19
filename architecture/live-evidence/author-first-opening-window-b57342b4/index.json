@@ -1,0 +1,24 @@
+{
+  "schema_version": "checked-native-coordination-repair.v1",
+  "at": "2026-10-19T04:53:21.401650+00:00",
+  "source_sha": "b57342b4e15241e722bcbc5ac67a68cd4063d11f",
+  "evidence_ceiling": "EXECUTABLE",
+  "checks": {
+    "unit": 82,
+    "postgres": 4,
+    "docs": "PASS",
+    "ruff": "PASS"
+  },
+  "full_matrix": "QUEUED_NOT_RUN_YET",
+  "full_matrix_waits_for_original_cleanup": true,
+  "old_full_failure_events": 41,
+  "original_full_source_sha": "33e567473541ffe7778df52af462a76ac377599b",
+  "original_full_still_running": true,
+  "prior_world_source_equivalent_checks": "../author-first-world-sampling-80caedd0/",
+  "real_native_production_checkpoint": "native-preparation-checkpoint.json",
+  "literary_qualification": "NOT_PROVEN",
+  "hundred_chapter_delivery": "NOT_COMPLETED",
+  "production_database_used_for_tests": false,
+  "prior_wait_only_queue_superseded_before_matrix_execution": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/queue-full-p0-80caedd0.superseded.json",
+  "raw_provider_or_prose_committed": false
+}

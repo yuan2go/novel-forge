@@ -1,0 +1,25 @@
+{
+  "source_sha": "b57342b4e15241e722bcbc5ac67a68cd4063d11f",
+  "classification": "PRODUCTION_COORDINATION_HANDOFF_DEFECT",
+  "first_failure": "Ordinary Creation recovery with maximum_ticks=2 returned ADMITTED before completing Opening",
+  "cause": "Normal coordination window exhaustion exposed an owner lifecycle instead of the existing resumable coordinator checkpoint",
+  "affected_entry_points": [
+    "authority-creation foreground continuation",
+    "Book creation RuntimeJob continuation"
+  ],
+  "fix": "Only normal Opening-loop exhaustion with ADMITTED or RUNNING yields YIELDED_CHECKPOINT and retains the original checkpoint",
+  "unchanged": [
+    "COMPLETE",
+    "claim/dependency waits",
+    "Kernel failure and reconciliation returns",
+    "cancellation",
+    "identity and version gates",
+    "Attempt and stage repair allowances"
+  ],
+  "actual_regression": "Existing four parameter cases unchanged; both previously failing full Creation chains now complete with original seven Foundation calls, native title, quality correction, replay and original Formation checks",
+  "review": {
+    "spec": "No further findings after现场 checkpoint confirmation",
+    "standards": "No substantive finding; Authority ownership and checkpoint preserved"
+  },
+  "new_state_or_framework": false
+}
