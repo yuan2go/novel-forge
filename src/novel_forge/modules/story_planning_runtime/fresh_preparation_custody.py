@@ -382,36 +382,13 @@ def target_runtime(application, source, target):
 
 
 def _cli_version_reconciliation(source, target):
-    from novel_forge.modules.production_execution.backends import CodexAccountEntitlementSnapshot
-    from novel_forge.modules.production_execution.codex_configuration import codex_local_binding_hash
-    proof = source['fresh_preparation']
-    reference = proof['original_route'].get('auth_profile_ref')
-    current_reference = target.get('auth_profile_ref')
-    if reference == current_reference:
-        return None
+    from novel_forge.modules.production_execution.codex_configuration import reconcile_codex_cli_version_account
     if source.get('mode') != 'ACKNOWLEDGED_PREPARATION_CUSTODY':
         return None
-    old = source.get('original_account_entitlement')
-    account = target.get('account') or {}
-    current = account.get('entitlement')
-    try:
-        original = CodexAccountEntitlementSnapshot(**old)
-        selected = CodexAccountEntitlementSnapshot(**current)
-        if (not old.get('billing_identity') or {key: value for key, value in old.items() if key != 'cli_version'} !=
-                {key: value for key, value in current.items() if key != 'cli_version'} or original.cli_version == selected.cli_version):
-            return None
-        fields = dict(codex_home=account['codex_home'], executable=account['executable'],
-            retry_policy=str(account.get('retry_policy') or ''), input_only_policy=str(account.get('input_only_policy') or ''))
-        old_binding = codex_local_binding_hash(**fields, entitlement=old)
-        new_binding = codex_local_binding_hash(**fields, entitlement=current)
-        if (not isinstance(reference, str) or not reference.endswith(':codex:' + old_binding)
-                or not isinstance(current_reference, str) or current_reference != reference[:-len(old_binding)] + new_binding):
-            return None
-    except (TypeError, ValueError, KeyError):
-        return None
-    return dict(version='codex-cli-version-reconciliation.v1', source_auth_profile_ref=reference,
-        target_auth_profile_ref=current_reference, original_entitlement=old, target_entitlement=current,
-        original_entitlement_hash=original.snapshot_hash, target_entitlement_hash=selected.snapshot_hash)
+    return reconcile_codex_cli_version_account(account=target.get('account') or {},
+        original_entitlement=source.get('original_account_entitlement'),
+        source_auth_profile_ref=source['fresh_preparation']['original_route'].get('auth_profile_ref'),
+        target_auth_profile_ref=target.get('auth_profile_ref'))
 
 
 def _first_route_authorization(source, target):

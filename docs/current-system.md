@@ -387,6 +387,9 @@ Root snapshot, typed inputs, Writer Effects/receipts and Context/materialization
 it never substitutes today's preview for an old request. An Effect records an intent;
 its receipt and transport artifacts retain their own execution status. Reading sources
 or a preview does not prove that a model consumed or understood them.
+The response's `working_manuscript` remains the original Root's context snapshot.
+Each Writer envelope is separately retained under that Effect's `provider_admission`;
+an absent legacy envelope never replaces or clears the Root snapshot.
 
 New memory-extraction and v10 requests additionally retain the complete application
 Provider envelope as `provider-request-snapshot.v1` within admission v2. Readback verifies

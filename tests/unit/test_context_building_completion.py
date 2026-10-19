@@ -215,3 +215,36 @@ def test_literal_chapter_locators_support_ordinals_and_exclude_current_or_future
     from novel_forge.modules.book_authority.source_locators import explicit_chapters
     task = {"goal": "参照第十四章、第二十至二十二章与 Chapters 9-10。第100章尚未发生。", "scenes": []}
     assert explicit_chapters(task, 22) == {9, 10, 14, 20, 21}
+
+
+@pytest.mark.parametrize('complete_snapshot', [False, True])
+def test_request_readback_retains_root_working_snapshot_beside_each_provider_envelope(monkeypatch, complete_snapshot):
+    from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from novel_forge.modules.book_authority import memory_readback
+    from novel_forge.modules.chapter_authority.request_snapshot import freeze_provider_request
+    from novel_forge.modules.production_execution.provider_admission import ProviderRequestEnvelope
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    working = dict(version='working-manuscript-context.v2', book_run_id='run', retrieval_task={'task_hash': 'frozen-task'})
+    working['snapshot_hash'] = canonical_hash(working)
+    envelope = ProviderRequestEnvelope(provider='codex-cli', model='test', protocol='codex-cli-application-stdin-v1',
+        input_text='Frozen Writer task and original prose.', max_output_tokens=2000, timeout_seconds=180, stable_idempotency_key='effect')
+    contract = dict(provider_request_identity=envelope.to_identity_dict())
+    if complete_snapshot:
+        contract['provider_request_snapshot'] = freeze_provider_request(envelope)
+    content = {'contract': contract}
+    document = SimpleNamespace(content=content, content_hash=canonical_hash(content))
+    capability = dict(provider_admission_asset_version_id='admission', provider_admission_content_hash=document.content_hash,
+        provider_request_envelope_hash=envelope.envelope_hash)
+    uow = MagicMock()
+    uow.cursor.fetchone.return_value = ({'chapter_root_operation_id': 'root'}, {'preparation_report': {'working_manuscript': working}}, [])
+    uow.cursor.fetchall.side_effect = [[('effect', 'operation', 'SUCCEEDED', {'_production_execution': {'capability_runtime': capability}}, [], [])], []]
+    uow.repositories.asset_documents.require.return_value = document
+    factory = MagicMock()
+    factory.return_value.__enter__.return_value = uow
+    monkeypatch.setattr(memory_readback, 'AuthorityUnitOfWork', factory)
+    result = memory_readback.request_memory('postgresql://unit', project_id='project', book_run_id='run', chapter_request_id='request', principal=MagicMock())
+    assert result['working_manuscript'] == working
+    effect = result['writer_effects'][0]
+    assert effect['provider_admission']['content'] == contract
+    assert effect['input_snapshot_status'] == ('FROZEN_APPLICATION_REQUEST' if complete_snapshot else 'LEGACY_HASH_ONLY')

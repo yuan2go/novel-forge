@@ -15,9 +15,9 @@ def request_memory(database_url, *, project_id, book_run_id, chapter_request_id,
         if row is None:
             raise KernelError("BOOK_CHAPTER_REQUEST_NOT_FOUND", "No request belongs to this Book and Project")
         request, command, inputs = row
-        snapshot = (command.get("preparation_report") or {}).get("working_manuscript")
-        if snapshot is not None and snapshot.get("snapshot_hash") != canonical_hash(
-                {key: value for key, value in snapshot.items() if key != "snapshot_hash"}):
+        working_snapshot = (command.get("preparation_report") or {}).get("working_manuscript")
+        if working_snapshot is not None and working_snapshot.get("snapshot_hash") != canonical_hash(
+                {key: value for key, value in working_snapshot.items() if key != "snapshot_hash"}):
             raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Stored request snapshot failed its digest")
         uow.cursor.execute("""SELECT effect.external_effect_id,effect.operation_id,effect.status,
                 effect.request_payload,COALESCE((SELECT jsonb_agg(to_jsonb(dispatch) ORDER BY dispatch.dispatch_id)
@@ -76,7 +76,7 @@ def request_memory(database_url, *, project_id, book_run_id, chapter_request_id,
             artifacts.append(dict(asset_type=kind, asset_version_id=identity, content_hash=digest, content=content))
     return {"version": "working-memory-request-readback.v1", "read_kind": "FROZEN_CHAPTER_REQUEST",
         "project_id": project_id, "book_run_id": book_run_id, "chapter_request": request,
-        "working_manuscript": snapshot, "input_assets": inputs, "writer_effects": effects,
+        "working_manuscript": working_snapshot, "input_assets": inputs, "writer_effects": effects,
         "request_artifacts": artifacts, "effect_intent_recorded": bool(effects),
         "dispatch_observed": any(effect["dispatches"] for effect in effects),
         "attribution_boundary": "INTENT_AND_RECEIPT_STATUS_RETAINED_NOT_PROOF_OF_MODEL_COMPREHENSION"}
