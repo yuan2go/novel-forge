@@ -1,0 +1,59 @@
+{
+  "schema_version": "checked-evidence-manifest.v1",
+  "files": [
+    {
+      "path": "acknowledged-checkpoint-06472af7-docs.json",
+      "sha256": "sha256:d911679bccd7d2751587e3e2a3ae834749a4ccb178e12bc3b1f230177213dc39"
+    },
+    {
+      "path": "acknowledged-checkpoint-06472af7-postgres.xml.gz",
+      "sha256": "sha256:2db6304c6f30316304cf417fe0a496982bce55cd0852809b736ffc25d0d0c267"
+    },
+    {
+      "path": "acknowledged-checkpoint-06472af7-unit.xml.gz",
+      "sha256": "sha256:065af469b201bd8ffcd3c343fbeb8c0a0c9bdd82261f880d52bf25e06b3e249e"
+    },
+    {
+      "path": "classification.json",
+      "sha256": "sha256:d819a231b972dcd8ff0ef09ece76dd84f383c03c6dbcbf7ac5b1dc6eff418148"
+    },
+    {
+      "path": "index.json",
+      "sha256": "sha256:f3d02d40ccf7f19c0e4287dcb868398b5cc503c67adb94edc34e253177ffe2d3"
+    },
+    {
+      "path": "native-pack-revalidation.json",
+      "sha256": "sha256:17bf61356343eeef2603bdbb7e498160b4fc6b7815a80ad06e4df865d741243a"
+    },
+    {
+      "path": "native-working-chapters-01-20.readback.json",
+      "sha256": "sha256:d44ea136950e3a94548b06c5728bfcc36b54955da0f07ee0eb7afb3aa6cd7a17"
+    },
+    {
+      "path": "native20-complete-rereview-transport-v4.json",
+      "sha256": "sha256:4f57e3004daf8ada17002422742ea936a93088b3a1d40115f41b5a1e8d4ec8a8"
+    },
+    {
+      "path": "native20-length-revision-actual-input-d9a6ed04.json",
+      "sha256": "sha256:d162bc8e2ab1fd8f624f3a3bc265bc5d13993fbf0fa701514c63f9230dd696de"
+    },
+    {
+      "path": "native20-rereview-actual-input-8b4ed0a1.json",
+      "sha256": "sha256:3b29e67ebbf9d6f2a54cbed2b6382142ba87192c7b77bbbb16404812e600d95e"
+    },
+    {
+      "path": "native20-selection-and-next-group.json",
+      "sha256": "sha256:8c506a742b84815c88bca34936069377bd011557888dca1f43313dbf5a1dcd26"
+    },
+    {
+      "path": "native20-writer-unknown-successor-and-rereview-success-proof.json",
+      "sha256": "sha256:3959e52da1926ed62787e680a908c21e48861d3064139b9fae9f3e14aeb2d320"
+    },
+    {
+      "path": "prose-counts-01-20.json",
+      "sha256": "sha256:9ad569a9f87d8b46948bf5cef450f28f4cb2ae2c36c0326bb4804cd871369f07"
+    }
+  ],
+  "historical_failures": "PRESERVED",
+  "raw_prose_and_provider_payloads": "PRIVATE_OUTSIDE_GIT"
+}
