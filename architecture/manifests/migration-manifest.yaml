@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261019_0235_source_isolation_convergence",
+  "head": "20261020_0236_acknowledged_preparation_custody",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -238,6 +238,7 @@
     "20261019_0232_first_isolated_preparation_custody",
     "20261019_0233_acknowledged_preparation_routing",
     "20261019_0234_settled_preparation_capacity",
-    "20261019_0235_source_isolation_convergence"
+    "20261019_0235_source_isolation_convergence",
+    "20261020_0236_acknowledged_preparation_custody"
   ]
 }

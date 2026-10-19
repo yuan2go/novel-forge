@@ -368,6 +368,14 @@ retains its original history and stops its batch; diagnosed terminal retries req
 explicit original operation and reject unresolved Effects or held writers. Neither
 backfill nor annotation changes prose, Canon, accepted state or active plans.
 
+A first native Planning preparation paused before its main call can retain completed
+preparation after the original worker acknowledges cancellation. The versioned
+`planning-acknowledged-preparation-handoff.v1` binds the same Book frontier, original
+Context, Pack semantics, account, route and verified receipts. It requires no isolated
+ancestor; it neither fabricates isolation nor converts an unknown result into success.
+The v14 control command and migration 0236 append this case alongside earlier guards.
+The policy checkpoint recognizes the resulting revoked, never-sent pause intent.
+
 The Editor memory read distinguishes `CURRENT_V3_PREVIEW` from
 `FROZEN_CHAPTER_REQUEST`. Supplying a `chapter_request_id` reads that Book's persisted
 Root snapshot, typed inputs, Writer Effects/receipts and Context/materialization artifacts;

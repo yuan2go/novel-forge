@@ -9,7 +9,8 @@ from .domain import canonical_hash
 LEGACY_CONTRACT = 'planning-first-isolated-preparation-handoff.v1'
 CONTRACT = 'planning-first-isolated-preparation-handoff.v2'
 CAPACITY_CONTRACT = 'planning-first-isolated-preparation-handoff.v3'
-SUPPORTED_CONTRACTS = frozenset({LEGACY_CONTRACT, CONTRACT, CAPACITY_CONTRACT})
+ACKNOWLEDGED_CONTRACT = 'planning-acknowledged-preparation-handoff.v1'
+SUPPORTED_CONTRACTS = frozenset({LEGACY_CONTRACT, CONTRACT, CAPACITY_CONTRACT, ACKNOWLEDGED_CONTRACT})
 CONTEXT_CONTRACT = 'same-capacity-isolated-preparation.v1'
 LINEAGE_LINK_FAILURE = dict(error_code='PLANNING_ROUTING_LINEAGE_INVALID',
     error_message='PLANNING_ROUTING_LINEAGE_INVALID: Runtime successor lacks its exact native continuation',
@@ -77,7 +78,7 @@ def require_source(uow, *, source_operation_id, frozen):
                 return None
         members.append(dict(operation=operation, generation=generation, isolation=isolation, parent=parent))
         if not parent:
-            if command.get('runtime_continuation_id') or not isolation:
+            if command.get('runtime_continuation_id') or (not isolation and operation['status'] != 'RECONCILIATION_REQUIRED'):
                 return None
             break
         current = parent['source_operation_id']
@@ -248,7 +249,10 @@ def require_source(uow, *, source_operation_id, frozen):
         ('backend_id', 'backend'), ('reasoning_effort', 'reasoning'))}
     if (account_route.get('model_provider'), account_route.get('backend_id')) == (main['provider'], main['backend']):
         original_route['auth_profile_ref'] = account_route['auth_profile_ref']
-    proof = dict(contract_version=CAPACITY_CONTRACT if capacity_members else CONTRACT, source_operation_id=original['operation_id'], source_attempt_id=attempt_id,
+    acknowledged_anchor = anchor['isolation'] is None
+    if acknowledged_anchor and any(member['kind'] != 'ACKNOWLEDGED_CANCELLATION' for member in stopped):
+        raise rejected
+    proof = dict(contract_version=ACKNOWLEDGED_CONTRACT if acknowledged_anchor else CAPACITY_CONTRACT if capacity_members else CONTRACT, source_operation_id=original['operation_id'], source_attempt_id=attempt_id,
         custody_source_operation_id=source_operation_id, book_run_id=working['book_run_id'], current_chapter=book[0],
         accepted_through_chapter=book[1], input_snapshot_id=book[2], working_snapshot_hash=working['snapshot_hash'],
         context_asset_version_id=context.asset_version_id, context_content_hash=context.content_hash,
@@ -259,7 +263,7 @@ def require_source(uow, *, source_operation_id, frozen):
     proof['original_capacity_bindings'] = bindings
     current_op = members[0]['operation']
     parent = members[0]['parent']
-    return dict(mode='FIRST_ISOLATED_PREPARATION_CUSTODY', source_operation_id=source_operation_id,
+    return dict(mode='ACKNOWLEDGED_PREPARATION_CUSTODY' if acknowledged_anchor else 'FIRST_ISOLATED_PREPARATION_CUSTODY', source_operation_id=source_operation_id,
         command=frozen, version=int(current_op['version']), snapshot=snapshot, depth=(int(parent['chain_depth']) if parent else 0) + 1,
         evidence_asset_version_id=context.asset_version_id, evidence_hash=context.content_hash, fresh_preparation=proof,
         source_operation_status=current_op['status'], source_release_sha=current_op.get('definition_snapshot', {}).get('commit_sha', snapshot.get('release_sha')), provider=original_route['model_provider'], route_evidence_operation_id=original['operation_id'])
@@ -375,7 +379,7 @@ def _first_route_authorization(source, target):
     route, account = proof['original_route'], target.get('account') or {}
     ancestry = proof.get('stopped_ancestry', [])
     reference = route.get('auth_profile_ref')
-    if (source.get('mode') != 'FIRST_ISOLATED_PREPARATION_CUSTODY'
+    if (source.get('mode') not in {'FIRST_ISOLATED_PREPARATION_CUSTODY', 'ACKNOWLEDGED_PREPARATION_CUSTODY'}
             or proof.get('contract_version') != CONTRACT or proof.get('source_operation_id') != source['source_operation_id']
             or proof.get('custody_source_operation_id') != source['source_operation_id']
             or proof.get('main_dispatch_count') != 0 or proof.get('isolated_generation_count') != 1
@@ -413,7 +417,7 @@ def authorization(uow, *, source, successor, principal, target):
         authorized_reasoning_effort=source['fresh_preparation']['original_route']['reasoning_effort'])
         if source['command'].get('runtime_continuation_id') or source['provider'] == 'scripted_provider_v2'
         else _first_route_authorization(source, target))
-    return {**capacity, 'capacity_only': False, 'recovery_kind': 'FIRST_ISOLATED_PREPARATION_CUSTODY',
+    return {**capacity, 'capacity_only': False, 'recovery_kind': source['mode'],
         'route_authorization': route, 'preserved_repair_number': successor.repair_number,
         'retained_preparation_count': len(source['fresh_preparation']['retained_preparation']),
         'generation_recovery_number': source['fresh_preparation']['isolated_generation_count']}

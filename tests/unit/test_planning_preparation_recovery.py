@@ -1368,3 +1368,39 @@ def test_settled_capacity_handoff_preserves_preparation_and_rejects_changed_or_l
     assert proof['stopped_ancestry'][-1]['kind'] == 'UNSENT_CAPACITY_FAILURE'
     assert proof['stopped_ancestry'][-1]['failure_hash'] == canonical_hash(s.capacity_failure)
     assert s.effects == before
+
+
+@pytest.mark.parametrize('damage', ['', 'unacknowledged', 'lease', 'unknown', 'main-send', 'foreign-cancellation'])
+def test_first_acknowledged_preparation_keeps_native_receipts_without_inventing_isolation(first_isolation, damage):
+    s = first_isolation
+    op, generation, _ = s.members['original']
+    op['status'] = 'RECONCILIATION_REQUIRED'
+    s.members['original'] = (op, generation, None)
+    s.cancellations['original'] = [('author',)]
+    s.effects['original'] = s.effects['original'][:1]
+    if damage == 'unacknowledged':
+        s.acknowledged = False
+    elif damage == 'lease':
+        s.held = True
+    elif damage == 'unknown':
+        effect = deepcopy(s.effects['original'][0][0])
+        effect['status'] = 'UNKNOWN'
+        s.effects['original'].append((effect, 'HELD_UNKNOWN', False))
+    elif damage == 'main-send':
+        effect = s.effects['original'][0][0]
+        effect['request_payload']['stage'] = 'chapter_plan.generate'
+        effect['request_hash'] = canonical_hash(effect['request_payload'])
+    elif damage == 'foreign-cancellation':
+        s.cancellations['original'] = [('other',)]
+    before = deepcopy(s.effects)
+    if damage:
+        with pytest.raises(KernelError, match='PLANNING_FIRST_PREPARATION_CUSTODY_UNSAFE'):
+            s.consume()
+    else:
+        source = s.consume()
+        assert source['mode'] == 'ACKNOWLEDGED_PREPARATION_CUSTODY'
+        proof = source['fresh_preparation']
+        assert proof['contract_version'] == 'planning-acknowledged-preparation-handoff.v1'
+        assert proof['isolated_generation_count'] == 0
+        assert proof['retained_preparation'][0]['receipt_contract'] == 'ACKNOWLEDGED_PREPARATION'
+    assert s.effects == before

@@ -683,7 +683,15 @@ Missing/failed memory does not erase or reject a complete Draft. Observation loc
 and receipt validity do not establish semantic completeness or literary quality.
 
 Select v10 only prospectively using the existing `select-working-policy` command below.
-It retains v9's policy fields and task binding, adding attributed promise lifecycle and
+If a first native Planning preparation still owns an unsent Book-pause intent, request
+its existing Kernel cancellation and let the registered worker acknowledge it. Register
+the same-contract Planning runtime continuation through the existing local-operator API.
+`planning-acknowledged-preparation-handoff.v1` / control v14 retains verified preparation
+without requiring a fabricated isolated ancestor. Migration 0236 requires a private
+database backup; old migration bodies and v1-v13 continuation semantics remain intact.
+Never clear Effect rows or reservations to make the policy checkpoint pass. Revalidate
+the unchanged Pack contracts and original authenticated route before successor admission.
+V10 retains v9's policy fields and task binding, adding attributed promise lifecycle and
 v2 working memory. Frozen v2-v9 inputs keep their original meaning. New v10 Writer
 self-observations use v2; malformed optional metadata preserves the full prose and leaves
 a queryable coverage gap for backfill. The process-local rank cache is disposable,
