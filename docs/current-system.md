@@ -2043,6 +2043,10 @@ version. Ambiguous, absent or mismatched source quotations remain invalid. Forma
 review and new literal reference sampling consume the same frozen diagnosis/citation
 flags. Legacy sample Intents retain their original payload, which omitted diagnosis
 flags even on v2 windows, so saved sample requests remain replayable.
+For a known rejected chapter-literal report, the existing second Attempt receives the
+verified settled report and original rejection as diagnosed correction input bound to
+the unchanged window and actor. This prevents reuse of the same invalid result without
+changing citation gates, retry allowance, the original receipt or manuscript authority.
 
 The existing Book start UoW can append `WINDOW_REVALIDATED` when a complete, verified
 v2 receipt failed only citation coordinates and all quotations resolve uniquely on

@@ -115,6 +115,17 @@ def test_literal_review_locates_unicode_quote_without_model_arithmetic_and_prese
     assert validate_window_report(result, manifest=frozen, window=window) == result
 
 
+def test_literal_retry_feedback_reaches_model_as_rejected_observation_not_story_input():
+    from novel_forge.modules.chapter_authority.provider_views import build_provider_task_view
+    repair = {'contract_version': 'prose-citation-output-repair.v1', 'source_effect_id': 'original',
+        'diagnostic': {'error_code': 'LONGFORM_PROSE_CITATION_NOT_UNIQUE'},
+        'rejected_report': {'findings': [{'claim': 'Untrusted earlier observation'}]},
+        'instruction': 'Correct only the report; unchanged literal citation gates apply.'}
+    task = build_provider_task_view('longform_prose_review', {'manifest_digest': 'manifest',
+        'window_id': 'window', 'prose_citation_repair': repair})
+    assert task['prose_citation_repair'] == repair
+
+
 @pytest.mark.parametrize("drift", ["quote", "source", "hash", "ambiguous", "stored_location"])
 def test_literal_review_rejects_unbound_or_nonunique_quote_without_fuzzy_repair(drift):
     frozen, window, raw = literal_report_case()

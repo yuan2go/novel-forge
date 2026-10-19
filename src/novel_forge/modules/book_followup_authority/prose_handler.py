@@ -108,10 +108,13 @@ class LongformProseReviewHandler:
                         )
 
         assert_current()
+        from .prose_recovery import literal_citation_retry_feedback
+        invocation = prose_review_invoke_payload(content)
+        invocation.update(literal_citation_retry_feedback(request, source=source, payload=invocation))
         result = self.model_port.invoke(
             request,
             stage="longform_prose_review",
-            payload=prose_review_invoke_payload(content),
+            payload=invocation,
             reservation_tokens=content["policy"]["context_token_budget"],
             pre_send_assertion=lambda: assert_current(dispatch=True),
         )

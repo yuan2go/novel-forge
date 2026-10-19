@@ -1183,6 +1183,7 @@ def build_provider_task_view(
                      **({"screenplay_source_contract": inputs["screenplay_source_contract"]} if inputs.get("screenplay_source_contract") else {}))
     if stage == "longform_prose_review":
         return _task(stage, manifest_digest=inputs.get("manifest_digest"), window_id=inputs.get("window_id"),
+                     **({"prose_citation_repair": deepcopy(inputs["prose_citation_repair"])} if inputs.get("prose_citation_repair") else {}),
                      **({"prose_diagnosis_contract": inputs["prose_diagnosis_contract"]} if inputs.get("prose_diagnosis_contract") else {}),
                      **({"prose_citation_locator_contract": inputs["prose_citation_locator_contract"]} if inputs.get("prose_citation_locator_contract") else {}))
     if stage == "reader_outcome":
