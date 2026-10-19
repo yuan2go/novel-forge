@@ -706,7 +706,8 @@ head, collection/JUnit artifacts and resolved dependency digest. Git SHA alone i
 dependency lock. A local run does not close remote branch governance; without required
 same-SHA CI evidence its state is `OPEN / NOT_CLOSED`.
 
-The existing collection-evidence plugin appends and fsyncs each failed test phase to
+The existing collection-evidence plugin appends and fsyncs each failed test phase,
+including its distinct subtest context, to
 the collection report's sibling `.failures.jsonl` file. These diagnostic events
 survive a later process exit or timeout before final JUnit/collection output. They
 do not prove a complete collection, change case accounting or qualify an interrupted
