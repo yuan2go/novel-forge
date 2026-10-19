@@ -1514,8 +1514,9 @@ reject this handoff. UNKNOWN siblings retain revoked rights and unknown usage. E
 continuations gain no implicit preparation authority: a new immutable v7 control receipt
 is required before an unstarted successor can use this contract. Native consumption
 and end-to-end qualification remain pending until proved on the corrected release.
-First Planning isolation and stopped generic-v1 successors use the explicit v11
-first-isolation preparation custody contract (`CODE_EXISTS`). It retains the original
+First Planning isolation and stopped generic-v1 successors use versioned
+first-isolation preparation custody. Frozen v11 controls retain handoff v1; new v12
+controls use handoff v2. The contract retains the original
 Context, World input, Pack and complete task hashes; only verified settled siblings
 are reusable. Every ancestor must be isolated with revoked rights, acknowledged as
 cancelled, or stopped at a verified zero-send query/lineage failure. A generic child
@@ -1523,18 +1524,16 @@ with another Context retains its own receipts. An exact never-sent pause intent 
 release its reserved budget through Kernel in the registration UoW; UNKNOWN usage
 and original failures remain untouched. Native model/account authorization is checked
 before registration and again in its transaction. Repair numbers remain unchanged;
-isolation counts are observations. Migration 0232 appends this contract without
-reinterpreting v1/v7 history. Native dispatch/consumption on the corrected release
-remains pending; a read-only replay verifies the 82 original chapter20 siblings.
-Native v11 admission exposed a further pre-send lineage gap: execution still admitted
-acknowledged routing ancestry only for v5, so a legal v11 child failed before any
-Effect. Owner-based frozen-contract routing validation and a v12 successor for this
-exact zero-send failure are implemented (`CODE_EXISTS`). Migration 0233 retains v11
-semantics and adds the exact zero-send failure as a v12 custody member. Focused
-PostgreSQL checks cover v5/v11/v12 routing and reject changed actors, receipts,
-Book scope and active submission rights. Native consumption remains pending. The
-failed child and its original v11 control are retained; this failure is not a new
-capacity shortage.
+isolation counts are observations. Migrations 0232/0233 append these controls without
+reinterpreting v1/v7/v11 history. The runtime-continuation owner validates acknowledged
+v5/v11/v12 routing ancestry against the exact author, cancellation ACK, stopped
+Attempts, absent leases and immutable control receipt. v12 additionally admits the
+exact historical routing-link failure only with zero Effects and budgets; it does
+not treat a generic failed Operation as unsent. Native same-Book v12 consumption
+has reached actual Planning dispatch with the original Context hash and verified
+settled siblings (`EXECUTABLE`). Chapter delivery and end-to-end qualification remain
+separate pending results. Original failed children and their controls remain intact;
+this routing correction does not increase request capacity.
 Isolation ancestry distinguishes verified zero-send v8/v9 carrier Operations from
 actual isolation owners (`CODE_EXISTS`). Each carrier must retain its exact successful
 outgoing control receipt and recomputed failure/Context/local-output custody proof,
