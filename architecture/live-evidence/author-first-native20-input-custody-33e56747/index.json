@@ -1,0 +1,62 @@
+{
+  "schema_version": "novel-forge.checked-native-input-custody.v1",
+  "at": "2026-10-19T01:14:07.631456+00:00",
+  "source_sha": "33e567473541ffe7778df52af462a76ac377599b",
+  "runtime_generation_sha": "d9a6ed04f638c07f19c9d97418919a376fff0fcc",
+  "diagnostic_exact_source": "f6d85471d3ee8309f16eabfe4a9633e1c56af7e5",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "book_checkpoint": {
+    "state": "CHAPTER_SUBMITTED",
+    "version": 143,
+    "current_chapter": 19,
+    "accepted_through_chapter": 0
+  },
+  "goal": {
+    "full_book_chapters": 600,
+    "initial_window": 100,
+    "body_han_per_chapter": [
+      4000,
+      5000
+    ]
+  },
+  "verified_effective_chapters": 19,
+  "verified_body_han": 81633,
+  "author_selection": "NOT_GRANTED",
+  "formal_acceptance": "NOT_GRANTED",
+  "planning20": {
+    "operation_id": "21e0115a-7a11-4ce9-aa2e-06691e85d47f",
+    "effect_id": "fd7e6606-907e-4247-8348-8e1e78106385",
+    "status": "SUCCEEDED",
+    "request_hash": "sha256:047b08f001d0a44ac092bdecbc92c5f93c65cd46b370702d56efa52a7cee3e28",
+    "actual_input_bytes": 404763,
+    "source_versions": 19,
+    "complete_sources": 15,
+    "compressed_sources": [
+      1,
+      8,
+      11,
+      15
+    ],
+    "retained_receipts_in_final_request": 33,
+    "new_preparation_receipts_in_final_request": 23,
+    "eligible_retained_receipts_in_control": 154
+  },
+  "memo20": {
+    "operation_id": "6469dc27-284e-4549-8f61-fccfb627dd69",
+    "status": "SUCCEEDED",
+    "complete_sources": 19,
+    "provider_effects": 0
+  },
+  "writer20": {
+    "operation_id": "2beecd08-6495-49c1-b6bf-587393dc56d6",
+    "effect_id": "124025fd-801f-49d1-bfc2-dfaf74faec37",
+    "status_at_checkpoint": "DISPATCHING",
+    "request_hash": "sha256:3cfacebefa1fa24926b7003c06bb7b1f6669ee25fb1d542a795d031ddd2426de",
+    "actual_input_bytes": 442828,
+    "complete_sources": 19
+  },
+  "evidence_ceiling": "EXECUTABLE",
+  "hundred_chapter_delivery": "NOT_COMPLETED",
+  "literary_qualification": "NOT_PROVEN",
+  "overall_production_qualification": "NOT_PROVEN"
+}

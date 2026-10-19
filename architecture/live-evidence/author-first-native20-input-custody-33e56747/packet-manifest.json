@@ -1,0 +1,59 @@
+{
+  "schema_version": "checked-evidence-manifest.v1",
+  "files": [
+    {
+      "path": "creative-shadow-schema-33e56747-exact-docs.json",
+      "sha256": "sha256:e2735ade7938270e1c336deb5aac7e55643a606ea8e9e82f5858f78e3c707072"
+    },
+    {
+      "path": "creative-shadow-schema-33e56747-exact.xml.gz",
+      "sha256": "sha256:53b0878af4f64ee8eca201a261407df0f0480c793e61cf0ca5c091fe1245ddea"
+    },
+    {
+      "path": "formal-negative-and-fixture-classification.json",
+      "sha256": "sha256:39cd56402d12e14698765fb79607817ab25b9fab76cd154256fe19b8e17138e7"
+    },
+    {
+      "path": "index.json",
+      "sha256": "sha256:f7010a0a2bdb916670a66699481a7b614d1867bf3ef7d535ab6c7aa8f6575d1d"
+    },
+    {
+      "path": "native-pack-revalidation.json",
+      "sha256": "sha256:75359b060083f0e0cc737ef73ddb5e5da20ed0e0997a5071f34fc37cc838e055"
+    },
+    {
+      "path": "native20-final-request-receipt-binding-v2.json",
+      "sha256": "sha256:3a98a46c0ab704604706b358b53f686d578255e578708c4e7c9ceed20dc0b496"
+    },
+    {
+      "path": "native20-memo-source-observation-d9a6ed04.json",
+      "sha256": "sha256:3f1649ce7737180ade35333ab7cfb004f7d384656ca15878f66c80f7e2b567a8"
+    },
+    {
+      "path": "native20-planning-dispatched-input-d9a6ed04.json",
+      "sha256": "sha256:f9a8818fb2cd57fb6a6d522e79a835804784ed3871a2af231c3ae345d6290fd7"
+    },
+    {
+      "path": "native20-planning-provider-receipt.json",
+      "sha256": "sha256:0be454b7a7c343959119bbcb1e74e21c071701ce4305bdff89a2d3570350f085"
+    },
+    {
+      "path": "native20-second-isolation-and-custody-d9a6ed04.json",
+      "sha256": "sha256:cd63c146058ec07b982c02b785e2ceb3c6ee725c8379ebf3d5967ee9c4c74c91"
+    },
+    {
+      "path": "native20-writer-dispatched-input-d9a6ed04.json",
+      "sha256": "sha256:12c8d6167d1f32467e5808a613b8c7c05f377a44f9ada66c4d418b83555c8700"
+    },
+    {
+      "path": "subtest-failure-durability-f6d85471-exact-docs.json",
+      "sha256": "sha256:59c6c877822188b7e69f1a84cf24a490f1bffa52777e220d74c450a4fd519775"
+    },
+    {
+      "path": "subtest-failure-durability-f6d85471-exact.xml.gz",
+      "sha256": "sha256:5e099b6f134349e72f4e7a88360cceef275e94c049d2e65c21dc11ded8f0e077"
+    }
+  ],
+  "historical_failures": "PRESERVED",
+  "raw_prose_and_provider_payloads": "PRIVATE_OUTSIDE_GIT"
+}
