@@ -1163,7 +1163,8 @@ def test_unknown_review_rebuild_queries_original_effect_without_resending(native
 
 
 @pytest.mark.parametrize('retry_mode', ['ordinary', 'correction', 'correction-response-loss'])
-def test_chapter_literal_review_persists_exact_source_binding_and_replays_without_another_effect(native_prose_effect_window, retry_mode):
+@pytest.mark.parametrize('citation_mode', ['literal', 'indexed'])
+def test_chapter_literal_review_persists_exact_source_binding_and_replays_without_another_effect(native_prose_effect_window, retry_mode, citation_mode):
     from novel_forge.api.authority_dependencies import build_production_execution_composition, build_longform_prose_review_model_port
     from novel_forge.modules.book_followup_authority.prose_review import CHAPTER_LITERAL_CITATION_CONTRACT
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
@@ -1173,6 +1174,14 @@ def test_chapter_literal_review_persists_exact_source_binding_and_replays_withou
     source_window = frozen['windows'][0]
     span = source_window['spans'][0]
     quote = span['text'][:min(32, len(span['text']))]
+    indexed = citation_mode == 'indexed'
+    if indexed:
+        from novel_forge.modules.book_followup_authority.prose_citations import citation_catalog
+        catalog = citation_catalog(source_window)
+        citation_id, selected = next(iter(catalog.items()))
+        quote = selected['quote']
+    schema_version = 'longform-prose-review.v5' if indexed else 'longform-prose-review.v4'
+    error_code = 'LONGFORM_PROSE_CITATION_ID_UNKNOWN' if indexed else 'LONGFORM_PROSE_CITATION_NOT_UNIQUE'
     calls = []
     def response(stage, inputs):
         assert stage == 'longform_prose_review'
@@ -1183,11 +1192,19 @@ def test_chapter_literal_review_persists_exact_source_binding_and_replays_withou
             else:
                 feedback = inputs['prose_citation_repair']
                 assert feedback['source_report_hash'] and feedback['source_effect_id']
-                assert feedback['rejected_report']['findings'][0]['evidence'][0]['quote'] == '不在冻结原文中的引用'
-        return dict(schema_version='longform-prose-review.v4', manifest_digest=inputs['manifest_digest'], window_id=inputs['window_id'],
+                rejected_evidence = feedback['rejected_report']['findings'][0]['evidence'][0]
+                if indexed:
+                    assert feedback['contract_version'] == 'prose-indexed-citation-output-repair.v1'
+                    assert rejected_evidence == {'citation_id': 'UNKNOWN'}
+                    assert citation_id in feedback['allowed_citation_ids']
+                else:
+                    assert rejected_evidence['quote'] == '不在冻结原文中的引用'
+        invalid = retry_mode != 'ordinary' and len(calls) == 1
+        evidence = dict(citation_id='UNKNOWN' if invalid else citation_id) if indexed else dict(chapter_number=span['chapter_number'], quote='不在冻结原文中的引用' if invalid else quote)
+        return dict(schema_version=schema_version, manifest_digest=inputs['manifest_digest'], window_id=inputs['window_id'],
                     reviewed_dimensions=list(PROSE_DIMENSIONS), findings=[dict(lineage_id='literal-chapter', dimension='motivation_cost',
                     judgment='INSUFFICIENT_EVIDENCE', severity='NONE', confidence=0.5, claim='局部正文不能证明后续选择', rationale='仅保留给定原句作为待核查观察',
-                    evidence=[dict(chapter_number=span['chapter_number'], quote='不在冻结原文中的引用' if retry_mode != 'ordinary' and len(calls) == 1 else quote)], repair=dict(root_cause='UNCERTAIN', problem_owner='UNKNOWN',
+                    evidence=[evidence], repair=dict(root_cause='UNCERTAIN', problem_owner='UNKNOWN',
                     repair_scope='INVESTIGATE', revision_goal='核对后续原文', preserve=['已保存正文'], resolution_criteria=['后续文本支持判断']))])
     execution = build_production_execution_composition(values['settings'], env=values['env'], chapter_fixture_factory=response)
     try:
@@ -1197,10 +1214,15 @@ def test_chapter_literal_review_persists_exact_source_binding_and_replays_withou
         policy = {**frozen['policy'], 'policy_version': 'chapter-literal-native.v1', 'diagnosis_contract': 'prose-root-cause.v1',
                   'citation_locator_contract': CHAPTER_LITERAL_CITATION_CONTRACT, 'reading_mode': 'BODY_FIRST',
                   'execution_mode': 'MANUAL', 'follow_acceptance': False}
+        if indexed:
+            policy.pop('citation_locator_contract')
         run = coordinator.start(**scope, **metadata('chapter-literal-start'), policy=policy)
+        if indexed:
+            frozen_policy = coordinator.report(**scope, run_id=run['run_id'])['manifest']['policy']
+            assert frozen_policy['citation_locator_contract'] == 'indexed-prose-citation.v1'
         command = dict(**scope, **metadata('chapter-literal-advance'), run_id=run['run_id'], expected_version=0)
         if retry_mode != 'ordinary':
-            with pytest.raises(KernelError, match='LONGFORM_PROSE_CITATION_NOT_UNIQUE'):
+            with pytest.raises(KernelError, match=error_code):
                 coordinator.advance(**command)
             failed = coordinator.report(**scope, run_id=run['run_id'])['operations'][0]
             operation_id = failed['operation_id']
@@ -1208,12 +1230,13 @@ def test_chapter_literal_review_persists_exact_source_binding_and_replays_withou
                 uow.cursor.execute('SELECT status,result FROM authority_attempt WHERE operation_id=%s', [operation_id])
                 original_failure = uow.cursor.fetchone()
                 assert original_failure[0] == 'FAILED_RETRYABLE'
-                assert original_failure[1]['error_code'] == 'LONGFORM_PROSE_CITATION_NOT_UNIQUE'
+                assert original_failure[1]['error_code'] == error_code
                 diagnostic = original_failure[1]['failure_details']
-                assert diagnostic['reason'] == 'QUOTE_NOT_FOUND'
-                assert diagnostic['exact_occurrences'] == 0
+                assert diagnostic['reason'] == ('PASSAGE_ID_NOT_SUPPLIED' if indexed else 'QUOTE_NOT_FOUND')
+                if not indexed:
+                    assert diagnostic['exact_occurrences'] == 0
+                    assert diagnostic['chapter_number'] == span['chapter_number']
                 assert diagnostic['citation_ordinal'] == 0
-                assert diagnostic['chapter_number'] == span['chapter_number']
                 assert 'quote' not in diagnostic and 'text' not in diagnostic
                 uow.cursor.execute('SELECT external_effect_id,request_payload FROM authority_external_effect WHERE operation_id=%s', [operation_id])
                 original_effect, original_input = uow.cursor.fetchone()
@@ -1259,7 +1282,7 @@ def test_chapter_literal_review_persists_exact_source_binding_and_replays_withou
         assert operation['status'] == 'SUCCEEDED'
         document = AuthorityAssetQuery(DATABASE_URL).require(project_id=scope['project_id'], asset_version_id=operation['report_asset_version_id'])
         citation = document.content['findings'][0]['evidence'][0]
-        assert document.content['schema_version'] == 'longform-prose-review.v4'
+        assert document.content['schema_version'] == schema_version
         assert citation['asset_version_id'] == span['asset_version_id'] and citation['text_hash'] == span['text_hash']
         assert citation['quote'] == quote and citation['start'] == span['start']
         assert coordinator.advance(**command)['review_complete']
@@ -1267,7 +1290,7 @@ def test_chapter_literal_review_persists_exact_source_binding_and_replays_withou
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute("SELECT receipt.payload->'evidence'->'result' FROM authority_external_receipt receipt JOIN authority_external_effect_dispatch dispatch USING(dispatch_id) JOIN authority_external_effect effect USING(external_effect_id) WHERE effect.operation_id=%s ORDER BY effect.created_at DESC LIMIT 1", [operation['operation_id']])
             raw = uow.cursor.fetchone()[0]
-            assert raw['findings'][0]['evidence'] == [dict(chapter_number=span['chapter_number'], quote=quote)]
+            assert raw['findings'][0]['evidence'] == ([dict(citation_id=citation_id)] if indexed else [dict(chapter_number=span['chapter_number'], quote=quote)])
     finally:
         execution.close()
 

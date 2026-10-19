@@ -462,15 +462,16 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
             def invoke(self, request, *, stage, payload, **options):
                 window = request.require_input("longform_prose_review_window").content
                 assert payload["prose_diagnosis_contract"] == "prose-root-cause.v1"
-                span = window["window"]["spans"][0]
-                return ModelProviderResult(output={"schema_version": "longform-prose-review.v3",
+                from novel_forge.modules.book_followup_authority.prose_citations import citation_catalog
+                assert payload["prose_citation_locator_contract"] == "indexed-prose-citation.v1"
+                citation = next(iter(citation_catalog(window["window"])))
+                return ModelProviderResult(output={"schema_version": "longform-prose-review.v5",
                     "manifest_digest": window["manifest_digest"], "window_id": window["window"]["window_id"],
                     "reviewed_dimensions": list(PROSE_DIMENSIONS), "findings": [{
                         "lineage_id": "controlled-future-plot:" + window["window"]["window_id"], "dimension": "motivation_cost", "judgment": "ISSUE",
                         "severity": "MAJOR", "confidence": 0.8, "claim": "Controlled future-plot diagnosis.",
                         "rationale": "Test source binding and native repair routing only.",
-                        "evidence": [{"asset_version_id": span["asset_version_id"], "text_hash": span["text_hash"],
-                            "quote": span["text"]}],
+                        "evidence": [{"citation_id": citation}],
                         "repair": {"root_cause": "UPPER_PLOT", "problem_owner": "PLAN", "repair_scope": "FUTURE_REPLAN",
                             "revision_goal": "Review future plot intent.", "preserve": ["Selected manuscripts."],
                             "resolution_criteria": ["Bind an exact future plan candidate."]}}]},

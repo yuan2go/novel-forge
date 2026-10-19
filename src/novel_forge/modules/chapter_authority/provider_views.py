@@ -3740,9 +3740,10 @@ def _build_longform_prose_review_context_view(context_bundle: Mapping[str, Any])
     if len(inputs) != 1 or inputs[0].get("asset_type") != "longform_prose_review_window":
         raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "exactly one bounded prose window is required")
     projection = inputs[0]["projection"]
-    from novel_forge.modules.book_followup_authority.prose_review import CHAPTER_LITERAL_CITATION_CONTRACT, uses_literal_citations
+    from novel_forge.modules.book_followup_authority.prose_review import CHAPTER_LITERAL_CITATION_CONTRACT, INDEXED_CITATION_CONTRACT, uses_literal_citations
     literal_citations = uses_literal_citations(projection["policy"])
     chapter_citations = projection["policy"].get("citation_locator_contract") == CHAPTER_LITERAL_CITATION_CONTRACT
+    indexed_citations = projection["policy"].get("citation_locator_contract") == INDEXED_CITATION_CONTRACT
     citation_requirement = ("只提交给定片段中的唯一精确引文；asset_version_id、text_hash 必须逐字复制引文所属的同一 span，不得缩写、猜测或混用其他章节的身份；Unicode 坐标由 Host 在原文中定位"
         if literal_citations else "只引用给定原文 Unicode code-point 坐标和精确 quote")
     if chapter_citations:
@@ -3751,14 +3752,18 @@ def _build_longform_prose_review_context_view(context_bundle: Mapping[str, Any])
             for key in ("asset_version_id", "asset_hash", "text_hash", "acceptance_id"):
                 span.pop(key, None)
         citation_requirement = "每条引文只返回所属的 chapter_number 和该章给定片段内唯一的精确 quote；不得返回或计算 hash、版本身份或坐标。Host 从同一冻结窗口绑定原始来源版本、hash 和 Unicode 位置，不接受其他章节或窗口的来源"
+    if indexed_citations:
+        from novel_forge.modules.book_followup_authority.prose_citations import project_indexed_window
+        projection = {**projection, "window": project_indexed_window(projection["window"])}
+        citation_requirement = "每条 evidence 只返回所选原文段落旁的 citation_id，不抄写、改写或拼接 quote，不生成章节号、hash、版本或坐标。需要不连续的两段时分别选择两个 citation_id。Host 从同一冻结窗口逐字提取该编号的原句并绑定版本、hash 和位置。编号只在本窗口有效；选择了真实原句仍不能证明审稿判断正确，必须核对原句是否支持 claim"
     if projection["policy"].get("reading_mode") == "BODY_FIRST":
         if any("creative_baseline" in span or "work_intent_status" in span
                for span in projection["window"]["spans"]):
             raise KernelError("LONGFORM_PROSE_CONTEXT_INVALID", "Body-first reading cannot receive design inputs")
         uncertainty = (" problem_owner=UNKNOWN、root_cause=UNCERTAIN、repair_scope=INVESTIGATE"
-                       if chapter_citations else "UNKNOWN/INVESTIGATE")
+                       if chapter_citations or indexed_citations else "UNKNOWN/INVESTIGATE")
         return {
-            "contract_version": "provider-context-view-v3", "stage": "longform_prose_review",
+            "contract_version": "provider-context-view-v4" if indexed_citations else "provider-context-view-v3", "stage": "longform_prose_review",
             "frozen_prose": projection,
             "instruction": "先阅读所提供的正文，不推定作者设计、题材或市场目标。记录正文呈现的目标、想跳读的具体段落、人物选择、处境变化与具体续读期待；用给定维度记录观察。" + citation_requirement + "。区分阅读感受、客观错误和证据不足，不能把个人偏好当成文学资格门禁。不能判断未提供的设计承诺是否兑现，也不能归因于未提供的计划或Writer输入。若返回repair，无法从正文确定的源头用" + uncertainty + "，不为结构不足提出扩写。所有结果为模型审读意见，不是真人反馈、作者接纳或市场效果。不得修改正文、Canon或计划。",
         }
@@ -3772,7 +3777,7 @@ def _build_longform_prose_review_context_view(context_bundle: Mapping[str, Any])
         "and give observable resolution criteria; no universal conflict or genre formula. "
         if projection["policy"].get("diagnosis_contract") == "prose-root-cause.v1" else "")
     return {
-        "contract_version": "provider-context-view-v3", "stage": "longform_prose_review",
+        "contract_version": "provider-context-view-v4" if indexed_citations else "provider-context-view-v3", "stage": "longform_prose_review",
         "frozen_prose": projection,
         **({"diagnosis_instruction": diagnosis_instruction} if diagnosis_instruction else {}),
         "instruction": "审读实际提供的原书正文，按每个来源章节冻结的 creative_baseline 检查题材、风格、受众、人物、结构与已选技法。作者有意的稳定、观察、开放结尾或重复不是默认缺陷；选择了变化、压力、伏笔或兑现时才检查相应承诺。UNKNOWN_LEGACY_BASELINE 表示作品目标未知，只判断可由原文证明的客观问题，不能推定玄幻、武侠、转化或商业节奏。逐项区分客观错误、作品目标偏差与审美建议；未到兑现期、合理变化及证据不足不能要求补写。" + citation_requirement + "，不把摘要或未提供正文视为已读。同一问题沿证据复用 lineage_id，不能按 category 合并。relation_hypothesis 是未核验关系假设，ISSUE 或 INTENTIONAL 判断必须分别引用两个给定片段，无法核验时输出 INSUFFICIENT_EVIDENCE。所有结论只是待确认审稿意见，不得修改正文、Canon 或计划。",

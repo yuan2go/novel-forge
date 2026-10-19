@@ -12,7 +12,7 @@ from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWrit
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from .application import BookFollowupAdmission, BookFollowupCommand
-from .prose_review import PROSE_REVIEW_DEFINITION, aggregate_reports, freeze_manifest, review_sources_current
+from .prose_review import INDEXED_CITATION_CONTRACT, PROSE_REVIEW_DEFINITION, aggregate_reports, freeze_manifest, review_sources_current
 
 
 def load_accepted_sources(
@@ -280,7 +280,7 @@ class BookProseReviewCoordinator:
         )
         delivered_policy = dict(policy)
         if delivered_policy.get("diagnosis_contract") == "prose-root-cause.v1" and "citation_locator_contract" not in delivered_policy:
-            delivered_policy["citation_locator_contract"] = "literal-prose-citation.v1"
+            delivered_policy["citation_locator_contract"] = INDEXED_CITATION_CONTRACT
 
         def handler(
             uow: AuthorityUnitOfWork, operation_id: str, checkpoint: Any

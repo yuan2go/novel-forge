@@ -2056,10 +2056,20 @@ aesthetic preferences and uncertainty cannot become cross-chapter blockers. A ha
 constraint claim must identify an explicitly approved frozen constraint; this extension
 does not promote inferred details into hard constraints.
 
-Frozen longform prose-review v1/v2 retains numeric code-point citations. New native
-root-cause review starts freeze `literal-prose-citation.v1`; Pack 1.5.0 delivers v3
-quote-only citations and the Host locates each unique literal in its supplied source
-version. Ambiguous, absent or mismatched source quotations remain invalid. Formal
+Frozen longform prose-review v1/v2 retains numeric code-point citations. Explicit
+`literal-prose-citation.v1` requests retain v3 quote-only citations, and the Host locates
+each unique literal in its supplied source version. New native root-cause review starts
+without an explicit citation contract freeze `indexed-prose-citation.v1` / report v5.
+The Host numbers exact nonblank passages in the frozen window; the Provider sees each
+number beside its unchanged text and returns only `citation_id`. The Host derives the
+original quote, chapter, version, hash and Unicode location without asking the model to
+transcribe or concatenate evidence. Empty lines and original line endings remain in the
+Provider view; all supplied prose reconstructs exactly, without a second full copy.
+Repeated text has distinct location-bound IDs. Unknown IDs and changed persisted bindings
+are rejected. This prevents model-authored quotation text from becoming review evidence;
+it does not prove that a selected passage supports the model's literary judgment.
+Explicit and previously frozen v3/v4 requests keep their contracts, inputs and receipts.
+Ambiguous, absent or mismatched source quotations remain invalid. Formal
 review and new literal reference sampling consume the same frozen diagnosis/citation
 flags. Legacy sample Intents retain their original payload, which omitted diagnosis
 flags even on v2 windows, so saved sample requests remain replayable.
@@ -2074,6 +2084,11 @@ For a known rejected chapter-literal report, the existing second Attempt receive
 verified settled report and original rejection as diagnosed correction input bound to
 the unchanged window and actor. This prevents reuse of the same invalid result without
 changing citation gates, retry allowance, the original receipt or manuscript authority.
+An indexed report with an unknown passage ID can use only its existing remaining Attempt.
+Its correction input retains the verified settled rejected result, exact source identity
+and allowed passage IDs. Unknown Effects, held leases, cancellation and exhausted Attempts
+retain their existing refusal/reconciliation paths. No invalid historical quote is
+converted automatically into a valid indexed report.
 
 The existing Book start UoW can append `WINDOW_REVALIDATED` when a complete, verified
 v2 receipt failed only citation coordinates and all quotations resolve uniquely on

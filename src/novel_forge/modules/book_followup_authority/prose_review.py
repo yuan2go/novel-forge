@@ -4,6 +4,7 @@ import hashlib
 import json
 from typing import Any, Mapping, Sequence
 from novel_forge.modules.command_kernel.errors import KernelError
+from .prose_citations import INDEXED_CITATION_CONTRACT
 
 PROSE_REVIEW_DEFINITION = "longform.prose_review"
 PROSE_REVIEW_SCHEMA = "longform-prose-review.v1"
@@ -44,7 +45,7 @@ def uses_literal_citations(policy: Mapping[str, Any]) -> bool:
     return policy.get("citation_locator_contract") in LITERAL_CITATION_CONTRACTS
 
 
-def prose_review_output_schema(*, root_cause: bool = False, literal_citations: bool = False, located_citations: bool = False, chapter_citations: bool = False) -> dict[str, Any]:
+def prose_review_output_schema(*, root_cause: bool = False, literal_citations: bool = False, located_citations: bool = False, chapter_citations: bool = False, indexed_citations: bool = False) -> dict[str, Any]:
     text = {"type": "string", "minLength": 1}
 
     def obj(properties: dict[str, Any]) -> dict[str, Any]:
@@ -64,6 +65,11 @@ def prose_review_output_schema(*, root_cause: bool = False, literal_citations: b
             "quote": text,
         }
     )
+    if indexed_citations:
+        citation = obj({"citation_id": text, **({
+            "chapter_number": {"type": "integer", "minimum": 1}, "asset_version_id": text, "text_hash": text,
+            "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 1}, "quote": text,
+        } if located_citations else {})})
     finding = obj(
         {
             "lineage_id": text,
@@ -98,7 +104,7 @@ def prose_review_output_schema(*, root_cause: bool = False, literal_citations: b
     finding = {"anyOf": [issue, observation]}
     return obj(
         {
-            "schema_version": {"type": "string", "enum": ["longform-prose-review.v4" if chapter_citations else "longform-prose-review.v3" if literal_citations else "longform-prose-review.v2" if root_cause else PROSE_REVIEW_SCHEMA]},
+            "schema_version": {"type": "string", "enum": ["longform-prose-review.v5" if indexed_citations else "longform-prose-review.v4" if chapter_citations else "longform-prose-review.v3" if literal_citations else "longform-prose-review.v2" if root_cause else PROSE_REVIEW_SCHEMA]},
             "manifest_digest": text,
             "window_id": text,
             "reviewed_dimensions": {
@@ -132,9 +138,10 @@ def normalize_prose_review_output(raw: Mapping[str, Any], *, located_citations: 
         "longform_prose_review",
         {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
-            **prose_review_output_schema(root_cause=result.get("schema_version") in {"longform-prose-review.v2", "longform-prose-review.v3", "longform-prose-review.v4"},
+            **prose_review_output_schema(root_cause=result.get("schema_version") in {"longform-prose-review.v2", "longform-prose-review.v3", "longform-prose-review.v4", "longform-prose-review.v5"},
                 literal_citations=result.get("schema_version") in {"longform-prose-review.v3", "longform-prose-review.v4"},
-                located_citations=located_citations, chapter_citations=result.get("schema_version") == "longform-prose-review.v4"),
+                located_citations=located_citations, chapter_citations=result.get("schema_version") == "longform-prose-review.v4",
+                indexed_citations=result.get("schema_version") == "longform-prose-review.v5"),
         },
         result,
     )
@@ -215,7 +222,7 @@ def freeze_manifest(
         raise KernelError("LONGFORM_PROSE_RELATION_FACTS_UNAVAILABLE", "Working prose does not grant accepted-state relation evidence; use lexical retrieval or complete formal fact review")
     if policy.get("diagnosis_contract") not in {None, "prose-root-cause.v1"}:
         raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown root-cause diagnosis contract")
-    if (policy.get("citation_locator_contract") is not None and not uses_literal_citations(policy)
+    if (policy.get("citation_locator_contract") is not None and not uses_literal_citations(policy) and policy.get("citation_locator_contract") != INDEXED_CITATION_CONTRACT
         or (policy.get("citation_locator_contract") and policy.get("diagnosis_contract") != "prose-root-cause.v1")):
         raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Literal citation delivery requires its explicit diagnosis contract")
     if policy.get("source_current_policy") not in {None, "FROZEN_SELECTED_RANGE"}:
@@ -444,7 +451,8 @@ def validate_window_report(
     report: Mapping[str, Any], *, manifest: Mapping[str, Any], window: Mapping[str, Any]
 ) -> dict[str, Any]:
     literal = uses_literal_citations(manifest["policy"])
-    expected_schema = "longform-prose-review.v4" if manifest["policy"].get("citation_locator_contract") == CHAPTER_LITERAL_CITATION_CONTRACT else "longform-prose-review.v3" if literal else "longform-prose-review.v2" if manifest["policy"].get("diagnosis_contract") == "prose-root-cause.v1" else PROSE_REVIEW_SCHEMA
+    indexed = manifest["policy"].get("citation_locator_contract") == INDEXED_CITATION_CONTRACT
+    expected_schema = "longform-prose-review.v5" if indexed else "longform-prose-review.v4" if manifest["policy"].get("citation_locator_contract") == CHAPTER_LITERAL_CITATION_CONTRACT else "longform-prose-review.v3" if literal else "longform-prose-review.v2" if manifest["policy"].get("diagnosis_contract") == "prose-root-cause.v1" else PROSE_REVIEW_SCHEMA
     if report.get("schema_version") != expected_schema:
         raise KernelError("LONGFORM_PROSE_REPORT_CONTRACT_DRIFT", "Report must retain its frozen diagnosis contract")
     if (
@@ -458,7 +466,10 @@ def validate_window_report(
     validate_window_source_binding(manifest=manifest, window=window)
     if literal:
         report, _ = locate_report_citations(report, window=window)
-    report = normalize_prose_review_output(report, located_citations=literal)
+    if indexed:
+        from .prose_citations import resolve_indexed_citations
+        report = resolve_indexed_citations(report, window=window)
+    report = normalize_prose_review_output(report, located_citations=literal or indexed)
     if set(report["reviewed_dimensions"]) != set(PROSE_DIMENSIONS):
         raise KernelError(
             "LONGFORM_PROSE_DIMENSIONS_MISSING",
@@ -528,7 +539,7 @@ def aggregate_reports(
                 "LONGFORM_PROSE_WINDOW_UNKNOWN",
                 "report window is outside this manifest",
             )
-        validate_window_report(report, manifest=manifest, window=window)
+        report = validate_window_report(report, manifest=manifest, window=window)
         if report["window_id"] in completed:
             continue
         completed.add(report["window_id"])

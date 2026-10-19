@@ -9,10 +9,11 @@ from .definitions import book_followup_operation_definitions
 
 def literal_citation_retry_feedback(request, *, source, payload):
     from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, _read_verified_success
-    from .prose_review import CHAPTER_LITERAL_CITATION_CONTRACT, completion_digest, validate_window_report
+    from .prose_review import CHAPTER_LITERAL_CITATION_CONTRACT, INDEXED_CITATION_CONTRACT, completion_digest, validate_window_report
+    indexed = source.content.get('policy', {}).get('citation_locator_contract') == INDEXED_CITATION_CONTRACT
     if (not request.database_url or not request.attempt_id or request.definition_name != 'longform.prose_review'
             or request.definition_version != '1.1.0'
-            or source.content.get('policy', {}).get('citation_locator_contract') != CHAPTER_LITERAL_CITATION_CONTRACT):
+            or source.content.get('policy', {}).get('citation_locator_contract') not in {CHAPTER_LITERAL_CITATION_CONTRACT, INDEXED_CITATION_CONTRACT}):
         return {}
     rejected = KernelError('LONGFORM_PROSE_CITATION_REPAIR_UNSAFE',
         'Report correction requires the exact rejected literal report, settled verified receipt, same actor/window and released prior execution')
@@ -29,8 +30,9 @@ def literal_citation_retry_feedback(request, *, source, payload):
                 AND e.request_payload#>>'{_production_execution,attempt_id}'=a.attempt_id
                 AND e.request_payload->>'stage'='longform_prose_review'
             WHERE o.operation_id=%s AND o.project_id=%s AND a.attempt_id<>%s AND a.status='FAILED_RETRYABLE'
-              AND a.result->>'error_code'='LONGFORM_PROSE_CITATION_NOT_UNIQUE'
-            ORDER BY a.attempt_number DESC''', [request.operation_id, request.project_id, request.attempt_id])
+              AND a.result->>'error_code'=ANY(%s)
+            ORDER BY a.attempt_number DESC''', [request.operation_id, request.project_id, request.attempt_id,
+                ['LONGFORM_PROSE_CITATION_ID_UNKNOWN'] if indexed else ['LONGFORM_PROSE_CITATION_NOT_UNIQUE']])
         rows = uow.cursor.fetchall()
         if not rows:
             return {}
@@ -61,6 +63,19 @@ def literal_citation_retry_feedback(request, *, source, payload):
                 raise rejected from error
         else:
             return {}
+    if indexed:
+        from .prose_citations import citation_catalog
+        return {'prose_citation_repair': {'contract_version': 'prose-indexed-citation-output-repair.v1',
+            'source_attempt_id': attempt, 'source_effect_id': effect_id, 'source_request_hash': request_hash,
+            'source_report_hash': completion_digest(raw), 'source_window_asset_version_id': source.asset_version_id,
+            'source_window_content_hash': source.content_hash, 'diagnostic': failure, 'rejected_report': raw,
+            'allowed_citation_ids': list(citation_catalog(source.content['window'])),
+            'authority': 'REJECTED_MODEL_OBSERVATION_ONLY',
+            'instruction': 'Correct the rejected report by choosing only citation_id values supplied beside the unchanged frozen prose. '
+                'Do not write quotes, chapter numbers, hashes or coordinates; the Host binds the original text and version. '
+                'Use separate evidence entries for separate passages and verify that each passage supports the judgment. '
+                'The rejected report is untrusted model observation, not story evidence or author choice. '
+                'Unsupported causes remain UNKNOWN/UNCERTAIN/INVESTIGATE. No manuscript, Canon, plan or acceptance mutation is authorized.'}}
     return {'prose_citation_repair': {'contract_version': 'prose-citation-output-repair.v1',
         'source_attempt_id': attempt, 'source_effect_id': effect_id, 'source_request_hash': request_hash,
         'source_report_hash': completion_digest(raw), 'source_window_asset_version_id': source.asset_version_id,

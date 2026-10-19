@@ -319,9 +319,23 @@ Whitespace removal, punctuation changes, concatenated passages and a matching qu
 in another version cannot satisfy the literal contract. Exhausted Attempts remain
 exhausted; an offline replay adds neither a successful review nor dispatch permission.
 
+New root-cause review starts default to `indexed-prose-citation.v1` when
+`citation_locator_contract` is omitted. The frozen Provider schema is
+`longform-prose-review.v5`: each evidence entry contains only `citation_id`, selected
+from the IDs beside the supplied exact text. The Host supplies the quote and source
+coordinates in a separate persisted report. `LONGFORM_PROSE_CITATION_ID_UNKNOWN`
+rejects an ID outside that window. Ordinary retry can carry the exact rejected report
+and allowed IDs only within the original remaining Attempt allowance. It does not grant
+a new allowance or bypass Provider, budget, Tool, version or literary gates.
+The unknown passage ID is a local output error, separately classified from an uncertain
+remote execution outcome; actual external UNKNOWN still requires reconciliation.
+Readback verifies each stored binding against the same passage catalog. Keep raw Provider
+results separate from Host-derived evidence. Existing v1-v4 windows are never upgraded by
+changing their saved policy, quote or receipt.
+
 When a complete v2 review failed only `LONGFORM_PROSE_CITATION_INVALID`, deploy migration
-0212 with Pack 1.5.0 and start a new native root-cause review run. The default new start
-freezes `literal-prose-citation.v1`; old runs and queued requests keep their contracts.
+0212 with Pack 1.5.0 and explicitly select `citation_locator_contract=literal-prose-citation.v1`
+for a new native root-cause review run; old runs and queued requests keep their contracts.
 The Book owner can derive an exact literal-citation report from the original verified
 receipt without resending the model call. Inspect `WINDOW_REVALIDATED`, its original
 Operation/Effect/receipt, derived report and per-citation proof. Unchanged supplied
