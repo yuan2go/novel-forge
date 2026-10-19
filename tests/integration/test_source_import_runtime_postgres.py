@@ -1991,7 +1991,8 @@ The algorithm trades availability against coordination and failure tolerance.
         )
         content_routes = self._document_routes(content_upgraded["import_job_id"])
         professional_methodologies = content_routes["professional.md"]["methodologies"]
-        self.assertEqual(professional_methodologies[0]["skill_version"], "1.0.0")
+        original_method_version = METHODOLOGY_VERSIONS["multidisciplinary-knowledge"]
+        self.assertEqual(professional_methodologies[0]["skill_version"], original_method_version)
         self.assertEqual(
             professional_methodologies[0]["methodology_content_hash"],
             content_upgraded_registry.require(
@@ -1999,11 +2000,13 @@ The algorithm trades availability against coordination and failure tolerance.
             ).content_digest,
         )
 
+        major, minor, patch = map(int, original_method_version.split("."))
+        upgraded_method_version = f"{major}.{minor}.{patch + 1}"
         version_upgraded_registry = SourceMethodologyRegistry(
             skill_root,
             versions={
                 **METHODOLOGY_VERSIONS,
-                "multidisciplinary-knowledge": "1.1.0",
+                "multidisciplinary-knowledge": upgraded_method_version,
             },
         )
         self.application.methodology_registry = version_upgraded_registry
@@ -2035,7 +2038,7 @@ The algorithm trades availability against coordination and failure tolerance.
         version_routes = self._document_routes(version_upgraded["import_job_id"])
         self.assertEqual(
             version_routes["professional.md"]["methodologies"][0]["skill_version"],
-            "1.1.0",
+            upgraded_method_version,
         )
         self.assertGreater(
             self._invalidation_counts().get("METHODOLOGY_UPGRADE", 0),

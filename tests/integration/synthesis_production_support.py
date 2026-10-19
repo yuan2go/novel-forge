@@ -218,7 +218,7 @@ class SynthesisChapterTransport(CreativeGroundingTransport):
                 self.calls[-1]["output"] = deepcopy(result)
         from tests.integration.current_chapter_wire_support import current_chapter_wire_result
 
-        value = current_chapter_wire_result(stage, inputs, result)
+        value = current_chapter_wire_result(stage, inputs, result, json_envelope=False)
         self.calls[-1]["output"] = deepcopy(value)
         return value
 
