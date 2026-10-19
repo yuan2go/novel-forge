@@ -661,9 +661,13 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
         if changes.get(number):
             rows[-1]["dependency_changes"] = changes[number]
     memory_packet, selection = None, None
+    source_locators = None
+    if projection_policy and projection_policy["version"] == "working-prose-projection.v10":
+        from .source_locators import freeze_source_locators
+        source_locators = freeze_source_locators(uow, book, [(number, source) for number, source, _ in resolved])
     if task is not None:
         from .working_selection import select_working_context, selected_memory_ranges
-        selection = select_working_context(rows, target_chapter=chapter, policy=projection_policy, task=task)
+        selection = select_working_context(rows, target_chapter=chapter, policy=projection_policy, task=task, source_locators=source_locators)
     if memory_enabled:
         from novel_forge.modules.narrative_state.working_memory import compile_working_memory, bind_packet_coverage
         retrieval = projection_policy["version"] in RETRIEVAL_POLICY_VERSIONS
@@ -677,7 +681,7 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     source_history = None
     if projection_policy:
         if task is not None:
-            selection = select_working_context(rows, target_chapter=chapter, policy=projection_policy, task=task, memory=memory_packet)
+            selection = select_working_context(rows, target_chapter=chapter, policy=projection_policy, task=task, memory=memory_packet, source_locators=source_locators)
             from .working_prose import _project_ranges
             rows = _project_ranges(rows, {(row["chapter"], row["start"], row["end"]) for row in selection["passages"]},
                 passage_characters=projection_policy["passage_characters"])
@@ -951,15 +955,19 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
             memory, provenance = replay_source_memory(uow, book, source_documents[source["asset_version_id"]], row["memory_source"])
             source.update(observations=memory, memory_provenance=provenance)
             frozen_memory_sources[source["asset_version_id"]] = row["memory_source"]
+        source_locators = None
+        if snapshot["context_selection"]["contract_version"] == "working-task-selection.v2":
+            from .source_locators import freeze_source_locators
+            source_locators = freeze_source_locators(uow, book, [(row["chapter"], source_documents[row["asset_version_id"]]) for row in history_sources])
         initial = select_working_context(raw_sources, target_chapter=snapshot["target_chapter"],
-            policy=snapshot["projection_policy"], task=task)
+            policy=snapshot["projection_policy"], task=task, source_locators=source_locators)
         memory = compile_working_memory(raw_sources, queries=snapshot["projection_policy"]["queries"],
             max_characters=None, dependency_closed=True,
             recent_complete_from=snapshot["target_chapter"] - snapshot["projection_policy"]["recent_complete_chapters"],
             task=task, selected_ranges=selected_memory_ranges(initial), frozen_sources=frozen_memory_sources,
             lifecycle=snapshot["projection_policy"]["version"] == "working-prose-projection.v10")
         expected = select_working_context(raw_sources, target_chapter=snapshot["target_chapter"],
-            policy=snapshot["projection_policy"], task=task, memory=memory)
+            policy=snapshot["projection_policy"], task=task, memory=memory, source_locators=source_locators)
         ranges = {(row["chapter"], row["start"], row["end"]) for row in expected["passages"]}
         projected = _project_ranges(raw_sources, ranges, passage_characters=snapshot["projection_policy"]["passage_characters"])
         if bind_packet_coverage(memory, projected) != snapshot["working_memory"]:

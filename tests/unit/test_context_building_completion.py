@@ -169,3 +169,49 @@ def test_new_request_snapshot_keeps_complete_envelope_and_checks_effect_identity
     snapshot["snapshot_hash"] = canonical_hash({key: value for key, value in snapshot.items() if key != "snapshot_hash"})
     with pytest.raises(ValueError, match="IDENTITY_DRIFT"):
         validate_provider_request_snapshot(snapshot, identity=envelope.to_identity_dict(), envelope_hash=envelope.envelope_hash)
+
+
+def test_native_event_locators_recover_changed_wording_without_realizing_future_plans():
+    from types import SimpleNamespace
+    from novel_forge.modules.book_authority.source_locators import freeze_source_locators
+    from novel_forge.modules.book_authority.working_selection import select_working_context
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    book = {"project_id": "project:test", "book_id": "book:test"}
+    plans, documents, rows = {}, [], []
+    texts = ["She crossed out a guess. The fragment's use stayed unclear.",
+        "Mira's old boots were damp, and the lamp was still broken.", "They closed the gate."]
+    for number, text in enumerate(texts, 1):
+        content = {**book, "chapter": number, "scene_plan": [{"realization_event_ids": ["opaque:lesson" if number == 1 else "opaque:other"]}],
+            "narrative_realization_slice": {"events": [{"next_event_ids": ["opaque:future"]}]}}
+        plan = SimpleNamespace(asset_type="chapter_plan", asset_version_id=f"plan:{number}", content=content, content_hash=canonical_hash(content))
+        plans[plan.asset_version_id] = plan
+        draft = {"chapter": number, "text": text, "creative_baseline": {"source_plan": {"asset_version_id": plan.asset_version_id, "content_hash": plan.content_hash}}}
+        document = SimpleNamespace(asset_type="chapter_draft", asset_version_id=f"draft:{number}", content=draft, content_hash=canonical_hash(draft))
+        documents.append((number, document))
+        rows.append({**source(number, text), "content_hash": document.content_hash})
+    repository = SimpleNamespace(require=lambda **kw: plans[kw["asset_version_id"]])
+    uow = SimpleNamespace(repositories=SimpleNamespace(asset_documents=repository))
+    index = freeze_source_locators(uow, book, documents)
+    task = {"goal": "Respect the earlier instruction", "event_refs": ["opaque:lesson"], "scenes": [], "target_chapter": 4}
+    task["task_hash"] = canonical_hash(task)
+    from novel_forge.modules.book_authority.working_prose import working_prose_policy
+    policy = working_prose_policy({"working_prose_policy": {"version": "working-prose-projection.v10", "history_chapters": 10000,
+        "recent_complete_chapters": 0, "recent_tail_paragraphs": 1, "retrieval_passages": 12, "retrieval_per_chapter": 3,
+        "neighbor_paragraphs": 0, "passage_characters": 512, "max_characters": None, "queries": [], "guidance_mode": "COMBINED"}})
+    result = select_working_context(rows, target_chapter=4, policy=policy, task=task, source_locators=index)
+    assert result["contract_version"] == "working-task-selection.v2"
+    assert [entry["chapter"] for entry in result["source_locator_receipt"]["selected"]] == [1]
+    assert not any(entry["chapter"] == 2 for entry in result["passages"])
+    assert {entry["chapter"] for entry in result["passages"] if "TASK_SOURCE_LOCATOR" in entry["reasons"]} == {1}
+    future = {**task, "event_refs": ["opaque:future"]}
+    future["task_hash"] = canonical_hash({key: value for key, value in future.items() if key != "task_hash"})
+    assert select_working_context(rows, target_chapter=4, policy=policy, task=future, source_locators=index)["source_locator_receipt"]["selected"] == []
+    plans["plan:1"].content = {**plans["plan:1"].content, "chapter": 9}
+    with pytest.raises(KernelError, match="historical generation plan"):
+        freeze_source_locators(uow, book, documents)
+
+
+def test_literal_chapter_locators_support_ordinals_and_exclude_current_or_future_sources():
+    from novel_forge.modules.book_authority.source_locators import explicit_chapters
+    task = {"goal": "参照第十四章、第二十至二十二章与 Chapters 9-10。第100章尚未发生。", "scenes": []}
+    assert explicit_chapters(task, 22) == {9, 10, 14, 20, 21}

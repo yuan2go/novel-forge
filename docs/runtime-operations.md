@@ -629,6 +629,13 @@ not an actual request. Add `chapter_request_id` for `FROZEN_CHAPTER_REQUEST`: th
 the original Root snapshot, source inputs, Writer Effects and receipts, and stored
 Context/materialization artifacts. It does not rebuild from current sidecars. The
 same read is available as `authority-manuscript memory-request --chapter-request-id ...`.
+For new v10 requests, inspect `context_selection.source_locator_receipt` as well as
+ranked hits: explicit past-chapter references and task event IDs retain complete original
+episodes through checked historical generation Plan pointers. The locator boundary is
+`HISTORICAL_GENERATION_PLAN_LOCATORS_NOT_EVENT_REALIZATION_OR_KNOWLEDGE`.
+Missing Plan pointers and unlocated event IDs remain diagnostic gaps. Check actual
+admission snapshots to establish delivery; a current reconstruction is not historical
+Provider evidence. Selection v1 replay must retain its original receipt without locators.
 
 POST annotations still bind `chapter`, `source_asset_version_id`, exact
 `expected_version`, a replay-safe `idempotency_key`, `source_kind` and located observations.

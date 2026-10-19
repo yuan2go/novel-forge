@@ -37,7 +37,7 @@ def _task_passage_ranges(text: str, max_characters: int) -> tuple[tuple[int, int
 
 def select_working_context(sources: list[dict[str, Any]], *, target_chapter: int,
         policy: Mapping[str, Any], task: Mapping[str, Any] | None,
-        memory: Mapping[str, Any] | None = None) -> dict[str, Any]:
+        memory: Mapping[str, Any] | None = None, source_locators: Mapping[str, Any] | None = None) -> dict[str, Any]:
     if not isinstance(task, Mapping) or not task.get("task_hash"):
         raise KernelError("WORKING_TASK_REQUIRED", "Task projection requires its frozen planning source")
     by_chapter = {source["chapter"]: source for source in sources}
@@ -50,6 +50,17 @@ def select_working_context(sources: list[dict[str, Any]], *, target_chapter: int
         [unit for unit in units if unit[0] >= target_chapter - policy["history_chapters"]],
         task=task, limit=policy["retrieval_passages"], per_chapter=policy["retrieval_per_chapter"])
     reasons: dict[tuple[int, int, int], set[str]] = defaultdict(set)
+    locator_receipt = None
+    if source_locators is not None:
+        from .source_locators import source_locator_receipt
+        if [{key: entry[key] for key in ("chapter", "asset_version_id", "content_hash", "text_hash")}
+                for entry in source_locators["entries"]] != [{key: source[key] for key in ("chapter", "asset_version_id", "content_hash", "text_hash")} for source in sources]:
+            raise KernelError("WORKING_SOURCE_LOCATOR_INVALID", "Locator index differs from the frozen manuscript inputs")
+        locator_receipt = source_locator_receipt(source_locators, task, target_chapter)
+        located = {entry["chapter"] for entry in locator_receipt["selected"]}
+        for number, start, end, _ in units:
+            if number in located:
+                reasons[(number, start, end)].add("TASK_SOURCE_LOCATOR")
     for number, start, end, _ in units:
         if number >= target_chapter - policy["recent_complete_chapters"]:
             reasons[(number, start, end)].add("EXPLICIT_COMPLETE_RECENT")
@@ -74,9 +85,11 @@ def select_working_context(sources: list[dict[str, Any]], *, target_chapter: int
     passages = [{"chapter": number, "asset_version_id": by_chapter[number]["asset_version_id"],
         "start": start, "end": end, "text_hash": text_hash(by_chapter[number]["text"][start:end]),
         "reasons": sorted(reason)} for (number, start, end), reason in sorted(reasons.items())]
-    body = {"contract_version": "working-task-selection.v1", "task_hash": task["task_hash"],
+    body = {"contract_version": "working-task-selection.v2" if locator_receipt is not None else "working-task-selection.v1", "task_hash": task["task_hash"],
         "policy_hash": canonical_hash(policy), "retrieval": retrieved, "passages": passages,
         "boundary": "LOCATED_EXCERPTS_NOT_COMPLETE_SEMANTIC_MEMORY"}
+    if locator_receipt is not None:
+        body["source_locator_receipt"] = locator_receipt
     return {**body, "selection_hash": canonical_hash(body)}
 
 
@@ -100,9 +113,10 @@ def validate_working_selection(snapshot: Mapping[str, Any]) -> None:
 
     task, policy = snapshot.get("retrieval_task"), snapshot.get("projection_policy")
     selection = snapshot.get("context_selection")
+    locator = isinstance(selection, Mapping) and selection.get("contract_version") == "working-task-selection.v2"
     if (not isinstance(task, Mapping) or not isinstance(policy, Mapping) or not isinstance(selection, Mapping)
-            or set(selection) != {"contract_version", "task_hash", "policy_hash", "retrieval", "passages", "boundary", "selection_hash"}
-            or selection.get("contract_version") != "working-task-selection.v1"
+            or set(selection) != {"contract_version", "task_hash", "policy_hash", "retrieval", "passages", "boundary", "selection_hash"} | ({"source_locator_receipt"} if locator else set())
+            or selection.get("contract_version") not in {"working-task-selection.v1", "working-task-selection.v2"}
             or selection.get("task_hash") != task.get("task_hash")
             or selection.get("policy_hash") != canonical_hash(policy)
             or selection.get("boundary") != "LOCATED_EXCERPTS_NOT_COMPLETE_SEMANTIC_MEMORY"
@@ -111,6 +125,9 @@ def validate_working_selection(snapshot: Mapping[str, Any]) -> None:
             or not isinstance(selection.get("retrieval"), Mapping)
             or selection["retrieval"].get("task_hash") != selection["task_hash"]):
         raise KernelError("WORKING_SELECTION_INVALID", "Selected context requires its exact task and source receipt")
+    if locator:
+        from .source_locators import validate_locator_receipt
+        validate_locator_receipt(selection["source_locator_receipt"], task, snapshot["sources"], snapshot["target_chapter"])
     retrieval = selection["retrieval"]
     if (set(retrieval) != {"contract_version", "task_hash", "source_units_hash", "selection_policy", "input_unit_count",
             "candidate_count", "queries", "selected", "omitted_candidate_count", "semantic_completeness", "selection_hash"}
@@ -169,13 +186,16 @@ def validate_working_selection(snapshot: Mapping[str, Any]) -> None:
                 or not 0 <= item["start"] < item["end"]
                 or not ordered_strings(item.get("reasons")) or not item["reasons"]
                 or any(reason not in {"EXPLICIT_COMPLETE_RECENT", "PREDECESSOR_ENDING", "TASK_RETRIEVAL",
-                    "LOCATED_MEMORY_OR_CAUSE", "SUPPORTING_NEIGHBOR"} for reason in item["reasons"])):
+                    "LOCATED_MEMORY_OR_CAUSE", "SUPPORTING_NEIGHBOR", *( {"TASK_SOURCE_LOCATOR"} if locator else set())} for reason in item["reasons"])):
             raise KernelError("WORKING_SELECTION_INVALID", "Every selected passage requires exact positions and selection reasons")
         identity = (item["asset_version_id"], item["start"], item["end"])
         source = projected.get(item["asset_version_id"])
         if identity in seen or source is None or source["chapter"] != item["chapter"]:
             raise KernelError("WORKING_SELECTION_INVALID", "Selection source differs from its frozen prose")
         seen.add(identity)
+        if locator and ("TASK_SOURCE_LOCATOR" in item["reasons"]) != any(
+                entry["asset_version_id"] == item["asset_version_id"] for entry in selection["source_locator_receipt"]["selected"]):
+            raise KernelError("WORKING_SELECTION_INVALID", "Source locator reasons must retain their exact selected manuscript")
         text = next((p["text"][item["start"]-p["start"]:item["end"]-p["start"]]
             for p in source["passages"] if p["start"] <= item["start"] < item["end"] <= p["end"]), None)
         if text is None or text_hash(text) != item["text_hash"]:
@@ -196,6 +216,10 @@ def validate_working_selection(snapshot: Mapping[str, Any]) -> None:
     for source in snapshot["sources"]:
         selected = sorted((item["start"], item["end"]) for item in selection["passages"]
             if item["asset_version_id"] == source["asset_version_id"])
+        located = locator and any(entry["asset_version_id"] == source["asset_version_id"] for entry in selection["source_locator_receipt"]["selected"])
+        if located and (not selected or selected[0][0] != 0 or selected[-1][1] != source["source_characters"]
+                or any(left[1] != right[0] for left, right in zip(selected, selected[1:]))):
+            raise KernelError("WORKING_SELECTION_INVALID", "Explicit episode locators must retain their complete original source")
         for passage in source["passages"]:
             spans = [(start, end) for start, end in selected if passage["start"] <= start < end <= passage["end"]]
             if (not spans or spans[0][0] != passage["start"] or spans[-1][1] != passage["end"]

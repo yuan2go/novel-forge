@@ -342,6 +342,17 @@ passage matches and open participant promises remain seeds; recursive causes and
 resolutions are restored independently of ranking. The selection has no causal-depth
 cutoff and does not claim that lexical relevance proves semantic completeness.
 
+New v10 selections also freeze `working-source-locators.v1` and record
+`working-task-selection.v2`. Literal past-chapter references and native task event IDs
+resolve against each selected manuscript's exact historical generation Plan. Only that
+Plan's own realization event IDs locate a source; future event IDs and causal references
+do not. The complete referenced original episode is retained so a changed wording cannot
+separate an action from its qualification or consequence. This is a selection policy;
+historical Plan bindings are navigation hints, never proof that a planned event happened
+or that a character knows it. Missing Plan bindings remain visible. Replay validates the
+original Plan versions and source digests before reusing a disposable locator index.
+Previously frozen selection v1 requests retain their original algorithm.
+
 Book owns native memory backfill through `authority-manuscript memory-backfill` and the
 Editor memory API. A Book mutation freezes the selected manuscript scope and missing
 coverage. The existing Book followup worker admits one extraction at a time, freezing
