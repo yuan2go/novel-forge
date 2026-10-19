@@ -2203,8 +2203,8 @@ if os.environ.get('SOURCE_READING_PLANNING_CRASH_ONCE'):
 if os.environ.get('SOURCE_READING_CRASH_ONCE'):
  from novel_forge.modules.source_import.execution import PostgresContentIntelligenceExecutionPort
  original=PostgresContentIntelligenceExecutionPort._execute
- def crash_after_receipt(self, *, worker, spec):
-  result=original(self,worker=worker,spec=spec)
+ def crash_after_receipt(self, *, worker, spec, reuse_effect_id=""):
+  result=original(self,worker=worker,spec=spec,reuse_effect_id=reuse_effect_id)
   path=Path(os.environ['SOURCE_READING_CRASH_ONCE'])
   if spec.input_payload.get('reading_context',{}).get('phase')=='OBSERVE' and not path.exists():
    path.write_text(worker.causation_id)
