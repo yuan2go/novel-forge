@@ -499,6 +499,29 @@ def test_only_unresolved_explicit_major_contradiction_blocks_propagation(kind, s
     assert source.content == {"text": "真实正文"}
 
 
+def test_propagation_batch_reads_reviews_once_but_rechecks_on_the_next_invocation():
+    from novel_forge.modules.book_authority.manuscript import require_prose_propagation_batch
+    from novel_forge.modules.review.diagnostics import prose_hash
+    review = {"target_asset_version_id": "draft:a", "target_text_hash": prose_hash("真实正文"),
+        "issues": [{"code": "contradiction", "judgment_kind": "SEMANTIC_CONTRADICTION", "severity": "major", "status": "OPEN"}]}
+    class Cursor:
+        def __init__(self): self.calls, self.reviews = 0, []
+        def execute(self, sql, params):
+            self.calls += 1
+            assert params == ["project", ["draft:a", "draft:b"]]
+        def fetchall(self): return self.reviews
+    cursor = Cursor()
+    sources = [SimpleNamespace(asset_version_id=identity, asset_type="draft_chapter", content={"text": "真实正文"})
+               for identity in ("draft:a", "draft:b")]
+    uow, book = SimpleNamespace(cursor=cursor), {"project_id": "project"}
+    require_prose_propagation_batch(uow, book, sources)
+    assert cursor.calls == 1
+    cursor.reviews = [("new-review", review)]
+    with pytest.raises(KernelError, match="MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED"):
+        require_prose_propagation_batch(uow, book, sources)
+    assert cursor.calls == 2
+
+
 @pytest.mark.parametrize("resolved", [False, True])
 def test_later_review_omission_cannot_remove_an_earlier_major_contradiction(resolved):
     from novel_forge.modules.book_authority.manuscript import require_prose_propagation
@@ -533,7 +556,7 @@ def test_frozen_later_context_rechecks_new_major_finding_before_execution(monkey
     monkeypatch.setattr(manuscript, "freeze_working_context", lambda *args, **kwargs: snapshot)
     def major(*args):
         raise KernelError("MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED", "new concrete Review finding")
-    monkeypatch.setattr(manuscript, "require_prose_propagation", major)
+    monkeypatch.setattr(manuscript, "require_prose_propagation_batch", major)
     uow = SimpleNamespace(repositories=SimpleNamespace(asset_documents=SimpleNamespace(require=lambda **kwargs: source)))
     manuscript.verify_working_context(uow, book, snapshot, require_current=False)
     snapshot["target_chapter"] = 2

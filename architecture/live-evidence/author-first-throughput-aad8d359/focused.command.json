@@ -1,0 +1,50 @@
+{
+  "source_sha": "aad8d3597daa66e0daf1a5f488691de9ffb03ee4",
+  "source_root": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/working-history-source-aad8d359",
+  "started_at": "2026-10-19T09:11:37.115286+00:00",
+  "provider_mode": "SCRIPTED_NATIVE_NOT_REAL_PROSE",
+  "production_database_used": false,
+  "commands": [
+    {
+      "name": "unit",
+      "pid": 13904,
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/unit/test_working_prose_projection.py",
+        "tests/unit/test_working_memory.py",
+        "tests/unit/test_longform_working_history.py",
+        "tests/unit/test_creation_coordination.py",
+        "tests/unit/test_semantic_context_units.py",
+        "tests/unit/test_complete_request_capacity.py",
+        "tests/unit/test_context_compression_provider.py",
+        "tests/unit/test_context_compression_routing.py",
+        "tests/unit/test_working_manuscript_revision.py",
+        "tests/unit/test_planning_working_continuity.py",
+        "tests/unit/test_provider_task_views.py",
+        "tests/unit/test_working_manuscript_selection.py",
+        "tests/unit/test_working_plan_regeneration.py",
+        "--tb=short",
+        "--junitxml=/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-unit-aad8d359.xml"
+      ],
+      "log": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-unit-aad8d359.log"
+    },
+    {
+      "name": "native",
+      "pid": 13905,
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export[default-author-first]",
+        "tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export[working-memory-interruption]",
+        "--tb=short",
+        "--junitxml=/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-native-aad8d359.xml"
+      ],
+      "log": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-native-aad8d359.log"
+    }
+  ]
+}

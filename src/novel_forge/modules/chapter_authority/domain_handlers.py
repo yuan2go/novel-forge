@@ -609,6 +609,7 @@ def normalize_draft_result(
     realization_contract: dict[str, Any] | None = None,
     enforce_voice_contract: bool = True,
 ) -> dict[str, Any]:
+    from novel_forge.modules.book_authority.working_prose import MEMORY_POLICY_VERSIONS
     from .realization_composition import prose_from_output
 
     text = prose_from_output(result, separators=result.get("scene_separators"))
@@ -670,7 +671,7 @@ def normalize_draft_result(
     )
     memory = None
     working = (context_content or {}).get("working_manuscript") or {}
-    if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"}:
+    if (working.get("projection_policy") or {}).get("version") in MEMORY_POLICY_VERSIONS:
         from novel_forge.modules.narrative_state.working_memory import optional_draft_memory
         memory = optional_draft_memory(result.get("working_memory_json"), text,
             available_causes={row["observation_id"] for row in working.get("working_memory", {}).get("entries", [])})

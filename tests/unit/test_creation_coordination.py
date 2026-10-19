@@ -173,7 +173,7 @@ def test_native_creation_freezes_current_method_bindings_and_keeps_legacy_replay
     assert creation_narrative_execution({"narrative_execution_contract": "native-narrative-execution.v2"})["chapter"]["pack_version_override"] == "3.0.4"
     profile = policy["profiles"]["production_profile"]["content"]
     current = working_prose_policy(profile)
-    assert current["version"] == "working-prose-projection.v7"
+    assert current["version"] == "working-prose-projection.v8"
     assert current["max_characters"] is None
     assert planning.manifest["context_sources"]["policy_id"] == "context-policy:chapter-generation-pack:v4"
     assert "No fixed number of turns" in working_instruction(current)

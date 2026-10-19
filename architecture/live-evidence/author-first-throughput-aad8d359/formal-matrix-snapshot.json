@@ -1,0 +1,42 @@
+{
+  "at": "2026-10-19T09:16:09.637104+00:00",
+  "current_source_sha": "aad8d3597daa66e0daf1a5f488691de9ffb03ee4",
+  "current_source_run": "RUNNING",
+  "current_report": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/p0-source-aad8d359.json",
+  "current_source_provider_credentials": "REMOVED",
+  "previous_source_sha": "54bad495e6d1a7d7650f3ee41a691a2d76b0b815",
+  "previous_full_run": "RUNNING_WITH_TWO_RECORDED_FAILURES",
+  "previous_recorded_failures": [
+    {
+      "node_id": "tests/integration/test_author_reading_checkpoints_postgres.py::test_native_twelve_chapter_reading_gates_resume_and_export_preserve_accepted_history",
+      "at": "2026-10-19T08:55:52.237431+00:00",
+      "failure_tail": [
+        "                       narrative_search_accepted_through_chapter=0, narrative_search_strategy_directive=\"\",",
+        "                       narrative_search_planning_horizon={}, narrative_search_desired_transformation={}, narrative_search_hard_constraints=[])",
+        "        held = authority.require(book_run_id)",
+        ">       assert held[\"state\"] == \"PAUSED\" and held[\"accepted_through_chapter\"] == 3",
+        "E       AssertionError",
+        "",
+        "tests/integration/operator_plan_change_support.py:112: AssertionError"
+      ]
+    },
+    {
+      "node_id": "tests/integration/test_book_editions_postgres.py::test_edition_candidate_uses_native_acceptance_and_isolates_source_facts",
+      "at": "2026-10-19T08:59:29.509196+00:00",
+      "failure_tail": [
+        "        bound=repair_bound(self,command=command,operation_id=operation_id,maximum=maximum)",
+        "        exhausted=(bound['stage_repair_number']>=bound['maximum_repairs'] or command.repair_number>=4) if bound else command.repair_number>=maximum",
+        "        if exhausted:",
+        ">           raise KernelError(\"PLANNING_RESULT_REPAIR_BOUND_EXCEEDED\", \"invalid raw results exhausted their bounded repair allowance; all results remain retained\")",
+        "E           novel_forge.modules.command_kernel.errors.KernelError: PLANNING_RESULT_REPAIR_BOUND_EXCEEDED: invalid raw results exhausted their bounded repair allowance; all results remain retained",
+        "",
+        "src/novel_forge/modules/story_planning_runtime/application.py:2040: KernelError"
+      ]
+    }
+  ],
+  "qualification": "INCOMPLETE",
+  "production_qualification": "NOT_RUN_BY_AUTHOR_PAUSE",
+  "literary_qualification": "INCOMPLETE",
+  "prior_formal_failures_preserved": true,
+  "no_skips_xfails_or_denominator_reduction": true
+}

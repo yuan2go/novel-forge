@@ -48,7 +48,7 @@ def _native_history(monkeypatch, target, *, tiny=False):
 
     monkeypatch.setattr(manuscript, "resolve_working_source", resolve)
     monkeypatch.setattr(manuscript, "selected_source", lambda *args: resolve(*args)[0])
-    monkeypatch.setattr(manuscript, "require_prose_propagation", lambda *_: None)
+    monkeypatch.setattr(manuscript, "require_prose_propagation_batch", lambda *_: None)
     monkeypatch.setattr(manuscript, "working_dependency_changes", lambda *_: ([], {}))
     monkeypatch.setattr("novel_forge.modules.book_authority.manuscript_memory.source_memory", lambda *_: (None, {"status": "MISSING"}))
     uow.repositories.asset_documents.require.side_effect = lambda **kwargs: next(
@@ -81,6 +81,25 @@ def test_native_longform_freeze_keeps_complete_versions_and_bounded_literal_inpu
     assert project_working_history_for_provider(view) == view
     with pytest.raises(KernelError, match="WORKING_PROSE_HISTORY_INVALID"):
         manuscript.verify_working_context(uow, book, view)
+
+
+@pytest.mark.parametrize("target", [21, 130, 600])
+def test_retrieval_freeze_scales_source_manifest_without_resending_missing_memory_as_full_prose(monkeypatch, target):
+    uow, book, documents = _native_history(monkeypatch, target)
+    snapshot = manuscript.freeze_working_context(uow, book, target,
+        projection_policy=_policy(version="working-prose-projection.v8", max_characters=None))
+    validate_working_projection(snapshot, project_id="project", book_id="book", target_chapter=target)
+    manuscript.verify_working_context(uow, book, snapshot)
+    assert len(working_source_rows(snapshot)) == target - 1
+    assert [row["chapter"] for row in snapshot["sources"]] == [target - 2, target - 1]
+    assert ["".join(p["text"] for p in row["passages"]) for row in snapshot["sources"]] == [documents[number].content["text"] for number in (target - 2, target - 1)]
+    assert len(snapshot["working_memory"]["source_coverage"]) == target - 1
+    assert {row["status"] for row in snapshot["working_memory"]["source_coverage"]} == {"MISSING"}
+    assert snapshot["working_memory"]["entries"] == []
+    provider = project_working_history_for_provider(snapshot)
+    validate_working_projection(provider, project_id="project", book_id="book", target_chapter=target)
+    assert provider["source_history"]["boundary"] == "OMITTED_PROSE_UNKNOWN_NO_ACCEPTED_FACTS"
+    assert len(provider["working_memory"]["source_coverage"]) == 2
 
 
 def test_longform_bounds_source_rows_and_recalls_old_located_annotation(monkeypatch):
@@ -181,7 +200,7 @@ def test_longform_neutral_guidance_preserves_author_scope():
         assert historical_requirement not in instruction
     template = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/creation_inputs.json").read_text())
     policy = template["profiles"]["production_profile"]["content"]["working_prose_policy"]
-    assert policy["version"] == "working-prose-projection.v7" and policy["history_chapters"] == 128
+    assert policy["version"] == "working-prose-projection.v8" and policy["history_chapters"] == 128
     assert policy["max_characters"] is None
 
 

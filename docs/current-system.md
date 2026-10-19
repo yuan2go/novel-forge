@@ -24,7 +24,7 @@ identity changes without a corresponding projection update.
 New Creation requests select `config/execution_templates/author_first.json` (v12).
 The default creation-input policy freezes `native-narrative-execution.v4`: Chapter Pack
 3.2.0 with prose Skill v5 and Template v15, event-first Planning Pack 2.19.0, and
-working-prose projection v7, Craft budget v5 and selected-working delivery v2.
+working-prose projection v8, Craft budget v5 and selected-working delivery v2.
 The original Formation policy remains the replay source;
 configurations without this selection retain their original Pack and prose projection.
 Creation v1/v2 installation uses the preserved Chapter 3.0.2 base manifest and Context
@@ -260,13 +260,24 @@ realized beats as premises, compresses incidental daily transitions, and asks ex
 scene goals, conflicts, beats and exit states to carry immediate friction, costly action
 and an irreversible ending that demands a next action. Missing source coverage or exceeded
 history/allocation closes input admission; literary interpretation remains a review concern.
-New Creation profiles select `working-prose-projection.v7`; frozen v5 profiles retain
+New Creation profiles select `working-prose-projection.v8`; frozen v5 profiles retain
 their historical character allocation. Book freezes every predecessor's
 exact effective source, source hash and selection lineage in `working-source-history.v1`,
 separately from the bounded prose passages sent to Planning, Memo and Writer. The configured
 128-chapter passage window does not reject chapter 130 or discard earlier source identities.
 Located observations and their causal passages can retrieve earlier material within the
 real character and complete-request capacity bounds. Omitted prose remains unknown.
+Frozen v6/v7 retains all eligible historical paragraphs when its configured history
+window permits them. New v8 selects complete recent chapters, exact older paragraphs
+matching explicit queries within that window, and the located original evidence for
+selected observations and their causal closure even outside that window. Memory keeps
+latest observations separately by subject, state key, perspective and knowledge owner;
+promises remain visible without inferring resolution, while other older observations
+require query relevance or causal support. An empty query does not select unrelated old
+prose. Missing, invalid or empty memory remains explicit coverage evidence, never a
+complete-history claim. Original prose remains available through exact-version manuscript
+read/export and prospective query selection. Neither lexical matching nor observation
+selection proves semantic completeness or long-form quality.
 The complete omission-ID and source-coverage ledger stays in the frozen Host packet.
 New requests record `working-history-provider-transport.v2`; frozen v1 admission replays
 its original projection.
@@ -1702,7 +1713,17 @@ The Context owner retains relevance, deduplication and source eligibility while
 deferring capacity eviction to the fully rendered request. Book's
 `working-prose-projection.v6` and v7 retain the selected historical passages without the
 legacy 24,000-character allocation; source identity and lossless history references
-remain separate from delivered expression. Older frozen policies retain their limits.
+remain separate from delivered expression. V8 selects relevance and located dependency
+evidence before capacity preparation, with no replacement character or fact-count quota.
+Older frozen policies retain their exact selection semantics and limits.
+An authenticated local author/operator may select future working inputs through
+`authority-manuscript select-working-policy` at a settled READY/PAUSED checkpoint.
+Book Authority records a versioned `book_working_prose_policy` asset, exact profile and
+frontier, and advances its version atomically without changing pause or acceptance.
+Original profiles and requests remain immutable; replay binds author, complete policy,
+reason and checkpoint. Later selections retain the exact preceding policy version/hash;
+reconstructing an earlier chapter resolves the policy at its original frontier.
+Unsettled effects retain their reconciliation protections.
 
 Chapter's binder and Planning's preparer coordinate capacity within their existing
 Owners before planning the main Effect. Eligible older historical expression is

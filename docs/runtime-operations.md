@@ -1647,6 +1647,25 @@ Chapter inputs retain their conflict checks. Current manuscript
 reads/edits/exports remain independent. API clients bind the original adoption
 key and expected Book version; response recovery replays the native transaction receipt.
 
+Select a different complete working-prose policy for future requests at the same settled
+checkpoint without replacing the production profile:
+
+```bash
+novel-forge authority-manuscript select-working-policy --project-id "$PROJECT" \
+  --book-run-id "$BOOK_RUN" --expected-version "$BOOK_VERSION" \
+  --working-policy-file /absolute/path/working-policy.json \
+  --idempotency-key "$POLICY_KEY" --reason "Use located historical retrieval"
+```
+
+The file contains the `working_prose_policy` object, not the entire Creation template.
+New Creation uses v8 with complete recent chapters and located historical retrieval.
+Empty or missing observations are coverage gaps; inspect exact older versions and select
+relevant query terms when that experience is needed. Do not label a recent-only input as
+complete historical memory. Selection keeps `PAUSED` unchanged, binds the original
+authenticated author, and replays only the same policy/reason/version. A stale checkpoint,
+active Chapter or unresolved Effect is rejected; reconcile it through the existing owner.
+The selection cannot reinterpret a frozen request or authorize a new Provider dispatch.
+
 Extend an existing author-first delivery window at a settled `READY` or `PAUSED`
 checkpoint, using the `book_version` returned by manuscript read:
 

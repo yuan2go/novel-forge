@@ -1,0 +1,823 @@
+{
+  "at": "2026-10-19 15:39:15.916590+08:00",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "source_active_before_pause": "393415967a4ad42abaef11d62a93f0468d5fe4c2",
+  "book": {
+    "current_chapter": 20,
+    "accepted": 0,
+    "state": "PAUSED",
+    "version": 146,
+    "created_at": "2026-10-18 02:00:29.866492+08:00",
+    "updated_at": "2026-10-19 15:36:45.846318+08:00"
+  },
+  "all": {
+    "intents": 950,
+    "dispatches": 950,
+    "status_counts": {
+      "SUCCEEDED": 920,
+      "UNKNOWN": 25,
+      "FAILED_FINAL": 2,
+      "FAILED_RETRYABLE": 3
+    },
+    "dispatch_status_counts": {
+      "SUCCEEDED": 920,
+      "UNKNOWN": 25,
+      "FAILED_FINAL": 2,
+      "FAILED_RETRYABLE": 3
+    },
+    "dispatch_seconds_sum": 62240.951169,
+    "dispatch_seconds_union": 61196.291718,
+    "median_dispatch_seconds": 26.457558499999998,
+    "max_dispatch_seconds": 916.298195,
+    "first_intent": "2026-10-17 20:28:02.645595+08:00",
+    "last_dispatch_end": "2026-10-19 15:37:51.774165+08:00"
+  },
+  "all_stage": {
+    "arc_plan.generate": {
+      "intents": 21,
+      "dispatches": 21,
+      "status_counts": {
+        "SUCCEEDED": 21
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 21
+      },
+      "dispatch_seconds_sum": 3458.595666,
+      "dispatch_seconds_union": 3458.595666,
+      "median_dispatch_seconds": 150.751562,
+      "max_dispatch_seconds": 271.164107,
+      "first_intent": "2026-10-18 01:01:42.630360+08:00",
+      "last_dispatch_end": "2026-10-18 02:00:27.329855+08:00"
+    },
+    "book_plan.generate": {
+      "intents": 3,
+      "dispatches": 3,
+      "status_counts": {
+        "SUCCEEDED": 3
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 3
+      },
+      "dispatch_seconds_sum": 759.366087,
+      "dispatch_seconds_union": 759.366087,
+      "median_dispatch_seconds": 264.86606,
+      "max_dispatch_seconds": 276.143131,
+      "first_intent": "2026-10-17 23:39:34.072280+08:00",
+      "last_dispatch_end": "2026-10-17 23:52:16.085918+08:00"
+    },
+    "chapter_group_plan.generate": {
+      "intents": 20,
+      "dispatches": 20,
+      "status_counts": {
+        "SUCCEEDED": 19,
+        "UNKNOWN": 1
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 19,
+        "UNKNOWN": 1
+      },
+      "dispatch_seconds_sum": 4724.278728,
+      "dispatch_seconds_union": 4724.278728,
+      "median_dispatch_seconds": 227.679963,
+      "max_dispatch_seconds": 313.286301,
+      "first_intent": "2026-10-18 02:02:42.845277+08:00",
+      "last_dispatch_end": "2026-10-19 14:11:35.198620+08:00"
+    },
+    "chapter_plan.generate": {
+      "intents": 22,
+      "dispatches": 22,
+      "status_counts": {
+        "SUCCEEDED": 21,
+        "FAILED_RETRYABLE": 1
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 21,
+        "FAILED_RETRYABLE": 1
+      },
+      "dispatch_seconds_sum": 3907.964071,
+      "dispatch_seconds_union": 3907.964071,
+      "median_dispatch_seconds": 179.719018,
+      "max_dispatch_seconds": 262.60024,
+      "first_intent": "2026-10-18 02:14:01.588500+08:00",
+      "last_dispatch_end": "2026-10-19 09:03:16.577347+08:00"
+    },
+    "character.cast.generate": {
+      "intents": 1,
+      "dispatches": 1,
+      "status_counts": {
+        "SUCCEEDED": 1
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 1
+      },
+      "dispatch_seconds_sum": 242.177744,
+      "dispatch_seconds_union": 242.177744,
+      "median_dispatch_seconds": 242.177744,
+      "max_dispatch_seconds": 242.177744,
+      "first_intent": "2026-10-17 23:33:22.517625+08:00",
+      "last_dispatch_end": "2026-10-17 23:37:24.727916+08:00"
+    },
+    "context_compress": {
+      "intents": 205,
+      "dispatches": 205,
+      "status_counts": {
+        "SUCCEEDED": 203,
+        "FAILED_RETRYABLE": 1,
+        "UNKNOWN": 1
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 203,
+        "FAILED_RETRYABLE": 1,
+        "UNKNOWN": 1
+      },
+      "dispatch_seconds_sum": 4336.786262,
+      "dispatch_seconds_union": 4336.786262,
+      "median_dispatch_seconds": 20.232186,
+      "max_dispatch_seconds": 40.169651,
+      "first_intent": "2026-10-18 17:47:36.654796+08:00",
+      "last_dispatch_end": "2026-10-19 15:34:33.405465+08:00"
+    },
+    "context_fidelity": {
+      "intents": 533,
+      "dispatches": 533,
+      "status_counts": {
+        "SUCCEEDED": 526,
+        "UNKNOWN": 6,
+        "FAILED_RETRYABLE": 1
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 526,
+        "UNKNOWN": 6,
+        "FAILED_RETRYABLE": 1
+      },
+      "dispatch_seconds_sum": 18774.229937,
+      "dispatch_seconds_union": 18774.229937,
+      "median_dispatch_seconds": 25.615827,
+      "max_dispatch_seconds": 913.029315,
+      "first_intent": "2026-10-18 17:48:02.168075+08:00",
+      "last_dispatch_end": "2026-10-19 15:37:51.774165+08:00"
+    },
+    "creative.candidates.generate": {
+      "intents": 2,
+      "dispatches": 2,
+      "status_counts": {
+        "SUCCEEDED": 2
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 2
+      },
+      "dispatch_seconds_sum": 337.16438300000004,
+      "dispatch_seconds_union": 337.16438300000004,
+      "median_dispatch_seconds": 168.58219150000002,
+      "max_dispatch_seconds": 177.155717,
+      "first_intent": "2026-10-17 20:28:02.645595+08:00",
+      "last_dispatch_end": "2026-10-17 20:33:40.639333+08:00"
+    },
+    "draft": {
+      "intents": 33,
+      "dispatches": 33,
+      "status_counts": {
+        "SUCCEEDED": 21,
+        "UNKNOWN": 12
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 21,
+        "UNKNOWN": 12
+      },
+      "dispatch_seconds_sum": 14113.524885,
+      "dispatch_seconds_union": 14113.524885,
+      "median_dispatch_seconds": 143.079802,
+      "max_dispatch_seconds": 916.298195,
+      "first_intent": "2026-10-18 02:16:40.444698+08:00",
+      "last_dispatch_end": "2026-10-19 09:22:27.096518+08:00"
+    },
+    "ending.intent.generate": {
+      "intents": 1,
+      "dispatches": 1,
+      "status_counts": {
+        "SUCCEEDED": 1
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 1
+      },
+      "dispatch_seconds_sum": 67.959389,
+      "dispatch_seconds_union": 67.959389,
+      "median_dispatch_seconds": 67.959389,
+      "max_dispatch_seconds": 67.959389,
+      "first_intent": "2026-10-17 20:36:10.090855+08:00",
+      "last_dispatch_end": "2026-10-17 20:37:18.080635+08:00"
+    },
+    "longform_prose_review": {
+      "intents": 16,
+      "dispatches": 16,
+      "status_counts": {
+        "SUCCEEDED": 14,
+        "FAILED_FINAL": 2
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 14,
+        "FAILED_FINAL": 2
+      },
+      "dispatch_seconds_sum": 1695.595318,
+      "dispatch_seconds_union": 1695.595318,
+      "median_dispatch_seconds": 92.711224,
+      "max_dispatch_seconds": 186.681232,
+      "first_intent": "2026-10-18 08:57:50.317944+08:00",
+      "last_dispatch_end": "2026-10-19 10:22:43.846446+08:00"
+    },
+    "reader.promise.generate": {
+      "intents": 1,
+      "dispatches": 1,
+      "status_counts": {
+        "SUCCEEDED": 1
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 1
+      },
+      "dispatch_seconds_sum": 70.205353,
+      "dispatch_seconds_union": 70.205353,
+      "median_dispatch_seconds": 70.205353,
+      "max_dispatch_seconds": 70.205353,
+      "first_intent": "2026-10-17 20:37:18.686434+08:00",
+      "last_dispatch_end": "2026-10-17 20:38:28.954482+08:00"
+    },
+    "rereview": {
+      "intents": 20,
+      "dispatches": 20,
+      "status_counts": {
+        "SUCCEEDED": 20
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 20
+      },
+      "dispatch_seconds_sum": 660.161822,
+      "dispatch_seconds_union": 660.161822,
+      "median_dispatch_seconds": 32.911588,
+      "max_dispatch_seconds": 39.417433,
+      "first_intent": "2026-10-18 02:23:08.294933+08:00",
+      "last_dispatch_end": "2026-10-19 09:39:42.115383+08:00"
+    },
+    "review": {
+      "intents": 20,
+      "dispatches": 20,
+      "status_counts": {
+        "SUCCEEDED": 20
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 20
+      },
+      "dispatch_seconds_sum": 668.457117,
+      "dispatch_seconds_union": 668.457117,
+      "median_dispatch_seconds": 32.8620115,
+      "max_dispatch_seconds": 47.783703,
+      "first_intent": "2026-10-18 02:20:59.021525+08:00",
+      "last_dispatch_end": "2026-10-19 09:23:38.965414+08:00"
+    },
+    "revision": {
+      "intents": 20,
+      "dispatches": 20,
+      "status_counts": {
+        "SUCCEEDED": 20
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 20
+      },
+      "dispatch_seconds_sum": 1619.960515,
+      "dispatch_seconds_union": 1619.960515,
+      "median_dispatch_seconds": 79.1142935,
+      "max_dispatch_seconds": 194.641168,
+      "first_intent": "2026-10-18 02:21:42.096040+08:00",
+      "last_dispatch_end": "2026-10-19 09:25:23.781333+08:00"
+    },
+    "theme.candidates.generate": {
+      "intents": 1,
+      "dispatches": 1,
+      "status_counts": {
+        "SUCCEEDED": 1
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 1
+      },
+      "dispatch_seconds_sum": 76.840925,
+      "dispatch_seconds_union": 76.840925,
+      "median_dispatch_seconds": 76.840925,
+      "max_dispatch_seconds": 76.840925,
+      "first_intent": "2026-10-17 20:34:52.624779+08:00",
+      "last_dispatch_end": "2026-10-17 20:36:09.496989+08:00"
+    },
+    "volume_plan.generate": {
+      "intents": 24,
+      "dispatches": 24,
+      "status_counts": {
+        "SUCCEEDED": 24
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 24
+      },
+      "dispatch_seconds_sum": 4122.325994,
+      "dispatch_seconds_union": 4122.325994,
+      "median_dispatch_seconds": 168.6896855,
+      "max_dispatch_seconds": 211.931571,
+      "first_intent": "2026-10-17 23:52:17.351467+08:00",
+      "last_dispatch_end": "2026-10-18 01:01:39.421075+08:00"
+    },
+    "world.design.generate": {
+      "intents": 5,
+      "dispatches": 5,
+      "status_counts": {
+        "UNKNOWN": 4,
+        "SUCCEEDED": 1
+      },
+      "dispatch_status_counts": {
+        "UNKNOWN": 4,
+        "SUCCEEDED": 1
+      },
+      "dispatch_seconds_sum": 1621.111374,
+      "dispatch_seconds_union": 1621.111374,
+      "median_dispatch_seconds": 355.907873,
+      "max_dispatch_seconds": 402.32382,
+      "first_intent": "2026-10-17 20:38:29.830812+08:00",
+      "last_dispatch_end": "2026-10-17 23:33:21.466397+08:00"
+    },
+    "world_candidates.evaluate": {
+      "intents": 1,
+      "dispatches": 1,
+      "status_counts": {
+        "UNKNOWN": 1
+      },
+      "dispatch_status_counts": {
+        "UNKNOWN": 1
+      },
+      "dispatch_seconds_sum": 909.264214,
+      "dispatch_seconds_union": 909.264214,
+      "median_dispatch_seconds": 909.264214,
+      "max_dispatch_seconds": 909.264214,
+      "first_intent": "2026-10-18 23:29:00.437732+08:00",
+      "last_dispatch_end": "2026-10-18 23:44:10.285464+08:00"
+    },
+    "world_candidates.generate": {
+      "intents": 1,
+      "dispatches": 1,
+      "status_counts": {
+        "SUCCEEDED": 1
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 1
+      },
+      "dispatch_seconds_sum": 74.981385,
+      "dispatch_seconds_union": 74.981385,
+      "median_dispatch_seconds": 74.981385,
+      "max_dispatch_seconds": 74.981385,
+      "first_intent": "2026-10-18 23:27:28.761559+08:00",
+      "last_dispatch_end": "2026-10-18 23:28:44.438821+08:00"
+    }
+  },
+  "categories": {
+    "capacity_preparation": {
+      "intents": 738,
+      "dispatches": 738,
+      "status_counts": {
+        "SUCCEEDED": 729,
+        "UNKNOWN": 7,
+        "FAILED_RETRYABLE": 2
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 729,
+        "UNKNOWN": 7,
+        "FAILED_RETRYABLE": 2
+      },
+      "dispatch_seconds_sum": 23111.016199,
+      "dispatch_seconds_union": 23111.016199,
+      "median_dispatch_seconds": 24.09494,
+      "max_dispatch_seconds": 913.029315,
+      "first_intent": "2026-10-18 17:47:36.654796+08:00",
+      "last_dispatch_end": "2026-10-19 15:37:51.774165+08:00"
+    },
+    "draft_and_revision": {
+      "intents": 53,
+      "dispatches": 53,
+      "status_counts": {
+        "SUCCEEDED": 41,
+        "UNKNOWN": 12
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 41,
+        "UNKNOWN": 12
+      },
+      "dispatch_seconds_sum": 15733.4854,
+      "dispatch_seconds_union": 15733.4854,
+      "median_dispatch_seconds": 123.209153,
+      "max_dispatch_seconds": 916.298195,
+      "first_intent": "2026-10-18 02:16:40.444698+08:00",
+      "last_dispatch_end": "2026-10-19 09:25:23.781333+08:00"
+    },
+    "review": {
+      "intents": 56,
+      "dispatches": 56,
+      "status_counts": {
+        "SUCCEEDED": 54,
+        "FAILED_FINAL": 2
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 54,
+        "FAILED_FINAL": 2
+      },
+      "dispatch_seconds_sum": 3024.214257,
+      "dispatch_seconds_union": 3024.214257,
+      "median_dispatch_seconds": 35.6110195,
+      "max_dispatch_seconds": 186.681232,
+      "first_intent": "2026-10-18 02:20:59.021525+08:00",
+      "last_dispatch_end": "2026-10-19 10:22:43.846446+08:00"
+    },
+    "planning": {
+      "intents": 103,
+      "dispatches": 103,
+      "status_counts": {
+        "SUCCEEDED": 96,
+        "UNKNOWN": 6,
+        "FAILED_RETRYABLE": 1
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 96,
+        "UNKNOWN": 6,
+        "FAILED_RETRYABLE": 1
+      },
+      "dispatch_seconds_sum": 20372.235313,
+      "dispatch_seconds_union": 20372.235313,
+      "median_dispatch_seconds": 181.607003,
+      "max_dispatch_seconds": 909.264214,
+      "first_intent": "2026-10-17 20:28:02.645595+08:00",
+      "last_dispatch_end": "2026-10-19 14:11:35.198620+08:00"
+    }
+  },
+  "elapsed_hours_first_intent_to_snapshot": 43.187019720833334,
+  "provider_dispatch_hours_union": 16.998969921666667,
+  "not_in_model_dispatch_hours": 26.188049799166667,
+  "recent_20h": {
+    "from": "2026-10-18 19:39:15.916590+08:00",
+    "all": {
+      "intents": 677,
+      "dispatches": 677,
+      "status_counts": {
+        "SUCCEEDED": 663,
+        "UNKNOWN": 9,
+        "FAILED_FINAL": 2,
+        "FAILED_RETRYABLE": 3
+      },
+      "dispatch_status_counts": {
+        "SUCCEEDED": 663,
+        "UNKNOWN": 9,
+        "FAILED_FINAL": 2,
+        "FAILED_RETRYABLE": 3
+      },
+      "dispatch_seconds_sum": 26077.627546,
+      "dispatch_seconds_union": 25286.223371,
+      "median_dispatch_seconds": 25.266268,
+      "max_dispatch_seconds": 916.298195,
+      "first_intent": "2026-10-18 19:49:32.378585+08:00",
+      "last_dispatch_end": "2026-10-19 15:37:51.774165+08:00"
+    },
+    "categories": {
+      "capacity_preparation": {
+        "intents": 649,
+        "dispatches": 649,
+        "status_counts": {
+          "SUCCEEDED": 640,
+          "UNKNOWN": 7,
+          "FAILED_RETRYABLE": 2
+        },
+        "dispatch_status_counts": {
+          "SUCCEEDED": 640,
+          "UNKNOWN": 7,
+          "FAILED_RETRYABLE": 2
+        },
+        "dispatch_seconds_sum": 21336.065626,
+        "dispatch_seconds_union": 21336.065626,
+        "median_dispatch_seconds": 25.047034,
+        "max_dispatch_seconds": 913.029315,
+        "first_intent": "2026-10-18 19:49:32.378585+08:00",
+        "last_dispatch_end": "2026-10-19 15:37:51.774165+08:00"
+      },
+      "draft_and_revision": {
+        "intents": 5,
+        "dispatches": 5,
+        "status_counts": {
+          "SUCCEEDED": 4,
+          "UNKNOWN": 1
+        },
+        "dispatch_status_counts": {
+          "SUCCEEDED": 4,
+          "UNKNOWN": 1
+        },
+        "dispatch_seconds_sum": 1333.320239,
+        "dispatch_seconds_union": 1333.320239,
+        "median_dispatch_seconds": 125.479054,
+        "max_dispatch_seconds": 916.298195,
+        "first_intent": "2026-10-19 02:54:22.913263+08:00",
+        "last_dispatch_end": "2026-10-19 09:25:23.781333+08:00"
+      },
+      "review": {
+        "intents": 16,
+        "dispatches": 16,
+        "status_counts": {
+          "SUCCEEDED": 14,
+          "FAILED_FINAL": 2
+        },
+        "dispatch_status_counts": {
+          "SUCCEEDED": 14,
+          "FAILED_FINAL": 2
+        },
+        "dispatch_seconds_sum": 1500.07681,
+        "dispatch_seconds_union": 1500.07681,
+        "median_dispatch_seconds": 91.5567815,
+        "max_dispatch_seconds": 186.681232,
+        "first_intent": "2026-10-18 21:33:27.821430+08:00",
+        "last_dispatch_end": "2026-10-19 10:22:43.846446+08:00"
+      },
+      "planning": {
+        "intents": 7,
+        "dispatches": 7,
+        "status_counts": {
+          "SUCCEEDED": 5,
+          "UNKNOWN": 1,
+          "FAILED_RETRYABLE": 1
+        },
+        "dispatch_status_counts": {
+          "SUCCEEDED": 5,
+          "UNKNOWN": 1,
+          "FAILED_RETRYABLE": 1
+        },
+        "dispatch_seconds_sum": 1908.164871,
+        "dispatch_seconds_union": 1908.164871,
+        "median_dispatch_seconds": 193.661794,
+        "max_dispatch_seconds": 909.264214,
+        "first_intent": "2026-10-18 23:27:28.761559+08:00",
+        "last_dispatch_end": "2026-10-19 14:11:35.198620+08:00"
+      }
+    },
+    "first_drafts_saved": 2,
+    "effective_assets_saved": 2,
+    "provider_dispatch_hours_union": 7.023950936388889,
+    "outside_dispatch_hours": 12.97604906361111,
+    "preparation_attempt_percentage": 95.86410635155096
+  },
+  "chapter_timeline": [
+    {
+      "chapter": 1,
+      "first_draft_at": "2026-10-18 02:19:03.594619+08:00",
+      "first_draft_version": "authority-output:d91a49f0-c575-4b37-bc18-8cba8b270895:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 02:23:42.360534+08:00",
+      "effective_version": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 2,
+      "first_draft_at": "2026-10-18 02:47:02.650427+08:00",
+      "first_draft_version": "authority-output:75403b34-66d4-4f84-9079-daf1caac5a15:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 02:50:50.557707+08:00",
+      "effective_version": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 3,
+      "first_draft_at": "2026-10-18 03:11:53.078067+08:00",
+      "first_draft_version": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 03:11:53.078067+08:00",
+      "effective_version": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1"
+    },
+    {
+      "chapter": 4,
+      "first_draft_at": "2026-10-18 03:33:11.105044+08:00",
+      "first_draft_version": "authority-output:d80359d5-5bd4-4f03-82b8-2c16628d1168:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 03:36:20.043190+08:00",
+      "effective_version": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 5,
+      "first_draft_at": "2026-10-18 04:22:49.644710+08:00",
+      "first_draft_version": "authority-output:2f10604b-da70-49cd-86d6-c187cb32cfad:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 04:27:28.671432+08:00",
+      "effective_version": "authority-output:fa8caa0f-61ca-40ab-b15c-4648b70d2027:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 6,
+      "first_draft_at": "2026-10-18 10:19:05.880329+08:00",
+      "first_draft_version": "authority-output:af8fdffc-c021-44e5-a1b6-b1c730d62d52:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 10:24:51.518077+08:00",
+      "effective_version": "authority-output:1b67e98b-9d26-4c1e-b4c4-5f84a8f33eb4:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 7,
+      "first_draft_at": "2026-10-18 10:30:16.452013+08:00",
+      "first_draft_version": "authority-output:7431f9fd-757a-4352-8ca9-b57c1f51120a:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 10:42:39.879232+08:00",
+      "effective_version": "authority-output:50d8eeee-dedf-47bd-b606-5b1ba8c9c9d2:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 8,
+      "first_draft_at": "2026-10-18 10:48:04.275761+08:00",
+      "first_draft_version": "authority-output:afd7254b-d1c4-480d-9729-ed0faee99e65:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 10:50:06.076286+08:00",
+      "effective_version": "authority-output:f8e98e0a-304e-4880-86f2-7905acf55d14:chapter.revision:v1"
+    },
+    {
+      "chapter": 9,
+      "first_draft_at": "2026-10-18 11:56:45.748835+08:00",
+      "first_draft_version": "authority-output:4a23da92-ae2b-47c1-857c-a68dd14d3ebb:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 12:01:24.192406+08:00",
+      "effective_version": "authority-output:99c16c1a-0083-419e-97d6-8317380cf045:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 10,
+      "first_draft_at": "2026-10-18 12:08:16.054492+08:00",
+      "first_draft_version": "authority-output:14148c65-aa11-4fd0-a6d6-8f512611a062:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 12:08:16.054492+08:00",
+      "effective_version": "authority-output:14148c65-aa11-4fd0-a6d6-8f512611a062:chapter.draft:v1"
+    },
+    {
+      "chapter": 11,
+      "first_draft_at": "2026-10-18 12:14:07.206685+08:00",
+      "first_draft_version": "authority-output:0049a6bf-94cb-45db-b4b4-7fc116710f87:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 12:16:56.684156+08:00",
+      "effective_version": "authority-output:15e6a150-b87d-4f81-95c7-5f7e57edceb1:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 12,
+      "first_draft_at": "2026-10-18 12:22:57.692642+08:00",
+      "first_draft_version": "authority-output:2fc5fcd8-6e28-48fa-85ad-f745e6935999:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 12:25:47.861809+08:00",
+      "effective_version": "authority-output:55e3b156-19e0-4d46-b949-6c58000027d4:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 13,
+      "first_draft_at": "2026-10-18 12:43:57.922441+08:00",
+      "first_draft_version": "authority-output:c63543b1-7ad5-4731-b91e-ea1e65b80e6d:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 12:47:02.655465+08:00",
+      "effective_version": "authority-output:0c725b33-5e71-4571-86e8-b08650db2841:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 14,
+      "first_draft_at": "2026-10-18 12:53:24.269352+08:00",
+      "first_draft_version": "authority-output:b5c393cb-5b07-4068-9a7f-1510cb20b768:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 13:30:39.296689+08:00",
+      "effective_version": "authority-output:c09cc5a0-1b0c-4c2b-a755-e43fd1f17d8c:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 15,
+      "first_draft_at": "2026-10-18 14:01:38.448081+08:00",
+      "first_draft_version": "authority-output:a546b1cf-0afa-4200-b164-e988303ccd4b:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 14:04:50.233461+08:00",
+      "effective_version": "authority-output:5c30ca31-41f3-4ccf-ba30-ead3b70681af:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 16,
+      "first_draft_at": "2026-10-18 14:26:04.606870+08:00",
+      "first_draft_version": "authority-output:cb21e289-8ac1-4323-86e4-37aab8208846:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 16:38:59.506386+08:00",
+      "effective_version": "authority-output:82900a6d-f40a-49cd-a7cb-a4db0343f09b:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 17,
+      "first_draft_at": "2026-10-18 17:02:27.635114+08:00",
+      "first_draft_version": "authority-output:7dd8c68a-ed9d-4d9f-b36f-d2c8a36da512:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 17:05:50.679250+08:00",
+      "effective_version": "authority-output:153d9a88-034a-44b0-a479-f5aaa18ade4e:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 18,
+      "first_draft_at": "2026-10-18 17:14:16.737084+08:00",
+      "first_draft_version": "authority-output:81dc9af9-af48-4e35-9e98-4cfccdba95e2:chapter.draft:v1",
+      "effective_asset_at": "2026-10-18 17:18:00.016075+08:00",
+      "effective_version": "authority-output:a6d3b10a-9c23-4d33-b6bf-dc0dc4f68516:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 19,
+      "first_draft_at": "2026-10-19 02:56:42.332600+08:00",
+      "first_draft_version": "authority-output:3c1abd63-e5bf-4b99-8352-a6ec014379f6:chapter.draft:v1",
+      "effective_asset_at": "2026-10-19 02:59:47.778114+08:00",
+      "effective_version": "authority-output:90250101-c3db-423f-9305-b74ce4ad98ef:chapter.best_candidate:v1"
+    },
+    {
+      "chapter": 20,
+      "first_draft_at": "2026-10-19 09:22:27.226345+08:00",
+      "first_draft_version": "authority-output:69f5649c-36b9-4dee-8805-813e11e5cf9e:chapter.draft:v1",
+      "effective_asset_at": "2026-10-19 09:39:43.235725+08:00",
+      "effective_version": "authority-output:76df75db-9b43-4660-998a-59870d3e2266:chapter.best_candidate:v1"
+    }
+  ],
+  "failure_counts": {
+    "PROVIDER_ROUTING_BLOCKED": 2,
+    "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN": 3,
+    "REVIEW_RESOLUTION_CHECKS_REQUIRED": 1,
+    "CHAPTER_LENGTH_REPAIR_INCOMPLETE": 1,
+    "CONTENT_CODEC_INPUT_INVALID": 2,
+    "MANUSCRIPT_CONTEXT_INVALID": 3,
+    "CONTEXT_COMPRESSION_TASK_INVALID": 1,
+    "MODEL_EFFECT_FINAL_RESULT_TRUNCATED": 1,
+    "LONGFORM_PROSE_CITATION_NOT_UNIQUE": 5,
+    "PROGRAMMING_BUG": 2,
+    "MODEL_EFFECT_FINAL_PROVIDER_FAILURE": 1,
+    "PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED": 1,
+    "EFFECT_RETRYABLE_FAILURE_RECORDED": 1,
+    "PLANNING_ROUTING_LINEAGE_INVALID": 1,
+    "TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED": 1,
+    "TASK_CONTEXT_COMPRESSION_NO_PROGRESS": 1
+  },
+  "note": "Dispatch time includes Provider and its receipt completion; union avoids overlap. Non-dispatch time is not automatically idle or test time. Actual final selection time may follow effective asset save time.",
+  "pause_reverified": {
+    "at": "2026-10-19 15:49:26.300291+08:00",
+    "book": {
+      "current_chapter": 20,
+      "accepted_through_chapter": 0,
+      "state": "PAUSED",
+      "version": 146,
+      "updated_at": "2026-10-19 15:36:45.846318+08:00"
+    },
+    "active_effect_counts": {},
+    "active_effect_total": 0,
+    "retained_checkpoint_operation": "1a2a38b9-ab7a-454d-aa55-770bd6dc8fcd",
+    "retained_checkpoint_status": {
+      "operation": "EXECUTING",
+      "attempt": "CHECKPOINTED",
+      "attempt_finished_at": null
+    },
+    "interpretation": "Paused checkpoint is retained; it is not permission to resume. In-flight receipt was preserved; next dispatch was refused before sending."
+  },
+  "group_21_amplification": {
+    "attempt_count": 251,
+    "stage_counts": {
+      "context_compress": 72,
+      "context_fidelity": 177,
+      "chapter_group_plan.generate": 2
+    },
+    "from": "2026-10-19 09:50:04.275232+08:00",
+    "to": "2026-10-19 15:37:51.774165+08:00",
+    "wall_hours": 5.796527481388889,
+    "chapter_21_draft_exists": false
+  },
+  "profiling": [
+    {
+      "stage": "chapter_group_plan.generate",
+      "wall_seconds_with_profiling": 1.2562428330420516,
+      "rendered_bytes": 468591,
+      "prompt_sha256": "064010748188a1c9c791caabe17ea600271090c6c9b28eb982d4cca9bd430000",
+      "provider_called": false,
+      "production_mutated": false
+    },
+    {
+      "stage": "context_compress",
+      "wall_seconds_with_profiling": 0.31337616697419435,
+      "rendered_bytes": 63942,
+      "prompt_sha256": "ccbdf697a23cf2bd3a27834bba422b75cdb5423f4cd50efcce81bef125091873",
+      "provider_called": false,
+      "production_mutated": false
+    },
+    {
+      "stage": "context_fidelity",
+      "wall_seconds_with_profiling": 0.3170490000047721,
+      "rendered_bytes": 65142,
+      "prompt_sha256": "e33d40895c39bd9f8d956c04616c5ec8f4ba147ecb10cb655e2d2ae63766a5c9",
+      "provider_called": false,
+      "production_mutated": false
+    }
+  ],
+  "measurement_limits": [
+    "Dispatch rows include pre-send failures; counts do not imply all attempts reached a real Provider.",
+    "Dispatch durations include receipt completion, are not isolated network latency, and category sums overlap. Union avoids overlaps.",
+    "Outside-dispatch time includes local preparation, validation, persistence, recovery and operator/code-deployment gaps; it is not all idle time or testing.",
+    "Ledger actual_tokens=0 on UNKNOWN does not prove zero usage. Original aggregate actual-token fields are deliberately omitted here; UNKNOWN usage remains unknown.",
+    "Pure render profiles do not attribute all inter-dispatch gaps. Full repeated-fit-probe, persistence, process and host-contention profiling remains NOT_RUN.",
+    "First effective asset timestamp is asset creation, not necessarily final working selection time.",
+    "Observed byte/token ratio is sample evidence only, not a safe bound for another request."
+  ],
+  "confirmed_findings": [
+    {
+      "cause": "Growing whole-history working prose",
+      "evidence": "production working_prose.py project_working_sources allocates the sum of all source paragraphs under the active capacity policy; actual Group 21 main inputs retained all 20 prior chapters."
+    },
+    {
+      "cause": "Conservative byte upper bound combined with large complete request",
+      "evidence": "token_meter.py fallback counts UTF-8 bytes. One native main request was 429331 visible bytes and 145693 actual Provider input tokens; reported membership context was 475000. Current repair render is 468591 bytes; its actual Provider input token count is unmeasured."
+    },
+    {
+      "cause": "Serial compression/fidelity amplification and correction-dependent re-preparation",
+      "evidence": "Group 21 has 249 preparation attempts for two main planning attempts and no chapter 21 prose. Source-bound correction changes task identity; reuse cannot ignore it."
+    },
+    {
+      "cause": "UNKNOWN and implementation/recovery interruptions",
+      "evidence": "Recent window has nine UNKNOWN effects. Stream/disconnect waits and contract/routing failures are preserved; this run was repeatedly repaired and resumed rather than a stable production benchmark."
+    }
+  ],
+  "next_work_before_resuming": [
+    "Use existing native source-bound working memory/retrieval for older prose, preserving exact source and omission/knowledge boundaries; do not blindly concatenate every full predecessor.",
+    "Bind complete-request capacity measurement to the actual Provider interface and a verified tokenizer/capacity contract; do not raise limits or use an observed ratio as a universal bound.",
+    "Reduce serial preparation fan-out and repeated fit probes; reuse only preparation proofs with matching frozen inputs, route, schema and task context.",
+    "Measure repeated-fit probes, UoW/persistence, process and recovery segments separately; then benchmark stable native continuity by effective chapters per wall hour before a 100-chapter run."
+  ],
+  "custody": {
+    "asset-timestamps.json": "15990b1c0a95f6fbae656908933c48f623e26e8ac1958d5e4d1d6c7713164218",
+    "attempt-failures.json": "7c79e2f05dd7c54f2db0027ef810f2cc5789ad24a8c0dc4ce683daa60eeeb774",
+    "effects-and-dispatches.json": "2e173ae04d1b6192c1cd4d182c5fe1669d551e20fa65347776a2ca584fe883b2",
+    "preparation-chain-timing.json": "334b7a58e0f8a93cc6f64319396641130e374290f337283ca5002d513eae61ef",
+    "readonly-render-profile.json": "35f862ff15a29123b911ad965b1c9ba7382cd910b04b9a44a06875cf0b115a18",
+    "summary.json": "3a7559b67e17119fce3d0fd8ce86b6c287bd87b2b606aa1a01688815b4712c62"
+  }
+}

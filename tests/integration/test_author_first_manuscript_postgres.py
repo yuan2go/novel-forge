@@ -411,10 +411,57 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     manifest = current_manuscript(DATABASE_URL, book=book, principal=principal)
     assert len(manifest["units"]) == 8 and book["current_chapter"] == 8 and book["accepted_through_chapter"] == 0
     assert [unit["asset_version_id"] for unit in manifest["units"][:6]] == prefix_versions
+    if default_template:
+        authority = PostgresBookAuthority(DATABASE_URL, chapter_port=None, followup_application=None,
+            application_build_id=harness.application_build_id, commit_sha=harness.release_sha)
+        from novel_forge.modules.command_kernel.errors import KernelError
+        from novel_forge.modules.book_authority.working_policy import select_working_policy, selected_working_policy
+        from novel_forge.modules.book_authority.manuscript import freeze_working_context
+        selected = json.loads((Path(__file__).resolve().parents[2] / 'config/execution_templates/creation_inputs.json').read_text())['profiles']['production_profile']['content']['working_prose_policy']
+        authority.pause(book['book_run_id'], reason='Keep production paused while selecting future inputs', principal=principal)
+        paused = authority.require(book['book_run_id'])
+        chosen = select_working_policy(authority, book['book_run_id'], policy=selected,
+            expected_version=paused['version'], reason='Use located historical retrieval', idempotency_key=project+':choose-retrieval', principal=principal)
+        assert chosen['state'] == 'PAUSED'
+        assert authority.require(book['book_run_id'])['production_profile_version'] == book['production_profile_version']
+        assert select_working_policy(authority, book['book_run_id'], policy=selected,
+            expected_version=paused['version'], reason='Use located historical retrieval', idempotency_key=project+':choose-retrieval', principal=principal)['replayed']
+        with pytest.raises(KernelError, match='WORKING_PROSE_POLICY_IDEMPOTENCY_CONFLICT'):
+            select_working_policy(authority, book['book_run_id'], policy={**selected, 'queries': ['other']},
+                expected_version=paused['version'], reason='Use located historical retrieval', idempotency_key=project+':choose-retrieval', principal=principal)
+        from dataclasses import replace
+        with pytest.raises(KernelError, match='WORKING_PROSE_POLICY_IDEMPOTENCY_CONFLICT'):
+            select_working_policy(authority, book['book_run_id'], policy=selected,
+                expected_version=paused['version'], reason='Use located historical retrieval', idempotency_key=project+':choose-retrieval',
+                principal=replace(principal, principal_id='another-author'))
+        with pytest.raises(KernelError, match='AUTHOR_WORKFLOW_CHECKPOINT_REQUIRED'):
+            select_working_policy(authority, book['book_run_id'], policy=selected,
+                expected_version=paused['version'], reason='Stale checkpoint', idempotency_key=project+':choose-stale', principal=principal)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            current = authority.require(book['book_run_id'])
+            assert selected_working_policy(uow, current, None) == selected
+            assert selected_working_policy(uow, current, None, target_chapter=1) is None
+            frozen = freeze_working_context(uow, current, current['current_chapter']+1)
+            assert frozen['projection_policy'] == selected
+            assert frozen['accepted_through_chapter'] == 0
+            assert current['state'] == 'PAUSED'
+        second_policy = {**selected, 'queries': ['bridge']}
+        replacement = select_working_policy(authority, book['book_run_id'], policy=second_policy,
+            expected_version=current['version'], reason='Retrieve a specific earlier obligation', idempotency_key=project+':choose-retrieval-2', principal=principal)
+        assert replacement['policy_asset_version_id'] != chosen['policy_asset_version_id']
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            current = authority.require(book['book_run_id'])
+            assert selected_working_policy(uow, current, None) == second_policy
+            uow.cursor.execute('SELECT lifecycle,content FROM authority_asset_version WHERE asset_version_id=%s', [chosen['policy_asset_version_id']])
+            old_policy = uow.cursor.fetchone()
+            assert old_policy[0] == 'SUPERSEDED' and old_policy[1]['working_prose_policy'] == selected
+        authority.resume(book['book_run_id'], reason='Explicit fixture author resume after policy pause check', principal=principal)
+        book = authority.require(book['book_run_id'])
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT context_snapshot FROM authority_book_manuscript_delivery WHERE book_run_id=%s AND chapter_number=6", [book["book_run_id"]])
         sixth_context = uow.cursor.fetchone()[0]
-        sixth_has_direct_first_dependency = any(row["chapter"] == 1 for row in sixth_context["sources"])
+        from novel_forge.modules.book_authority.working_prose import working_source_rows
+        sixth_has_direct_first_dependency = any(row["chapter"] == 1 for row in working_source_rows(sixth_context))
         uow.cursor.execute("SELECT context_snapshot FROM authority_book_manuscript_delivery WHERE book_run_id=%s AND chapter_number=7", [book["book_run_id"]])
         frozen_working = uow.cursor.fetchone()[0]
         sources = frozen_working["sources"]

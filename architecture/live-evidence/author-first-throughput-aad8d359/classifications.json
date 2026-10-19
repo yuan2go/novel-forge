@@ -1,0 +1,52 @@
+{
+  "source_sha": "aad8d3597daa66e0daf1a5f488691de9ffb03ee4",
+  "issues": [
+    {
+      "issue": "Every eligible old paragraph was selected even with empty queries",
+      "classification": "CURRENT_RUNTIME_FACT_AND_POLICY_DEFECT",
+      "first_failure": "Book working projection before Planning/Memo/Writer capacity preparation",
+      "fix": "New frozen v8: complete recent sources, explicit relevant old paragraphs and original evidence for source-bound observations/causal closure",
+      "boundary": "Frozen v2-v7 retain their original interpretation; all predecessor identities and omission evidence retained"
+    },
+    {
+      "issue": "Repeated binary probes and immutable source-catalog hashing",
+      "classification": "IMPLEMENTATION_PERFORMANCE_DEFECT",
+      "first_failure": "Context capacity chunk assembly",
+      "fix": "Try full admissible chunk first, cache by complete payload hash, compute immutable source audit catalog hash once",
+      "boundary": "Changed route-binding metadata forces remeasurement; physical capacity and final integrity checks remain"
+    },
+    {
+      "issue": "110 repeated review-source lookups in one freeze/verify pair",
+      "classification": "IMPLEMENTATION_PERFORMANCE_DEFECT",
+      "first_failure": "Book prose propagation guard",
+      "fix": "Batch review lookup per invocation with original lineage and per-alias ordering",
+      "boundary": "Fresh invocation rereads current review rows; serious contradiction rejection is preserved; no shared UoW cache"
+    },
+    {
+      "issue": "Prospective policy switch lacked historical-frontier traversal / rejected Book version zero",
+      "classification": "REVIEW_FOUND_IMPLEMENTATION_DEFECT_FIXED_BEFORE_DELIVERY",
+      "first_failure": "Read previous selected policy for an earlier chapter",
+      "fix": "Exact prior policy asset/hash chain, descending Book versions, version zero admitted",
+      "boundary": "Wrong actor, stale Book, wrong hash/scope, active/unresolved execution and mismatched idempotency remain refused"
+    },
+    {
+      "issue": "Production early memory is missing/not requested/unavailable",
+      "classification": "UNRESOLVED_COVERAGE_GAP",
+      "fix": "Coverage remains explicit; exact original versions remain readable and query-selectable",
+      "boundary": "No fabricated memory, automatic Canon promotion, long-form completeness or literary claim"
+    },
+    {
+      "issue": "Application UTF-8 byte upper bound overestimates observed tokens",
+      "classification": "CURRENT_RUNTIME_FACT_NOT_A_LICENSE_TO_RAISE_CAPACITY",
+      "fix": "Retain existing frozen accounting and confirmed475000 capacity; reduce selected expression before preparation",
+      "boundary": "Physical tokenizer equivalence NOT_ESTABLISHED; observed ratios do not authorize a larger route"
+    }
+  ],
+  "review": {
+    "spec": "P1 historical policy chain and P2 version zero fixed; targeted rereview closed both with no additional findings",
+    "standards": "No findings; read-only review"
+  },
+  "new_skip_or_xfail": false,
+  "valid_assertions_removed": false,
+  "real_prose_generated_by_tests": false
+}

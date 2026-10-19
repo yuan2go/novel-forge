@@ -1,0 +1,117 @@
+{
+  "tested_source_sha": "aad8d3597daa66e0daf1a5f488691de9ffb03ee4",
+  "mode": "PROSPECTIVE_READONLY_RENDER_NOT_DISPATCH_OR_HISTORICAL_REPLAY",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "historical_repair_source_preserved": true,
+  "production_mutated": false,
+  "provider_called": false,
+  "before_bytes": 468591,
+  "after_bytes": 177080,
+  "complete_request_before_reserved": 495279,
+  "complete_request_after_reserved": 203768,
+  "unchanged_capacity_limit": 475000,
+  "preparation_model_calls_for_prospective_request": 0,
+  "frozen_accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+  "protocol_schema_bytes": 26415,
+  "before_sha256": "064010748188a1c9c791caabe17ea600271090c6c9b28eb982d4cca9bd430000",
+  "after_sha256": "dd3c52f3274692a6dfff790e1d67de6d98b00f65276e4125ac3e693db07312d1",
+  "visible_chapters": [
+    19,
+    20
+  ],
+  "predecessor_sources": 20,
+  "snapshot_hash": "sha256:3d0370c2e061bd12fd534c69f1aa2bbfecf050d6abe1c065afb4dff115df949c",
+  "source_history_hash": "sha256:e82aa966e4c324101eb72dea26dd2005af923176de2a2cba47d59eb59952d43c",
+  "memory_entries": 0,
+  "memory_coverage_statuses": [
+    "MISSING",
+    "NOT_REQUESTED",
+    "UNAVAILABLE"
+  ],
+  "missing_memory_is_not_complete_history": true,
+  "freeze_and_verify_seconds": 2.2905204169801436,
+  "changed_working_snapshot_paths": [
+    [
+      "inputs",
+      "arc_working_set",
+      "working_manuscript"
+    ],
+    [
+      "inputs",
+      "planning_command",
+      "arc_working_set",
+      "working_manuscript"
+    ],
+    [
+      "materialization",
+      "context_selection",
+      0,
+      "content",
+      "arc_working_set",
+      "working_manuscript"
+    ]
+  ],
+  "query_count": 922,
+  "query_seconds": 1.5422260179184377,
+  "slow_query_shapes": [
+    {
+      "count": 280,
+      "seconds": 0.5216603404842317,
+      "sql_shape": "SELECT asset.project_id, COALESCE(locator.logical_ref, 'asset-version:' || version.asset_version_id), COALESCE(locator.category, asset.asset_type), asset.asset_id, asset.asset_type",
+      "prose_review_lookup": false
+    },
+    {
+      "count": 2,
+      "seconds": 0.4376367919612676,
+      "sql_shape": "SELECT v.asset_version_id,v.content FROM authority_operation_output_asset output JOIN authority_operation operation USING(operation_id) JOIN authority_asset_version v USING(asset_v",
+      "prose_review_lookup": true
+    },
+    {
+      "count": 36,
+      "seconds": 0.17214933392824605,
+      "sql_shape": "SELECT to_jsonb(root), child.definition_name FROM authority_operation_output_asset output JOIN authority_operation child USING(operation_id) JOIN authority_operation root ON root.o",
+      "prose_review_lookup": false
+    },
+    {
+      "count": 36,
+      "seconds": 0.12009370588930324,
+      "sql_shape": "SELECT root.workspace_id, root.command_payload, book.book_id FROM authority_operation_output_asset output JOIN authority_operation op ON op.operation_id=output.operation_id JOIN au",
+      "prose_review_lookup": false
+    },
+    {
+      "count": 2,
+      "seconds": 0.08518525003455579,
+      "sql_shape": "SELECT DISTINCT ON (r.chapter_number) r.chapter_number, output.asset_version_id, COALESCE(d.context_snapshot,r.command_payload #> '{preparation_report,working_manuscript}','{\"sourc",
+      "prose_review_lookup": false
+    },
+    {
+      "count": 296,
+      "seconds": 0.07339471630984917,
+      "sql_shape": "SELECT locator.project_id, locator.logical_ref, locator.category, asset.asset_id, asset.asset_type, version.asset_version_id, version.version_number, version.lifecycle, version.eli",
+      "prose_review_lookup": false
+    },
+    {
+      "count": 1,
+      "seconds": 0.03484000003663823,
+      "sql_shape": "SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s",
+      "prose_review_lookup": false
+    },
+    {
+      "count": 78,
+      "seconds": 0.028447959455661476,
+      "sql_shape": "SELECT outcome.content->>'accepted_draft_asset_version_id' FROM authority_book_acceptance_lineage(%s) acceptance JOIN authority_asset_version outcome ON outcome.asset_version_id=ac",
+      "prose_review_lookup": false
+    }
+  ],
+  "projection_policy": {
+    "version": "working-prose-projection.v8",
+    "history_chapters": 128,
+    "recent_complete_chapters": 2,
+    "max_characters": null,
+    "queries": [],
+    "guidance_mode": "COMBINED"
+  },
+  "physical_tokenizer_equivalence": "NOT_ESTABLISHED",
+  "existing_operation_input_rewritten": false,
+  "historical_source": "393415967a4ad42abaef11d62a93f0468d5fe4c2"
+}

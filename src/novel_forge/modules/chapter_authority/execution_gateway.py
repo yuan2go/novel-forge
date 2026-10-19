@@ -1417,6 +1417,7 @@ class PostgresChapterExecutionContractBinder:
         legacy_contract: bool = False,
         prompt_contract_version: str = "v3",
     ) -> tuple[dict[str, Any], str]:
+        from novel_forge.modules.book_authority.working_prose import MEMORY_POLICY_VERSIONS
         inputs = request_payload.get("input") or {}
         from novel_forge.modules.review.diagnostics import structural_repair_scope, prose_repair_diagnoses
         structural_revision = stage == "revision" and (bool(inputs.get("chapter_length_repair_scope")) or structural_repair_scope(
@@ -1522,7 +1523,7 @@ class PostgresChapterExecutionContractBinder:
             schema = scoped_realization_schema(schema, inputs["realization_contract"])
             schema_ref = "schema:chapter-provider-output:draft:v4"
         working = inputs.get("working_manuscript") or (inputs.get("frozen_intent") or {}).get("working_manuscript") or (inputs.get("execution_intent") or {}).get("working_manuscript") or {}
-        if stage == "draft" and (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"}:
+        if stage == "draft" and (working.get("projection_policy") or {}).get("version") in MEMORY_POLICY_VERSIONS:
             schema["properties"]["working_memory_json"] = {"type": "string", "maxLength": 100000}
             schema_ref += ":working-memory-v1"
         if stage == "revision" and not targeted_revision and (inputs.get("draft", {}).get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v3":
@@ -4694,6 +4695,7 @@ def _materialize_production_codex_prompt(
     prose_review_transport_version: str = "prose-review-exact-transport.v1",
     provider_data_capture: dict[str, Any] | None = None,
 ) -> tuple[str, dict[str, Any]]:
+    from novel_forge.modules.book_authority.working_prose import POLICY_VERSIONS
     if request is not None:
         resolved_target_scope = request.target_scope.to_dict()
     elif target_scope is not None:
@@ -4944,7 +4946,7 @@ def _materialize_production_codex_prompt(
         from .provider_views import compile_exact_context_references
         structured_transport = review_transport or (template.get("ref"), template.get("version")) == ("prompt-template:story-planning-pack", "v3") or (
             stage in {"draft", "revision"} and template.get("ref") == "prompt-template:chapter-generation-pack"
-            and template.get("version") in {"v13", "v15"} and (protected_exact_accounting or (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"}))
+            and template.get("version") in {"v13", "v15"} and (protected_exact_accounting or (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in POLICY_VERSIONS))
         short_literals = (context_content.get("planning_method_scope_projection_version") == "book-method-scope-projection.v1"
             or context_content.get("planning_group_method_scope_projection_version") == "group-method-scope-projection.v1"
             or context_content.get("planning_chapter_method_scope_projection_version") == "chapter-method-scope-projection.v1"
