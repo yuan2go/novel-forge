@@ -49,12 +49,14 @@ def working_review_window(request, draft, context, prior=None):
         "window_policy": {"version": WORKING_WINDOW_POLICY,
             "maximum_previous_chapters": max(1, request.command["chapter"] - 1), "source_token_budget": budget}}
     snapshot["snapshot_hash"] = digest(snapshot)
+    working = context.content.get("working_manuscript") or {}
+    task_selection = working if working.get("projection_policy", {}).get("version") == "working-prose-projection.v10" else None
     return freeze_review_window(snapshot, candidate_id=draft.asset_version_id, text=draft.content["text"],
         context_token_budget=budget, protected_context={"current_context_asset_version_id": context.asset_version_id,
             "current_context_content_hash": context.content_hash, "authority": "FROZEN_REQUIREMENTS_AND_SELECTED_PROSE"},
         required_context=build_provider_context_view("review", context.content,
             {"creative_baseline": draft.content.get("creative_baseline"), "cross_chapter_window": {"source_isolation": "SELECTED_PROSE_NO_CANON_AUTHORITY"}},
-            writer_projection_version="accepted-writer-history.v2"))
+            writer_projection_version="accepted-writer-history.v2"), task_selection=task_selection)
 
 
 def working_revision_definition(*, application_build_id: str, commit_sha: str, regeneration: bool = False) -> dict[str, Any]:

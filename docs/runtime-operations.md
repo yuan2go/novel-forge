@@ -560,6 +560,13 @@ For current v5, include `test_working_manuscript_revision.py`,
 selected replacement and transitive dependency invalidation, neutral guidance, located
 working Review phase support and unchanged frozen v1-v4 replay. Fixtures establish input
 contracts only; separately capture the actual sent Provider input and saved prose.
+For v10 working revision, inspect the frozen `cross-chapter-working-review-window.v2`
+task hash, exact visible ranges, exclusions and complete predecessor. Its initial Review
+selection comes from the frozen task Context; ReReview must retain that Review's window.
+New `prose-review-exact-transport.v2` requests may deduplicate the displayed output schema
+only when the local reference protocol saves bytes. Validate complete reconstruction and
+the unchanged Provider protocol schema separately. An old v1 window or transport remains
+replayable, and a failed capacity check is never a successful or sent Provider request.
 An offline located-case PASS, a scripted PostgreSQL execution
 or model evaluation cannot establish literary improvement or independent human validation.
 For World working continuity, run `test_world_working_continuity.py`,

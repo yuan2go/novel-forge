@@ -15,6 +15,7 @@ WINDOW_CONTRACT = "cross-chapter-review-window.v2"
 WINDOW_POLICY = "accepted-prose-neighbours.v1"
 WORKING_WINDOW_POLICY = "selected-working-prose-neighbours.v1"
 WORKING_WINDOW_CONTRACT = "cross-chapter-working-review-window.v1"
+TASK_WORKING_WINDOW_CONTRACT = "cross-chapter-working-review-window.v2"
 COVERAGE_POLICY = "whole-paragraph-ending.v1"
 CROSS_CHAPTER_CATEGORIES = frozenset(
     {
@@ -142,6 +143,7 @@ def freeze_review_window(
     context_token_budget: int,
     protected_context: dict[str, Any],
     required_context: dict[str, Any] | None = None,
+    task_selection: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     validate_source_snapshot(snapshot)
     if not candidate_id or not text:
@@ -162,17 +164,22 @@ def freeze_review_window(
         )
     )
     remaining = min(policy["source_token_budget"], context_token_budget - required_cost - safety_margin)
-    if remaining < 0:
+    if remaining < 0 and task_selection is None:
         raise KernelError(
             "CROSS_CHAPTER_REVIEW_CONTEXT_INSUFFICIENT",
             "required target and preservation exceed Context budget",
         )
     sources = []
+    task_ranges = _task_review_ranges(snapshot, task_selection) if task_selection is not None else None
     for source in reversed(snapshot["sources"]):
         prose = source["text"]
         ranges = [(0, len(prose))]
         coverage, reason = "FULL", "FULL_PROSE_FITS"
-        if meter.estimate(prose) > remaining:
+        if task_ranges is not None:
+            ranges = task_ranges.get(source["asset_version_id"], [])
+            coverage = "FULL" if ranges == [(0, len(prose))] else "EXCERPT" if ranges else "NOT_INCLUDED"
+            reason = "FROZEN_TASK_EVIDENCE" if ranges else "OUTSIDE_FROZEN_TASK_SELECTION"
+        elif meter.estimate(prose) > remaining:
             paragraphs = list(re.finditer(r"[^\n]+(?:\n+|$)", prose))
             start = paragraphs[max(0, len(paragraphs) - 2)].start() if paragraphs else 0
             ranges = [(start, len(prose))]
@@ -189,11 +196,16 @@ def freeze_review_window(
             for start, end in ranges
         ]
         remaining -= sum(meter.estimate(item["text"]) for item in excerpts)
-        exclusions = (
-            []
-            if coverage == "FULL"
-            else [{"start": 0, "end": ranges[0][0] if ranges else len(prose)}]
-        )
+        if task_ranges is not None:
+            exclusions, cursor = [], 0
+            for start, end in ranges:
+                if cursor < start:
+                    exclusions.append({"start": cursor, "end": start})
+                cursor = end
+            if cursor < len(prose):
+                exclusions.append({"start": cursor, "end": len(prose)})
+        else:
+            exclusions = [] if coverage == "FULL" else [{"start": 0, "end": ranges[0][0] if ranges else len(prose)}]
         sources.append(
             {
                 **{key: value for key, value in source.items() if key != "text"},
@@ -206,7 +218,7 @@ def freeze_review_window(
         )
     window = {
         **{key: deepcopy(value) for key, value in snapshot.items() if key != "sources"},
-        "contract_version": WORKING_WINDOW_CONTRACT if snapshot["contract_version"] == "selected-working-prose-snapshot.v1" else WINDOW_CONTRACT,
+        "contract_version": TASK_WORKING_WINDOW_CONTRACT if task_ranges is not None else WORKING_WINDOW_CONTRACT if snapshot["contract_version"] == "selected-working-prose-snapshot.v1" else WINDOW_CONTRACT,
         "sources": list(reversed(sources)),
         "target_candidate_asset_version_id": candidate_id,
         "target_candidate_text_hash": prose_hash(text),
@@ -226,12 +238,49 @@ def freeze_review_window(
         "provider_admission": "EXISTING_COMPLETE_REQUEST_TOKEN_ACCOUNTING_REQUIRED",
         "preservation_requirements": deepcopy(protected_context),
     }
+    if task_ranges is not None:
+        window.update(coverage_policy="frozen-task-exact-ranges.v1", selection_accounting="FROZEN_TASK_SELECTION",
+            task_selection={"snapshot_hash": task_selection["snapshot_hash"],
+                "task_hash": task_selection["retrieval_task"]["task_hash"],
+                "policy_version": task_selection["projection_policy"]["version"]})
     window["source_window_hash"] = digest(window)
     return window
 
 
+def _task_review_ranges(snapshot, selection):
+    from novel_forge.modules.book_authority.working_prose import validate_working_projection
+    if snapshot["contract_version"] != "selected-working-prose-snapshot.v1":
+        raise KernelError("CROSS_CHAPTER_REVIEW_SOURCE_INVALID", "Task selection requires selected working prose")
+    validate_working_projection(selection, project_id=snapshot["project_id"], book_id=snapshot["book_id"],
+        target_chapter=snapshot["target_chapter_number"], accepted_through_chapter=snapshot["accepted_through_chapter"])
+    if selection["projection_policy"]["version"] != "working-prose-projection.v10":
+        raise KernelError("CROSS_CHAPTER_REVIEW_SOURCE_INVALID", "Task review selection requires its versioned v10 policy")
+    originals = {row["asset_version_id"]: row for row in snapshot["sources"]}
+    result = {}
+    for row in selection["sources"]:
+        source = originals.get(row["asset_version_id"])
+        if (source is None or source["content_hash"] != row["content_hash"] or source["text_hash"] != row["text_hash"]
+                or source["chapter_number"] != row["chapter"]):
+            raise KernelError("CROSS_CHAPTER_REVIEW_SOURCE_INVALID", "Task selection must match the frozen selected prose version")
+        ranges = []
+        for part in row["passages"]:
+            start, end = part["start"], part["end"]
+            if (type(start) is not int or type(end) is not int or not 0 <= start < end <= len(source["text"])
+                    or source["text"][start:end] != part["text"]):
+                raise KernelError("CROSS_CHAPTER_REVIEW_SOURCE_INVALID", "Task ranges must retain exact original Unicode text")
+            if ranges and start <= ranges[-1][1]:
+                ranges[-1] = (ranges[-1][0], max(end, ranges[-1][1]))
+            else:
+                ranges.append((start, end))
+        result[source["asset_version_id"]] = ranges
+    predecessor = next((row for row in snapshot["sources"] if row["chapter_number"] == snapshot["target_chapter_number"] - 1), None)
+    if predecessor and result.get(predecessor["asset_version_id"]) != [(0, len(predecessor["text"]))]:
+        raise KernelError("CROSS_CHAPTER_REVIEW_SOURCE_INVALID", "Task review must preserve the complete frozen predecessor")
+    return result
+
+
 def validate_window(window: dict[str, Any]) -> None:
-    if window.get("contract_version") not in {WINDOW_CONTRACT, "cross-chapter-review-window.v1", WORKING_WINDOW_CONTRACT} or window.get(
+    if window.get("contract_version") not in {WINDOW_CONTRACT, "cross-chapter-review-window.v1", WORKING_WINDOW_CONTRACT, TASK_WORKING_WINDOW_CONTRACT} or window.get(
         "source_window_hash"
     ) != digest({k: v for k, v in window.items() if k != "source_window_hash"}):
         raise KernelError(

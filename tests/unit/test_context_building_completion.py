@@ -1,4 +1,6 @@
 from pathlib import Path
+from copy import deepcopy
+import json
 
 import pytest
 
@@ -8,6 +10,87 @@ from novel_forge.modules.capability_packs.memory_profiles import build_working_m
 from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.narrative_state.working_memory import OBSERVATIONS_V2, compile_working_memory, normalize_observations, validate_observations
 from tests.unit.test_working_memory import note, source
+
+
+def test_task_review_reuses_exact_ranges_and_truthfully_retains_excluded_history(monkeypatch):
+    from novel_forge.modules.review.prose_window import digest, freeze_review_window, validate_support
+    from novel_forge.modules.review.diagnostics import prose_hash
+    from novel_forge.modules.book_authority import working_prose
+    scope = dict(project_id="p", workspace_id="w", book_id="b", book_run_id="r")
+    texts = ["A prior promise. Unrelated banquet.", "Unrelated older journey.", "The complete predecessor."]
+    sources = [{**scope, "chapter_number": i, "asset_version_id": f"s:{i}", "content_hash": f"hash:{i}",
+        "text_hash": prose_hash(text), "text": text, "source_status": "SELECTED_WORKING_PROSE"}
+        for i, text in enumerate(texts, 1)]
+    snapshot = {**scope, "contract_version": "selected-working-prose-snapshot.v1", "working_through_chapter": 3,
+        "target_chapter_number": 4, "accepted_through_chapter": 0, "sources": sources,
+        "source_isolation": "SELECTED_PROSE_NO_CANON_AUTHORITY",
+        "window_policy": {"version": "selected-working-prose-neighbours.v1", "maximum_previous_chapters": 3, "source_token_budget": 20000}}
+    snapshot["snapshot_hash"] = digest(snapshot)
+    selection = {"snapshot_hash": "sha256:task", "projection_policy": {"version": "working-prose-projection.v10"},
+        "retrieval_task": {"task_hash": "sha256:demand"}, "sources": [
+            {**{k: s[k] for k in ("asset_version_id", "content_hash", "text_hash")}, "chapter": s["chapter_number"],
+                "passages": [{"start": 0, "end": len(text), "text": text}]}
+            for s, text in [(sources[0], "A prior promise."), (sources[2], texts[2])]]}
+    validated = []
+    monkeypatch.setattr(working_prose, "validate_working_projection", lambda value, **kw: validated.append((deepcopy(value), kw)))
+    def build(value):
+        return freeze_review_window(snapshot, candidate_id="candidate", text="Current exact body", context_token_budget=20000,
+            protected_context={}, task_selection=value)
+    window = build(selection)
+    assert validated and window["contract_version"] == "cross-chapter-working-review-window.v2"
+    assert [s["coverage"] for s in window["sources"]] == ["EXCERPT", "NOT_INCLUDED", "FULL"]
+    assert window["sources"][0]["excluded_ranges"] == [{"start": 16, "end": len(texts[0])}]
+    assert window["task_selection"]["task_hash"] == "sha256:demand"
+    with pytest.raises(KernelError, match="outside reviewed coverage"):
+        validate_support([{"asset_version_id": "s:1", "start": 17, "end": len(texts[0]), "relation_to_issue": "Unseen banquet"}], window)
+    changed = deepcopy(selection)
+    changed["sources"][0]["content_hash"] = "another-version"
+    with pytest.raises(KernelError, match="frozen selected prose version"):
+        build(changed)
+    changed = deepcopy(selection)
+    changed["sources"][-1]["passages"] = [{"start": 0, "end": 3, "text": texts[2][:3]}]
+    with pytest.raises(KernelError, match="complete frozen predecessor"):
+        build(changed)
+    old = freeze_review_window(snapshot, candidate_id="candidate", text="Current exact body", context_token_budget=20000, protected_context={})
+    assert old["contract_version"] == "cross-chapter-working-review-window.v1"
+    assert all(s["coverage"] == "FULL" for s in old["sources"])
+
+
+def test_v10_review_deduplicates_schema_display_without_changing_protocol_or_legacy_replay(monkeypatch):
+    from novel_forge.modules.chapter_authority import execution_gateway as gateway
+    from novel_forge.modules.chapter_authority.provider_views import expand_exact_context_references
+    context = {"working_manuscript": {"projection_policy": {"version": "working-prose-projection.v10"}}}
+    monkeypatch.setattr(gateway, "build_provider_task_view", lambda *_a, **_kw: {"contract_version": "fixture:task", "task": "Read the complete prose"})
+    monkeypatch.setattr(gateway, "build_provider_context_view", lambda *_a, **_kw: {"contract_version": "fixture:context"})
+    citation = {"type": "object", "properties": {"source_version": {"type": "string"}, "quote": {"type": "string"},
+        "relation_to_issue": {"type": "string"}, "offset_unit": {"type": "string", "enum": ["UNICODE_CODE_POINT"]}},
+        "required": ["source_version", "quote", "relation_to_issue", "offset_unit"], "additionalProperties": False}
+    schema = {"type": "object", "properties": {f"finding_{i}": deepcopy(citation) for i in range(20)}}
+    materialization = {"materialization_hash": "sha256:fixture", "pack_artifacts": {
+        key: {"ref": key, "version": "v1", "content": {"text": text}}
+        for key, text in {"system_instruction": "Keep source isolation", "skill": "Read prose", "prompt_template": "{{provider_data_envelope}}"}.items()},
+        "context_selection": [{"content": context}], "knowledge_selection": [{"ref": "knowledge:fixture", "content": {"rule": "exact sources"}}],
+        "tool_permissions": {"allowed": ["model.provider.invoke"]}, "output_schema": {"ref": "schema:fixture", "content": schema}}
+    materialization["pack_artifacts"]["prompt_template"].update(ref="prompt-template:chapter-generation-pack", version="v13")
+    original = deepcopy(materialization)
+    def render(version=None):
+        return gateway._materialize_production_codex_prompt(stage="rereview", inputs={},
+            target_scope={"scope_kind": "book", "scope_id": "b", "project_id": "p", "book_id": "b"},
+            materialization=materialization, prose_review_transport_version=version)
+    legacy, old_proof = render("prose-review-exact-transport.v1")
+    current, proof = render()
+    assert proof["prose_review_transport_version"] == "prose-review-exact-transport.v2"
+    assert proof["output_schema_exact_references"]["decoded_equal"]
+    assert len(current.encode()) + 1000 < len(legacy.encode())
+    displayed = json.loads(current.split("<output_schema>\n", 1)[1].split("\n</output_schema>", 1)[0])
+    assert expand_exact_context_references(displayed) == schema
+    assert materialization == original
+    assert render(old_proof["prose_review_transport_version"]) == (legacy, old_proof)
+    assert render(proof["prose_review_transport_version"]) == (current, proof)
+    materialization["output_schema"]["content"] = {"type": "object", "properties": {"finding": {"type": "string"}}}
+    small, small_proof = render()
+    assert "output_schema_exact_references" not in small_proof
+    assert "separate local exact-reference envelope" not in small
 
 
 def transition(text, **changes):

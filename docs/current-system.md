@@ -166,13 +166,22 @@ for a completed-only generation revalidation, and it never masks a new in-flight
 Planning and prose transport keep contiguous selected passages as one exact text plus
 Unicode boundaries; the host reconstructs their original locations and hashes. This
 reduces repeated protocol metadata within real model capacity without omitting prose.
-New Review/ReReview requests freeze `prose-review-exact-transport.v1` and use the same
-lossless structured envelope. ReReview may encode its revised body as exact edits to
+New v10 Review/ReReview requests freeze `prose-review-exact-transport.v2`, extending
+the existing lossless envelope with short literal reuse, canonical JSON decoding
+and a separately scoped exact-reference display of the output schema. The full
+Provider protocol schema and host validation are unchanged. Older v1 and unversioned requests retain their frozen
+encoding. ReReview may encode its revised body as exact edits to
 the complete original string, retaining ordered Unicode ranges and every intervening
 character. Host reconstruction must equal both complete Provider inputs; it does not
 prove semantic preservation or diagnosis resolution. Complete frozen source windows
 remain unchanged. Historical requests without this version keep their original
 representation, including ordinary data containing a later protocol's reserved key.
+For a new v10 working Review, `cross-chapter-working-review-window.v2` reuses the
+exact selected ranges and source versions of its frozen task Context. It retains
+coverage and exclusions for every prior source and the complete predecessor, rather
+than independently loading every historical chapter into a new full-prose window.
+Review findings can cite only visible ranges. ReReview retains its initial Review's
+window, including historical v1 windows; a new memory head never rewrites it.
 At a working-selection checkpoint, registered first-isolation custody can identify its
 exact acknowledged, never-sent preparation intent after the Book advances. Recognition
 reuses the owning cancellation/continuation and pause validators, binds the same BookRun,
