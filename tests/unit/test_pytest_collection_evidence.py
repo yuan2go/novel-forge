@@ -18,7 +18,8 @@ class PytestCollectionEvidenceTests(unittest.TestCase):
             root = Path(temporary)
             (root / "test_interrupted.py").write_text(
                 "import os\n"
-                "def test_a_failure():\n    assert False, 'preserved failure'\n"
+                "def test_a_failure():\n"
+                "    assert {'api_key': 'opaque-private-value', 'fencing_token': 7} == {}, 'preserved failure'\n"
                 "def test_z_exit():\n    os._exit(7)\n", encoding="utf-8"
             )
             report_path = root / "collection.json"
@@ -37,6 +38,8 @@ class PytestCollectionEvidenceTests(unittest.TestCase):
             self.assertEqual(failures[0]["node_id"], "test_interrupted.py::test_a_failure")
             self.assertEqual(failures[0]["phase"], "call")
             self.assertIn("preserved failure", failures[0]["failure"])
+            self.assertNotIn("opaque-private-value", failures[0]["failure"])
+            self.assertIn("fencing_token", failures[0]["failure"])
 
     def test_public_pytest_plugin_writes_atomic_machine_collection_report(self) -> None:
         with TemporaryDirectory() as temporary:

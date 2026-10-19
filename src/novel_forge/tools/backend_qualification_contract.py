@@ -96,6 +96,10 @@ CREDENTIAL_URL_PATTERN = re.compile(
 ENV_SECRET_PATTERN = re.compile(
     r"(?i)\b[A-Z0-9_]*(?:PASSWORD|SECRET|API_KEY|ACCESS_KEY|PRIVATE_KEY|AUTH_TOKEN)=[^\s]+"
 )
+QUOTED_EVIDENCE_VALUE_PATTERN = re.compile(
+    r'''(?P<key_quote>["'])(?P<key>[A-Za-z0-9_.-]+)(?P=key_quote)\s*:\s*'''
+    r'''(?P<value>"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')'''
+)
 SENSITIVE_EVIDENCE_KEYS = frozenset(
     {
         "access_key",
@@ -651,9 +655,20 @@ def _sensitive_evidence_key(key: str) -> bool:
 
 
 def _sanitize_evidence_text(value: str) -> str:
+    from novel_forge.modules.production_execution.security import redact_secret_text
+
+    def quoted_value(match):
+        key = match.group("key")
+        if not _sensitive_evidence_key(key) and key.lower() not in {"authorization", "proxy_authorization"}:
+            return match.group(0)
+        prefix = match.group(0)[:match.start("value") - match.start()]
+        return prefix + '"[REDACTED]"'
+
+    value = QUOTED_EVIDENCE_VALUE_PATTERN.sub(quoted_value, value)
     sanitized = DATABASE_URL_PATTERN.sub("[REDACTED_DATABASE_URL]", value)
     sanitized = CREDENTIAL_URL_PATTERN.sub("[REDACTED_CREDENTIAL_URL]", sanitized)
-    return ENV_SECRET_PATTERN.sub("[REDACTED_SECRET_ASSIGNMENT]", sanitized)
+    sanitized = ENV_SECRET_PATTERN.sub("[REDACTED_SECRET_ASSIGNMENT]", sanitized)
+    return redact_secret_text(sanitized)
 
 
 def sanitize_evidence(value: object) -> object:
