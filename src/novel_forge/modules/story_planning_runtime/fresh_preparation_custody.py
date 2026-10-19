@@ -334,11 +334,50 @@ def target_runtime(application, source, target):
             context_asset_version_id=proof['context_asset_version_id'], context_content_hash=proof['context_content_hash']))}
 
 
+def _first_route_authorization(source, target):
+    from novel_forge.modules.production_execution.codex_configuration import codex_local_binding_hash
+    proof = source['fresh_preparation']
+    route, account = proof['original_route'], target.get('account') or {}
+    ancestry = proof.get('stopped_ancestry', [])
+    reference = route.get('auth_profile_ref')
+    if (source.get('mode') != 'FIRST_ISOLATED_PREPARATION_CUSTODY'
+            or proof.get('contract_version') != CONTRACT or proof.get('source_operation_id') != source['source_operation_id']
+            or proof.get('custody_source_operation_id') != source['source_operation_id']
+            or proof.get('main_dispatch_count') != 0 or proof.get('isolated_generation_count') != 1
+            or proof.get('source_submission_rights') != 'REVOKED_OR_TERMINALLY_RELEASED'
+            or len(ancestry) != 1 or ancestry[0].get('kind') != 'ISOLATED'
+            or ancestry[0].get('operation_id') != source['source_operation_id']
+            or not proof.get('retained_preparation') or not isinstance(reference, str) or not reference
+            or target.get('model_provider') != 'codex-cli' or target.get('cost_accounting_basis') != 'ACCOUNT_ENTITLEMENT'
+            or not all(isinstance(account.get(key), str) and account[key] for key in ('codex_home', 'executable'))
+            or not isinstance(account.get('entitlement'), dict) or not account['entitlement']
+            or target.get('auth_profile_ref') != reference):
+        raise KernelError('PLANNING_RUNTIME_CONTINUATION_ACCOUNT_DRIFT',
+            'First recovery requires its exact isolated owner, settled native preparation and authenticated membership route')
+    target_runtime(None, source, target)
+    try:
+        binding = codex_local_binding_hash(codex_home=account['codex_home'], executable=account['executable'],
+            entitlement=account['entitlement'], retry_policy=str(account.get('retry_policy') or ''),
+            input_only_policy=str(account.get('input_only_policy') or ''))
+    except (TypeError, ValueError) as error:
+        raise KernelError('PLANNING_RUNTIME_CONTINUATION_ACCOUNT_DRIFT',
+            'Original membership recovery requires a supported frozen local configuration') from error
+    if not reference.endswith(':codex:' + binding):
+        raise KernelError('PLANNING_RUNTIME_CONTINUATION_ACCOUNT_DRIFT',
+            'Current account, executable and configuration must reconstruct the original verified preparation authentication')
+    return dict(reasoning_evidence_source='ORIGINAL_FROZEN_MAIN_ROUTE',
+        authorized_reasoning_effort=route['reasoning_effort'], account_evidence_source='VERIFIED_PREPARATION_AND_MAIN_ROUTE',
+        source_auth_profile_ref=reference, source_operation_id=source['source_operation_id'],
+        source_pack_snapshot_hash=proof['original_pack_snapshot_hash'], account_runtime_hash=canonical_hash(account))
+
+
 def authorization(uow, *, source, successor, principal, target):
     from .runtime_continuation import _capacity_authorization, require_route_evidence
     capacity = _capacity_authorization(uow, source=source, successor=successor, principal=principal, target=target)
-    route = require_route_evidence(uow, source=source, target=target,
+    route = (require_route_evidence(uow, source=source, target=target,
         authorized_reasoning_effort=source['fresh_preparation']['original_route']['reasoning_effort'])
+        if source['command'].get('runtime_continuation_id') or source['provider'] == 'scripted_provider_v2'
+        else _first_route_authorization(source, target))
     return {**capacity, 'capacity_only': False, 'recovery_kind': 'FIRST_ISOLATED_PREPARATION_CUSTODY',
         'route_authorization': route, 'preserved_repair_number': successor.repair_number,
         'retained_preparation_count': len(source['fresh_preparation']['retained_preparation']),

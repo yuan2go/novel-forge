@@ -1208,3 +1208,85 @@ def test_first_custody_uses_the_frozen_main_stage_route_instead_of_compressor_re
     assert target_runtime(None, source, target)['preparation_handoff']['original_capacity_bindings']['chapter_plan.generate']['route']['reasoning'] == 'high'
     with pytest.raises(KernelError, match='PLANNING_PREPARATION_REUSE_DRIFT'):
         target_runtime(None, source, {**target, 'reasoning_effort': 'medium'})
+
+
+@pytest.fixture
+def first_native_route(first_isolation):
+    from novel_forge.modules.production_execution.codex_configuration import codex_local_binding_hash
+    account = dict(codex_home='/original/account', executable='/original/codex',
+        entitlement=dict(authorization_ref='original-native-authority'), retry_policy='', input_only_policy='')
+    reference = 'original:codex:' + codex_local_binding_hash(**account)
+    first_isolation.read.return_value['provider_evidence']['production_execution']['route_snapshot']['auth_profile_ref'] = reference
+    source = first_isolation.consume()
+    target = dict(pack_snapshot=deepcopy(source['snapshot']), model_provider='codex-cli', model_id='model',
+        model_backend_id='backend', reasoning_effort='medium', auth_profile_ref=reference,
+        cost_accounting_basis='ACCOUNT_ENTITLEMENT', account=account)
+    return source, target
+
+
+def test_first_custody_authorizes_the_original_native_receipt_without_legacy_book_policy(first_native_route, monkeypatch):
+    from novel_forge.modules.story_planning_runtime import fresh_preparation_custody as fresh
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as continuation
+    source, target = first_native_route
+    capacity = MagicMock(return_value={'authorization_ref': 'original-native-authority'})
+    monkeypatch.setattr(continuation, '_capacity_authorization', capacity)
+    uow = MagicMock()
+    uow.cursor.fetchone.return_value = None
+    result = fresh.authorization(uow, source=source, successor=SimpleNamespace(repair_number=0),
+        principal=SimpleNamespace(principal_id='author'), target=target)
+    assert result['route_authorization']['account_evidence_source'] == 'VERIFIED_PREPARATION_AND_MAIN_ROUTE'
+    assert result['route_authorization']['source_auth_profile_ref'] == target['auth_profile_ref']
+    assert result['retained_preparation_count'] == 1
+    assert result['preserved_repair_number'] == 0
+    capacity.assert_called_once()
+    uow.cursor.execute.assert_not_called()
+
+
+@pytest.mark.parametrize('damage', ['auth_profile_ref', 'codex_home', 'executable', 'entitlement', 'retry_policy',
+    'input_only_policy', 'empty_account', 'cost_accounting_basis', 'model_id', 'model_provider', 'model_backend_id',
+    'reasoning_effort', 'pack', 'missing_original_auth', 'main_send', 'unisolated', 'live_rights', 'foreign_owner', 'empty_receipts'])
+def test_first_native_route_rejects_changed_identity_custody_and_capacity(first_native_route, damage):
+    from novel_forge.modules.story_planning_runtime.fresh_preparation_custody import _first_route_authorization
+    source, target = first_native_route
+    proof = source['fresh_preparation']
+    if damage in {'auth_profile_ref', 'cost_accounting_basis', 'model_id', 'model_provider', 'model_backend_id', 'reasoning_effort'}:
+        target[damage] = 'different'
+    elif damage in {'codex_home', 'executable', 'retry_policy', 'input_only_policy'}:
+        target['account'][damage] = 'different'
+    elif damage == 'entitlement':
+        target['account']['entitlement']['authorization_ref'] = 'different'
+    elif damage == 'empty_account':
+        target['account'] = {}
+    elif damage == 'pack':
+        target['pack_snapshot']['context_policy_hash'] = 'different'
+    elif damage == 'missing_original_auth':
+        proof['original_route'].pop('auth_profile_ref')
+    elif damage == 'main_send':
+        proof['main_dispatch_count'] = 1
+    elif damage == 'unisolated':
+        proof['stopped_ancestry'][0]['kind'] = 'ACTIVE'
+    elif damage == 'live_rights':
+        proof['source_submission_rights'] = 'ACTIVE'
+    elif damage == 'foreign_owner':
+        proof['source_operation_id'] = 'other'
+    else:
+        proof['retained_preparation'] = []
+    with pytest.raises(KernelError, match='PLANNING_(RUNTIME_CONTINUATION_ACCOUNT|PREPARATION_REUSE)_DRIFT'):
+        _first_route_authorization(source, target)
+
+
+def test_first_custody_existing_successor_keeps_registered_account_validation(first_native_route, monkeypatch):
+    from novel_forge.modules.story_planning_runtime import fresh_preparation_custody as fresh
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as continuation
+    source, target = first_native_route
+    source['command']['runtime_continuation_id'] = 'registered-parent'
+    capacity = MagicMock(return_value={'authorization_ref': 'original-native-authority'})
+    route = MagicMock(return_value={'account_evidence_source': 'PRIOR_REGISTERED_RUNTIME'})
+    monkeypatch.setattr(continuation, '_capacity_authorization', capacity)
+    monkeypatch.setattr(continuation, 'require_route_evidence', route)
+    result = fresh.authorization(MagicMock(), source=source, successor=SimpleNamespace(repair_number=3),
+        principal=SimpleNamespace(principal_id='author'), target=target)
+    assert result['route_authorization']['account_evidence_source'] == 'PRIOR_REGISTERED_RUNTIME'
+    assert result['preserved_repair_number'] == 3
+    route.assert_called_once()
+    capacity.assert_called_once()

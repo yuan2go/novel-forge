@@ -863,8 +863,10 @@ keeps its original nonqualifying protocol. The feedback projection revalidates t
 receipt, target, model log and labels, and separates generator/profile protocols before
 reviewer admission. A reference result still cannot create a domain qualification or
 activate its candidate. Scripted labels cannot supply real calibration evidence.
-This does not prove judge calibration or bootstrap every task family. Ordinary production
-routing blocks when sufficient quality evidence is absent.
+This does not prove judge calibration or bootstrap every task family. Strict qualified
+routing retains its quality-evidence gate. Author-supervised and author-first requests
+retain their separately frozen policies and `NOT_PROVEN` literary ceiling; missing judge
+calibration does not become a prerequisite for ordinary saved Draft delivery.
 
 The normal Book supervisor supplies `world_preparation_request` for ChapterPlan generation,
 and `PlanningWorldPreparation.prepare` executes `world_candidates.generate` followed by
@@ -1537,7 +1539,11 @@ cancelled, or stopped at a verified zero-send query/lineage failure. A generic c
 with another Context retains its own receipts. An exact never-sent pause intent may
 release its reserved budget through Kernel in the registration UoW; UNKNOWN usage
 and original failures remain untouched. Native model/account authorization is checked
-before registration and again in its transaction. Repair numbers remain unchanged;
+before registration and again in its transaction. A first-source Codex membership
+recovery binds its verified settled preparation authentication and frozen main-stage
+capacity route. The current executable, account, entitlement and configuration must
+reconstruct that original authentication hash, with unchanged Pack semantics and physical
+capacity. Existing registered descendants and scripted sources retain their route checks. Repair numbers remain unchanged;
 isolation counts are observations. Migrations 0232/0233 append these controls without
 reinterpreting v1/v7/v11 history. The runtime-continuation owner validates acknowledged
 v5/v11/v12 routing ancestry against the exact author, cancellation ACK, stopped
