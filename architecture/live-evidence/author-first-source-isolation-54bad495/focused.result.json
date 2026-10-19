@@ -1,0 +1,99 @@
+{
+  "source_sha": "54bad495e6d1a7d7650f3ee41a691a2d76b0b815",
+  "cwd": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/source-isolation-convergence-source",
+  "started_at": "2026-10-19T07:09:29.302930+00:00",
+  "commands": {
+    "unit": [
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+      "-m",
+      "pytest",
+      "tests/unit/test_coordinated_migration_identity.py",
+      "tests/unit/test_craft_migration_convergence.py",
+      "tests/unit/test_longform_prose_editorial.py",
+      "tests/unit/test_planning_routing_bootstrap.py",
+      "tests/unit/test_postgres_migrations.py",
+      "tests/unit/test_prose_reviewer_sampling.py",
+      "-q",
+      "--tb=short",
+      "--junitxml=/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/source-isolation-final-54bad495-unit.xml"
+    ],
+    "postgres": [
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+      "-m",
+      "pytest",
+      "tests/integration/test_narrative_qualification_report_postgres.py",
+      "tests/integration/test_source_observation_isolation_postgres.py",
+      "tests/integration/test_planning_routing_bootstrap_postgres.py::test_bootstrap_candidate_is_frozen_reviewable_and_permanently_ineligible",
+      "tests/integration/test_prose_reviewer_sampling_postgres.py",
+      "tests/integration/test_longform_prose_editorial_postgres.py::test_unknown_review_rebuild_queries_original_effect_without_resending",
+      "tests/integration/test_semantic_preparation_continuation_postgres.py",
+      "tests/integration/test_synthesis_formation_postgres.py::test_native_formation_generates_foundation_from_author_brief[legacy-runtime-recovery]",
+      "tests/integration/test_capability_pack_registration_compilation_postgres.py",
+      "tests/integration/test_capability_pack_rollout_postgres.py",
+      "tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261019_0234_settled_preparation_capacity]",
+      "tests/integration/test_creative_validation_integration_upgrade_postgres.py::test_every_forward_head_retains_dead_letter_known_result_and_exact_causation[20261019_0235_source_isolation_convergence]",
+      "tests/integration/test_synthesis_formation_postgres.py::test_native_formation_generates_foundation_from_author_brief[current-production]",
+      "-q",
+      "--tb=short",
+      "--junitxml=/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/source-isolation-final-54bad495-postgres.xml"
+    ],
+    "docs": [
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+      "-m",
+      "novel_forge.tools.documentation_reality",
+      "--repo-root",
+      "."
+    ],
+    "ruff": [
+      "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/ruff",
+      "check",
+      "src/novel_forge/modules/book_followup_authority/prose_recovery.py",
+      "src/novel_forge/storage/migrations/versions/__init__.py",
+      "src/novel_forge/storage/migrations/versions/v20261019_0235_source_isolation_convergence.py",
+      "tests/integration/capability_pack_postgres_support.py",
+      "tests/integration/test_creative_validation_integration_upgrade_postgres.py",
+      "tests/integration/test_longform_prose_editorial_postgres.py",
+      "tests/integration/test_narrative_qualification_report_postgres.py",
+      "tests/integration/test_planning_routing_bootstrap_postgres.py",
+      "tests/integration/test_prose_reviewer_sampling_postgres.py",
+      "tests/integration/test_semantic_preparation_continuation_postgres.py",
+      "tests/integration/test_synthesis_formation_postgres.py",
+      "tests/unit/test_craft_migration_convergence.py",
+      "tests/unit/test_longform_prose_editorial.py"
+    ]
+  },
+  "production_database_used": false,
+  "scripted_and_historical_evidence_only": true,
+  "steps": [
+    {
+      "step": "unit",
+      "returncode": 0,
+      "junit": {
+        "tests": 152,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "step": "postgres",
+      "returncode": 0,
+      "junit": {
+        "tests": 61,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "step": "docs",
+      "returncode": 0
+    },
+    {
+      "step": "ruff",
+      "returncode": 0
+    }
+  ],
+  "status": "PASS",
+  "finished_at": "2026-10-19T07:17:12.388329+00:00"
+}

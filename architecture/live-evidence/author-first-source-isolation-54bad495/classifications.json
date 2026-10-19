@@ -1,0 +1,53 @@
+{
+  "source_sha": "54bad495e6d1a7d7650f3ee41a691a2d76b0b815",
+  "changes": [
+    {
+      "issue": "Ordinary optional prose advance incorrectly required external resolution rights",
+      "classification": "IMPLEMENTATION_DEFECT",
+      "first_failure": "recover_prose_review before any unresolved result",
+      "fix": "Require recovery rights only for exact unresolved effects or unsettled verified receipts",
+      "verified": "normal sample advances and ten UNKNOWN recovery cases, including missing permission, retain actor/source/cancel/concurrent/late-result protections"
+    },
+    {
+      "issue": "Source owned-method UNKNOWN isolation rejected by SQL",
+      "classification": "IMPLEMENTATION_DEFECT",
+      "first_failure": "GENERATION_ISOLATION_SCOPE_UNSAFE after current guard replaced the published Source branch",
+      "fix": "Append migration235; retain existing224 guard bytes except the three exact published Source alternatives",
+      "verified": "Source positive and negative cases, old guard byte preservation, and 233/234-to235 real backup/restore business-table fingerprints"
+    },
+    {
+      "issue": "Generated test System v12-fixture-3 mixed with exact Template v3",
+      "classification": "STALE_FIXTURE_AND_CORRECT_PRODUCTION_REFUSAL",
+      "fix": "Retain the exact current story-planning System v12/Template v3 pair while other fixture assets remain distinct",
+      "verified": "generic distinct Pack/rollout controls and exact historic continuation"
+    },
+    {
+      "issue": "Legacy Foundation lacks current applicability declarations",
+      "classification": "CORRECT_REJECTION_WITH_STALE_POSITIVE_ASSERTION",
+      "first_failure": "STYLE_PROJECTION_MIGRATION_REQUIRED before Writer",
+      "fix": "Keep historical Planning continuation/replay assertions, prove immutable source identity/content and zero Writer/acceptance on current Chapter rejection",
+      "verified": "legacy compatibility boundary PASS; unchanged current-production three-chapter workspace/acceptance/export assertions PASS",
+      "missing_capability": "v2/v3 applicability migration NOT_IMPLEMENTED"
+    },
+    {
+      "issue": "Upgrade fixture lacks budget.project_id",
+      "classification": "STALE_FIXTURE",
+      "first_failure": "new234 guard parsing temporary budget table",
+      "fix": "Add the existing schema field to the TEMP table; retain every guard assertion",
+      "verified": "head234 and235 cases PASS"
+    },
+    {
+      "issue": "Other reporting/bootstrap/sampling fixtures",
+      "classification": "STALE_FIXTURES",
+      "fix": "Report mixed evidence as unverified, bind exact frozen qualification options, and assert the actual financial-cap refusal rather than an obsolete optional quality gate",
+      "verified": "source-bound reporting, bootstrap ineligibility, sample custody and zero unauthorized dispatch remain covered"
+    }
+  ],
+  "review": {
+    "spec": "NO_FINDINGS_READ_ONLY",
+    "standards": "NO_FINDINGS_READ_ONLY"
+  },
+  "new_skip_or_xfail": false,
+  "collection_reduced": false,
+  "real_prose_generated_by_tests": false
+}

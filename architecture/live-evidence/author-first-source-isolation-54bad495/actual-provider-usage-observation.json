@@ -1,0 +1,29 @@
+{
+  "at": "2026-10-19T07:11:52.713836+00:00",
+  "observation_only": true,
+  "source_sha": "393415967a4ad42abaef11d62a93f0468d5fe4c2",
+  "operation_id": "e86b93b5-911b-4bbc-b96e-d7295409be05",
+  "thread_id": "01a152c5-4e60-7c91-b09d-d2308632a877",
+  "transcript_sha256": "7d4ab779e06e78433f7066c4d617ae31901387bfe6f99c9fe074c696eb819b13",
+  "actual_provider_usage": {
+    "input_tokens": 145693,
+    "cached_input_tokens": 0,
+    "cache_write_input_tokens": 0,
+    "output_tokens": 12589,
+    "reasoning_output_tokens": 290,
+    "total_tokens": 158282
+  },
+  "reported_model_context_window": 475000,
+  "application_complete_input_bytes": 429331,
+  "active_request_and_capacity_unchanged": true,
+  "official_api_model_context": {
+    "model": "gpt-6.1-sol",
+    "context_window": 1050000,
+    "source": "https://developers.openai.com/api/docs/models/gpt-6.1-sol",
+    "membership_capacity_equivalence": "NOT_ESTABLISHED"
+  },
+  "configuration_reference": "https://learn.chatgpt.com/docs/config-file/config-reference",
+  "larger_membership_context_dispatch": "NOT_RUN",
+  "byte_upper_bound_is_not_actual_token_count": true,
+  "ratio_is_not_a_proven_future_capacity_bound": true
+}
