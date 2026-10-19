@@ -160,6 +160,7 @@ def build_arc_working_set(
     working_manuscript: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
 
+    from novel_forge.modules.book_authority.working_prose import MEMORY_POLICY_VERSIONS
     if (
         not project_id.strip()
         or not book_id.strip()
@@ -184,7 +185,7 @@ def build_arc_working_set(
     if working_schedule:
         from novel_forge.modules.book_authority.working_prose import WORKING_SCHEDULE_POLICY, WORKING_SCHEDULE_INSTRUCTION, validate_working_projection
         if (working_manuscript["scheduling_policy"] != WORKING_SCHEDULE_POLICY
-                or working_manuscript.get("projection_policy", {}).get("version") not in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"}):
+                or working_manuscript.get("projection_policy", {}).get("version") not in MEMORY_POLICY_VERSIONS):
             raise KernelError("ARC_WORKING_SCHEDULE_POLICY_INVALID", "Require the frozen working-story schedule contract")
         validate_working_projection(working_manuscript, project_id=project_id, book_id=book_id,
             target_chapter=chapter_number, accepted_through_chapter=accepted_through)

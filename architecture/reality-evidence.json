@@ -7192,6 +7192,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/retained_working.py",
           "symbol": "continue_retained_working"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_policy.py",
+          "symbol": "select_working_policy"
         }
       ],
       "domain_symbols": [
@@ -7214,6 +7218,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/manuscript.py",
           "symbol": "resolve_working_source"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_policy.py",
+          "symbol": "selected_working_policy"
         }
       ],
       "commands_operations": [
@@ -7238,7 +7246,8 @@
           "terminal completion state",
           "immutable manuscript delivery and separate writing cursor",
           "versioned author workflow adoption",
-          "explicit immutable unaccepted retained-original working continuation; original Provider failure remains separate"
+          "explicit immutable unaccepted retained-original working continuation; original Provider failure remains separate",
+          "prospective versioned working-prose policy selection without profile or request rewrite"
         ],
         "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
         "evidence": [
@@ -7257,6 +7266,10 @@
           {
             "path": "src/novel_forge/modules/book_authority/retained_working.py",
             "symbol": "continue_retained_working"
+          },
+          {
+            "path": "src/novel_forge/modules/book_authority/working_policy.py",
+            "symbol": "select_working_policy"
           }
         ]
       },
@@ -7280,6 +7293,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/retained_working.py",
           "symbol": "continue_retained_working"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_policy.py",
+          "symbol": "select_working_policy"
         }
       ],
       "persistence": [
@@ -10619,7 +10636,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:18e4fb7b3787efceaa42d84b33d039a99b455148f29114f7e6bcd8c2c0d10229"
+    "implementation_tree_sha": "sha256:25805127407c476811c283e6ba3aba01ad2e812ca0471280eaa1d72d99743854"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

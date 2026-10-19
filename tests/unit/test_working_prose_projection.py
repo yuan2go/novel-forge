@@ -166,6 +166,93 @@ def test_required_recent_source_cannot_be_truncated_to_fit():
         )
 
 
+def test_creation_default_does_not_send_unrelated_complete_history():
+    import json
+    from pathlib import Path
+
+    selected = json.loads(Path("config/execution_templates/creation_inputs.json").read_text())["profiles"]["production_profile"]["content"]["working_prose_policy"]
+    sources = [{"chapter": number, "text": f"Unrelated history {number}.\n\n" + "旧日闲事。" * 100}
+               for number in range(1, 21)]
+    projected = project_working_sources(sources, target_chapter=21, policy=selected)
+    assert [row["chapter"] for row in projected if row["passages"]] == [19, 20]
+    assert all(row["omitted_ranges"] for row in projected[:-2])
+    assert all(not row["omitted_ranges"] for row in projected[-2:])
+
+
+def test_retrieval_policy_retains_queries_and_causal_quotes_without_full_history():
+    selected = policy(version="working-prose-projection.v8", max_characters=None, history_chapters=2, queries=["bridge"])
+    text = "Unrelated.\n\nA cause.\n\nIts consequence.\n\nAnother unrelated detail."
+    sources = [{"chapter": 1, "text": text}, {"chapter": 3, "text": "The bridge is closed.\n\nNo relation."},
+               {"chapter": 4, "text": "Recent whole chapter."}]
+    low, high = text.index("A cause."), text.index("Another unrelated")
+    memory = {"entries": [{"source": {"chapter": 1}, "location": {"start": low, "end": high}}]}
+    rows = project_working_sources(sources, target_chapter=5, policy=selected, memory=memory)
+    assert "".join(part["text"] for part in rows[0]["passages"]) == text[low:high]
+    assert [part["text"] for part in rows[1]["passages"]] == ["The bridge is closed.\n\n"]
+    assert rows[-1]["omitted_ranges"] == []
+
+
+@pytest.mark.parametrize("target,expected", [(20, "profile"), (21, "first"), (22, "second")])
+def test_future_policy_selection_resolves_its_exact_historical_frontier(monkeypatch, target, expected):
+    from novel_forge.modules.book_authority.working_policy import selected_working_policy
+    book = dict(project_id="p", workspace_id="w", book_id="b", book_run_id="r", production_profile_version="profile", current_chapter=22, version=30)
+    def document(identity, content, *, asset_type="book_working_prose_policy", lifecycle="ACTIVE"):
+        return SimpleNamespace(asset_version_id=identity, content=content, content_hash=canonical_hash(content), asset_type=asset_type,
+            lifecycle=lifecycle, governance="CLEAR", eligibility="ELIGIBLE")
+    profile = document("profile", {"working_prose_policy": policy(version="working-prose-projection.v7", max_characters=None)}, asset_type="production_profile")
+    common = {key: book[key] for key in ("project_id", "workspace_id", "book_id", "book_run_id")}
+    common.update(version="book-working-prose-policy-selection.v1", source_profile_version="profile", source_profile_hash=profile.content_hash)
+    first = document("first", {**common, "source_book_version": 20, "effective_after_chapter": 20, "previous_policy": None,
+        "working_prose_policy": policy(version="working-prose-projection.v8", max_characters=None, queries=["first"])}, lifecycle="SUPERSEDED")
+    second = document("second", {**common, "source_book_version": 25, "effective_after_chapter": 21,
+        "previous_policy": {"asset_version_id": first.asset_version_id, "content_hash": first.content_hash},
+        "working_prose_policy": policy(version="working-prose-projection.v8", max_characters=None, queries=["second"])})
+    documents = {row.asset_version_id: row for row in (profile, first, second)}
+    monkeypatch.setattr(manuscript, "_optional_document", lambda *_: second)
+    uow = SimpleNamespace(repositories=SimpleNamespace(asset_documents=SimpleNamespace(require=lambda **keys: documents[keys["asset_version_id"]])))
+    fallback = profile.content["working_prose_policy"]
+    assert selected_working_policy(uow, book, fallback, target_chapter=target) == documents[expected].content["working_prose_policy"]
+    before = deepcopy(second.content)
+    second.content["previous_policy"]["content_hash"] = "sha256:wrong"
+    second.content_hash = canonical_hash(second.content)
+    if target <= 21:
+        with pytest.raises(KernelError, match="WORKING_PROSE_POLICY_SELECTION_DRIFT"):
+            selected_working_policy(uow, book, fallback, target_chapter=target)
+
+    second.content, second.content_hash = before, canonical_hash(before)
+    first.content["book_run_id"] = "foreign"
+    first.content_hash = canonical_hash(first.content)
+    second.content["previous_policy"]["content_hash"] = first.content_hash
+    second.content_hash = canonical_hash(second.content)
+    if target <= 21:
+        with pytest.raises(KernelError, match="WORKING_PROSE_POLICY_SELECTION_DRIFT"):
+            selected_working_policy(uow, book, fallback, target_chapter=target)
+
+
+def test_initial_zero_version_working_policy_remains_readable_after_a_second_selection(monkeypatch):
+    from novel_forge.modules.book_authority.working_policy import selected_working_policy
+    book = dict(project_id="p", workspace_id="w", book_id="b", book_run_id="r", production_profile_version="profile", current_chapter=0, version=1)
+    profile = SimpleNamespace(asset_version_id="profile", content={}, content_hash=canonical_hash({}), asset_type="production_profile",
+        governance="CLEAR", eligibility="ELIGIBLE")
+    content = {key: book[key] for key in ("project_id", "workspace_id", "book_id", "book_run_id")}
+    content.update(version="book-working-prose-policy-selection.v1", source_profile_version="profile", source_profile_hash=profile.content_hash,
+        source_book_version=0, effective_after_chapter=0, previous_policy=None,
+        working_prose_policy=policy(version="working-prose-projection.v8", max_characters=None))
+    first = SimpleNamespace(asset_version_id="first", content=content, content_hash=canonical_hash(content), asset_type="book_working_prose_policy",
+        lifecycle="ACTIVE", governance="CLEAR", eligibility="ELIGIBLE")
+    documents = {"profile": profile, "first": first}
+    uow = SimpleNamespace(repositories=SimpleNamespace(asset_documents=SimpleNamespace(require=lambda **keys: documents[keys["asset_version_id"]])))
+    head = [first]
+    monkeypatch.setattr(manuscript, "_optional_document", lambda *_: head[0])
+    assert selected_working_policy(uow, book, None, target_chapter=1) == content["working_prose_policy"]
+    next_content = {**content, "source_book_version": 1, "previous_policy": {"asset_version_id": "first", "content_hash": first.content_hash},
+        "working_prose_policy": {**content["working_prose_policy"], "queries": ["new"]}}
+    second = SimpleNamespace(**{**vars(first), "asset_version_id": "second", "content": next_content, "content_hash": canonical_hash(next_content)})
+    head[0], book["version"], first.lifecycle = second, 2, "SUPERSEDED"
+    assert selected_working_policy(uow, book, None, target_chapter=1) == next_content["working_prose_policy"]
+    assert selected_working_policy(uow, book, None, target_chapter=0) is None
+
+
 def test_query_selects_complete_attributed_old_units_and_records_omissions():
     text = "Irrelevant paragraph.\n\nAn old promise remembered.\n\nAnother detail."
     sources = [{"chapter": 1, "text": text}, {"chapter": 2, "text": "Recent."}]
@@ -542,7 +629,7 @@ def test_partial_selection_resolves_contiguous_native_prose_with_provenance(monk
         return original_require(**kwargs)
     uow.repositories.asset_documents.require.side_effect = require
     monkeypatch.setattr(manuscript, "working_dependency_changes", lambda *_: ([], {}))
-    monkeypatch.setattr(manuscript, "require_prose_propagation", lambda *_: None)
+    monkeypatch.setattr(manuscript, "require_prose_propagation_batch", lambda *_: None)
     monkeypatch.setattr("novel_forge.modules.book_authority.manuscript_memory.source_memory", lambda *_: ([], {"status": "NOT_REQUESTED"}))
     book = {"project_id": "p", "workspace_id": "w", "book_id": "b", "book_run_id": "run", "accepted_through_chapter": 0}
     chosen_policy = policy(version=PROGRESSION_POLICY_VERSION, history_chapters=128, recent_complete_chapters=3)

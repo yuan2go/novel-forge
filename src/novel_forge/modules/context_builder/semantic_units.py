@@ -647,6 +647,7 @@ def split_oversized_unit(unit, fits):
 
 def verify_final_selection(candidate, units, keep, *, payload, fits, model_call, external_refs=()):
     all_ids = {unit["unit_id"] for unit in units}
+    catalog_hash = narrative_hash(source_audit(units, all_ids))
     evidence, assessments = [], []
     chosen = close_dependencies(units, keep, external_refs=external_refs)
     while chosen != all_ids:
@@ -655,7 +656,7 @@ def verify_final_selection(candidate, units, keep, *, payload, fits, model_call,
         def check_task(group):
             return {**payload(group), "selected_unit_ids": [unit["unit_id"] for unit in group if unit["unit_id"] in chosen],
                 "composition_check": {"phase": "FINAL_COMPOSED_EXTRACT", "result_content_hash": content_hash,
-                    "catalog_hash": narrative_hash(source_audit(units, all_ids)), "meaning": "Judge this final selection against located original neighbors and attribution. Unselected units remain retrievable; identify required missing meaning by unit ID, without inventing facts."}}
+                    "catalog_hash": catalog_hash, "meaning": "Judge this final selection against located original neighbors and attribution. Unselected units remain retrievable; identify required missing meaning by unit ID, without inventing facts."}}
         windows = final_windows(units, chosen, external_refs=external_refs)
         for group in pack_final_windows(windows, payload=check_task, fits=fits):
             task = check_task(group)
@@ -672,9 +673,9 @@ def verify_final_selection(candidate, units, keep, *, payload, fits, model_call,
         closed = close_dependencies(units, chosen | additions, external_refs=external_refs)
         if closed == chosen:
             return chosen, {"contract_version": SEMANTIC_CONTRACT, "result_content_hash": content_hash,
-                "catalog_hash": narrative_hash(source_audit(units, all_ids)), "selected_unit_ids": [unit["unit_id"] for unit in units if unit["unit_id"] in chosen],
+                "catalog_hash": catalog_hash, "selected_unit_ids": [unit["unit_id"] for unit in units if unit["unit_id"] in chosen],
                 "deterministic_required_fields_and_dependencies": "VERIFIED", "semantic_scope": "TARGETED_SOURCE_NEIGHBOR_WINDOWS_ONLY", "assessments": assessments}, evidence
         chosen = closed
     return chosen, {"contract_version": SEMANTIC_CONTRACT, "result_content_hash": narrative_hash(reconstruct(candidate, units, chosen)),
-        "catalog_hash": narrative_hash(source_audit(units, all_ids)), "deterministic_required_fields_and_dependencies": "VERIFIED",
+        "catalog_hash": catalog_hash, "deterministic_required_fields_and_dependencies": "VERIFIED",
         "semantic_scope": "EXACT_COMPLETE_ORIGINAL_RESTORED", "assessments": assessments}, evidence

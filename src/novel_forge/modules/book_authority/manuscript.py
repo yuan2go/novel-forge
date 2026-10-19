@@ -547,13 +547,15 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
 
 def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
                            projection_policy: Any = "FROM_PROFILE", scheduling_policy: Any = None) -> dict[str, Any]:
-    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, LONGFORM_POLICY_VERSIONS, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, RESOLVED_POLICY_VERSIONS, WORKING_SCHEDULE_POLICY, freeze_source_history, project_working_sources, working_instruction, working_prose_policy
+    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, LONGFORM_POLICY_VERSIONS, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, RESOLVED_POLICY_VERSIONS, RETRIEVAL_POLICY_VERSION, WORKING_SCHEDULE_POLICY, freeze_source_history, project_working_sources, working_instruction, working_prose_policy
 
     schedule_policy = scheduling_policy
     if projection_policy == "FROM_PROFILE":
         profile_id = book.get("production_profile_version")
         profile = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=profile_id) if profile_id else None
         projection_policy = working_prose_policy(profile.content) if profile else None
+        from .working_policy import selected_working_policy
+        projection_policy = selected_working_policy(uow, book, projection_policy, target_chapter=chapter)
         schedule_policy = profile.content.get("working_schedule_policy") if profile else None
     projection_policy = working_prose_policy({"working_prose_policy": projection_policy})
     if schedule_policy is not None and (schedule_policy != WORKING_SCHEDULE_POLICY or not projection_policy
@@ -566,13 +568,16 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     if projection_policy and projection_policy["version"] == PROGRESSION_POLICY_VERSION and chapter - 1 > history:
         raise KernelError("WORKING_PROSE_HISTORY_INCOMPLETE", "Progression requires every predecessor source within its declared history allocation")
     longform = bool(projection_policy and projection_policy["version"] in LONGFORM_POLICY_VERSIONS)
+    resolved = []
     for number in range(1 if longform else max(1, chapter - history), chapter):
         resolution = None
         if projection_policy and projection_policy["version"] in RESOLVED_POLICY_VERSIONS:
             source, resolution = resolve_working_source(uow, book, number)
         else:
             source = selected_source(uow, book, number)
-        require_prose_propagation(uow, book, source)
+        resolved.append((number, source, resolution))
+    require_prose_propagation_batch(uow, book, [source for _, source, _ in resolved])
+    for number, source, resolution in resolved:
         text = source_draft_content(source)["text"]
         rows.append({"chapter": number, "asset_version_id": source.asset_version_id,
             "content_hash": source.content_hash, "text_hash": text_hash(text),
@@ -589,9 +594,11 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     memory_packet = None
     if memory_enabled:
         from novel_forge.modules.narrative_state.working_memory import compile_working_memory, bind_packet_coverage
+        retrieval = projection_policy["version"] == RETRIEVAL_POLICY_VERSION
         memory_packet = compile_working_memory(rows, queries=projection_policy["queries"],
-                                               max_characters=projection_policy["max_characters"] // 3 if projection_policy["max_characters"] is not None else max(1, sum(len(row["text"]) for row in rows)),
-                                               dependency_closed=projection_policy["version"] == "working-prose-projection.v7")
+                                               max_characters=None if retrieval else projection_policy["max_characters"] // 3 if projection_policy["max_characters"] is not None else max(1, sum(len(row["text"]) for row in rows)),
+                                               dependency_closed=projection_policy["version"] in {"working-prose-projection.v7", RETRIEVAL_POLICY_VERSION},
+                                               recent_complete_from=chapter - projection_policy["recent_complete_chapters"] if retrieval else None)
     source_history = None
     if projection_policy:
         rows = project_working_sources(rows, target_chapter=chapter, policy=projection_policy, memory=memory_packet)
@@ -708,24 +715,42 @@ def _require_scope_proposal_review(uow, book, source):
         "Keep the complete expanded-scope candidate readable; exact-source preservation is required before downstream use")
 
 
-def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any) -> None:
+def _prose_reviews(uow, book, source_ids):
+    predicate = "=ANY(%s)" if isinstance(source_ids, list) else "=%s"
+    uow.cursor.execute(f"""SELECT v.asset_version_id,v.content FROM authority_operation_output_asset output
+        JOIN authority_operation operation USING(operation_id)
+        JOIN authority_asset_version v USING(asset_version_id)
+        JOIN authority_asset asset ON asset.asset_id=v.asset_id
+        WHERE operation.project_id=%s AND operation.status='SUCCEEDED'
+          AND asset.asset_type IN ('review_report','re_review_report')
+          AND COALESCE(v.content->>'revision_version_id',v.content->>'target_asset_version_id'){predicate}
+        ORDER BY operation.created_at""", [book["project_id"], source_ids])
+    return uow.cursor.fetchall()
+
+
+def require_prose_propagation_batch(uow, book, sources):
+    if not sources:
+        return
+    lineages = {source.asset_version_id: tuple(_prose_source_lineage(uow, book, source)) for source in sources}
+    aliases = list(dict.fromkeys(identity for lineage in lineages.values() for version in lineage
+        for identity in (version.asset_version_id, source_draft_content(version).get("selected_source_asset_version_id") or version.asset_version_id)))
+    reviews = {identity: [] for identity in aliases}
+    for identity, content in _prose_reviews(uow, book, aliases):
+        reviews[content.get("revision_version_id") or content.get("target_asset_version_id")].append((identity, content))
+    for source in sources:
+        require_prose_propagation(uow, book, source, lineage=lineages[source.asset_version_id], review_index=reviews)
+
+
+def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any, *, lineage=None, review_index=None) -> None:
     from novel_forge.modules.review.diagnostics import major_contradiction_codes, prose_hash
     _require_scope_proposal_review(uow, book, source)
     pending, seen_reviews = {}, {}
-    for version in _prose_source_lineage(uow, book, source):
+    for version in lineage if lineage is not None else _prose_source_lineage(uow, book, source):
         content = source_draft_content(version)
         aliases = list(dict.fromkeys([version.asset_version_id, content.get("selected_source_asset_version_id") or version.asset_version_id]))
         reviews = {}
         for source_id in aliases:
-            uow.cursor.execute("""SELECT v.asset_version_id,v.content FROM authority_operation_output_asset output
-                JOIN authority_operation operation USING(operation_id)
-                JOIN authority_asset_version v USING(asset_version_id)
-                JOIN authority_asset asset ON asset.asset_id=v.asset_id
-                WHERE operation.project_id=%s AND operation.status='SUCCEEDED'
-                  AND asset.asset_type IN ('review_report','re_review_report')
-                  AND COALESCE(v.content->>'revision_version_id',v.content->>'target_asset_version_id')=%s
-                ORDER BY operation.created_at""", [book["project_id"], source_id])
-            reviews.update(uow.cursor.fetchall())
+            reviews.update(_prose_reviews(uow, book, source_id) if review_index is None else review_index[source_id])
         embedded = content.get("selected_review")
         if isinstance(embedded, dict):
             reviews[embedded.get("selection_review_source_asset_version_id")] = embedded
@@ -783,14 +808,16 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
         if not current:
             raise KernelError("MANUSCRIPT_DEPENDENCY_CHANGED", "A selected predecessor changed; retain the result and rebind only affected continuation")
     projected_sources = {row["chapter"]: row for row in snapshot["sources"]} if enhanced else {}
+    source_documents = {item["asset_version_id"]: uow.repositories.asset_documents.require(
+        project_id=book["project_id"], asset_version_id=item["asset_version_id"]) for item in history_sources}
+    if require_current:
+        require_prose_propagation_batch(uow, book, list(source_documents.values()))
     for item in history_sources:
         if require_current and enhanced and snapshot["projection_policy"]["version"] in RESOLVED_POLICY_VERSIONS:
             _, resolution = resolve_working_source(uow, book, item["chapter"])
             if resolution != item["source_resolution"]:
                 raise KernelError("MANUSCRIPT_DEPENDENCY_CHANGED", "Effective source selection lineage changed after freeze")
-        source = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=item["asset_version_id"])
-        if require_current:
-            require_prose_propagation(uow, book, source)
+        source = source_documents[item["asset_version_id"]]
         if source.content_hash != item["content_hash"] or text_hash(source_draft_content(source)["text"]) != item["text_hash"]:
             raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working manuscript source failed its exact version binding")
         if snapshot.get("working_memory"):

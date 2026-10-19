@@ -2740,6 +2740,7 @@ def _build_planning_context_view(
 def project_planning_narrative_intent(
     task: Mapping[str, Any], context: Mapping[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    from novel_forge.modules.book_authority.working_prose import RESOLVED_POLICY_VERSIONS
     original_task, original_context = deepcopy(dict(task)), deepcopy(dict(context))
     projected_task, projected_context = deepcopy(original_task), deepcopy(original_context)
     omissions: list[dict[str, str]] = []
@@ -2753,7 +2754,7 @@ def project_planning_narrative_intent(
     narrative_command: dict[str, Any] = {}
     if isinstance(command, dict):
         working = (projected_task.get("arc_working_set") or {}).get("working_manuscript") or {}
-        if (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"} and command.get("repair_reason"):
+        if (working.get("projection_policy") or {}).get("version") in RESOLVED_POLICY_VERSIONS and command.get("repair_reason"):
             projected_task["planning_correction"] = {
                 "source_pointer": "/planning_command/repair_reason",
                 "instruction": command["repair_reason"],

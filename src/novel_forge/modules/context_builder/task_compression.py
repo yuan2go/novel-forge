@@ -43,10 +43,11 @@ def _exact_original_restoration(candidate, units, chosen):
 
 
 def _history_accounting_payload(payload):
+    from novel_forge.modules.book_authority.working_prose import LONGFORM_POLICY_VERSIONS
     from novel_forge.modules.chapter_authority.provider_views import compile_working_history_transport
 
     summary = payload.get("safe_summary")
-    if isinstance(summary, str) and any(version in summary for version in ("working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7")):
+    if isinstance(summary, str) and any(version in summary for version in LONGFORM_POLICY_VERSIONS):
         try:
             parsed = json.loads(summary)
         except (ValueError, TypeError):
@@ -59,6 +60,7 @@ def _history_accounting_payload(payload):
 
 
 def _candidate_tokens(candidate: ContextCandidate) -> tuple[int, str]:
+    from novel_forge.modules.book_authority.working_prose import POLICY_VERSIONS
     payload = _payload(candidate)
     if candidate.asset_type == "chapter_execution_intent" and (candidate.provenance or {}).get("working_artifact"):
         try:
@@ -67,7 +69,7 @@ def _candidate_tokens(candidate: ContextCandidate) -> tuple[int, str]:
             intent = None
         working = intent.get("working_manuscript") if isinstance(intent, dict) else None
         if (isinstance(working, dict) and isinstance(working.get("projection_policy"), dict)
-            and working["projection_policy"].get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"}):
+            and working["projection_policy"].get("version") in POLICY_VERSIONS):
             from novel_forge.modules.chapter_authority.provider_views import compile_exact_context_references
             encoded, _ = compile_exact_context_references(_history_accounting_payload({**payload, 'safe_summary': intent}), structured_transport=True)
             return max(1, serialized_token_upper_bound(encoded) + 64), "STRUCTURED_WORKING_INTENT"
@@ -389,8 +391,15 @@ def compile_task_context(
                     **({"semantic_contract": semantic_units.SEMANTIC_CONTRACT} if semantic else {}),
                 }
 
+            fit_results = {}
             def fits(group):
-                return len(group) <= FROZEN_COMPRESSION_REQUEST_MAX_UNITS and (chunk_fits(chunk_payload(group, target=min(SYSTEM_CONTEXT_WINDOW_TOKENS, token_budget))) if chunk_fits else token_counter(group) <= compression_input_tokens)
+                if len(group) > FROZEN_COMPRESSION_REQUEST_MAX_UNITS:
+                    return False
+                chunk = chunk_payload(group, target=min(SYSTEM_CONTEXT_WINDOW_TOKENS, token_budget)) if chunk_fits else group
+                key = narrative_hash(chunk)
+                if key not in fit_results:
+                    fit_results[key] = chunk_fits(chunk) if chunk_fits else token_counter(group) <= compression_input_tokens
+                return fit_results[key]
 
             if chunk_fits and not semantic:
                 units = _split_oversized_units(units, fits, preserve_quotes=tuple(task.get("preserve_quotes") or ()))
@@ -400,6 +409,8 @@ def compile_task_context(
             position = 0
             while position < len(visible_units):
                 low, high, stop = position + 1, min(len(visible_units), position + FROZEN_COMPRESSION_REQUEST_MAX_UNITS), position
+                if fits(visible_units[position:high]):
+                    stop, low = high, high + 1
                 while low <= high:
                     middle = (low + high) // 2
                     if fits(visible_units[position:middle]):

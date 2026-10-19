@@ -78,6 +78,28 @@ def test_upstream_edit_invalidates_dependent_memory_and_explicitly_reports_gap()
     assert compile_working_memory([row], queries=[], max_characters=5000)["source_coverage"][0]["status"] == "WORKING_MEMORY_DEPENDENCY_CHANGED"
 
 
+def test_retrieval_memory_keeps_latest_scoped_states_promises_and_causal_closure():
+    first_text = "Mira was waiting.\n\nThe bridge broke.\n\nShe promised to return.\n\nA bird flew away."
+    old = normalize_observations([
+        note(kind="CHARACTER_STATE", state_key="position", quote="Mira was waiting."),
+        note(kind="EVENT", state_key="damage", quote="The bridge broke."),
+        note(quote="She promised to return."),
+        note(kind="EVENT", state_key="bird", quote="A bird flew away."),
+    ], first_text)
+    cause = old["entries"][1]["observation_id"]
+    latest_text = "Mira left the bridge."
+    new = normalize_observations([note(kind="CHARACTER_STATE", state_key="position", quote=latest_text, causes=[cause])], latest_text, available_causes={cause})
+    rows = [source(1, first_text, old), source(20, latest_text, new)]
+    packet = compile_working_memory(rows, queries=[], max_characters=None, dependency_closed=True, recent_complete_from=19)
+    assert {entry["quote"] for entry in packet["entries"]} == {"The bridge broke.", "She promised to return.", latest_text}
+    assert len(packet["omitted_observation_ids"]) == 2
+    projected = project_working_sources(rows, target_chapter=21, policy=policy(version="working-prose-projection.v8", max_characters=None, recent_complete_chapters=2), memory=packet)
+    bound = bind_packet_coverage(packet, projected)
+    assert bound["entries"] == packet["entries"]
+    assert bound["retrieval_omissions"] == []
+    validate_memory_packet(bound, projected)
+
+
 def test_beliefs_and_reader_disclosures_do_not_merge_with_character_knowledge():
     text = "Mira trusted the bridge. Only the reader saw its broken support."
     notes = [note(kind="KNOWLEDGE", state_key="safety", perspective="BELIEF", knowledge_owner="Mira", quote="Mira trusted the bridge."),

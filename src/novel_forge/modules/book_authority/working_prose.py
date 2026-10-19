@@ -12,7 +12,8 @@ PROGRESSION_POLICY_VERSION = "working-prose-projection.v4"
 LONGFORM_POLICY_VERSION = "working-prose-projection.v5"
 CAPACITY_POLICY_VERSION = "working-prose-projection.v6"
 SEMANTIC_POLICY_VERSION = "working-prose-projection.v7"
-CAPACITY_POLICY_VERSIONS = {CAPACITY_POLICY_VERSION, SEMANTIC_POLICY_VERSION}
+RETRIEVAL_POLICY_VERSION = "working-prose-projection.v8"
+CAPACITY_POLICY_VERSIONS = {CAPACITY_POLICY_VERSION, SEMANTIC_POLICY_VERSION, RETRIEVAL_POLICY_VERSION}
 LONGFORM_POLICY_VERSIONS = {LONGFORM_POLICY_VERSION, *CAPACITY_POLICY_VERSIONS}
 MEMORY_POLICY_VERSIONS = {MEMORY_POLICY_VERSION, PROGRESSION_POLICY_VERSION, *LONGFORM_POLICY_VERSIONS}
 RESOLVED_POLICY_VERSIONS = {PROGRESSION_POLICY_VERSION, *LONGFORM_POLICY_VERSIONS}
@@ -224,10 +225,16 @@ def project_working_sources(
                 for row in (memory or {}).get("entries", [])}
     def evidence_priority(unit):
         _, number, start, end, _ = unit
-        return int(any(n == number and start <= low < high <= end for n, low, high in evidence))
+        return int(any(n == number and (start < high and low < end if policy["version"] == RETRIEVAL_POLICY_VERSION
+                                        else start <= low < high <= end) for n, low, high in evidence))
     for score, number, start, end, text in sorted(
         scored, key=lambda row: (-evidence_priority(row), -row[0], -row[1], row[2])
     ):
+        if policy["version"] == RETRIEVAL_POLICY_VERSION:
+            if evidence_priority((score, number, start, end, text)) or (
+                    score > 0 and number >= target_chapter - policy["history_chapters"]):
+                chosen.add((number, start, end))
+            continue
         if len(text) <= remaining and (policy["version"] not in LONGFORM_POLICY_VERSIONS
                 or number in chosen_numbers or len(chosen_numbers) < policy["history_chapters"]):
             chosen.add((number, start, end))
@@ -550,7 +557,7 @@ def validate_working_projection(
         )
     )
     if policy["version"] in LONGFORM_POLICY_VERSIONS:
-        if (numbers != sorted(set(numbers)) or len(numbers) > policy["history_chapters"]
+        if (numbers != sorted(set(numbers)) or policy["version"] != RETRIEVAL_POLICY_VERSION and len(numbers) > policy["history_chapters"]
                 or not set(range(max(1, snapshot["target_chapter"] - policy["recent_complete_chapters"]), snapshot["target_chapter"])).issubset(numbers)):
             raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Bounded long-form prose must retain every mandatory recent source")
         expected = numbers

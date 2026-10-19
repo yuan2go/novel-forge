@@ -17,7 +17,8 @@ def _manuscript_runtime_values(settings, *, project_id, book_run_id):
 
 def add_manuscript_parser(subparsers: Any) -> None:
     parser = subparsers.add_parser("authority-manuscript", help="read, edit, compare, adopt or export the current work")
-    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "revise", "continue-revision", "revision-status", "use-working-candidate", "continue-retained-working", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
+    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "revise", "continue-revision", "revision-status", "use-working-candidate", "continue-retained-working", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "select-working-policy", "extend-delivery-window", "pause", "resume", "continue"))
+    parser.add_argument("--working-policy-file", type=Path)
     parser.add_argument("--project-id", default="")
     parser.add_argument("--book-run-id", required=True)
     parser.add_argument("--chapter", type=int)
@@ -81,7 +82,7 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
             return retire_reference_failed_chapter(composition.authority,book_run_id=args.book_run_id,proposal_id=args.proposal_id,plan_change=composition.plan_change,principal=principal)
         finally:
             execution.close()
-    if args.action in {"use-working-candidate", "continue-retained-working", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"}:
+    if args.action in {"use-working-candidate", "continue-retained-working", "adopt-author-workflow", "select-working-policy", "extend-delivery-window", "pause", "resume", "continue"}:
         from novel_forge.modules.book_authority.production import PostgresBookAuthority
         from novel_forge.modules.book_followup_authority.application import BookFollowupAuthorityApplication
         from novel_forge.modules.book_authority.manuscript import adopt_author_workflow
@@ -91,6 +92,12 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         book = authority.require(args.book_run_id)
         if book["project_id"] != args.project_id:
             raise PermissionError("Work is outside this Project")
+        if args.action == "select-working-policy":
+            from novel_forge.modules.book_authority.working_policy import select_working_policy
+            if not args.working_policy_file:
+                raise ValueError("Require --working-policy-file with the complete versioned working prose policy")
+            return select_working_policy(authority, args.book_run_id, policy=json.loads(args.working_policy_file.read_text()),
+                expected_version=args.expected_version, idempotency_key=args.idempotency_key, reason=args.reason, principal=principal)
         if args.action == "continue-retained-working":
             from novel_forge.modules.book_authority.retained_working import continue_retained_working
             return continue_retained_working(authority, args.book_run_id, candidate_id=args.candidate_version,

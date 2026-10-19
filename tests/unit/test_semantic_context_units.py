@@ -710,6 +710,46 @@ def test_final_batching_preserves_far_dependency_closures_and_rejects_an_oversiz
         semantic.pack_final_windows(windows,payload=payload,fits=lambda task:amount(task)<limit)
 
 
+@pytest.mark.parametrize("bind_route_during_probe", [False, True])
+def test_complete_compressor_group_probes_capacity_once_before_splitting(bind_route_during_probe):
+    boundary = dict(kind="FROZEN_STAGE_INPUTS", project_id="p", book_id="b", sources=[dict(asset_version_id="context", content_hash="frozen")])
+    original = candidate("\n\n".join(f"ordinary scene {index}: " + "x" * 100 for index in range(32)), provenance=dict(frozen_input_boundary=boundary))
+    task = dict(stage="draft", semantic_contract=semantic.SEMANTIC_CONTRACT, frozen_input_boundary=boundary, source_projection_hash="frozen", capacity_bindings={})
+    probes = []
+    def fits(chunk):
+        probes.append(chunk)
+        if bind_route_during_probe:
+            chunk["task"]["capacity_bindings"]["context_compress"] = {"route": "frozen-selected-route"}
+        return True
+    def call(stage, chunk):
+        if stage == "context_compress":
+            return dict(selected_unit_ids=[unit["unit_id"] for unit in chunk["units"]])
+        return dict(supported=True, coverage_complete=False,
+            missing_unit_ids=[unit["unit_id"] for unit in chunk["units"] if unit["unit_id"] not in chunk["selected_unit_ids"]], distorted_unit_ids=[])
+    result, receipt = compile_task_context([original], task=task, token_budget=250, required_asset_types=(),
+        model_call=call, compression_input_tokens=16000, chunk_fits=fits,
+        token_counter=lambda value: len(json.dumps(value).encode()), allow_restored_overflow=True)
+    assert result[0].safe_summary == original.safe_summary
+    assert receipt["compression_trace"][0]["exact_original_restorations"]
+    assert len(probes) == (2 if bind_route_during_probe else 1)
+
+
+def test_final_checker_hashes_immutable_catalog_once_for_all_capacity_probes(monkeypatch):
+    original = candidate("\n\n".join(f"ordinary paragraph {index}." for index in range(90)))
+    units = semantic.source_units(original, {})
+    audit, calls = semantic.source_audit, []
+    def checked(*args, **kwargs):
+        calls.append(1)
+        return audit(*args, **kwargs)
+    monkeypatch.setattr(semantic, "source_audit", checked)
+    selected, proof, _ = semantic.verify_final_selection(original, units, {"text:21", "text:45"},
+        payload=lambda group: dict(units=group), fits=lambda _: True,
+        model_call=lambda *_: dict(supported=True, coverage_complete=True, missing_unit_ids=[], distorted_unit_ids=[]))
+    assert selected == {"text:21", "text:45"}
+    assert proof["catalog_hash"]
+    assert len(calls) == 1
+
+
 def test_small_measured_deficit_does_not_discard_half_the_optional_proposal():
     boundary = dict(kind='FROZEN_STAGE_INPUTS',project_id='p',book_id='b',sources=[dict(asset_version_id='context',content_hash='frozen')])
     original = candidate('\n\n'.join(f'ordinary paragraph {index}: '+'x'*80 for index in range(10)),provenance=dict(frozen_input_boundary=boundary))
