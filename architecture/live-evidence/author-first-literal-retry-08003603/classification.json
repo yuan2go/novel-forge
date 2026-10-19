@@ -1,0 +1,40 @@
+{
+  "schema_version": "native-recovery-and-verification-classification.v1",
+  "source_sha": "080036038958a130fac551143ab9e42ae131e205",
+  "at": "2026-10-19T02:25:15.830940+00:00",
+  "root_causes": [
+    {
+      "first_failure": "Native literal report delivery rejected after successful model dispatch",
+      "classification": "CORRECT_LITERAL_CITATION_REJECTION",
+      "resolution": "Preserve exact quote and identity gates; two raw reports and settled costs remain unchanged",
+      "status": "REAL_PROVIDER_REPORT_STILL_INVALID"
+    },
+    {
+      "first_failure": "Identical retry input could reuse the completed invalid model report",
+      "classification": "KNOWN_INVALID_RESULT_REUSE_OMISSION",
+      "resolution": "Existing second Attempt carries verified original raw report and diagnostic bound to the same source window, actor, original request and settled receipt",
+      "status": "PASS_REAL_CHANGED_DISPATCH_INPUT_NOT_REPORT_QUALITY"
+    }
+  ],
+  "focused_final_source": {
+    "sha": "080036038958a130fac551143ab9e42ae131e205",
+    "unit": 303,
+    "postgresql": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "docs": "PASS",
+    "ruff": "PASS"
+  },
+  "native_recovery_scope": {
+    "same_operation": true,
+    "original_failed_attempt_preserved": true,
+    "typed_model_effect_only": true,
+    "unknown_reconciled_before_handler": true,
+    "replay_does_not_send_again": true,
+    "retry_allowance_increased": false
+  },
+  "human_review": "NOT_RUN",
+  "literary_qualification": "NOT_PROVEN",
+  "overall_production_qualification": "NOT_PROVEN"
+}

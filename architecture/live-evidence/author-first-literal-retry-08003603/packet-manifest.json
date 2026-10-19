@@ -1,0 +1,35 @@
+{
+  "schema_version": "checked-evidence-manifest.v1",
+  "files": [
+    {
+      "path": "classification.json",
+      "sha256": "sha256:c2929536bbff6d6af9d03b93af38220e2830e5e5b21feaffb369cd13e1d83dcb"
+    },
+    {
+      "path": "documentation-reality.json",
+      "sha256": "sha256:089105d122daa7cb333b762529d2a98c312bdd483e7494f8a5777a3a24a084b0"
+    },
+    {
+      "path": "focused-postgres.xml.gz",
+      "sha256": "sha256:f10acb6380be5f994f0938f33c015890dc9c39dd102b2aa347623a81f70106f0"
+    },
+    {
+      "path": "focused-unit.xml.gz",
+      "sha256": "sha256:0d91ffa57534d3a2286cd9d636ed06a0cd7329bd08a984d6a3768299de909356"
+    },
+    {
+      "path": "index.json",
+      "sha256": "sha256:44730342f3a8accde1ac3ad82d14879c3a3e268905294bf2b33c4e0ef1d3d955"
+    },
+    {
+      "path": "native-rejected-report-proof.json",
+      "sha256": "sha256:f1ee1f0899168e3872a5f3026b01ba126bceea8d435ff3cf15c16199b41939f6"
+    },
+    {
+      "path": "optional-pack-revalidation.json",
+      "sha256": "sha256:057f28eed9d628992b723f377788d4c43997e9d0a7feeb6af70396724c833ade"
+    }
+  ],
+  "raw_prose_or_provider_payloads_committed": false,
+  "source_sha": "080036038958a130fac551143ab9e42ae131e205"
+}
