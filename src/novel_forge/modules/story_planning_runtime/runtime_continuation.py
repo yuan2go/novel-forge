@@ -31,6 +31,7 @@ ACKNOWLEDGED_ROUTING_CONTRACTS = {
     '5.0.0': ('planning-completed-preparation-handoff.v1', 'source_operation_id'),
     '11.0.0': ('planning-first-isolated-preparation-handoff.v1', 'custody_source_operation_id'),
     '12.0.0': ('planning-first-isolated-preparation-handoff.v2', 'custody_source_operation_id'),
+    '13.0.0': ('planning-first-isolated-preparation-handoff.v3', 'custody_source_operation_id'),
 }
 
 
@@ -110,7 +111,7 @@ def capacity_upgrade_projection_hash(context):
 def runtime_continuation_definition(
     *, application_build_id: str, commit_sha: str, definition_version: str = "1.0.0"
 ) -> dict[str, Any]:
-    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0", "7.0.0", "8.0.0", "9.0.0", "10.0.0", "11.0.0", "12.0.0"}:
+    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0", "7.0.0", "8.0.0", "9.0.0", "10.0.0", "11.0.0", "12.0.0", "13.0.0"}:
         raise ValueError("Unsupported runtime continuation definition")
     schema = {"type": "object"}
     return {
@@ -147,6 +148,7 @@ def runtime_continuation_definition(
             **({'failed_pre_submit_main_custody_required': True, 'complete_prepared_projection_required': True} if definition_version == '10.0.0' else {}),
             **({'first_isolation_preparation_custody_required': True, 'stopped_exact_ancestry_required': True} if definition_version == '11.0.0' else {}),
             **({'first_isolation_preparation_custody_required': True, 'verified_zero_send_lineage_stop_supported': True} if definition_version == '12.0.0' else {}),
+            **({'first_isolation_preparation_custody_required': True, 'settled_preparation_capacity_failure_supported': True} if definition_version == '13.0.0' else {}),
             **({'unsent_preparation_query_failure_required': True, 'exact_preparation_custody_required': True} if definition_version == '8.0.0' else {}),
             **({"world_contract_successor": "world-agency.v2", "settled_causal_lineage_required": True, "preserve_content_repair_counter": True} if definition_version == "2.0.0" else {}),
         },
@@ -2159,7 +2161,7 @@ def register(
                     decision_evidence.get("authorized_reasoning_effort") or ""
                 ),
             )
-    continuation_version = '12.0.0' if fresh_custody else '10.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-prepared-main-handoff.v1' else '9.0.0' if source.get('completed_preparation', {}).get('contract_version') in {'planning-unsent-preparation-lineage-handoff.v1', 'planning-unsent-preparation-query-handoff.v1'} else '7.0.0' if source.get('isolated_preparation') else '6.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-terminal-preparation-handoff.v1' else '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
+    continuation_version = '13.0.0' if source.get('fresh_preparation', {}).get('contract_version') == 'planning-first-isolated-preparation-handoff.v3' else '12.0.0' if fresh_custody else '10.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-prepared-main-handoff.v1' else '9.0.0' if source.get('completed_preparation', {}).get('contract_version') in {'planning-unsent-preparation-lineage-handoff.v1', 'planning-unsent-preparation-query-handoff.v1'} else '7.0.0' if source.get('isolated_preparation') else '6.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-terminal-preparation-handoff.v1' else '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
     definition = runtime_continuation_definition(
         application_build_id=application.application_build_id,
         commit_sha=application.commit_sha,

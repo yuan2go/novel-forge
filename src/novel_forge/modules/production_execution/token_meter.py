@@ -124,5 +124,5 @@ def capacity_route_binding(route: Any, decision: dict | None = None) -> dict:
 def route_protocol_schema(route, schema, schema_ref):
     if route.model_profile.model_provider != "codex-cli":
         return ""
-    from .codex_configuration import codex_output_schema
-    return json.dumps(codex_output_schema(schema, schema_ref=schema_ref), ensure_ascii=False, sort_keys=True, indent=2) + "\n"
+    from .codex_configuration import codex_protocol_schema_text
+    return codex_protocol_schema_text(schema, schema_ref=schema_ref)

@@ -414,9 +414,12 @@ def test_unsent_carrier_control_reader_requires_exact_successful_native_receipt(
             connection.rollback()
 
 
-@pytest.mark.parametrize('version,bridge,lineage_stop', [('11.0.0', False, False), ('11.0.0', True, False), ('12.0.0', False, False), ('12.0.0', True, False), ('12.0.0', True, True)])
+@pytest.mark.parametrize('version,bridge,lineage_stop', [('11.0.0', False, False), ('11.0.0', True, False), ('12.0.0', False, False), ('12.0.0', True, False), ('12.0.0', True, True), ('13.0.0', True, True)])
 def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_foreign_changes(version, bridge, lineage_stop):
-    if version == '12.0.0':
+    capacity_stop = version == '13.0.0'
+    if capacity_stop:
+        from novel_forge.storage.migrations.versions.v20261019_0234_settled_preparation_capacity import PERMITTED as FIRST_PERMITTED, MEMBER_STOPPED, CAPACITY_STOPPED
+    elif version == '12.0.0':
         from novel_forge.storage.migrations.versions.v20261019_0233_acknowledged_preparation_routing import PERMITTED as FIRST_PERMITTED, MEMBER_STOPPED
     else:
         from novel_forge.storage.migrations.versions.v20261019_0232_first_isolated_preparation_custody import PERMITTED as FIRST_PERMITTED, MEMBER_STOPPED
@@ -428,7 +431,7 @@ def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_
                 'worker_cancel_signal', 'lease_acquisition', 'external_effect', 'budget_reservation',
                 'external_effect_dispatch', 'external_receipt', 'effect_dispatch_lease'):
                 c.execute(f'CREATE TEMP TABLE authority_{table} AS SELECT * FROM public.authority_{table} WITH NO DATA')
-            for statement in (MEMBER_STOPPED, FIRST_PERMITTED):
+            for statement in ((CAPACITY_STOPPED,) if capacity_stop else ()) + (MEMBER_STOPPED, FIRST_PERMITTED):
                 c.execute(statement.replace('CREATE FUNCTION', 'CREATE OR REPLACE FUNCTION', 1))
             def insert(table, **values):
                 c.execute(f'INSERT INTO authority_{table} ({",".join(values)}) VALUES ({",".join(["%s"] * len(values))})',
@@ -468,6 +471,22 @@ def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_
                 insert('story_planning_runtime_continuation', continuation_id='bridge-link', source_operation_id='bridge', successor_operation_id='lineage-stop', project_id='project', book_id='book', chain_depth=2)
                 assert not c.execute("SELECT authority_first_preparation_member_stopped('lineage-stop','author')").fetchone()[0]
                 assert c.execute("SELECT authority_first_preparation_member_v12_stopped('lineage-stop','author')").fetchone()[0]
+                if capacity_stop:
+                    capacity_boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id='project', book_id='book', pack_snapshot_hash='snapshot-hash', sources=[dict(asset_version_id='context', content_hash='context-hash')])
+                    capacity_projection = dict(contract_version='complete-request-capacity.v1', semantic_contract='source-unit-dependency-and-final-composition.v2',
+                        original_hash='projection', result_hash='projection', stage='chapter_plan.generate', source_boundary=capacity_boundary,
+                        compression_receipt=dict(fast_path=True), measurement=dict(before_reserved=480000, after_reserved=480384, limit=475000, actual_provider_tokens=None))
+                    failure = dict(error_code='TASK_CONTEXT_COMPRESSION_NO_PROGRESS', failure_class='retryable',
+                        error_message='TASK_CONTEXT_COMPRESSION_NO_PROGRESS: All remaining source expression is required or already verified; the complete request still exceeds capacity',
+                        failure_details=dict(projection=capacity_projection))
+                    c.execute("UPDATE authority_attempt SET status='FAILED_RETRYABLE',result=%s WHERE attempt_id='lineage-attempt'", [Jsonb(failure)])
+                    insert('external_effect', external_effect_id='capacity-success', operation_id='lineage-stop', project_id='project', effect_type='model.invoke', status='SUCCEEDED', request_hash='capacity-hash',
+                        request_payload=dict(stage='context_fidelity', input=dict(context_compression_task=dict(frozen_input_boundary=capacity_boundary, task=dict(source_projection_hash='projection')))))
+                    insert('budget_reservation', external_effect_id='capacity-success', operation_id='lineage-stop', project_id='project', status='SETTLED')
+                    insert('external_effect_dispatch', dispatch_id='capacity-dispatch', external_effect_id='capacity-success', status='SUCCEEDED')
+                    insert('external_receipt', dispatch_id='capacity-dispatch', status='VERIFIED')
+                    assert not c.execute("SELECT authority_first_preparation_member_v12_stopped('lineage-stop','author')").fetchone()[0]
+                    assert c.execute("SELECT authority_first_preparation_member_v13_stopped('lineage-stop','author')").fetchone()[0]
             snapshot = dict(context_policy_payload_json='{"planning_task_token_budget":512000}')
             boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id='project', book_id='book', pack_snapshot_hash='snapshot-hash', sources=[dict(asset_version_id='context', content_hash='context-hash')])
             proof = dict(contract_version='planning-first-isolated-preparation-handoff.v1' if version == '11.0.0' else 'planning-first-isolated-preparation-handoff.v2', source_operation_id='anchor', source_attempt_id='anchor-attempt',
@@ -477,6 +496,12 @@ def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_
                 context_asset_version_id='context', context_content_hash='context-hash', preparation_source_boundary=boundary, preparation_source_projection_hash='projection',
                 stopped_ancestry=[dict(operation_id='anchor'), *([dict(operation_id='bridge')] if bridge else []), *([dict(operation_id='lineage-stop')] if lineage_stop else [])],
                 retained_preparation=[dict(operation_id='anchor', external_effect_id='success', request_hash='success-hash', stage='context_compress')])
+            if capacity_stop:
+                proof['contract_version'] = 'planning-first-isolated-preparation-handoff.v3'
+                proof['preparation_source_projection_hash'] = 'projection'
+                proof['preparation_source_boundary'] = boundary
+                proof['stopped_ancestry'][-1]['kind'] = 'UNSENT_CAPACITY_FAILURE'
+                proof['retained_preparation'].append(dict(operation_id='lineage-stop', external_effect_id='capacity-success', request_hash='capacity-hash', stage='context_fidelity'))
             target = dict(model_provider='codex-cli', model_id='model', model_backend_id='backend', reasoning_effort='medium', auth_profile_ref='auth', preparation_handoff=proof, planning_capacity=dict(allocated_task_tokens=512000, prior_task_tokens=512000,
                 context_revalidation=dict(contract_version='same-capacity-isolated-preparation.v1', context_asset_version_id='context', context_content_hash='context-hash')))
             insert('external_effect', external_effect_id='success', operation_id='anchor', project_id='project', effect_type='model.invoke', status='SUCCEEDED', request_hash='success-hash',
@@ -495,9 +520,24 @@ def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_
             insert('asset_version', asset_version_id='receipt', asset_id='receipt-owner', content_hash='receipt-hash', content=dict(source_operation_id=source, target_runtime=target))
             insert('operation_output_asset', operation_id='control', asset_version_id='receipt', content_hash='receipt-hash', role='primary')
             def allowed():
-                function = 'authority_first_isolated_preparation_v12_permitted' if version == '12.0.0' else 'authority_first_isolated_preparation_permitted'
+                function = 'authority_first_isolated_preparation_v13_permitted' if capacity_stop else 'authority_first_isolated_preparation_v12_permitted' if version == '12.0.0' else 'authority_first_isolated_preparation_permitted'
                 return c.execute('SELECT '+function+'(%s,%s,%s)', ['new-link', 'child', Jsonb(gen)]).fetchone()[0]
             assert allowed()
+            if capacity_stop:
+                for statement in (
+                    "UPDATE authority_operation SET status='FAILED_RETRYABLE' WHERE operation_id='lineage-stop'",
+                    "UPDATE authority_attempt SET result=jsonb_set(result,'{failure_details,projection,result_hash}','\"other\"') WHERE attempt_id='lineage-attempt'",
+                    "UPDATE authority_attempt SET result=jsonb_set(result,'{failure_details,projection,source_boundary,book_id}','\"foreign\"') WHERE attempt_id='lineage-attempt'",
+                    "UPDATE authority_attempt SET result=jsonb_set(result,'{failure_details,projection,measurement,after_reserved}','1') WHERE attempt_id='lineage-attempt'",
+                    "UPDATE authority_budget_reservation SET status='HELD_UNKNOWN' WHERE external_effect_id='capacity-success'",
+                    "UPDATE authority_external_receipt SET status='REJECTED' WHERE dispatch_id='capacity-dispatch'",
+                    "UPDATE authority_external_effect SET request_payload='{}' WHERE external_effect_id='capacity-success'",
+                    "INSERT INTO authority_cancellation_command(operation_id,actor_id) VALUES('lineage-stop','author')",
+                ):
+                    c.execute('SAVEPOINT capacity_negative')
+                    c.execute(statement)
+                    assert not allowed(), statement
+                    c.execute('ROLLBACK TO SAVEPOINT capacity_negative')
             for statement in (
                 "UPDATE authority_operation SET actor_id='foreign' WHERE operation_id='child'",
                 "UPDATE authority_book_production SET current_chapter=20",
@@ -578,3 +618,32 @@ def test_acknowledged_routing_link_retains_exact_frozen_contract_and_revoked_sub
                 c.execute('ROLLBACK TO SAVEPOINT negative_ack')
         finally:
             c.rollback()
+
+
+def test_settled_capacity_upgrade_preserves_prior_functions_and_restored_business_facts(tmp_path):
+    from novel_forge.storage.migrations import run_migrations
+    from tests.integration.migration_window_postgres_support import (
+        disposable_database_at_migration, restored_generation_backup,
+        _database_fingerprint, assert_database_at_migration,
+    )
+    prior = '20261019_0233_acknowledged_preparation_routing'
+    current = '20261019_0234_settled_preparation_capacity'
+    with disposable_database_at_migration(DATABASE_URL, prefix='settled_capacity', target_migration_id=prior) as original:
+        with restored_generation_backup(original, backup_root=tmp_path / 'restore') as restored:
+            _, before = _database_fingerprint(restored)
+            with psycopg.connect(restored) as c:
+                names = ['authority_first_isolated_preparation_permitted', 'authority_first_isolated_preparation_v12_permitted',
+                    'authority_first_preparation_member_stopped', 'authority_first_preparation_member_v12_stopped']
+                old = dict(c.execute('SELECT proname,pg_get_functiondef(oid) FROM pg_proc WHERE proname=ANY(%s)', [names]).fetchall())
+                assert set(old) == set(names)
+            status = run_migrations(restored, backup_directory=str(tmp_path / 'upgrade-backup'))
+            assert status['ok']
+            assert_database_at_migration(restored, target_migration_id=current)
+            assert_database_at_migration(original, target_migration_id=prior)
+            _, after = _database_fingerprint(restored)
+            assert {k:v for k,v in before.items() if k != 'nf_schema_migrations'} == {k:v for k,v in after.items() if k != 'nf_schema_migrations'}
+            with psycopg.connect(restored) as c:
+                assert old == dict(c.execute('SELECT proname,pg_get_functiondef(oid) FROM pg_proc WHERE proname=ANY(%s)', [names]).fetchall())
+                guard = c.execute("SELECT pg_get_functiondef(oid) FROM pg_proc WHERE proname='authority_planning_result_repair_guard'").fetchone()[0]
+                assert 'authority_first_isolated_preparation_v13_permitted' in guard
+            assert run_migrations(restored)['ok']

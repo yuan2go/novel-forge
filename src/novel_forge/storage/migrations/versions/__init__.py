@@ -236,6 +236,7 @@ from . import (
     v20261019_0231_prepared_main_handoff,
     v20261019_0232_first_isolated_preparation_custody,
     v20261019_0233_acknowledged_preparation_routing,
+    v20261019_0234_settled_preparation_capacity,
 )
 
 VERSION_MODULES = [
@@ -473,6 +474,7 @@ VERSION_MODULES = [
     v20261019_0231_prepared_main_handoff,
     v20261019_0232_first_isolated_preparation_custody,
     v20261019_0233_acknowledged_preparation_routing,
+    v20261019_0234_settled_preparation_capacity,
 ]
 
 __all__ = ["VERSION_MODULES"]

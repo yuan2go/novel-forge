@@ -165,6 +165,11 @@ def codex_output_schema(schema: dict, *, schema_ref: str = "") -> dict:
     return _codex_output_schema(schema, all_nullable=True)
 
 
+def codex_protocol_schema_text(schema: dict, *, schema_ref: str = "", compact: bool = True) -> str:
+    return json.dumps(codex_output_schema(schema, schema_ref=schema_ref), ensure_ascii=False,
+        sort_keys=True, **({"separators": (",", ":")} if compact else {"indent": 2})) + "\n"
+
+
 def strict_codex_json_loads(text: str):
     def pairs(items):
         result={}

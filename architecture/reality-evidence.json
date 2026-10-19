@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261019_0233_acknowledged_preparation_routing",
+  "migration_head": "20261019_0234_settled_preparation_capacity",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -9601,6 +9601,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261019_0233_acknowledged_preparation_routing.py",
           "id": "20261019_0233_acknowledged_preparation_routing",
           "locator": "MIGRATION_ID = '20261019_0233_acknowledged_preparation_routing'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261019_0234_settled_preparation_capacity.py",
+          "id": "20261019_0234_settled_preparation_capacity",
+          "locator": "MIGRATION_ID = '20261019_0234_settled_preparation_capacity'"
         }
       ],
       "external_effects": {
@@ -10604,7 +10609,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:60a2928d810a35953c2966f80a6dcfb2894534557ec6b2bdce5cad594741dfcb"
+    "implementation_tree_sha": "sha256:48dd03d78d423e9391b5f2e43e63173de21220ce44f20036c044bee4a18099ca"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

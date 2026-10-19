@@ -341,6 +341,24 @@ def recover_book_generations(application, *, project_id, book_id, principal, sou
               AND NOT EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation WHERE source_operation_id=generation.operation_id)""",
             [project_id,book_id,source_actor_id])
         capacities=uow.cursor.fetchall()
+        uow.cursor.execute("""SELECT operation.operation_id,operation.version FROM authority_operation operation
+            JOIN authority_story_planning_generation generation USING(operation_id)
+            JOIN LATERAL (SELECT result FROM authority_attempt WHERE operation_id=operation.operation_id
+                ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
+            WHERE generation.project_id=%s AND generation.book_id=%s AND operation.actor_id=%s
+              AND operation.definition_version='1.21.0' AND operation.status IN ('FAILED_RETRYABLE','FAILED_FINAL')
+              AND generation.candidate_asset_version_id IS NULL
+              AND attempt.result->>'error_code'='TASK_CONTEXT_COMPRESSION_NO_PROGRESS'
+              AND EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=operation.operation_id)
+              AND NOT EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation WHERE source_operation_id=operation.operation_id)
+              AND EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=operation.operation_id)
+              AND NOT EXISTS(SELECT 1 FROM authority_external_effect effect
+                LEFT JOIN authority_budget_reservation budget USING(external_effect_id)
+                WHERE effect.operation_id=operation.operation_id AND NOT COALESCE(effect.effect_type='model.invoke'
+                  AND effect.request_payload->>'stage' IN ('context_compress','context_fidelity')
+                  AND effect.status='SUCCEEDED' AND budget.status='SETTLED',false))""",
+            [project_id,book_id,source_actor_id])
+        capacities.extend(uow.cursor.fetchall())
         rows = unresolved_cli_outcomes(uow.cursor, project_id, book_id=book_id)
         uow.cursor.execute("""SELECT effect.external_effect_id,effect.operation_id,effect.status
             FROM authority_external_effect effect JOIN authority_story_planning_generation generation USING(operation_id)
@@ -362,7 +380,7 @@ def recover_book_generations(application, *, project_id, book_id, principal, sou
     for operation_id,version in capacities:
         application.register_runtime_continuation(operation_id,project_id=project_id,principal=principal,
             expected_source_version=version,decision_evidence={"authorization_ref":"NATIVE_CONTINUOUS_CREATION_TEMPLATE",
-                "reason":"Allocate bounded native task capacity after a proven unsent failure while retaining original inputs and authorization"},
+                "reason":"Recover native pre-send capacity with original frozen inputs, verified preparation and current authorization"},
             trace_id="trace:generation-capacity:"+operation_id,correlation_id=book_id)
     candidates = {effect["external_effect_id"]: (effect, operation) for effect, operation in pending}
     for item in rows:

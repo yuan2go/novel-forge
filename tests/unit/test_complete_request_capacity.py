@@ -394,7 +394,8 @@ def test_codex_separate_protocol_schema_is_frozen_and_included_in_capacity():
     assert replace(envelope, protocol_schema_json="{}").envelope_hash != envelope.envelope_hash
 
 
-def test_cli_backend_checks_the_actual_schema_file_before_starting_a_process(tmp_path):
+@pytest.mark.parametrize("serialization", ["current", "historical_pretty", "compact"])
+def test_cli_backend_checks_the_actual_schema_file_before_starting_a_process(tmp_path, serialization):
     import sys
     from novel_forge.modules.production_execution import (
         CodexCliExecutionBackend, CodexProcessSupervisor, ExecutionRuntimeClass,
@@ -420,6 +421,13 @@ def test_cli_backend_checks_the_actual_schema_file_before_starting_a_process(tmp
     configured = route(model="fixture-codex")
     configured.model_profile.model_provider = "codex-cli"
     frozen = route_protocol_schema(configured, schema, "fixture:v1")
+    from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+    wire = codex_output_schema(schema, schema_ref="fixture:v1")
+    compact = json.dumps(wire, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+    if serialization == "current":
+        assert frozen == compact
+    else:
+        frozen = compact if serialization == "compact" else json.dumps(wire, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
     payload = ResolvedExecutionPayload(request_payload={"protocol_schema_json": frozen}, input_text="task",
         working_directory=str(tmp_path), timeout_seconds=60, output_schema_version="fixture:v1", output_schema=schema)
     prepared = backend._prepare_payload(request, payload, selected)

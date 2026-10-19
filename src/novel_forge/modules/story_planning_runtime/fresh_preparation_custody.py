@@ -8,7 +8,8 @@ from .domain import canonical_hash
 
 LEGACY_CONTRACT = 'planning-first-isolated-preparation-handoff.v1'
 CONTRACT = 'planning-first-isolated-preparation-handoff.v2'
-SUPPORTED_CONTRACTS = frozenset({LEGACY_CONTRACT, CONTRACT})
+CAPACITY_CONTRACT = 'planning-first-isolated-preparation-handoff.v3'
+SUPPORTED_CONTRACTS = frozenset({LEGACY_CONTRACT, CONTRACT, CAPACITY_CONTRACT})
 CONTEXT_CONTRACT = 'same-capacity-isolated-preparation.v1'
 LINEAGE_LINK_FAILURE = dict(error_code='PLANNING_ROUTING_LINEAGE_INVALID',
     error_message='PLANNING_ROUTING_LINEAGE_INVALID: Runtime successor lacks its exact native continuation',
@@ -20,6 +21,25 @@ PAUSED_INTENT = dict(message='RUNTIME_DISPATCH_PAUSED: Planning preparation wait
 
 def _semantic(command):
     return {key: value for key, value in command.items() if key not in {'runtime_continuation_id', 'idempotency_key'}}
+
+
+def settled_capacity_projection(failure):
+    if not isinstance(failure, dict) or (failure.get('error_code'), failure.get('error_message'), failure.get('failure_class')) != (
+            'TASK_CONTEXT_COMPRESSION_NO_PROGRESS',
+            'TASK_CONTEXT_COMPRESSION_NO_PROGRESS: All remaining source expression is required or already verified; the complete request still exceeds capacity', 'retryable'):
+        return None
+    projection = (failure.get('failure_details') or {}).get('projection') or {}
+    measurement = projection.get('measurement') or {}
+    receipt = projection.get('compression_receipt') or {}
+    if (projection.get('contract_version') != 'complete-request-capacity.v1'
+            or projection.get('semantic_contract') != 'source-unit-dependency-and-final-composition.v2'
+            or not projection.get('original_hash') or projection.get('original_hash') != projection.get('result_hash')
+            or receipt.get('fast_path') is not True
+            or any(type(measurement.get(key)) is not int for key in ('before_reserved', 'after_reserved', 'limit'))
+            or not 0 < measurement['limit'] < min(measurement['before_reserved'], measurement['after_reserved'])
+            or measurement.get('actual_provider_tokens') is not None):
+        return None
+    return projection
 
 
 def require_source(uow, *, source_operation_id, frozen):
@@ -115,6 +135,7 @@ def require_source(uow, *, source_operation_id, frozen):
     boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id=frozen['project_id'], book_id=frozen['book_id'],
         pack_snapshot_hash=snapshot_hash, sources=[dict(asset_version_id=context.asset_version_id, content_hash=context.content_hash)])
     retained, stopped, first_task, projection, original_route = [], [], None, None, None
+    capacity_failures = []
     for member in reversed(members):
         op, gen, isolation = member['operation'], member['generation'], member['isolation']
         identity = op['operation_id']
@@ -145,16 +166,21 @@ def require_source(uow, *, source_operation_id, frozen):
             stop = dict(operation_id=identity, kind='ACKNOWLEDGED_CANCELLATION')
         else:
             failure = attempts[-1][2] or {}
+            capacity = settled_capacity_projection(failure)
+            if capacity:
+                capacity_failures.append(capacity)
             allowed_failure = (failure.get('error_code'), failure.get('error_message')) in {
                 ('PLANNING_ROUTING_LINEAGE_INVALID', 'PLANNING_ROUTING_LINEAGE_INVALID: Runtime successor lacks its exact native continuation'),
                 ('PROGRAMMING_BUG', 'canceling statement due to statement timeout'),
                 ('PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED', 'PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED: Planning repair routing lineage exceeds its bounded depth')}
             if failure.get('error_code') == LINEAGE_LINK_FAILURE['error_code'] and failure != LINEAGE_LINK_FAILURE:
                 raise rejected
-            if op['status'] not in {'FAILED_FINAL', 'FAILED_RETRYABLE'} or cancellations or not allowed_failure or any(a[1] not in {'FAILED_FINAL', 'FAILED_RETRYABLE'} for a in attempts):
+            if op['status'] not in {'FAILED_FINAL', 'FAILED_RETRYABLE'} or cancellations or not (allowed_failure or capacity) or any(a[1] not in {'FAILED_FINAL', 'FAILED_RETRYABLE'} for a in attempts):
                 raise rejected
             receipt_kind, read = 'STOPPED_GENERATION_SIBLING', read_retained_generation_stage_success_in_uow
-            stop = dict(operation_id=identity, kind='UNSENT_HOST_FAILURE', failure=deepcopy(failure))
+            stop = (dict(operation_id=identity, kind='UNSENT_CAPACITY_FAILURE', failure_hash=canonical_hash(failure),
+                capacity_projection_hash=canonical_hash(capacity), measurement=deepcopy(capacity['measurement'])) if capacity
+                else dict(operation_id=identity, kind='UNSENT_HOST_FAILURE', failure=deepcopy(failure)))
         uow.cursor.execute('''SELECT to_jsonb(effect),reservation.status,authority_generation_isolated(effect.external_effect_id)
             FROM authority_external_effect effect LEFT JOIN authority_budget_reservation reservation USING(external_effect_id)
             WHERE effect.operation_id=%s ORDER BY effect.external_effect_id FOR UPDATE OF effect''', [identity])
@@ -164,6 +190,8 @@ def require_source(uow, *, source_operation_id, frozen):
         for effect, budget, isolated in effects:
             payload = effect['request_payload']
             stage = payload.get('stage')
+            if stop['kind'] == 'UNSENT_CAPACITY_FAILURE' and stage not in {'context_compress', 'context_fidelity'}:
+                raise rejected
             if effect['effect_type'] != 'model.invoke' or stage not in {'context_compress', 'context_fidelity', 'world_candidates.generate', 'world_candidates.evaluate', *ACTOR_STAGES} or canonical_hash(payload) != effect['request_hash']:
                 raise rejected
             if isolated:
@@ -208,12 +236,19 @@ def require_source(uow, *, source_operation_id, frozen):
     main = bindings.get(anchor['generation']['generator_operation_name'], {}).get('route', {})
     if not main:
         raise rejected
+    capacity_members = [member for member in stopped if member['kind'] == 'UNSENT_CAPACITY_FAILURE']
+    for capacity in capacity_failures:
+        if (capacity['source_boundary'] != boundary or capacity['original_hash'] != projection
+                or capacity['stage'] != anchor['generation']['generator_operation_name']
+                or capacity['measurement']['limit'] != min(512_000, main.get('context_limit', 0))
+                or capacity['measurement']['token_method'] != main.get('method')):
+            raise rejected
     account_route = original_route
     original_route = {new: main[old] for new, old in (('model_provider', 'provider'), ('model_id', 'model'),
         ('backend_id', 'backend'), ('reasoning_effort', 'reasoning'))}
     if (account_route.get('model_provider'), account_route.get('backend_id')) == (main['provider'], main['backend']):
         original_route['auth_profile_ref'] = account_route['auth_profile_ref']
-    proof = dict(contract_version=CONTRACT, source_operation_id=original['operation_id'], source_attempt_id=attempt_id,
+    proof = dict(contract_version=CAPACITY_CONTRACT if capacity_members else CONTRACT, source_operation_id=original['operation_id'], source_attempt_id=attempt_id,
         custody_source_operation_id=source_operation_id, book_run_id=working['book_run_id'], current_chapter=book[0],
         accepted_through_chapter=book[1], input_snapshot_id=book[2], working_snapshot_hash=working['snapshot_hash'],
         context_asset_version_id=context.asset_version_id, context_content_hash=context.content_hash,

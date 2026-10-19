@@ -1290,3 +1290,81 @@ def test_first_custody_existing_successor_keeps_registered_account_validation(fi
     assert result['preserved_repair_number'] == 3
     route.assert_called_once()
     capacity.assert_called_once()
+
+
+@pytest.fixture
+def settled_capacity_child(first_isolation, monkeypatch):
+    s = first_isolation
+    original, generation, _ = s.members['original']
+    child = deepcopy(original)
+    child.update(operation_id='child', status='FAILED_RETRYABLE')
+    child['command_payload']['payload']['runtime_continuation_id'] = 'first-link'
+    s.parents['child'] = dict(continuation_id='first-link', source_operation_id='original',
+        successor_command=child['command_payload']['payload'], source_command=deepcopy(s.frozen), target_runtime={}, chain_depth=1)
+    s.members['child'] = child, deepcopy(generation), None
+    effect = deepcopy(s.effects['original'][0][0])
+    effect.update(external_effect_id='child-success', operation_id='child')
+    s.effects['child'] = [(effect, 'SETTLED', False)]
+    task = effect['request_payload']['input']['context_compression_task']
+    projection = dict(contract_version='complete-request-capacity.v1', semantic_contract='source-unit-dependency-and-final-composition.v2',
+        original_hash=task['task']['source_projection_hash'], result_hash=task['task']['source_projection_hash'],
+        source_boundary=deepcopy(task['frozen_input_boundary']), stage='chapter_plan.generate',
+        compression_receipt=dict(fast_path=True), measurement=dict(before_reserved=5000, after_reserved=5001, limit=4000,
+            token_method='CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1', actual_provider_tokens=None))
+    failure = dict(error_code='TASK_CONTEXT_COMPRESSION_NO_PROGRESS', failure_class='retryable',
+        error_message='TASK_CONTEXT_COMPRESSION_NO_PROGRESS: All remaining source expression is required or already verified; the complete request still exceeds capacity',
+        failure_details=dict(projection=projection))
+    s.attempts['child'] = [('child-attempt', 'FAILED_RETRYABLE', failure)]
+    monkeypatch.setattr('novel_forge.modules.chapter_authority.receipt_recovery.retained_capacity_bindings_in_uow',
+        lambda *_a, **_k: {'chapter_plan.generate': {'route': dict(provider='codex-cli', model='model', backend='backend', reasoning='medium',
+            context_limit=4000, method='CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1')}})
+    s.capacity, s.capacity_failure = projection, failure
+    return s
+
+
+@pytest.mark.parametrize('damage', [None, 'projection', 'result', 'boundary', 'stage', 'method', 'limit', 'not_overflow',
+    'fast_path', 'failure', 'main_send', 'world_send', 'unsettled', 'unknown', 'lease', 'cancel', 'actor', 'frontier'])
+def test_settled_capacity_handoff_preserves_preparation_and_rejects_changed_or_live_sources(settled_capacity_child, damage):
+    s = settled_capacity_child
+    effect, _, _ = s.effects['child'][0]
+    if damage in {'projection', 'result'}:
+        s.capacity['original_hash' if damage == 'projection' else 'result_hash'] = 'changed'
+    elif damage == 'boundary':
+        s.capacity['source_boundary']['book_id'] = 'foreign'
+    elif damage == 'stage':
+        s.capacity['stage'] = 'draft'
+    elif damage in {'method', 'limit', 'not_overflow'}:
+        s.capacity['measurement'][{'method': 'token_method', 'limit': 'limit', 'not_overflow': 'after_reserved'}[damage]] = 'other' if damage == 'method' else 3000
+    elif damage == 'fast_path':
+        s.capacity['compression_receipt']['fast_path'] = False
+    elif damage == 'failure':
+        s.capacity_failure['failure_class'] = 'programming_bug'
+    elif damage in {'main_send', 'world_send'}:
+        effect['request_payload']['stage'] = 'chapter_plan.generate' if damage == 'main_send' else 'world_candidates.generate'
+        effect['request_hash'] = canonical_hash(effect['request_payload'])
+    elif damage == 'unsettled':
+        s.effects['child'][0] = effect, 'RESERVED', False
+    elif damage == 'unknown':
+        effect['status'] = 'UNKNOWN'
+    elif damage == 'lease':
+        s.held = True
+    elif damage == 'cancel':
+        s.cancellations['child'] = [('author',)]
+    elif damage == 'actor':
+        s.members['child'][0]['actor_id'] = 'foreign'
+    elif damage == 'frontier':
+        s.book = (20, *s.book[1:])
+    if damage:
+        with pytest.raises(KernelError, match='PLANNING_FIRST_PREPARATION_CUSTODY_UNSAFE'):
+            s.consume('child')
+        return
+    before = deepcopy(s.effects)
+    source = s.consume('child')
+    proof = source['fresh_preparation']
+    assert proof['contract_version'] == 'planning-first-isolated-preparation-handoff.v3'
+    assert source['source_operation_status'] == 'FAILED_RETRYABLE'
+    assert proof['main_dispatch_count'] == 0
+    assert [item['external_effect_id'] for item in proof['retained_preparation']] == ['success', 'child-success']
+    assert proof['stopped_ancestry'][-1]['kind'] == 'UNSENT_CAPACITY_FAILURE'
+    assert proof['stopped_ancestry'][-1]['failure_hash'] == canonical_hash(s.capacity_failure)
+    assert s.effects == before

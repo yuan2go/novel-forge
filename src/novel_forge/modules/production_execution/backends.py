@@ -2011,22 +2011,14 @@ class CodexCliExecutionBackend:
         route = admission.route_snapshot
         layout = self.supervisor.execution_directory.prepare(request.execution_id)
         schema_path = layout.result_path("output.schema.json")
+        from .codex_configuration import codex_protocol_schema_text
+        current_schema = codex_protocol_schema_text(payload.output_schema, schema_ref=payload.output_schema_version)
+        historical_schema = codex_protocol_schema_text(payload.output_schema, schema_ref=payload.output_schema_version, compact=False)
         frozen_schema = payload.request_payload.get("protocol_schema_json")
         if frozen_schema:
-            actual_schema = json.dumps(codex_output_schema(payload.output_schema, schema_ref=payload.output_schema_version),
-                ensure_ascii=False, sort_keys=True, indent=2) + "\n"
-            if frozen_schema != actual_schema:
+            if frozen_schema not in (current_schema, historical_schema):
                 raise ValueError("PROVIDER_PROTOCOL_SCHEMA_DRIFT")
-        schema_path.write_text(
-            json.dumps(
-                codex_output_schema(payload.output_schema, schema_ref=payload.output_schema_version),
-                ensure_ascii=False,
-                sort_keys=True,
-                indent=2,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
+        schema_path.write_text(frozen_schema or historical_schema, encoding="utf-8")
         result_filename = "last-message.json"
         result_path = layout.result_path(result_filename)
         if self.account_entitlement and self.account_entitlement.billing_identity:
