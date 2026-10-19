@@ -102,8 +102,8 @@ def prepare_backfill(authority, *, book_run_id, chapter, expected_version, idemp
         if source["coverage"] == "WORKING_MEMORY_DEPENDENCY_CHANGED":
             raise KernelError("WORKING_MEMORY_SOURCE_STALE", "Reconcile selected predecessor changes before extraction")
         from .memory_prior import select_extraction_prior
-        prior, prior_selection = select_extraction_prior(entries, text)
-        task = {"version": "working-memory-extraction-task.v1",
+        prior, prior_selection = select_extraction_prior(entries, text, version="working-memory-prior-state.v2")
+        task = {"version": "working-memory-extraction-task.v2",
             **{key: current[key] for key in ("project_id", "workspace_id", "book_id", "book_run_id")},
             "chapter": chapter, "sources": rows, "prior_observations": prior, "prior_selection": prior_selection, "text": text,
             "observations_version": OBSERVATIONS_V2, "source_isolation": "SELECTED_OWN_WORKING_PROSE_ONLY",

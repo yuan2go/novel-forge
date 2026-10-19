@@ -234,6 +234,46 @@ def test_v10_selects_task_related_state_instead_of_every_state_of_the_same_chara
     assert selected["task_selection"]["query_support"]
 
 
+def test_extraction_prior_v2_requires_topic_and_retains_unbounded_support_and_open_promises():
+    from novel_forge.modules.book_authority.memory_prior import select_extraction_prior
+    entries = []
+    for n in range(15):
+        entries.append({**note(kind="EVENT", subject="storm", state_key=f"wind-{n}", quote="The wind blew.",
+            causes=[str(n - 1)] if n else []), "observation_id": str(n), "source": {"chapter": n + 1}, "location": {"start": 0}})
+    for key, claim, causes in [("boots", "Mira's old boots were wet.", []), ("orchard", "Mira knows the orchard harvest was destroyed by wind.", ["14"])]:
+        entries.append({**note(kind="KNOWLEDGE", state_key=key, claim=claim, quote=claim, causes=causes),
+            "observation_id": key, "source": {"chapter": 16}, "location": {"start": 0}})
+    entries.append({**note(state_key="rope", claim="Mira promised to return a rope."), "promise_status": "OPEN", "supersedes": [],
+        "observation_id": "rope", "source": {"chapter": 16}, "location": {"start": 0}})
+    text = "Mira considers how the orchard harvest was destroyed."
+    old, old_receipt = select_extraction_prior(entries, text)
+    selected, receipt = select_extraction_prior(entries, text, version="working-memory-prior-state.v2")
+    assert "boots" in {r["observation_id"] for r in old} and old_receipt["version"].endswith(".v1")
+    assert {r["observation_id"] for r in selected} == {str(n) for n in range(15)} | {"orchard", "rope"}
+    assert receipt["version"].endswith(".v2") and receipt["task_relevance"]["query_support"]
+    assert receipt["semantic_completeness"] == "NOT_ESTABLISHED"
+
+
+def test_memory_task_v2_view_preserves_semantics_and_old_view_without_duplicate_quote_provenance():
+    from novel_forge.modules.book_followup_authority.memory_execution import memory_context_view
+    task = {"version": "working-memory-extraction-task.v1", "task_hash": "sha256:task", "project_id": "p", "book_id": "b", "book_run_id": "r",
+        "chapter": 2, "text": "The current complete prose.", "observations_version": OBSERVATIONS_V2,
+        "source_isolation": "SELECTED_OWN_WORKING_PROSE_ONLY", "formal_acceptance": "NOT_GRANTED",
+        "sources": [{"chapter": 1, "asset_version_id": "s:1", "content_hash": "hash:1", "coverage": "LOCATED_UNREVIEWED", "provenance": {"host": "audit"}}],
+        "prior_selection": {"version": "working-memory-prior-state.v2", "selection_hash": "sha256:selection", "candidate_count": 3, "omitted_count": 2, "semantic_completeness": "NOT_ESTABLISHED", "task_relevance": {"host_only": "scores"}},
+        "prior_observations": [{**note(), "location": {"start": 2, "end": 10, "quote": note()["quote"]}}]}
+    context = {"schema_version": "novelos.working_memory_context_bundle.v1", "selected_inputs": [{"asset_type": "working_memory_task", "projection": task}]}
+    assert memory_context_view(context)["source"] == task
+    task["version"] = "working-memory-extraction-task.v2"
+    before = deepcopy(context)
+    view = memory_context_view(context)["source"]
+    assert context == before and view["text"] == task["text"] and view["task_hash"] == task["task_hash"]
+    for key, value in task["prior_observations"][0].items():
+        assert view["prior_observations"][0][key] == ({k: v for k, v in value.items() if k != "quote"} if key == "location" else value)
+    assert view["prior_selection"]["omitted_count"] == 2 and "task_relevance" not in view["prior_selection"]
+    assert view["sources"][0]["content_hash"] == "hash:1" and "provenance" not in view["sources"][0]
+
+
 def test_new_request_snapshot_keeps_complete_envelope_and_checks_effect_identity():
     from novel_forge.modules.chapter_authority.request_snapshot import (
         freeze_provider_request, request_snapshot_required, validate_provider_request_snapshot,

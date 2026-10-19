@@ -385,6 +385,14 @@ reported separately from missing Writer metadata. A cancelled or failed extracti
 retains its original history and stops its batch; diagnosed terminal retries require an
 explicit original operation and reject unresolved Effects or held writers. Neither
 backfill nor annotation changes prose, Canon, accepted state or active plans.
+New `working-memory-extraction-task.v2` freezes `working-memory-prior-state.v2`:
+current prose paragraphs select relevant earlier observations through the shared task
+retriever. An actor name alone no longer selects all differently keyed current states.
+Open promises, explicit references, closing evidence and recursive causes retain their
+support. Its Provider view carries complete current prose, selected prior claims and
+quotes, exact source identities and explicit omission counts; duplicate quote strings
+and host-only sidecar provenance remain in the frozen task. V1 tasks keep their original
+selection and Provider representation. Omitted prior observations remain unknown.
 
 A first native Planning preparation paused before its main call can retain completed
 preparation after the original worker acknowledges cancellation. The versioned

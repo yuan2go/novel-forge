@@ -29,7 +29,20 @@ def memory_context_view(context):
     rows = context.get("selected_inputs", [])
     if context.get("schema_version") != PostgresMemoryExecutionContractBinder.context_schema or len(rows) != 1 or rows[0].get("asset_type") != TASK_TYPE:
         raise KernelError("WORKING_MEMORY_CONTEXT_INVALID", "Require the frozen extraction context")
-    return {"contract_version": "provider-context-view-v2", "stage": STAGE, "source": rows[0]["projection"],
+    source = rows[0]["projection"]
+    if source.get("version") not in {"working-memory-extraction-task.v1", "working-memory-extraction-task.v2"}:
+        raise KernelError("WORKING_MEMORY_CONTEXT_INVALID", "Require a supported frozen extraction task version")
+    if source.get("version") == "working-memory-extraction-task.v2":
+        prior = [{key: deepcopy(value) for key, value in entry.items() if key != "location"}
+            | {"location": {key: value for key, value in entry["location"].items() if key != "quote"}}
+            for entry in source["prior_observations"]]
+        source = {key: deepcopy(source[key]) for key in ("version", "task_hash", "project_id", "book_id", "book_run_id",
+            "chapter", "text", "observations_version", "source_isolation", "formal_acceptance")}
+        task = rows[0]["projection"]
+        source.update(provider_projection_version="working-memory-source-provider.v2", prior_observations=prior,
+            sources=[{key: deepcopy(row[key]) for key in ("chapter", "asset_version_id", "content_hash", "coverage")} for row in task["sources"]],
+            prior_selection={key: task["prior_selection"][key] for key in ("version", "selection_hash", "candidate_count", "omitted_count", "semantic_completeness")})
+    return {"contract_version": "provider-context-view-v2", "stage": STAGE, "source": source,
         "instruction": "Extract source-bound working observations only from the provided current chapter text. Prior observations are fallible navigation, not Canon. Preserve subject, stable state_key, attribution, negation, conditions, uncertainty, beliefs, hearsay and reader-only disclosure. Reuse prior subject/state_key for the same state or promise. For each literal quote use both start/end null when it occurs exactly once; the Host locates it. Supply Unicode code-point offsets only to disambiguate a repeated quote. Prior selection omissions remain unknown, not evidence of absence. Record current state changes, important events, knowledge ownership, relationship changes, consequences and promises. For promise closure use FULFILLED or RELEASED only with direct textual support and supersedes referencing exact earlier promise observation IDs with identical subject/state_key/perspective/knowledge_owner. Otherwise retain UNKNOWN or OPEN. Non-promises use NOT_APPLICABLE and empty supersedes. Causes reference only provided prior observation IDs. Do not invent unseen events, author acceptance, knowledge or future-plan fulfilment. Omit unsupported claims; an empty list is valid. Never rewrite the manuscript."}
 
 
