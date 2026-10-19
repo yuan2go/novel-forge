@@ -8905,6 +8905,18 @@
         {
           "path": "tests/unit/test_reader_calibration.py",
           "symbol": "test_kernel_manuscript_mapping_rebuild_prevents_replacement_of_saved_prose"
+        },
+        {
+          "path": "tests/unit/test_prose_citation_diagnostics.py",
+          "symbol": "test_report_binding_precedes_missing_quote_diagnosis"
+        },
+        {
+          "path": "tests/unit/test_prose_citation_diagnostics.py",
+          "symbol": "test_literal_failure_distinguishes_missing_and_ambiguous_without_disclosing_prose"
+        },
+        {
+          "path": "tests/unit/test_prose_citation_diagnostics.py",
+          "symbol": "test_handler_rejects_window_source_substitution_before_model_invocation"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -10619,7 +10631,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:18e4fb7b3787efceaa42d84b33d039a99b455148f29114f7e6bcd8c2c0d10229"
+    "implementation_tree_sha": "sha256:dcb255ba81980039ae1066905c081b0224c238c4758b3af1cb41541e01de18f6"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

@@ -2063,6 +2063,13 @@ version. Ambiguous, absent or mismatched source quotations remain invalid. Forma
 review and new literal reference sampling consume the same frozen diagnosis/citation
 flags. Legacy sample Intents retain their original payload, which omitted diagnosis
 flags even on v2 windows, so saved sample requests remain replayable.
+Chapter-literal v4 binds the chapter number to its frozen version and text hash on the
+Host. Contract and manifest/window identity are checked before quotation location;
+registered window spans must retain the manifest's exact source identities. Missing
+quotes, multiple literal occurrences and unavailable source identities retain distinct
+diagnostic reasons under the compatible citation error code. Diagnostics carry citation
+ordinals and hashes without reproducing prose. Unicode codepoint offsets preserve
+punctuation and line breaks; normalization or fuzzy matching cannot validate a quotation.
 For a known rejected chapter-literal report, the existing second Attempt receives the
 verified settled report and original rejection as diagnosed correction input bound to
 the unchanged window and actor. This prevents reuse of the same invalid result without

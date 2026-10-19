@@ -6,7 +6,7 @@ from novel_forge.modules.authority_handler_runtime import (
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from .contracts import ReaderOutcomeModelPort
-from .prose_review import prose_review_invoke_payload, validate_window_report
+from .prose_review import prose_review_invoke_payload, validate_window_report, validate_window_source_binding
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,6 +78,7 @@ class LongformProseReviewHandler:
                     work_intent=content["schema_version"] in {"longform-prose-window.v2", "longform-prose-window.v3"},
                 )
                 run_id, manifest = rows[0]
+                validate_window_source_binding(manifest=manifest, window=content["window"])
                 if (
                     manifest["sources"]
                     != current["sources"][: len(manifest["sources"])]

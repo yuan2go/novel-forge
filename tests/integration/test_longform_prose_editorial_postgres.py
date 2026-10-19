@@ -1209,6 +1209,12 @@ def test_chapter_literal_review_persists_exact_source_binding_and_replays_withou
                 original_failure = uow.cursor.fetchone()
                 assert original_failure[0] == 'FAILED_RETRYABLE'
                 assert original_failure[1]['error_code'] == 'LONGFORM_PROSE_CITATION_NOT_UNIQUE'
+                diagnostic = original_failure[1]['failure_details']
+                assert diagnostic['reason'] == 'QUOTE_NOT_FOUND'
+                assert diagnostic['exact_occurrences'] == 0
+                assert diagnostic['citation_ordinal'] == 0
+                assert diagnostic['chapter_number'] == span['chapter_number']
+                assert 'quote' not in diagnostic and 'text' not in diagnostic
                 uow.cursor.execute('SELECT external_effect_id,request_payload FROM authority_external_effect WHERE operation_id=%s', [operation_id])
                 original_effect, original_input = uow.cursor.fetchone()
             if retry_mode == 'correction-response-loss':

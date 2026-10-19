@@ -306,6 +306,19 @@ recovery without blocking saved prose. Historical Effect deadlines and attempt l
 remain receipt observations; they do not reserve or terminate a model process window.
 CLI stream/request retries remain disabled.
 
+For a chapter-literal citation failure, inspect the immutable Provider result and its
+exact input window before classifying the cause. `LONGFORM_PROSE_CITATION_NOT_UNIQUE`
+retains its compatible code; new `failure_details.reason` distinguishes
+`QUOTE_NOT_FOUND`, `QUOTE_AMBIGUOUS` and `SOURCE_IDENTITY_NOT_SUPPLIED`, with the
+zero-based citation ordinal, literal occurrence count and quote hash. Missing or
+ambiguous chapter bindings use `LONGFORM_PROSE_CITATION_SOURCE_AMBIGUOUS` with
+`CHAPTER_NOT_SUPPLIED` or `CHAPTER_SOURCE_AMBIGUOUS`. An older empty diagnostic is
+not evidence of multiple matches. Replay only against the original version, hash and
+supplied span, retaining new offline diagnostics separately from the original Attempt.
+Whitespace removal, punctuation changes, concatenated passages and a matching quote
+in another version cannot satisfy the literal contract. Exhausted Attempts remain
+exhausted; an offline replay adds neither a successful review nor dispatch permission.
+
 When a complete v2 review failed only `LONGFORM_PROSE_CITATION_INVALID`, deploy migration
 0212 with Pack 1.5.0 and start a new native root-cause review run. The default new start
 freezes `literal-prose-citation.v1`; old runs and queued requests keep their contracts.

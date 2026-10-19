@@ -384,22 +384,34 @@ def locate_report_citations(report: Mapping[str, Any], *, window: Mapping[str, A
                 sources = {(span["asset_version_id"], span["text_hash"]) for span in window["spans"]
                            if span["chapter_number"] == citation["chapter_number"]}
                 if len(sources) != 1:
-                    raise KernelError("LONGFORM_PROSE_CITATION_SOURCE_AMBIGUOUS", "Chapter citation requires one exact frozen source version and hash")
+                    raise KernelError("LONGFORM_PROSE_CITATION_SOURCE_AMBIGUOUS", "Chapter citation requires one exact frozen source version and hash",
+                        details={"citation_ordinal": ordinal, "chapter_number": citation["chapter_number"],
+                                 "reason": "CHAPTER_NOT_SUPPLIED" if not sources else "CHAPTER_SOURCE_AMBIGUOUS"})
                 asset_version_id, text_hash = next(iter(sources))
                 if located and (citation["asset_version_id"], citation["text_hash"]) != (asset_version_id, text_hash):
                     raise KernelError("LONGFORM_PROSE_CITATION_INVALID", "Bound chapter citation must retain its original frozen identity")
                 citation.update(asset_version_id=asset_version_id, text_hash=text_hash)
             locations = set()
-            for span in window["spans"]:
-                if (span["asset_version_id"] != citation["asset_version_id"] or span["text_hash"] != citation["text_hash"]
-                        or result["schema_version"] == "longform-prose-review.v4" and span["chapter_number"] != citation["chapter_number"]):
-                    continue
+            supplied_spans = [span for span in window["spans"]
+                if span["asset_version_id"] == citation["asset_version_id"] and span["text_hash"] == citation["text_hash"]
+                and (result["schema_version"] != "longform-prose-review.v4" or span["chapter_number"] == citation["chapter_number"])]
+            for span in supplied_spans:
                 offset = 0
                 while (offset := span["text"].find(citation["quote"], offset)) >= 0:
                     locations.add((span["start"] + offset, span["start"] + offset + len(citation["quote"])))
                     offset += 1
             if len(locations) != 1:
-                raise KernelError("LONGFORM_PROSE_CITATION_NOT_UNIQUE", "Each quote must identify one exact location in its supplied source version; no fuzzy matching or invented coordinates")
+                raise KernelError(
+                    "LONGFORM_PROSE_CITATION_NOT_UNIQUE",
+                    "Each quote must identify one exact location in its supplied source version; no fuzzy matching or invented coordinates",
+                    details={
+                        "citation_ordinal": ordinal,
+                        "reason": "SOURCE_IDENTITY_NOT_SUPPLIED" if not supplied_spans else "QUOTE_NOT_FOUND" if not locations else "QUOTE_AMBIGUOUS",
+                        "exact_occurrences": len(locations),
+                        "quote_hash": text_digest(citation["quote"]),
+                        **{key: citation[key] for key in ("chapter_number", "asset_version_id", "text_hash") if key in citation},
+                    },
+                )
             start, end = next(iter(locations))
             if supplied[ordinal] and supplied[ordinal] != {"start": start, "end": end}:
                 raise KernelError("LONGFORM_PROSE_CITATION_INVALID", "Persisted host coordinates must match their exact literal source")
@@ -410,24 +422,43 @@ def locate_report_citations(report: Mapping[str, Any], *, window: Mapping[str, A
     return result, resolutions
 
 
+def validate_window_source_binding(*, manifest: Mapping[str, Any], window: Mapping[str, Any]) -> None:
+    if "windows" in manifest:
+        registered = [item for item in manifest["windows"] if item["window_id"] == window["window_id"]]
+        if len(registered) != 1 or registered[0]["spans"] != window["spans"]:
+            raise KernelError(
+                "LONGFORM_PROSE_CITATION_SOURCE_DRIFT",
+                "Citations require the exact window registered in the frozen manifest",
+            )
+    if "sources" in manifest:
+        identity = ("chapter_number", "asset_version_id", "text_hash", "asset_hash")
+        sources = {tuple(source[key] for key in identity) for source in manifest["sources"]}
+        if any(tuple(span[key] for key in identity) not in sources for span in window["spans"]):
+            raise KernelError(
+                "LONGFORM_PROSE_CITATION_SOURCE_DRIFT",
+                "Window sources must retain the frozen manifest chapter, version and hashes",
+            )
+
+
 def validate_window_report(
     report: Mapping[str, Any], *, manifest: Mapping[str, Any], window: Mapping[str, Any]
 ) -> dict[str, Any]:
     literal = uses_literal_citations(manifest["policy"])
-    if literal:
-        report, _ = locate_report_citations(report, window=window)
-    report = normalize_prose_review_output(report, located_citations=literal)
     expected_schema = "longform-prose-review.v4" if manifest["policy"].get("citation_locator_contract") == CHAPTER_LITERAL_CITATION_CONTRACT else "longform-prose-review.v3" if literal else "longform-prose-review.v2" if manifest["policy"].get("diagnosis_contract") == "prose-root-cause.v1" else PROSE_REVIEW_SCHEMA
-    if report["schema_version"] != expected_schema:
+    if report.get("schema_version") != expected_schema:
         raise KernelError("LONGFORM_PROSE_REPORT_CONTRACT_DRIFT", "Report must retain its frozen diagnosis contract")
     if (
-        report["manifest_digest"] != manifest["manifest_digest"]
-        or report["window_id"] != window["window_id"]
+        report.get("manifest_digest") != manifest["manifest_digest"]
+        or report.get("window_id") != window["window_id"]
     ):
         raise KernelError(
             "LONGFORM_PROSE_REPORT_STALE",
             "review must bind the frozen manuscript and actual window",
         )
+    validate_window_source_binding(manifest=manifest, window=window)
+    if literal:
+        report, _ = locate_report_citations(report, window=window)
+    report = normalize_prose_review_output(report, located_citations=literal)
     if set(report["reviewed_dimensions"]) != set(PROSE_DIMENSIONS):
         raise KernelError(
             "LONGFORM_PROSE_DIMENSIONS_MISSING",
