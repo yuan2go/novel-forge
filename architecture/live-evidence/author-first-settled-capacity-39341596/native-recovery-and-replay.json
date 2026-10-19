@@ -1,0 +1,70 @@
+{
+  "schema_version": "native-settled-preparation-capacity-recovery.v1",
+  "at": "2026-10-19T06:06:51.575193+00:00",
+  "source_sha": "393415967a4ad42abaef11d62a93f0468d5fe4c2",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "old_source_operation_id": "e1721b3f-4294-4d54-a2f6-3be5b9b6c67b",
+  "old_operation_status": "FAILED_FINAL",
+  "old_attempt_status": "FAILED_RETRYABLE",
+  "old_failure_hash": "sha256:679536c50037315c0a0ccb38664af1953b676c3bb2e288495e50cf8d57e84e17",
+  "old_failure_unchanged": true,
+  "retained_preparation_count": 169,
+  "retained_preparations_unchanged": true,
+  "unknown_history": [
+    {
+      "external_effect_id": "ab7a4e94-e5e6-40eb-9e65-62cb8b1b7685",
+      "status": "UNKNOWN",
+      "budget": "HELD_UNKNOWN",
+      "settlement": null,
+      "submission_rights": "REVOKED"
+    },
+    {
+      "external_effect_id": "0cfeecce-c642-495c-be34-b768db8065c2",
+      "status": "UNKNOWN",
+      "budget": "HELD_UNKNOWN",
+      "settlement": null,
+      "submission_rights": "REVOKED"
+    }
+  ],
+  "control_operation_id": "0080b9af-8eb7-407f-a42a-6bfa82693d61",
+  "control_definition_version": "13.0.0",
+  "control_provider_calls": 0,
+  "replay": {
+    "operation_id": "0080b9af-8eb7-407f-a42a-6bfa82693d61",
+    "status": "SUCCEEDED",
+    "continuation_id": "planning-runtime-continuation:e1721b3f-4294-4d54-a2f6-3be5b9b6c67b",
+    "target_release_sha": "393415967a4ad42abaef11d62a93f0468d5fe4c2",
+    "asset_version_id": "ff113556-2edf-4b60-ad15-aa6d86f30285",
+    "content_hash": "sha256:5a055bae313ab7972c67ee20519399dffd2949b987896d87c4982956cee72e0c",
+    "source_operation_id": "e1721b3f-4294-4d54-a2f6-3be5b9b6c67b",
+    "replayed": true
+  },
+  "successor_operation_id": "b65808fc-0779-4a09-acb5-3792c7c406e4",
+  "successor_main_effect_id": "42e6e13f-82b3-4c89-be72-16ceb3dccb6b",
+  "successor_main_status_at_capture": "SUCCEEDED",
+  "new_preparation_effect_count": 0,
+  "retained_is_not_claimed_as_consumed": true,
+  "main_input_bytes": 429324,
+  "actual_dispatched_prior_complete_chapters": 20,
+  "actual_input_hash": "sha256:ce777d24f1cd2ca74eafca4d4625f22021fc9e15694241922c797903502b164c",
+  "provider_token_contract": {
+    "source": "FROZEN_REQUEST_INPUT_PLUS_OUTPUT_CEILING",
+    "cost_status": "UNKNOWN",
+    "contract_hash": "sha256:40a3d4769e326c0b638664a493f849327e643254a37341055e10ba6854c93a9e",
+    "budget_scope_id": "",
+    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+    "contract_version": "provider-token-reservation.v2",
+    "max_output_tokens": 18989,
+    "input_token_ceiling": 456011,
+    "budget_scope_revision": null,
+    "estimated_cost_amount": null,
+    "cost_authorization_ref": "user-authorization:WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01",
+    "estimated_total_tokens": 475000
+  },
+  "original_context_and_semantic_pack_preserved": true,
+  "physical_context_limit_increased": false,
+  "paid_authorization_increased": false,
+  "accepted_through_chapter": 0,
+  "new_chapter_delivery": "PENDING",
+  "literary_qualification": "NOT_PROVEN"
+}

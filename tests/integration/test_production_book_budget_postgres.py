@@ -65,20 +65,25 @@ def test_unknown_prior_book_reservation_remains_unavailable_after_reallocation(p
     fixture.configure(policy)
     fixture.books["A"] = policy["authorization"]["book_id"]
     assert fixture.usage()["phases"]["DESIGN"]["unmeasured_reserved_tokens"] == 100
-    with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
-        fixture.reserve("CREATION", 1, effect=fixture.native_effect(planning_identity()))
+    _, additional = fixture.reserve("CREATION", 1, effect=fixture.native_effect(planning_identity()))
+    assert additional["reservation_id"] != reservation["reservation_id"]
+    assert fixture.usage()["phases"]["DESIGN"]["unmeasured_reserved_tokens"] == 101
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT status FROM authority_budget_reservation WHERE reservation_id=%s", [reservation["reservation_id"]])
+        assert uow.cursor.fetchone()[0] == "HELD_UNKNOWN"
 
 
 def test_reallocation_cannot_move_reserved_phase_credits_or_restore_old_policy(production_budget):
     fixture = production_budget
-    fixture.reserve("CREATION", 100, effect=fixture.native_effect(planning_identity()))
+    _, reservation = fixture.reserve("CREATION", 100, effect=fixture.native_effect(planning_identity()))
+    original_proof = fixture.proof(reservation)
     previous = deepcopy(fixture.policies["A"])
     policy = production_book_policy(previous)
     policy["authorization"]["authorized_cumulative_caps"]["DESIGN"] = {"calls": 0, "tokens": 0}
-    with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
-        fixture.configure(policy)
-    policy = production_book_policy(previous)
     fixture.configure(policy)
+    assert fixture.proof(reservation) == original_proof
+    assert fixture.usage()["phases"]["DESIGN"]["conservative_tokens"] == 100
     previous["policy_version"] += ":restore"
     with pytest.raises(KernelError, match="CREATIVE_BUDGET_PLAN_IMMUTABLE"):
         fixture.configure(previous)

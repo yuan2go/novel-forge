@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 from dataclasses import replace
+import json
 import sys
 from uuid import uuid4
 
@@ -566,25 +567,31 @@ def test_native_author_acceptance_and_edition_source_classification(monkeypatch,
     """Real native author/Book/edition records, with scripted literary judgments only."""
     from novel_forge.modules.book_authority.edition_application import BookEditionApplication
     from novel_forge.modules.book_authority.edition_runtime import freeze_edition_adoption
-    from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+    from tests.integration.synthesis_production_support import SynthesisChapterTransport
     from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
     from novel_forge.modules.book_authority.edition_planning import edition_plan_scope
     from tests.integration import test_book_to_chapter_authority_vertical_postgres as native_book
 
     build_execution = native_book.build_production_execution_composition
+    transport = SynthesisChapterTransport(retain_original=True)
 
     def literary_transport(stage, inputs):
-        result = default_chapter_fixture_response(stage, inputs)
+        result = transport(stage, inputs)
+        if set(result) == {"payload_json"}:
+            result = json.loads(result["payload_json"])
         if stage == "review":
             result.update(score=95, issues=[], resolution_checks=[])
         elif stage == "revision":
-            result["resolved_issue_codes"] = []
+            result = ({"edits": [], "resolved_issue_codes": []}
+                if inputs["review"].get("cross_chapter_window") or inputs["review"].get("craft_targets")
+                else {"text": inputs["draft"]["text"], "scene_artifacts": deepcopy(inputs["draft"]["scene_artifacts"]), "resolved_issue_codes": []})
         elif stage == "rereview":
             result.update(score=90, issues=[], resolution_checks=[])
         return result
 
     def build_with_transport(*args, **kwargs):
-        return build_execution(*args, **kwargs, chapter_fixture_factory=literary_transport)
+        kwargs["chapter_fixture_factory"] = literary_transport
+        return build_execution(*args, **kwargs)
 
     monkeypatch.setattr(native_book, "build_production_execution_composition", build_with_transport)
     helper = native_book.BookToChapterAuthorityVerticalPostgresTests()
@@ -612,7 +619,7 @@ def test_native_author_acceptance_and_edition_source_classification(monkeypatch,
         fixture["candidates"] = [{**row, "asset_version_id": plan.asset_version_id, "content_hash": plan.content_hash,
             "content": plan_content} if row is planned else row for row in fixture["candidates"]]
         editor = ChapterAuthorEditingApplication(DATABASE_URL, application_build_id="book-authority-control", commit_sha="e" * 40)
-        prose = "Mara breaks her only passage token and shelters the witnesses behind the gate. She cannot go home now."
+        prose = "玛拉折断了唯一的通行符，把证人护送到城门后的石屋。门外响起追兵的脚步，她掩住灯火，让伤者先包扎流血的手腕。碎符已经不能复原，她暂时无路回家，只能守住眼前的人。她把断符收进袖里，按住发抖的手，让证人靠着门后的石墙坐下。"
         payload = {**scope, "base_asset_version_id": plan.asset_version_id, "base_asset_hash": plan.content_hash,
             "base_text_hash": text_hash(""), "expected_version": 0, "text": prose, "rights_basis": "ORIGINAL_AUTHOR_INPUT"}
         saved = editor.execute(action="save", payload=payload, idempotency_key=identifier("edition-author-save"), principal=principal)
