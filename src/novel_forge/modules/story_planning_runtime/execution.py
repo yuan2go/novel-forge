@@ -2511,6 +2511,18 @@ def _canonical_narrative_provider_properties(
     }
 
 
+def compile_planning_output_schema(schema, schema_ref, *, prompt_template_ref, prompt_template_version,
+                                   skill_ref, skill_version, progression=False):
+    if (prompt_template_ref, prompt_template_version) != ("prompt-template:story-planning-pack", "v3"):
+        return schema, schema_ref
+    from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
+
+    output = bind_narrative_intent_schema(schema,
+        event_first_planning=(skill_ref, skill_version) == ("long-outline", "long-outline-v5"),
+        progression=progression)
+    return output, schema_ref + ":narrative-intent-v1" + (":narrative-progression-v1" if progression else "")
+
+
 def stage_schema_evidence_identity(stage, schema, schema_ref, *, world_stage=False):
     if stage in {"context_compress", "context_fidelity"}:
         root = Path(__file__).resolve().parents[1]
@@ -4583,19 +4595,13 @@ class PostgresPlanningExecutionPreparer:
         if (context_document.content.get("world_protected_context_accounting_version") == "world-protected-context-accounting.v1"
                 and (pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version) != ("prompt-template:story-planning-pack", "v3")):
             raise KernelError("WORLD_EXACT_ACCOUNTING_TRANSPORT_DRIFT", "Frozen exact accounting requires the original structured Planning transport")
-        if not capacity_task and (pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version) == ("prompt-template:story-planning-pack", "v3"):
-            from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
-
+        if not capacity_task:
             progression = provider_stage is None and command.generator_operation_name in {"book_plan.generate", "volume_plan.generate", "arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"} and (((context_document.content.get("arc_working_set") or {}).get("working_manuscript") or {}).get("projection_policy") or {}).get("version") == "working-prose-projection.v4"
-            output_schema = bind_narrative_intent_schema(
-                output_schema,
-                event_first_planning=(pack_materialization.skill.ref, pack_materialization.skill.version)
-                == ("long-outline", "long-outline-v5"),
-                progression=progression,
-            )
-            output_schema_ref += ":narrative-intent-v1"
-            if progression:
-                output_schema_ref += ":narrative-progression-v1"
+            output_schema, output_schema_ref = compile_planning_output_schema(output_schema, output_schema_ref,
+                prompt_template_ref=pack_materialization.prompt_template.ref,
+                prompt_template_version=pack_materialization.prompt_template.version,
+                skill_ref=pack_materialization.skill.ref, skill_version=pack_materialization.skill.version,
+                progression=progression)
         if capacity_task:
             from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema, chapter_provider_output_schema_ref
             output_schema = chapter_provider_output_schema(stage_name)

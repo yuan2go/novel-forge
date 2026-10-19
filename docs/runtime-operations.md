@@ -2241,16 +2241,17 @@ independent human input. A coding agent's labels cannot be submitted as human ev
 The software checks provenance and declared independence; it cannot certify a person's
 judgment or turn subjective labels into universal truth.
 
-Model-only references are a separate requested contract, not HumanEvaluation or human
-calibration. The current native reference path requires human annotations. An explicit
+Model-only references use a separate contract from HumanEvaluation and human
+calibration. Creation, record/adjudication validation and a composition factory are
+`CODE_EXISTS`; this does not establish a callable product entry or real panel execution.
+Human-reference requests retain their human annotations. An explicit
 `codex-router-models.v1` catalog can configure task-scoped Codex models, but it does not
 create model reference evidence. A frozen model panel requires two isolated
 blind executions and a third adjudication, all binding the exact subject, author baseline,
 policy, Producer, actual ModelCallLog and Kernel receipt. Same-model executions remain
 correlated model consensus; selection alone cannot qualify a model. Do not replace an old
-human reference, frozen route or budget when enabling a model panel. Model reference
-creation, native record/adjudication and reference feedback
-must be implemented and verified before dispatch or production admission can use that basis.
+human reference, frozen route or budget when enabling a model panel. A catalog selection
+or fixture cannot supply the native creation receipts required by model-reference consumers.
 
 The model-only contract uses separate `model_reference_evaluation` and
 `model_reference_adjudication` assets. Each evaluation binds the exact subject, author
@@ -2260,6 +2261,10 @@ model sessions; a third independent execution adjudicates their frozen outputs. 
 using one model family declares its correlation and remains `MODEL_CONSENSUS`, never
 HumanEvaluation or reader preference. Reference consumers validate the native source
 chain again and keep model-consensus qualification separate from human calibration.
+The Content Codec integration denominator includes every registered command. Fixture
+completions and explicit provenance refusals for the two native model-reference record
+commands are reported separately. Those refusals do not prove successful native panel
+creation, qualification or real Provider coverage.
 
 The offline `model-reference-pressure-pairs.v1` diagnostic uses
 `config/evaluation/model_reference_pressure_v1.json`. Four synthetic subjects expand

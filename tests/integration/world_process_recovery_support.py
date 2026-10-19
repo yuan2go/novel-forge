@@ -125,6 +125,10 @@ def main():
 
     def record(stage, inputs, callback):
         output = callback(stage, inputs)
+        if callback is transport:
+            from tests.integration.current_chapter_wire_support import current_chapter_wire_result
+
+            output = current_chapter_wire_result(stage, inputs, output, json_envelope=False)
         with (root / "world-process-calls.jsonl").open("a") as stream:
             stream.write(
                 json.dumps(

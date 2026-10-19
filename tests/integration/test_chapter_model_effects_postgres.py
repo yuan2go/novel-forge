@@ -1069,6 +1069,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
     def test_canonical_chapter_outcome_obeys_frozen_router_with_fixture_evidence(self) -> None:
         from datetime import datetime, timezone
         from unittest.mock import patch
+        from tests.integration.current_chapter_wire_support import current_chapter_fixture_response
 
         from novel_forge.modules.production_execution.cost_routing import (
             BenchmarkObservation, ModelCandidate, PricingSnapshot,
@@ -1125,7 +1126,8 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 "NOVEL_FORGE_ENABLE_SYNCHRONOUS_AUTHORITY_FIXTURE": "true",
                 "NOVEL_FORGE_COMMIT_SHA": "e" * 40,
             }
-            execution = build_production_execution_composition(settings, env=env)
+            execution = build_production_execution_composition(settings, env=env,
+                chapter_fixture_factory=lambda stage, inputs: current_chapter_fixture_response(stage, inputs, json_envelope=False))
             execution.gateway.provider_router = router
             application = build_chapter_authority_application(settings, execution=execution, env=env)
             self.assertIs(application._model_port.capability_binder.provider_router, router)
@@ -1135,6 +1137,7 @@ class ChapterModelEffectsPostgresTests(unittest.TestCase):
                 chapter=1, title="A Frozen Fixture Route", premise="A public choice costs a safe route home.",
                 trace_id=identifier("router-trace"), correlation_id=identifier("router-correlation"),
                 application_build_id="chapter-router-fixture-test", commit_sha="e" * 40,
+                context_token_budget=64_000,
                 context_candidates=self._release_evidence(
                     project_id, scope_preseeded=True, workspace_id=harness.workspace_id,
                 ),

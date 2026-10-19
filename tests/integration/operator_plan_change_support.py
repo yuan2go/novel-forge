@@ -108,6 +108,12 @@ def execute_operator_plan_change_vertical(*, composition, chapter, snapshot, set
                    narrative_search_id="", narrative_search_branch_key="", narrative_search_parent_state_asset_version_id="",
                    narrative_search_accepted_through_chapter=0, narrative_search_strategy_directive="",
                    narrative_search_planning_horizon={}, narrative_search_desired_transformation={}, narrative_search_hard_constraints=[])
+    held = authority.require(book_run_id)
+    assert held["state"] == "PAUSED" and held["accepted_through_chapter"] == 3
+    resumed_for_candidate = authority.resume(book_run_id, principal=principal,
+        reason="Fixture operator permits future candidate generation before the next explicit hold",
+        expected_version=int(held["version"]))
+    assert resumed_for_candidate["accepted_through_chapter"] == 3
     generated = post(f"/product/production/book-authority/books/{book_id}/planning-generations", command)
     candidate_id = generated["candidate_asset_version_id"]
     assert generated["status"] == "APPROVAL_PENDING"

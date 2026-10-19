@@ -877,6 +877,15 @@ forbidden. Native Router, admission, ExternalEffect, settlement and recovery ret
 owners. Results are ineligible World samples; they cannot materialize a World action or
 activate a ChapterPlan. Reference sampling uses independent native adjudications outside
 Provider input and records score disagreement separately from World rule validation.
+Sampling must reconstruct a recorded `world-plan-references.v1` contract from the original
+Planning command's Arc versions and original source's accepted obligations. A source
+without that recorded projection retains its historical task and Schema; the current
+Book or template cannot add reference authority to it. Exact frozen Context comparison
+and governed-source hash checks remain required. Producer reconstruction must apply the
+original materialized Pack's Prompt/Skill Schema projection for generation and derived
+Director tasks; a raw factory Schema cannot replace the recorded compiled Schema.
+Sample result decoding also uses the frozen task's agency contract, so historical and
+current transition payloads cannot be accepted under each other's protocol.
 World reference sampling at definition version `1.1.0` also accepts an exact native
 `world_provider_sample` generation output. Native Content annotation version `2.3.0`
 permits independent labels for that ineligible target. Planning derives the Director task

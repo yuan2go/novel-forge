@@ -238,28 +238,6 @@ class SynthesisChapterTransport(CreativeGroundingTransport):
                 return result
         result = super().planning(stage, inputs)
         task = inputs.get("world_preparation") or {}
-        if task.get("epistemic_contract") == "world-agency.v2":
-            from novel_forge.modules.worldbuilding.production_schema import agency_transition_paths
-
-            if stage == "world_candidates.generate":
-                from tests.integration.current_planning_wire_support import current_world_disclosure_result
-
-                result = current_world_disclosure_result(result, task)
-                for transition in agency_transition_paths(result).values():
-                    payload = json.loads(transition["payload_json"])
-                    if (payload["action"] == "act on the approved faction pressure"
-                        and payload["state_kind"] not in {"character_knowledge", "character_belief", "reader_knowledge", "disclosure_event"}):
-                        payload["action_mode"] = "ROUTINE"
-                        transition["payload_json"] = json.dumps(payload)
-            elif stage == "world_candidates.evaluate":
-                from tests.integration.current_planning_wire_support import current_world_fixture_classification
-
-                result["action_classifications"] = [
-                    {"field_path": path,
-                     "supported": current_world_fixture_classification(transition),
-                     "rationale": "Check the exact scripted action classification; the native causal gate separately verifies frozen sources, actor isolation and preparation order."}
-                    for path, transition in agency_transition_paths(task["generated_portfolio"]).items()
-                ]
         if inputs.get("controlled_execution_contract_version") == "1.18.0" and inputs.get("controlled_frozen_cast"):
             cast = inputs["controlled_frozen_cast"]["candidate_payload"]["characters"]
             if len(cast) != 1:

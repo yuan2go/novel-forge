@@ -1726,10 +1726,15 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
             native_transport = OperatorPlanChangeTransport(long_novel=autonomous_world == "long_novel_pilot")
         native_transport.database_url = DATABASE_URL
         native_planning = _current_planning_transport(native_transport)
+        from tests.integration.current_chapter_wire_support import current_chapter_wire_result
+
+        def native_chapter(stage, inputs):
+            return current_chapter_wire_result(stage, inputs, native_transport(stage, inputs), json_envelope=False)
+
         execution = build_production_execution_composition(
             settings,
             env=env,
-            chapter_fixture_factory=native_transport,
+            chapter_fixture_factory=native_chapter,
             planning_fixture_factory=native_planning,
         )
         chapter_application = build_chapter_authority_application(
@@ -2039,6 +2044,15 @@ def test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(
                         book_id=world_book, source_operation_id=world_origin, stage=world_stage)
                     assert frozen_world.context.content["world_preparation"] == frozen_world.stage.task
                     assert frozen_world.context.content["narrative_intelligence"]["selection_digest"] == frozen_world.stage.task["narrative_intelligence"]["selection_digest"]
+                    if world_stage == "world_candidates.generate":
+                        references = frozen_world.stage.task["plan_reference_contract"]
+                        assert references["version"] == "world-plan-references.v1"
+                        candidate_schema = frozen_world.stage.output_schema["properties"]["candidates"]["items"]["properties"]
+                        for role in ("arc_refs", "obligation_refs"):
+                            if references[role]:
+                                assert candidate_schema[role]["items"]["enum"] == references[role]
+                            else:
+                                assert candidate_schema[role]["maxItems"] == 0
                 with pytest.raises(KernelError, match="WORLD_SAMPLE_SOURCE_INVALID"):
                     require_world_sample_source(DATABASE_URL, project_id=project_id, book_id="wrong-book",
                         source_operation_id=world_origin, stage="world_candidates.generate")

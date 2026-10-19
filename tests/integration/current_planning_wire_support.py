@@ -17,7 +17,7 @@ def current_planning_fixture_response(stage, inputs, database_url):
 
 def current_planning_wire_result(result, inputs):
     command = inputs.get("planning_command") or {}
-    value = deepcopy(result)
+    value = deepcopy(current_world_fixture_wire_result(inputs.get("stage"), result, inputs.get("world_preparation") or {}))
     if command.get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}:
         for row in value.get("chapter_function_matrix", []):
             row["required_state_delta"] = {"status": "CHANGED", **row["required_state_delta"]}
@@ -157,7 +157,7 @@ def current_world_disclosure_result(result, task):
     value = deepcopy(result)
     for candidate in value.get("candidates", []):
         raw = json.loads(candidate["transition"]["payload_json"])
-        if raw.get("state_kind") != "disclosure_event" or raw.get("transition_id") != "reveal-accepted-notice":
+        if raw.get("state_kind") != "disclosure_event" or raw.get("transition_id") != "reveal-accepted-notice" or "action_mode" in raw:
             continue
         event_id = raw["changes"]["fact_id"]
         sources = [entry for entry in task["context_projection"]["selection"]
@@ -171,7 +171,7 @@ def current_world_disclosure_result(result, task):
             raise ValueError("current disclosure fixture requires an exact declared presentation channel")
         source = sources[0]
         actor = characters[0]["character_id"]
-        knowledge_key = f"character_id={actor}&fact_id={event_id}"
+        knowledge_key = f"character_id={actor}|fact_id={event_id}"
         predicate = {"requirement_id": "observe-accepted-notice-status", "state_kind": "world_state",
                      "entity_key": source["entity_key"], "field": "status", "operator": "EQUALS", "value": source["state"]["status"]}
         observe = {
@@ -194,6 +194,30 @@ def current_world_disclosure_result(result, task):
         candidate["preparation_paths"] = [{"path_id": "observe-notice-before-disclosure", "rationale": "The actor observes an exact frozen objective source before choosing disclosure; this is an unaccepted preparation proposal.",
                                              "steps": [{"chapter_offset": 0, "transition": {"payload_json": json.dumps(observe)}}]}]
     return value
+
+
+def current_world_fixture_wire_result(stage, result, task):
+    import json
+    from novel_forge.modules.worldbuilding.production_schema import agency_transition_paths
+
+    if task.get("epistemic_contract") != "world-agency.v2":
+        return result
+    if stage == "world_candidates.generate":
+        result = current_world_disclosure_result(result, task)
+        for transition in agency_transition_paths(result).values():
+            payload = json.loads(transition["payload_json"])
+            if ("action_mode" not in payload and payload["action"] == "act on the approved faction pressure"
+                    and payload["state_kind"] not in {"character_knowledge", "character_belief", "reader_knowledge", "disclosure_event"}):
+                payload["action_mode"] = "ROUTINE"
+                transition["payload_json"] = json.dumps(payload)
+    elif stage == "world_candidates.evaluate":
+        result = deepcopy(result)
+        result["action_classifications"] = [
+            {"field_path": path, "supported": current_world_fixture_classification(transition),
+             "rationale": "Check the exact scripted action classification; the native causal gate separately verifies frozen sources, actor isolation and preparation order."}
+            for path, transition in agency_transition_paths(task["generated_portfolio"]).items()
+        ]
+    return result
 
 
 def current_world_fixture_classification(transition):

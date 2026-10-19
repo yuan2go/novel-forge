@@ -308,10 +308,9 @@ class AutonomousWorldTransport:
                 supports = [
                     entry
                     for entry in task["context_projection"]["selection"]
-                    if entry["entity_key"] == "world_state_id=council-inquiry"
+                    if entry["entity_key"] == "world_state_id=council-inquiry" and entry["state"].get("prepared") is True
                 ]
-                if supports:
-                    proposed["cause_refs"] = [supports[0]["source_event_id"]]
+                proposed["cause_refs"] = [supports[0]["source_event_id"]] if supports else ["local:prepare-inquiry"]
                 candidate = result["candidates"][0]
                 candidate["transition"] = {"payload_json": json.dumps(proposed)}
                 candidate["preparation_paths"] = [
@@ -941,6 +940,18 @@ def execute_autonomous_world_vertical(
     lease_takeovers = []
     armed = False
 
+    def wait_for_retry_window(claim):
+        import time
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+        with AuthorityUnitOfWork(composition.authority.database_url) as uow:
+            uow.cursor.execute("SELECT status,EXTRACT(EPOCH FROM available_at-NOW()) FROM authority_runtime_job WHERE runtime_job_id=%s", [claim.runtime_job_id])
+            retry_status, wait_seconds = uow.cursor.fetchone()
+        assert retry_status == "RETRY_WAIT"
+        assert jobs.claim(runtime_group="book", worker_id="world-causal-worker", lease_seconds=30,
+            job_kinds=("BOOK_COORDINATION_TICK",), subject_kind="BOOK_RUN", subject_id=admitted.book_run_id) is None
+        time.sleep(max(0, float(wait_seconds)))
+
     def acceptance_failure(point):
         nonlocal armed
         if point == "after_chapter_acceptance":
@@ -1031,6 +1042,7 @@ def execute_autonomous_world_vertical(
                     ]
                     == 0
                 )
+            wait_for_retry_window(claim)
             continue
         except KernelError as exc:
             if (
@@ -1044,15 +1056,7 @@ def execute_autonomous_world_vertical(
                 ]
                 == 0
             )
-            import time
-            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
-            with AuthorityUnitOfWork(composition.authority.database_url) as uow:
-                uow.cursor.execute("SELECT status,EXTRACT(EPOCH FROM available_at-NOW()) FROM authority_runtime_job WHERE runtime_job_id=%s", [claim.runtime_job_id])
-                retry_status, wait_seconds = uow.cursor.fetchone()
-            assert retry_status == "RETRY_WAIT"
-            assert jobs.claim(runtime_group="book",worker_id="world-causal-worker",lease_seconds=30,
-                job_kinds=("BOOK_COORDINATION_TICK",),subject_kind="BOOK_RUN",subject_id=admitted.book_run_id) is None
-            time.sleep(max(0, float(wait_seconds)))
+            wait_for_retry_window(claim)
             continue
         coordination.append(result)
         assert jobs.complete(claim, result)["replayed"] is True
@@ -1259,11 +1263,17 @@ def execute_autonomous_world_vertical(
                     for entry in reality["current_state"]["narrative_obligation"]
                     if entry["state"].get("obligation_type") == "CAUSAL_DEBT"
                 ]
-                assert (
-                    len(debts) == 1
-                    and debts[0]["status"] == "OPEN"
-                    and not debts[0]["payoff_evidence"]
-                )
+                assert len(debts) == 1
+                if transport.scenario == "multi_preparation":
+                    assert debts[0]["status"] == "OPEN" and not debts[0]["payoff_evidence"]
+                else:
+                    target = next(event for event in background
+                        if (event["mutation"]["payload"].get("causal_batch") or {}).get("local_id") == "complete-prepared-inquiry")
+                    preparation = next(event for event in background
+                        if (event["mutation"]["payload"].get("causal_batch") or {}).get("local_id") == "prepare-inquiry")
+                    assert target["causality"]["cause_refs"] == ["local:prepare-inquiry"]
+                    assert preparation["coordinate"]["source_chapter"] == target["coordinate"]["source_chapter"] == 1
+                    assert debts[0]["status"] == "FULFILLED" and debts[0]["payoff_evidence"]["event_id"] == target["event_id"]
                 reader = composition.query.reality_view(
                     book_run_id=admitted.book_run_id, view="reader"
                 )
@@ -1379,7 +1389,9 @@ def execute_autonomous_world_vertical(
                 if (event["mutation"]["payload"].get("fact_origin") or {}).get("kind")
                 == "GOVERNED_BACKGROUND"
             ]
-            fact_id = background[0]["event_id"]
+            fact_id = (next(event["event_id"] for event in background
+                if (event["mutation"]["payload"].get("causal_batch") or {}).get("local_id") == "complete-prepared-inquiry")
+                if transport.scenario == "causal_preparation" else background[0]["event_id"])
             if transport.scenario != "causal_preparation":
                 expected_reader = {
                     "reader_partial": "SUSPECTED",

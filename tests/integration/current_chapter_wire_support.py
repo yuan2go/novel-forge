@@ -18,8 +18,15 @@ def current_chapter_wire_result(stage, inputs, result, *, json_envelope=True):
         return result
     if table.get("contract_version") != "literal-source-spans.v1":
         raise ValueError("current Chapter fixture requires its exact frozen source span table")
-    value = deepcopy(result)
+    value = deepcopy(json.loads(result["payload_json"]) if current_canon and set(result) == {"payload_json"} else result)
     text = inputs["revision"]["text"]
+
+    def existing_span(identity):
+        matches = [span for span in table["spans"] if span["span_id"] == identity
+                   and span["quote"] == text[span["start"]:span["end"]]]
+        if len(matches) != 1:
+            raise ValueError("current Chapter fixture span must belong to its exact frozen candidate")
+        return identity
 
     def span_id(location):
         quote = location.get("quote")
@@ -45,16 +52,26 @@ def current_chapter_wire_result(stage, inputs, result, *, json_envelope=True):
 
         for field in (*PROVIDER_SEMANTIC_CHANGE_FIELDS.values(), "arc_evidence", "realization_evidence"):
             for claim in value.get(field, []):
-                quote = claim.pop("evidence_quote", None)
-                start, end = claim.pop("evidence_start", None), claim.pop("evidence_end", None)
-                claim["evidence_span_id"] = (
-                    None if claim.get("observation_status") == "NOT_OBSERVED"
-                    else span_id({"quote": quote, "start": start, "end": end})
-                )
+                if "evidence_span_id" in claim:
+                    if any(key in claim for key in ("evidence_quote", "evidence_start", "evidence_end")):
+                        raise ValueError("current Chapter fixture cannot mix span and coordinate evidence")
+                    if claim.get("observation_status") == "NOT_OBSERVED":
+                        if claim["evidence_span_id"] is not None:
+                            raise ValueError("unobserved fixture claim cannot assert a source span")
+                    else:
+                        existing_span(claim["evidence_span_id"])
+                else:
+                    quote = claim.pop("evidence_quote", None)
+                    start, end = claim.pop("evidence_start", None), claim.pop("evidence_end", None)
+                    claim["evidence_span_id"] = (
+                        None if claim.get("observation_status") == "NOT_OBSERVED"
+                        else span_id({"quote": quote, "start": start, "end": end})
+                    )
                 if "resolution_evidence" in claim:
-                    claim["resolution_evidence"] = [span_id({"quote": quote}) for quote in claim["resolution_evidence"]]
+                    identities = {span["span_id"] for span in table["spans"]}
+                    claim["resolution_evidence"] = [existing_span(quote) if quote in identities else span_id({"quote": quote}) for quote in claim["resolution_evidence"]]
                 for location in claim.get("accepted_prose_evidence", []):
-                    identity = span_id(location)
+                    identity = existing_span(location["span_id"]) if "span_id" in location else span_id(location)
                     location.pop("quote", None)
                     location.pop("start", None)
                     location.pop("end", None)
@@ -71,7 +88,7 @@ def current_chapter_wire_result(stage, inputs, result, *, json_envelope=True):
             if status == "UNDETERMINED":
                 row.update(gate_status="INSUFFICIENT_EVIDENCE", score=None)
             row["evidence_locations"] = [
-                {"span_id": span_id(location), "claim": location.get("claim") or "Scripted wire evidence only; no literary qualification."}
+                {"span_id": existing_span(location["span_id"]) if "span_id" in location else span_id(location), "claim": location.get("claim") or "Scripted wire evidence only; no literary qualification."}
                 for location in row["evidence_locations"]
             ]
     return value

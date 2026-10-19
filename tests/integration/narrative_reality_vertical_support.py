@@ -218,6 +218,7 @@ def execute_native_reality_vertical(
                     "precision": "EXACT",
                 },
                 "action": "respond to the accepted discovery",
+                "action_mode": "INFORMATION_DEPENDENT",
                 "state_kind": "world_state",
                 "entity_key": "world_state_id=council-inquiry",
                 "changes": {"status": "OPEN"},

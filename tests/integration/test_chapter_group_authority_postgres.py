@@ -367,7 +367,8 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
         from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
         output = default_chapter_fixture_response(stage, inputs)
         if stage == "draft":
-            text = "雪花静静落在冬日的长街上。旁观者看着街灯和窗户，没有作出决定。无人知晓新的事实，街道仍是原先的模样。"
+            text = ("雪花静静落在冬日的长街上。旁观者看着街灯和窗户，没有作出决定。无人知晓新的事实，街道仍是原先的模样。"
+                    "灯罩上的薄霜映着窗内的暖色，檐下的阴影沿砖缝铺开。远处屋脊只有朦胧的轮廓，近处栏杆的纹理仍清晰可辨。")
             for scene in output["scene_artifacts"]:
                 scene["text"] = text
             output["text"] = serialize_realization(output["scene_artifacts"]) if output["scene_artifacts"] else text
