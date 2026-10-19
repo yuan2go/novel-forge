@@ -558,7 +558,10 @@ Formation-owned intent forwarded to the active native phase; it prevents later s
 Completed accepted production cannot be cancelled retroactively. Phase workers resolve the
 same project Pack scope and original admitted author identity when taking over continuous creation;
 the worker identity owns only its execution lease. Coordination coalesces live ticks, backs off
-failures and retains a dead-letter stop for repeated actual execution failures. Healthy
+failures and retains a dead-letter stop for repeated actual execution failures.
+Opening work that exhausts its local coordination window while `ADMITTED` or `RUNNING`
+yields `YIELDED_CHECKPOINT` with the original checkpoint for the next CLI or worker window;
+it does not become an owner-recovery stop or receive a new Attempt allowance. Healthy
 lease/dependency waits and unknown-outcome reconciliation use backoff and remain queryable;
 unchanged wait observations cannot become a no-progress failure. A native
 dependency change or explicit owner recovery can wake the same work. A deterministic Planning

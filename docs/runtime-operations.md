@@ -1783,6 +1783,9 @@ The start result supplies the original Formation identity. Preserve it and the s
 creation key. Start now returns after durable admission; the existing Book worker owns
 continuous phase handoffs. `continue` schedules the same work and `--foreground` optionally
 drives a bounded local window. Ordinary technical waits need no author continuation call.
+An Opening that exhausts that window while `ADMITTED` or `RUNNING` yields the
+existing `YIELDED_CHECKPOINT`, retaining its exact checkpoint so the CLI or worker can
+schedule the next window. Other stop reasons retain their existing recovery requirements.
 The existing author production page sends `production_intent` with its saved Brief to the
 same Formation endpoint and uses this same application coordinator. It displays the
 Formation decision, worker progress and cancellation; reader/editor/Edition interfaces

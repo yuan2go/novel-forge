@@ -524,7 +524,8 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
                         "checkpoint": composition.opening.require(opening[0])}
         opened = composition.opening.require(opening[0])
         if opened["lifecycle"] != "COMPLETE":
-            return {"opening_run_id": opening[0], "stop_reason": opened["lifecycle"], "checkpoint": opened}
+            stop = "YIELDED_CHECKPOINT" if opened["lifecycle"] in {"ADMITTED", "RUNNING"} else opened["lifecycle"]
+            return {"opening_run_id": opening[0], "stop_reason": stop, "checkpoint": opened}
         execution_probe()
         snapshot = composition.input_resolver.require(opened["result"]["input_snapshot_id"])
         design = AuthorityAssetQuery(content.database_url).require(project_id=project, asset_version_id=snapshot.book_design_version)
