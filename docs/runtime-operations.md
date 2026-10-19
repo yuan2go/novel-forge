@@ -633,7 +633,7 @@ For new v10 requests, inspect `context_selection.source_locator_receipt` as well
 ranked hits: explicit past-chapter references and task event IDs retain complete original
 episodes through checked historical generation Plan pointers. The locator boundary is
 `HISTORICAL_GENERATION_PLAN_LOCATORS_NOT_EVENT_REALIZATION_OR_KNOWLEDGE`.
-Current task v2 binds the native current Volume segment for Planning; an empty native
+Current task v3 retains task v2's native current Volume segment binding for Planning; an empty native
 demand rejects before generation. Locator v2 / selection v3 record
 `predecessor_handoff` separately from explicit chapter references and event matches,
 retaining the complete delivered predecessor. Inspect task `sources`, `field_sources`,
@@ -641,9 +641,13 @@ subjects and goal; a collection of valid Arc pointers alone is not a task descri
 Missing Plan pointers and unlocated event IDs remain diagnostic gaps. Check actual
 admission snapshots to establish delivery; a current reconstruction is not historical
 Provider evidence. Selection v1 replay must retain its original receipt without locators.
-Frozen task v1 and locator v1 / selection v2 replay also retain their original scope.
+Frozen task v1-v2 and locator v1 / selection v2 replay also retain their original scope.
 Complete request capture checks original frozen stage inputs before Provider rendering;
 an empty rendering-capture object must not erase a v10 request's snapshot requirement.
+Task v3 freezes `source-bound-full-provider-request.v1` as its delivery contract. It has
+a distinct request identity from prior tasks; an obsolete never-sent branch is cancelled
+through its original Kernel lifecycle rather than rebound to another release or relabelled
+with a new receipt. Existing Effects retain their original admission artifacts.
 
 POST annotations still bind `chapter`, `source_asset_version_id`, exact
 `expected_version`, a replay-safe `idempotency_key`, `source_kind` and located observations.

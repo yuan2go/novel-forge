@@ -11,6 +11,8 @@ def request_snapshot_required(stage, provider_data):
     while pending:
         value = pending.pop()
         if isinstance(value, Mapping):
+            if value.get("delivery_contract") == "source-bound-full-provider-request.v1":
+                return True
             policy = value.get("projection_policy")
             if isinstance(policy, Mapping) and policy.get("version") == "working-prose-projection.v10":
                 return True

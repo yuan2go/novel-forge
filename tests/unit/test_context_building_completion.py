@@ -325,3 +325,23 @@ def test_shared_admission_snapshot_uses_frozen_inputs_and_context_across_native_
         assert actual.input_text == envelope.input_text
     else:
         assert contract == original
+
+
+def test_delivery_contract_requires_full_snapshot_without_reinterpreting_frozen_task2():
+    from novel_forge.modules.book_authority.working_task import build_working_task, validate_working_task
+    from novel_forge.modules.chapter_authority.request_snapshot import request_snapshot_required
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    book = dict(project_id='project', book_id='book', book_run_id='run')
+    content = dict(project_id='project', book_id='book', chapter=3, chapter_intent='Continue the previous action.')
+    sources = [dict(asset_type='chapter_plan', asset_version_id='plan', content_hash=canonical_hash(content), content=content)]
+    old = build_working_task(sources=sources, book=book, chapter=3, stage='CHAPTER', version='working-retrieval-task.v2')
+    current = build_working_task(sources=sources, book=book, chapter=3, stage='CHAPTER', version='working-retrieval-task.v3')
+    assert 'delivery_contract' not in old
+    assert current['delivery_contract'] == 'source-bound-full-provider-request.v1'
+    assert current['task_hash'] != old['task_hash']
+    assert {key: value for key, value in current.items() if key not in {'contract_version', 'delivery_contract', 'task_hash'}} == {
+        key: value for key, value in old.items() if key not in {'contract_version', 'task_hash'}}
+    validate_working_task(old, book=book, chapter=3, stage='CHAPTER', sources=sources)
+    validate_working_task(current, book=book, chapter=3, stage='CHAPTER', sources=sources)
+    assert request_snapshot_required('draft', {'frozen_task': current})
+    assert not request_snapshot_required('draft', {'frozen_task': old})

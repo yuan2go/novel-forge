@@ -352,7 +352,8 @@ historical Plan bindings are navigation hints, never proof that a planned event 
 or that a character knows it. Missing Plan bindings remain visible. Replay validates the
 original Plan versions and source digests before reusing a disposable locator index.
 Previously frozen selection v1-v2 requests retain their original algorithms.
-New v10 freezes use retrieval task v2. Native
+New v10 freezes use retrieval task v3 with an explicit full-request delivery contract.
+Task v2's demand and handoff rules remain supported for frozen replay. Native
 Planning binds the exact current VolumePlan as well as Arc/Group inputs, selects its
 current narrative segment and the corresponding Arc segments, and resolves literal
 participant mentions against the frozen cast. The delivered predecessor is an explicit
