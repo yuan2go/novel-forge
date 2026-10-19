@@ -3855,15 +3855,60 @@ def compile_working_history_transport(view, *, contract_version="working-history
     return result, {"contract_version": contract_version, "projections": receipts}
 
 
-def compile_exact_context_references(view, *, structured_transport=False, short_literals=False, nested_canonical_strings=False):
+def _apply_exact_text_edits(source, edits):
+    if not isinstance(source, str) or not isinstance(edits, list) or not edits:
+        raise KernelError('PROVIDER_EXACT_REFERENCE_INVALID', 'Text edits require a complete earlier string and nonempty ordered edits')
+    result, position, last_start = [], 0, -1
+    for edit in edits:
+        if (not isinstance(edit, Mapping) or set(edit) != {'start', 'end', 'text'}
+                or type(edit['start']) is not int or type(edit['end']) is not int or not isinstance(edit['text'], str)
+                or not position <= edit['start'] <= edit['end'] <= len(source) or edit['start'] <= last_start):
+            raise KernelError('PROVIDER_EXACT_REFERENCE_INVALID', 'Text edits require ordered nonoverlapping half-open Unicode ranges')
+        result.extend((source[position:edit['start']], edit['text']))
+        position, last_start = edit['end'], edit['start']
+    return ''.join((*result, source[position:]))
+
+
+def _comparison_text_edits(view):
+    from novel_forge.modules.review.diagnostics import prose_hash
+    task = view.get('input_manifest') if isinstance(view, Mapping) else None
+    comparison = task.get('prose_comparison') if isinstance(task, Mapping) else None
+    if not isinstance(comparison, Mapping) or comparison.get('contract_version') != 'exact-prose-comparison-view.v1':
+        return None
+    before = (comparison.get('original') or {}).get('text')
+    after = (task.get('revised_chapter') or {}).get('text')
+    if not isinstance(before, str) or not isinstance(after, str) or before == after:
+        return None
+    if (comparison.get('offset_unit') != 'UNICODE_CODE_POINT'
+            or comparison.get('coverage') != 'COMPLETE_BEFORE_AND_AFTER'
+            or comparison['original'].get('text_hash') != prose_hash(before)
+            or (comparison.get('revised') or {}).get('text_hash') != prose_hash(after)):
+        raise KernelError('PROVIDER_EXACT_REFERENCE_INVALID', 'Comparison transport requires both exact complete prose identities')
+    edits, position = [], 0
+    for span in comparison.get('edits') or []:
+        start, end = span.get('after_start'), span.get('after_end')
+        if type(start) is not int or type(end) is not int or not position <= start <= end <= len(after):
+            raise KernelError('PROVIDER_EXACT_REFERENCE_INVALID', 'Comparison edits must bind ordered revised Unicode ranges')
+        edits.append({'start': span.get('before_start'), 'end': span.get('before_end'), 'text': after[start:end]})
+        position = end
+    if _apply_exact_text_edits(before, edits) != after:
+        raise KernelError('PROVIDER_EXACT_REFERENCE_INVALID', 'Comparison edits must reconstruct the complete revised body')
+    return before, edits
+
+
+def compile_exact_context_references(view, *, structured_transport=False, short_literals=False, nested_canonical_strings=False, prose_comparison=False):
     from novel_forge.modules.story_planning_runtime.domain import canonical_hash
     marker = "__exact_value_ref__"
     overrides, removed, json_string = "__exact_value_overrides__", "__exact_value_removed_keys__", "__canonical_json_string__"
     fragments = '__text_fragments__'
-    seen, dictionaries, count, delta_count, json_count, fragment_count = {}, [], 0, 0, 0, 0
+    text_edits = '__exact_text_edits__'
+    comparison = _comparison_text_edits(view) if prose_comparison else None
+    if prose_comparison and not structured_transport:
+        raise KernelError('PROVIDER_EXACT_REFERENCE_INVALID', 'Comparison transport requires the structured exact envelope')
+    seen, dictionaries, count, delta_count, json_count, fragment_count, text_count = {}, [], 0, 0, 0, 0, 0
     def encode(value, path):
-        nonlocal count, delta_count, json_count, fragment_count
-        if isinstance(value, Mapping) and any(key in value for key in (marker, overrides, removed, json_string, fragments)):
+        nonlocal count, delta_count, json_count, fragment_count, text_count
+        if isinstance(value, Mapping) and any(key in value for key in (marker, overrides, removed, json_string, fragments, *((text_edits,) if prose_comparison else ()))):
             raise KernelError("PROVIDER_EXACT_REFERENCE_COLLISION", "Reserved reference syntax occurs in source content")
         identity = _canonical_exact_reference_value(value)
         large = len(identity.encode("utf-8")) >= (96 if short_literals and isinstance(value,str) else 256)
@@ -3908,11 +3953,18 @@ def compile_exact_context_references(view, *, structured_transport=False, short_
                 result = value
         else:
             result = value
+        if comparison and path == '/input_manifest/revised_chapter/text':
+            source_identity = _canonical_exact_reference_value(comparison[0])
+            if source_identity in seen:
+                candidate = {marker: seen[source_identity], text_edits: comparison[1]}
+                if len(_canonical_exact_reference_value(candidate).encode()) < len(_canonical_exact_reference_value(result).encode()):
+                    result = candidate
+                    text_count += 1
         if large:
             seen.setdefault(identity, path)
         return result
     encoded = encode(view, "")
-    if expand_exact_context_references(encoded) != view:
+    if expand_exact_context_references(encoded, prose_comparison=prose_comparison) != view:
         raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Exact context references did not reconstruct the complete source")
     proof = {"contract_version": "planning-exact-value-reference.v1", "source_context_hash": canonical_hash(view),
         "encoded_context_hash": canonical_hash(encoded), "reference_count": count, "decoded_equal": True}
@@ -3925,6 +3977,8 @@ def compile_exact_context_references(view, *, structured_transport=False, short_
         if not structured_transport:
             raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Nested canonical strings require structured transport")
         proof.update(transport_version="provider-structured-exact-reference.v4")
+    if prose_comparison:
+        proof.update(transport_version='provider-structured-exact-reference.v5', text_edit_reference_count=text_count)
     return encoded, proof
 
 
@@ -3932,10 +3986,11 @@ def _canonical_exact_reference_value(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
-def expand_exact_context_references(encoded):
+def expand_exact_context_references(encoded, *, prose_comparison=False):
     decoded = {}
     marker, overrides, removed, json_string = "__exact_value_ref__", "__exact_value_overrides__", "__exact_value_removed_keys__", "__canonical_json_string__"
     fragments = '__text_fragments__'
+    text_edits = '__exact_text_edits__'
     def remember(value, path):
         decoded[path] = value
         if isinstance(value, Mapping):
@@ -3947,9 +4002,13 @@ def expand_exact_context_references(encoded):
     def expand(value, path):
         if isinstance(value, Mapping) and marker in value:
             target = value[marker]
-            if not set(value).issubset({marker, overrides, removed}) or not isinstance(target, str) or target not in decoded:
+            if not set(value).issubset({marker, overrides, removed, *((text_edits,) if prose_comparison else ())}) or not isinstance(target, str) or target not in decoded:
                 raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "References must identify an earlier complete value within the same Context; external, forward and cyclic references are forbidden")
             result = deepcopy(decoded[target])
+            if prose_comparison and text_edits in value:
+                if set(value) != {marker, text_edits}:
+                    raise KernelError('PROVIDER_EXACT_REFERENCE_INVALID', 'Text edits cannot be mixed with object deltas')
+                result = _apply_exact_text_edits(result, value[text_edits])
             if overrides in value or removed in value:
                 changes, deletions = value.get(overrides, {}), value.get(removed, [])
                 if (not isinstance(result, dict) or not isinstance(changes, Mapping) or not isinstance(deletions, list)
@@ -3974,7 +4033,7 @@ def expand_exact_context_references(encoded):
                 raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Canonical JSON string requires an object")
             result = _canonical_exact_reference_value(parsed)
         elif isinstance(value, Mapping):
-            if overrides in value or removed in value:
+            if overrides in value or removed in value or prose_comparison and text_edits in value:
                 raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Exact object deltas require an earlier reference")
             result = {key: expand(item, path + "/" + str(key).replace("~", "~0").replace("/", "~1")) for key, item in value.items()}
         elif isinstance(value, list):

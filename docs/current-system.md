@@ -166,6 +166,13 @@ for a completed-only generation revalidation, and it never masks a new in-flight
 Planning and prose transport keep contiguous selected passages as one exact text plus
 Unicode boundaries; the host reconstructs their original locations and hashes. This
 reduces repeated protocol metadata within real model capacity without omitting prose.
+New Review/ReReview requests freeze `prose-review-exact-transport.v1` and use the same
+lossless structured envelope. ReReview may encode its revised body as exact edits to
+the complete original string, retaining ordered Unicode ranges and every intervening
+character. Host reconstruction must equal both complete Provider inputs; it does not
+prove semantic preservation or diagnosis resolution. Complete frozen source windows
+remain unchanged. Historical requests without this version keep their original
+representation, including ordinary data containing a later protocol's reserved key.
 Requested aesthetic repair of that exact selected source may use its diagnosed structural
 scope; unsolicited advice and stale requests do not authorize whole-chapter changes.
 Located edits of unmapped prose derive the body from the exact source, retain `NOT_MAPPED`

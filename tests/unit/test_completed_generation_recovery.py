@@ -301,6 +301,53 @@ def test_structured_exact_transport_reconstructs_full_json_and_object_deltas_aft
     assert compile_exact_context_references(source)[0] == legacy
 
 
+def test_prose_comparison_transport_keeps_complete_bodies_hashes_and_unicode_edits():
+    import json
+    from novel_forge.modules.review.prose_comparison import prose_comparison_view
+    before = ''.join(f'{index}：许照川拿起草料。🙂\n\n' for index in range(120))
+    after = '午后。\n' + before[:391] + '手臂酸了，他换手再搬。' + before[391:]
+    source = {'input_manifest': {'prose_comparison': prose_comparison_view(
+        {'text': before}, {'text': after}, original_id='draft:v1', revised_id='revision:v1'),
+        'revised_chapter': {'text': after}}, 'context_bundle': {'prior_prose': before}}
+    legacy, legacy_proof = compile_exact_context_references(source, structured_transport=True)
+    encoded, proof = compile_exact_context_references(source, structured_transport=True, prose_comparison=True)
+    assert expand_exact_context_references(json.loads(json.dumps(encoded, sort_keys=True)), prose_comparison=True) == source
+    assert proof['text_edit_reference_count'] == 1 and proof['transport_version'] == 'provider-structured-exact-reference.v5'
+    assert len(json.dumps(encoded, ensure_ascii=False).encode()) < len(json.dumps(legacy, ensure_ascii=False).encode()) - 3000
+    assert compile_exact_context_references(source, structured_transport=True) == (legacy, legacy_proof)
+
+
+@pytest.mark.parametrize('edits', [
+    [{'start': True, 'end': 1, 'text': ''}], [{'start': -1, 'end': 1, 'text': ''}],
+    [{'start': 0, 'end': 4, 'text': ''}], [{'start': 2, 'end': 1, 'text': ''}],
+    [{'start': 0, 'end': 2, 'text': ''}, {'start': 1, 'end': 3, 'text': ''}],
+    [{'start': 1, 'end': 1, 'text': '甲'}, {'start': 1, 'end': 1, 'text': '乙'}],
+    [{'start': 0, 'end': 1, 'text': None}], [{'start': 0, 'end': 1, 'text': '', 'extra': True}],
+    {}, [],
+])
+def test_exact_text_edits_reject_invalid_overlapping_or_ambiguous_ranges(edits):
+    with pytest.raises(KernelError, match='PROVIDER_EXACT_REFERENCE_INVALID'):
+        expand_exact_context_references({'a': '甲🙂乙', 'b': {'__exact_value_ref__': '/a', '__exact_text_edits__': edits}}, prose_comparison=True)
+
+
+@pytest.mark.parametrize('value', [
+    {'__exact_value_ref__': '/later', '__exact_text_edits__': [{'start': 0, 'end': 0, 'text': '甲'}]},
+    {'__exact_text_edits__': [{'start': 0, 'end': 0, 'text': '甲'}]},
+    {'__exact_value_ref__': '/a', '__exact_text_edits__': [{'start': 0, 'end': 0, 'text': '甲'}], '__exact_value_overrides__': {}},
+])
+def test_exact_text_edits_cannot_borrow_forward_or_object_delta_authority(value):
+    with pytest.raises(KernelError, match='PROVIDER_EXACT_REFERENCE_INVALID'):
+        expand_exact_context_references({'a': {}, 'b': value, 'later': '乙'}, prose_comparison=True)
+
+
+def test_new_text_marker_remains_literal_in_historical_reference_contracts():
+    source = {'note': {'__exact_text_edits__': 'historically ordinary literal data'}}
+    encoded, _ = compile_exact_context_references(source, structured_transport=True)
+    assert expand_exact_context_references(encoded) == source
+    with pytest.raises(KernelError, match='PROVIDER_EXACT_REFERENCE_COLLISION'):
+        compile_exact_context_references(source, structured_transport=True, prose_comparison=True)
+
+
 @pytest.mark.parametrize('start', [0, 19])
 def test_contiguous_text_transport_keeps_unicode_whitespace_hashes_and_referenced_fragments(start):
     import hashlib
