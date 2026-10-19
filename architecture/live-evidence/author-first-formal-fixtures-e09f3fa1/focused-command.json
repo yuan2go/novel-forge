@@ -1,0 +1,61 @@
+{
+  "at": "2026-10-19T06:29:59.598615+00:00",
+  "source_sha": "e09f3fa160a13b54927fc2858d0eb65eb5729aac",
+  "source_root": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/instruction-fixture-source",
+  "commands": {
+    "postgres": [
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+      "-m",
+      "pytest",
+      "tests/integration/test_synthesis_formation_postgres.py::test_native_formation_generates_foundation_from_author_brief[current-production]",
+      "tests/integration/test_runtime_policies_postgres.py::RuntimePolicyPostgresTests::test_router_policy_is_operator_owned_and_applied_by_canonical_selector",
+      "tests/integration/test_knowledge_closure_helper_source_postgres.py",
+      "tests/integration/test_source_import_runtime_postgres.py::SourceImportRuntimePostgresTests::test_document_routing_exact_reuse_and_contract_invalidation",
+      "-q",
+      "--tb=short",
+      "--junitxml=/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/instruction-fixtures-final-postgres-e09f3fa1.xml"
+    ],
+    "unit": [
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+      "-m",
+      "pytest",
+      "tests/unit/test_synthesis_fixture_contract_versions.py",
+      "tests/unit/test_synthesis_current_planning_wire.py",
+      "tests/unit/test_current_chapter_wire_fixture.py",
+      "tests/unit/test_current_fixture_wire_contracts.py",
+      "tests/unit/test_creation_freeze.py",
+      "tests/unit/test_source_intelligence_routing.py",
+      "tests/unit/test_production_execution_routing.py",
+      "tests/unit/test_instruction_surface.py",
+      "-q",
+      "--tb=short",
+      "--junitxml=/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/instruction-fixtures-final-unit-e09f3fa1.xml"
+    ],
+    "docs": [
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+      "-m",
+      "novel_forge.tools.documentation_reality",
+      "--repo-root",
+      ".",
+      "--expected-sha",
+      "e09f3fa160a13b54927fc2858d0eb65eb5729aac",
+      "--output",
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/instruction-fixtures-final-docs-e09f3fa1.json"
+    ],
+    "ruff": [
+      "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/ruff",
+      "check",
+      "tests/integration/synthesis_production_support.py",
+      "tests/integration/test_cross_model_source_postgres.py",
+      "tests/integration/test_knowledge_closure_helper_source_postgres.py",
+      "tests/integration/test_production_book_budget_postgres.py",
+      "tests/integration/test_runtime_policies_postgres.py",
+      "tests/integration/test_single_book_budget_postgres.py",
+      "tests/integration/test_source_import_runtime_postgres.py"
+    ]
+  },
+  "postgres_expected_tests": 5,
+  "focused_database": "nf_author_first_custody_final_test",
+  "native_production_database_not_used": true,
+  "no_skip_or_xfail_added": true
+}

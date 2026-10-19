@@ -1,0 +1,36 @@
+{
+  "source_sha": "a452cdc52d35f67cc9a03a992eb0266c3a823f81",
+  "at": "2026-10-19T06:17:08.985306+00:00",
+  "returncodes": {
+    "postgres": 0,
+    "unit": 0,
+    "docs": 0,
+    "ruff": 1
+  },
+  "counts": {
+    "unit": {
+      "tests": 164,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "postgres": {
+      "tests": 21,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "status": "PASS",
+  "ruff_corrected_invocation": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/ruff",
+    "check",
+    "tests/integration/test_cross_model_source_postgres.py",
+    "tests/integration/test_production_book_budget_postgres.py",
+    "tests/integration/test_single_book_budget_postgres.py"
+  ],
+  "ruff_corrected_returncode": 0,
+  "original_failed_invocation_retained": true,
+  "original_failure_reason": "Runner sent XML evidence to Python linter; all changed Python files checked separately without altering collection",
+  "production_trees_equal_to_39341596": true
+}
