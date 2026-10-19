@@ -521,7 +521,7 @@ class ExternalEffectChapterModelPort:
             dict(business_payload.get("preparation_report") or {}).get("stage_context_profile_versions", {}).get("draft")
             or business_payload.get("draft_profile_version") or ""
         )
-        task_admission_scoped = task_profile == "draft-context-profile-v4" or stage in CONTEXT_MODEL_STAGES
+        task_admission_scoped = task_profile == "draft-context-profile-v4" or stage in CONTEXT_MODEL_STAGES or stage == "working_memory_extract"
         task_scoped = task_admission_scoped or (stage == "reader_outcome" and request.definition_version == "1.4.0") or task_scoped_prose_review(request, stage)
         route = getattr(self.adapter, "routes", {}).get(stage)
         output_target = None
