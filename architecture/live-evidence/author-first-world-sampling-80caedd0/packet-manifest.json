@@ -1,0 +1,51 @@
+{
+  "schema_version": "checked-evidence-manifest.v1",
+  "source_sha": "80caedd02377270937ad76851725a28652fd12ce",
+  "files": [
+    {
+      "path": "classification.json",
+      "sha256": "sha256:9a2f39bed9a19adf4fe15c28d24896375a19619e7872bd06d80c4274f52ffc0d"
+    },
+    {
+      "path": "code-equivalence.json",
+      "sha256": "sha256:1ef23d5e5856a874370884aa86dadb2394528962be9304acc1aa96473a74a4d6"
+    },
+    {
+      "path": "documentation-reality.json",
+      "sha256": "sha256:d67692ed63605dfe32ad68534a9d5656b269877f2cb2771a1dbc738bd21b75bd"
+    },
+    {
+      "path": "focused-checks.json",
+      "sha256": "sha256:30ab8510e73b0d62738557de1fd4971c66e22593f490d5398e1531e4d4cb2cbb"
+    },
+    {
+      "path": "focused-unit.xml.gz",
+      "sha256": "sha256:b8a5ab048855f9b866e10151a7c5a9a166c86b6f427cd50ceebceff50dffaa27"
+    },
+    {
+      "path": "full-matrix-queue.json",
+      "sha256": "sha256:55e2dba0013246e6e92302d5337f26828f5503f660ada05782deeefe1f88c879"
+    },
+    {
+      "path": "index.json",
+      "sha256": "sha256:a5e11e666d9aa7fbd6177aa55e45770e68eded6f3ad516f887c086515ac22596"
+    },
+    {
+      "path": "native-checkpoint.json",
+      "sha256": "sha256:77ab9c727cac7d2973213d2b4e549d023c3958bbc14b7c507ba6da326cd845a7"
+    },
+    {
+      "path": "native21-second-missing-task-recovery.json",
+      "sha256": "sha256:a9c20e83bf1338fc35fbd8748700278977fd6d894a31622158108e4b990121f6"
+    },
+    {
+      "path": "native21-second-stream-recovery.json",
+      "sha256": "sha256:8b208fc60d051a7148946d9df74141df342e7febcf665bbe6f4cf3cb4abce4f4"
+    },
+    {
+      "path": "original-matrix-failure-summary.json",
+      "sha256": "sha256:38080794f3b6cb2b0b7664478c95b1873a3d37e93b5ce9f16a1552c2bcea9884"
+    }
+  ],
+  "raw_prose_or_provider_payloads_committed": false
+}

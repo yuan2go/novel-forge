@@ -1,0 +1,2023 @@
+{
+  "schema_version": "novel-forge.focused-source-equivalence.v1",
+  "source_sha": "80caedd02377270937ad76851725a28652fd12ce",
+  "unit_source": "80caedd02377270937ad76851725a28652fd12ce",
+  "unit": {
+    "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/causal-frontier-final-unit-80caedd0.xml",
+    "sha256": "sha256:b94b3890088f68615397c6e444061c4d54ed871f3446c9b22facec794f3c2bd6",
+    "tests": 355,
+    "passed": 355,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "cases": [
+      {
+        "classname": "tests.unit.test_world_sample_frozen_schema",
+        "name": "test_sampling_reconstructs_original_reference_scope_and_preserves_unmarked_history[False]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_sample_frozen_schema",
+        "name": "test_sampling_reconstructs_original_reference_scope_and_preserves_unmarked_history[True]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_sample_frozen_schema",
+        "name": "test_sample_compiles_schema_with_its_original_pack_for_generation_and_director[world_candidates.generate-v1]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_sample_frozen_schema",
+        "name": "test_sample_compiles_schema_with_its_original_pack_for_generation_and_director[world_candidates.generate-v2]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_sample_frozen_schema",
+        "name": "test_sample_compiles_schema_with_its_original_pack_for_generation_and_director[world_candidates.generate-v3]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_sample_frozen_schema",
+        "name": "test_sample_compiles_schema_with_its_original_pack_for_generation_and_director[world_candidates.evaluate-v1]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_sample_frozen_schema",
+        "name": "test_sample_compiles_schema_with_its_original_pack_for_generation_and_director[world_candidates.evaluate-v2]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_sample_frozen_schema",
+        "name": "test_sample_compiles_schema_with_its_original_pack_for_generation_and_director[world_candidates.evaluate-v3]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_sample_frozen_schema",
+        "name": "test_sample_result_decodes_only_the_frozen_agency_contract[False-False]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_sample_frozen_schema",
+        "name": "test_sample_result_decodes_only_the_frozen_agency_contract[False-True]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_sample_frozen_schema",
+        "name": "test_sample_result_decodes_only_the_frozen_agency_contract[True-False]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_sample_frozen_schema",
+        "name": "test_sample_result_decodes_only_the_frozen_agency_contract[True-True]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_current_chapter_wire_fixture",
+        "name": "test_current_fixture_can_replay_its_exact_wire_without_rebinding[False-canon_extraction]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_current_chapter_wire_fixture",
+        "name": "test_current_fixture_can_replay_its_exact_wire_without_rebinding[False-quality_structural]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_current_chapter_wire_fixture",
+        "name": "test_current_fixture_can_replay_its_exact_wire_without_rebinding[True-canon_extraction]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_current_chapter_wire_fixture",
+        "name": "test_current_fixture_can_replay_its_exact_wire_without_rebinding[True-quality_structural]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_current_chapter_wire_fixture",
+        "name": "test_replayed_fixture_rejects_a_foreign_candidate_span[canon_extraction]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_current_chapter_wire_fixture",
+        "name": "test_replayed_fixture_rejects_a_foreign_candidate_span[quality_structural]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_actor_sampling",
+        "name": "test_actor_sample_output_validates_private_basis_and_continuing_obligation",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_actor_sampling",
+        "name": "test_actor_sample_definitions_stay_experimental_and_use_native_workflow",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_actor_sampling",
+        "name": "test_world_schema_identity_shares_only_instance_ids_and_preserves_semantics",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_actor_sampling",
+        "name": "test_world_schema_identity_preserves_factory_identity_through_module_path_alias",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_author_intent_binds_frozen_working_frontier[None-WORLD_REASONER-world_candidates.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_author_intent_binds_frozen_working_frontier[None-DIRECTOR-world_candidates.evaluate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_author_intent_binds_frozen_working_frontier[book-WORLD_REASONER-world_candidates.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_author_intent_binds_frozen_working_frontier[book-DIRECTOR-world_candidates.evaluate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_author_intent_binds_frozen_working_frontier[target-WORLD_REASONER-world_candidates.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_author_intent_binds_frozen_working_frontier[target-DIRECTOR-world_candidates.evaluate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_author_intent_binds_frozen_working_frontier[accepted-WORLD_REASONER-world_candidates.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_author_intent_binds_frozen_working_frontier[accepted-DIRECTOR-world_candidates.evaluate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_author_intent_binds_frozen_working_frontier[hash-WORLD_REASONER-world_candidates.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_author_intent_binds_frozen_working_frontier[hash-DIRECTOR-world_candidates.evaluate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_author_intent_binds_frozen_working_frontier[legacy-WORLD_REASONER-world_candidates.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_author_intent_binds_frozen_working_frontier[legacy-DIRECTOR-world_candidates.evaluate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_and_director_consume_selected_experience_without_granting_accepted_knowledge[WORLD_REASONER-world_candidates.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_and_director_consume_selected_experience_without_granting_accepted_knowledge[DIRECTOR-world_candidates.evaluate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_compact_world_delivery_preserves_exact_story_and_original_observation_binding[WORLD_REASONER-world_candidates.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_compact_world_delivery_preserves_exact_story_and_original_observation_binding[DIRECTOR-world_candidates.evaluate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_delivery_keeps_knowledge_and_separates_selection_criteria_from_character_rules",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_task_scoped_world_history_excludes_unselected_internal_event[world-role-delivery.v3]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_task_scoped_world_history_excludes_unselected_internal_event[world-role-delivery.v4]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_actual_world_successor_consumes_registered_frozen_delivery_proof[None]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_actual_world_successor_consumes_registered_frozen_delivery_proof[story]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_actual_world_successor_consumes_registered_frozen_delivery_proof[knowledge]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_actual_world_successor_consumes_registered_frozen_delivery_proof[inputs]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_actual_world_successor_consumes_registered_frozen_delivery_proof[task]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_actual_world_successor_consumes_registered_frozen_delivery_proof[proof]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_continuation_rejects_wrong_frontier_or_unbound_selected_prose[target]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_continuation_rejects_wrong_frontier_or_unbound_selected_prose[book]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_continuation_rejects_wrong_frontier_or_unbound_selected_prose[accepted]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_continuation_rejects_wrong_frontier_or_unbound_selected_prose[missing-predecessor]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_world_continuation_rejects_wrong_frontier_or_unbound_selected_prose[changed-passage]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_frozen_accepted_only_source_does_not_acquire_working_history_or_new_chapter",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_native_working_generation_task_and_serialized_schema_share_the_scoped_transition_contract",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_native_world_output_validator_accepts_scoped_versions_and_enforces_the_frozen_schema[generation-False-False]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_native_world_output_validator_accepts_scoped_versions_and_enforces_the_frozen_schema[generation-False-True]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_native_world_output_validator_accepts_scoped_versions_and_enforces_the_frozen_schema[generation-True-False]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_native_world_output_validator_accepts_scoped_versions_and_enforces_the_frozen_schema[generation-True-True]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_native_world_output_validator_accepts_scoped_versions_and_enforces_the_frozen_schema[evaluation-False-False]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_native_world_output_validator_accepts_scoped_versions_and_enforces_the_frozen_schema[evaluation-False-True]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_native_world_output_validator_accepts_scoped_versions_and_enforces_the_frozen_schema[evaluation-True-False]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_native_world_output_validator_accepts_scoped_versions_and_enforces_the_frozen_schema[evaluation-True-True]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_working_belief_and_acquired_information_support_own_next_action_without_becoming_world_truth",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_local_disclosure_uses_bound_working_chapter_without_advancing_accepted_history",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_unbound_or_invalid_working_frontier_cannot_authorize_candidate_disclosure[None]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_unbound_or_invalid_working_frontier_cannot_authorize_candidate_disclosure[True]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_unbound_or_invalid_working_frontier_cannot_authorize_candidate_disclosure[0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_unbound_or_invalid_working_frontier_cannot_authorize_candidate_disclosure[2]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_corrupt_working_projection_cannot_fall_back_to_accepted_scope[projection0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_corrupt_working_projection_cannot_fall_back_to_accepted_scope[projection1]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_corrupt_working_projection_cannot_fall_back_to_accepted_scope[False]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_working_continuity",
+        "name": "test_supervisor_replans_only_future_when_world_missed_unchanged_working_history",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_versioned_disclosure_address_preserves_exact_state_and_legacy_contract",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_disclosure_alias_never_widens_visibility_or_guesses_a_field[state0-fields0-WORLD_DISCLOSURE_FIELDS_INVALID]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_disclosure_alias_never_widens_visibility_or_guesses_a_field[state1-fields1-WORLD_DISCLOSURE_FIELDS_INVALID]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_disclosure_alias_never_widens_visibility_or_guesses_a_field[state2-fields2-WORLD_DISCLOSURE_FIELDS_INVALID]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_disclosure_alias_never_widens_visibility_or_guesses_a_field[state3-fields3-WORLD_DISCLOSURE_FIELDS_INVALID]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_disclosure_alias_never_widens_visibility_or_guesses_a_field[state4-fields4-WORLD_DISCLOSURE_FIELDS_INVALID]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_disclosure_alias_never_widens_visibility_or_guesses_a_field[state5-fields5-WORLD_DISCLOSURE_FIELD_AMBIGUOUS]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_disclosure_alias_never_widens_visibility_or_guesses_a_field[state6-fields6-WORLD_DISCLOSURE_FIELD_AMBIGUOUS]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_current_world_role_input_binds_same_agency_schema_as_action_validation",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_empty_genesis_supports_first_agency_then_perception_then_own_decision_without_mutation",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_invalid_initial_knowledge_chain_is_rejected[borrow-WORLD_EPISTEMIC_ACTOR_MISMATCH]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_invalid_initial_knowledge_chain_is_rejected[future-WORLD_BATCH_FUTURE_CAUSE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_invalid_initial_knowledge_chain_is_rejected[cycle-WORLD_BATCH_CAUSAL_CYCLE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_invalid_initial_knowledge_chain_is_rejected[observed_value-WORLD_PERCEPTION_EVIDENCE_MISMATCH]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_invalid_initial_knowledge_chain_is_rejected[stolen_perception-WORLD_PERCEPTION_ACTOR_INVALID]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_invalid_initial_knowledge_chain_is_rejected[routine_knowledge-WORLD_ROUTINE_CANNOT_GRANT_KNOWLEDGE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_invalid_initial_knowledge_chain_is_rejected[missing_dependency-WORLD_BATCH_CONCURRENT_WRITE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_reader_knowledge_cannot_support_first_perception",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_host_binds_first_observation_owner_from_typed_actor_without_inventing_content",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_legacy_genesis_contract_is_preserved_and_cannot_take_new_modes",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_local_disclosure_requires_selected_causal_path_and_remains_unaccepted[None-None]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_local_disclosure_requires_selected_causal_path_and_remains_unaccepted[unknown-WORLD_DISCLOSURE_SOURCE_UNKNOWN]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_local_disclosure_requires_selected_causal_path_and_remains_unaccepted[private-WORLD_DISCLOSURE_FIELDS_INVALID]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_local_disclosure_requires_selected_causal_path_and_remains_unaccepted[future-WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_local_disclosure_requires_selected_causal_path_and_remains_unaccepted[cycle-WORLD_BATCH_CAUSAL_CYCLE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_schema_diagnosis_collects_multiple_nested_defects_in_one_result",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_first_chapter_plan_binds_canon_identity_and_executes_only_due_causal_batch[None]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_first_chapter_plan_binds_canon_identity_and_executes_only_due_causal_batch[identity]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_initial_agency",
+        "name": "test_first_chapter_plan_binds_canon_identity_and_executes_only_due_causal_batch[future]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_handler_retains_exact_frozen_supported_version[1.16.0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_handler_retains_exact_frozen_supported_version[1.17.0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_handler_retains_exact_frozen_supported_version[1.18.0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_handler_retains_exact_frozen_supported_version[1.19.0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_handler_retains_exact_frozen_supported_version[1.21.0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_handler_rejects_adjacent_unregistered_versions[1.20.0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_handler_rejects_adjacent_unregistered_versions[1.22.0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_handler_rejects_adjacent_unregistered_versions[1.170.0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_handler_rejects_adjacent_unregistered_versions[1.17.0-extra]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_result_repair_preserves_parent_snapshot_order_and_shared_asset_roles",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_result_repair_rejects_any_frozen_input_identity_drift[role]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_result_repair_rejects_any_frozen_input_identity_drift[asset_version_id]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_result_repair_rejects_any_frozen_input_identity_drift[asset_type]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_result_repair_rejects_any_frozen_input_identity_drift[content_hash]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_result_repair_rejects_incomplete_or_corrupt_frozen_input_evidence[missing]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_result_repair_rejects_incomplete_or_corrupt_frozen_input_evidence[extra]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_result_repair_rejects_incomplete_or_corrupt_frozen_input_evidence[duplicate_role]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_result_repair_rejects_incomplete_or_corrupt_frozen_input_evidence[bad_hash]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_repair_routing_lineage_is_rooted_in_durable_operations",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_candidate_repair_routing_lineage_uses_immutable_generation_source[False]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_candidate_repair_routing_lineage_uses_immutable_generation_source[True]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_candidate_repair_routing_lineage_rejects_unbound_candidate[content_hash]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_candidate_repair_routing_lineage_rejects_unbound_candidate[source_operation]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_candidate_repair_routing_lineage_rejects_unbound_candidate[book_scope]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_repair_routing_lineage_rejects_scope_drift[replacement0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_repair_routing_lineage_rejects_scope_drift[replacement1]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_repair_routing_lineage_rejects_scope_drift[replacement2]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_repair_routing_lineage_rejects_cycle",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_repair_routing_lineage_has_a_bounded_depth",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[None-1]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[None-8]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[None-9]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[cycle-1]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[cycle-8]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[cycle-9]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[foreign-1]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[foreign-8]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[foreign-9]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[counter-1]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[counter-8]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[counter-9]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[binding-1]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[binding-8]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_continuations_preserve_full_lineage_without_spending_content_repair_depth[binding-9]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_current_chapter_activation_cannot_use_import_compatibility_to_downgrade[chapter_contract_schema_version]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_current_chapter_activation_cannot_use_import_compatibility_to_downgrade[narrative_architecture_version]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_repetition_debt_ignores_unselected_search_branches",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_story_design_transition_idempotency_is_scoped_to_expected_version",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_real_planning_definition_versions_the_bounded_xhigh_timeout",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_provider_effect_shares_the_operation_retry_budget",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_planning_accepts_authoritative_runtime_snapshot_types[character_state-character_state_snapshot]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_planning_accepts_authoritative_runtime_snapshot_types[foreshadowing_state-foreshadow_snapshot]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_planning_accepts_authoritative_runtime_snapshot_types[reward_ledger-reward_ledger_snapshot]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_planning_accepts_authoritative_runtime_snapshot_types[promise_ledger-promise_ledger_snapshot]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_production_planning_composition_is_available_at_the_authority_boundary",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_scripted_semantic_evaluation_requires_explicit_test_runtime",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_provider_schema_is_codex_strict[BOOK]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_provider_schema_is_codex_strict[VOLUME]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_provider_schema_is_codex_strict[ARC]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_provider_schema_is_codex_strict[CHAPTER_GROUP]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_provider_schema_is_codex_strict[CHAPTER]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_realization_reference_contract_exposes_exact_frozen_authority_choices",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_volume_and_chapter_provider_contracts_bind_timeline_segments",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_provider_schema_freezes_active_schedule_row",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_schedule_binding_rejects_reworded_scheduling",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_group_search_schema_freezes_exact_horizon",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_realization_schema_merges_repeated_object_scalar_vocabulary",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_arc_provider_allows_relations_only_with_distinct_frozen_arc_refs",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_canonical_contracts_freeze_progressive_horizon_and_realization[BOOK-STRATEGIC-ANCHOR]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_canonical_contracts_freeze_progressive_horizon_and_realization[VOLUME-STRATEGIC-DEFINED]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_canonical_contracts_freeze_progressive_horizon_and_realization[ARC-STRATEGIC-DEFINED]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_canonical_contracts_freeze_progressive_horizon_and_realization[CHAPTER_GROUP-TACTICAL-DETAILED]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_canonical_contracts_freeze_progressive_horizon_and_realization[CHAPTER-OPERATIONAL-ACTIVE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_operational_plan_fails_closed_on_open_design_space_and_load_overrun",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_operational_plan_consumes_accepted_narrative_debt_projection",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_narrative_load_counts_world_concepts_not_revealed_facts",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_overdue_identity_requires_action_even_within_numeric_allowance",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_provider_contract_schedules_only_frozen_required_contributions",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_group_contract_rejects_non_pair_range_as_governed_error",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_contract_rejects_duplicate_arc_contribution_identity",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_contract_rejects_noncanonical_state_kind",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_contract_derives_reader_knowledge_from_disclosure_mode",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_contract_accepts_withheld_reader_boundary_without_state_advance",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_contract_rejects_temporal_and_scene_structural_failures[<lambda>-CHAPTER_KNOWLEDGE_FUTURE_LEAK]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_contract_rejects_temporal_and_scene_structural_failures[<lambda>-CHAPTER_STATE_TRANSITION_NOOP]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_contract_rejects_temporal_and_scene_structural_failures[<lambda>-SCENE_ARCHITECTURE_IDENTITY_DUPLICATE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_scene_contract_enforces_pov_time_relation_and_spatial_access",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_scene_contract_advances_declared_character_knowledge_between_scenes",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_progressive_realization_can_refine_strategic_versions",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_one_plan_supports_entity_specific_progressive_realization",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_current_entity_cannot_be_less_realized_than_plan_horizon",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_realization_reference_must_match_frozen_authority_version_and_hash",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_realization_domain_cannot_be_self_asserted_by_wrong_authority_role",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_book_contract_rejects_impossible_obligation_window",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_book_contract_accepts_window_for_declared_story_truth",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_volume_contract_rejects_gapped_narrative_segments",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_arc_contract_rejects_invalid_typed_relation",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_contract_preserves_explicit_empty_arc_contribution_policy",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_fixture_preserves_requested_chapter_number",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_fixture_applies_frozen_change_evidence",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_future_chapter_group_search_begins_after_accepted_boundary",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_group_search_command_freezes_complete_request_and_exact_range",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_group_search_command_rejects_identity_without_frozen_request",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_volume_search_freezes_and_enforces_exact_book_portfolio_range",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_book_search_rejects_oversized_or_drifted_opening_topology_before_activation",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_fixture_obeys_frozen_book_target_and_volume_range",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_world_runtime_contract_preserves_historical_frozen_commands",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_context_uses_canonical_policy_and_selection_seam[historical]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_context_uses_canonical_policy_and_selection_seam[task-policy-v2]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_context_rejects_duplicate_authority_representation",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_world_context_accounting_remains_bound_to_its_frozen_policy[world-production-policy.v1-historical-pack-historical-accounting]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_world_context_accounting_remains_bound_to_its_frozen_policy[world-production-policy.v1-historical-pack-explicit-exact-accounting]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_world_context_accounting_remains_bound_to_its_frozen_policy[world-production-policy.v1-task-pack-v2-historical-accounting]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_world_context_accounting_remains_bound_to_its_frozen_policy[world-production-policy.v1-task-pack-v2-explicit-exact-accounting]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_world_context_accounting_remains_bound_to_its_frozen_policy[world-production-policy.v4-historical-pack-historical-accounting]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_world_context_accounting_remains_bound_to_its_frozen_policy[world-production-policy.v4-historical-pack-explicit-exact-accounting]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_world_context_accounting_remains_bound_to_its_frozen_policy[world-production-policy.v4-task-pack-v2-historical-accounting]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_world_context_accounting_remains_bound_to_its_frozen_policy[world-production-policy.v4-task-pack-v2-explicit-exact-accounting]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_five_planning_generators_require_exact_authority_input_roles[arc_plan.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_five_planning_generators_require_exact_authority_input_roles[book_plan.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_five_planning_generators_require_exact_authority_input_roles[chapter_group_plan.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_five_planning_generators_require_exact_authority_input_roles[chapter_plan.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_five_planning_generators_require_exact_authority_input_roles[character.cast.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_five_planning_generators_require_exact_authority_input_roles[creative.candidates.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_five_planning_generators_require_exact_authority_input_roles[ending.intent.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_five_planning_generators_require_exact_authority_input_roles[reader.promise.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_five_planning_generators_require_exact_authority_input_roles[theme.candidates.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_five_planning_generators_require_exact_authority_input_roles[volume_plan.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_five_planning_generators_require_exact_authority_input_roles[world.design.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_change_evidence_cannot_alias_generator_input",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_plan_rejects_caller_shaped_realization_slice[standalone-read]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_plan_rejects_caller_shaped_realization_slice[existing-mutation-uow]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_arc_generation_freezes_multi_volume_and_related_arc_scope",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_arc_generation_rejects_relation_outside_frozen_portfolio",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_scheduling_generation_freezes_related_arc_portfolio",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_binder_requires_pack_capability_and_pep_on_one_attempt",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_invalid_primary_result_retains_exact_context_before_candidate_validation",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_capability_cannot_claim_chapter_commit_authority",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_constraint_envelope_propagates_parent_invariants_and_scope",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_role_aliases_share_one_exact_kernel_admission_reference",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_takeover_preserves_snapshot_provenance_but_requires_current_binding[4-7-True]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_takeover_preserves_snapshot_provenance_but_requires_current_binding[8-7-False]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_takeover_preserves_snapshot_provenance_but_requires_current_binding[4-6-False]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_raw_result_contract_requires_all_repaired_fields_and_keeps_original",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_raw_result_boundary_rejects_types_without_coercion[None]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_raw_result_boundary_rejects_types_without_coercion[raw1]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_raw_result_boundary_rejects_types_without_coercion[42]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_raw_result_boundary_rejects_types_without_coercion[invalid]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_raw_result_boundary_rejects_types_without_coercion[raw4]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_result_repair_command_keeps_historical_identity_and_bounded_new_causation",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_result_repair_cannot_mix_candidate_and_raw_result_causation",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_model_profile_distinguishes_contracts_and_reuses_exact_legacy[creative.candidates.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_model_profile_distinguishes_contracts_and_reuses_exact_legacy[world.design.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_model_profile_distinguishes_contracts_and_reuses_exact_legacy[character.cast.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_planning_model_profile_distinguishes_contracts_and_reuses_exact_legacy[book_plan.generate]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_model_profile_does_not_coerce_or_rewrite_invalid_retained_contract[invalid0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_model_profile_does_not_coerce_or_rewrite_invalid_retained_contract[None]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_model_profile_does_not_coerce_or_rewrite_invalid_retained_contract[42]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_model_profile_does_not_coerce_or_rewrite_invalid_retained_contract[invalid3]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_same_static_planning_model_preserves_only_its_own_capacity_binding[False]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_same_static_planning_model_preserves_only_its_own_capacity_binding[True]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_changed_static_planning_model_has_no_unrelated_draft_capacity_or_probe[codex-cli-codex-cli-LOCAL_CLI_REMOTE_INFERENCE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_changed_static_planning_model_has_no_unrelated_draft_capacity_or_probe[remote-provider-openai-openai-REMOTE_PROVIDER_API]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_changed_static_planning_model_has_no_unrelated_draft_capacity_or_probe[remote-provider-spoof-scripted_provider_v2-REMOTE_PROVIDER_API]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_changed_static_planning_model_has_no_unrelated_draft_capacity_or_probe[scripted-fixture-scripted_provider_v2-LOCAL_CLI_REMOTE_INFERENCE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_changed_static_planning_model_has_no_unrelated_draft_capacity_or_probe[remote-provider-spoof-scripted_provider_v2-SCRIPTED_FIXTURE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_scripted_planning_virtual_model_labels_retain_backend_fixture_capacity",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_routed_planning_model_uses_the_selected_candidates_own_capacities",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_changed_static_candidate_configuration_can_restore_original_active_planning_receipt[high]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_changed_static_candidate_configuration_can_restore_original_active_planning_receipt[low]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_runtime_repair_route_lineage_keeps_same_structural_count",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_current_serialization_contract_preserves_historical_strict_property_set",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_projection_cannot_reinterpret_another_frozen_mission[chapter-mission-scene.v3-3.0.0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_chapter_projection_cannot_reinterpret_another_frozen_mission[chapter-mission-scene.v4-2.0.0]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_story_planning_runtime",
+        "name": "test_completed_result_repair_replays_without_revalidating_old_world_frontier",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_known_world_action_requires_its_own_current_fence_before_frontier_adoption[world-host-revalidation.v3-None]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_known_world_action_requires_its_own_current_fence_before_frontier_adoption[world-host-revalidation.v3-foreign-operation]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_known_world_action_requires_its_own_current_fence_before_frontier_adoption[world-host-revalidation.v3-foreign-project]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_known_world_action_requires_its_own_current_fence_before_frontier_adoption[world-host-revalidation.v3-owned]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_known_world_action_requires_its_own_current_fence_before_frontier_adoption[world-host-revalidation.v4-None]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_known_world_action_requires_its_own_current_fence_before_frontier_adoption[world-host-revalidation.v4-foreign-operation]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_known_world_action_requires_its_own_current_fence_before_frontier_adoption[world-host-revalidation.v4-foreign-project]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_known_world_action_requires_its_own_current_fence_before_frontier_adoption[world-host-revalidation.v4-owned]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_serialized_world_contract_exposes_native_time_and_causal_predicates",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_preparation_uses_accepted_resource_reducer_semantics",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_world_policy_bounds_projected_time_as_well_as_candidate_count",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_generated_preparation_is_selected_but_only_actual_support_discharges_debt",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_failed_preparation_cannot_be_outscored_or_silently_repaired",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_no_world_event_is_a_reasoned_durable_planning_result[NO_OP]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_no_world_event_is_a_reasoned_durable_planning_result[DEFER]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_generation_bound_and_unknown_director_references_fail_closed",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_complete_world_task_respects_frozen_budget_not_only_state_selection",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_duplicate_preparation_event_names_are_rejected_before_chapter_planning",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_local_goal_support_requires_validated_own_preparation_path",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_preparation_cannot_legitimize_unknown_or_cyclic_target_sources[event:invented]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_preparation_cannot_legitimize_unknown_or_cyclic_target_sources[local:foreign-path]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_preparation_cannot_legitimize_unknown_or_cyclic_target_sources[local:departure]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_preparation_topology_is_independent_of_provider_array_order",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_continuation_never_treats_plan_success_as_accepted_completion",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_disclosure_resolves_an_accepted_occurrence_after_current_state_moves_on",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_disclosure_projection_exposes_only_the_requested_audience_fields[READER-PARTIAL]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_disclosure_projection_exposes_only_the_requested_audience_fields[hero-CONFIRM]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_disclosure_projection_exposes_only_the_requested_audience_fields[READER-MISDIRECT]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_disclosure_projection_exposes_only_the_requested_audience_fields[READER-WITHHOLD]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_continuation_reuses_an_exact_accepted_effect_without_reexecuting_a_step",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_due_preparation_revalidates_the_same_batch_graph[reordered]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_due_preparation_revalidates_the_same_batch_graph[cycle]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_due_preparation_revalidates_the_same_batch_graph[unordered_write]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_historical_disclosure_rejects_inexact_or_overbroad_claims[future-WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_historical_disclosure_rejects_inexact_or_overbroad_claims[book-WORLD_DISCLOSURE_SOURCE_SCOPE_INVALID]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_historical_disclosure_rejects_inexact_or_overbroad_claims[unknown-WORLD_DISCLOSURE_SOURCE_UNKNOWN]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_historical_disclosure_rejects_inexact_or_overbroad_claims[assertion-WORLD_DISCLOSURE_ASSERTION_STALE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_historical_disclosure_rejects_inexact_or_overbroad_claims[private-WORLD_DISCLOSURE_FIELDS_INVALID]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_historical_disclosure_rejects_inexact_or_overbroad_claims[audience-WORLD_DISCLOSURE_AUDIENCE_INVALID]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_misleading_character_presentation_cannot_smuggle_known_truth[MISDIRECT]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_misleading_character_presentation_cannot_smuggle_known_truth[WITHHOLD]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_professional_card_translation_changes_native_world_resource_feasibility",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_retained_world_candidate_missing_required_evidence_is_diagnosable_before_director[affected_entities]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_retained_world_candidate_missing_required_evidence_is_diagnosable_before_director[world_consequences]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_world_provider_delivers_typed_nested_payload_without_normalizing_invalid_fields",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_world_reference_contract_uses_selected_arcs_and_accepted_obligations_only",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_retained_blocked_world_plan_preserves_exact_json_identity_after_storage",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_legacy_rejection_and_typed_transition_cannot_conflict_in_diagnostic",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_isolated_world_sibling_requires_original_success_and_source[none]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_isolated_world_sibling_requires_original_success_and_source[missing_document]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_isolated_world_sibling_requires_original_success_and_source[missing_receipt]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_isolated_world_sibling_requires_original_success_and_source[different_output]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_isolated_world_sibling_requires_original_success_and_source[different_source]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_preparation",
+        "name": "test_isolated_world_recovery_skips_only_exact_owned_older_source_version",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_actor_travel_uses_its_own_clock_not_an_unrelated_world_event",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_unordered_same_batch_knowledge_cannot_authorize_a_decision",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_same_chapter_acquisition_supports_dependent_decision_without_mutating_baseline",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_invalid_causal_batch_has_no_partial_state[missing-WORLD_BATCH_REFERENCE_UNKNOWN]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_invalid_causal_batch_has_no_partial_state[future-WORLD_BATCH_FUTURE_CAUSE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_invalid_causal_batch_has_no_partial_state[cycle-WORLD_BATCH_CAUSAL_CYCLE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_invalid_causal_batch_has_no_partial_state[other_actor-WORLD_EPISTEMIC_ACTOR_MISMATCH]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_invalid_causal_batch_has_no_partial_state[unordered_write-WORLD_BATCH_CONCURRENT_WRITE]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_independent_same_time_events_are_legal",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_legacy_write_cannot_bypass_batch_order_for_same_identity",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_observer_batch_contract_has_a_distinct_identity_from_unbatched_extraction",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_ordered_changes_to_one_entity_get_consecutive_versions",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_why_trace_resolves_batch_names_within_exact_outcome_without_mutation",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_approved_world_mechanism_can_allow_instant_travel_but_model_flag_cannot",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_observed_root_cannot_invent_its_accepted_draft_evidence",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_approved_revival_projects_a_new_event_without_superseding_death",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_world_causal_batch",
+        "name": "test_combined_batch_checks_rules_against_the_final_projection",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_model_reference_contract",
+        "name": "test_native_model_call_requires_exact_effect_and_nonfixture_receipt",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_model_reference_contract",
+        "name": "test_native_model_call_rejects_peer_input_stale_baseline_and_mismatched_receipt",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_model_reference_contract",
+        "name": "test_panel_requires_three_distinct_native_executions_and_reports_correlation",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_model_reference_contract",
+        "name": "test_chapter_consumer_requires_exact_subject_scope_and_dimension",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_model_reference_contract",
+        "name": "test_blind_provider_projection_rejects_peer_report_and_stale_author_baseline",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_model_reference_contract",
+        "name": "test_model_record_rejects_human_identity_spoof_and_changed_model_result",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_model_reference_contract",
+        "name": "test_planning_agreement_consumes_model_panel_without_human_provenance",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.unit.test_model_reference_contract",
+        "name": "test_planning_model_reference_consumer_requires_exact_book_and_candidate",
+        "status": "PASSED"
+      }
+    ]
+  },
+  "original_postgres_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+  "original_postgres": {
+    "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/world-sample-final-postgres-102892aa.xml",
+    "sha256": "sha256:069f0ec83a03d71c8f723bdc9c46aa4034d5cd90cc956899bf39d1366030e279",
+    "tests": 13,
+    "passed": 12,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "cases": [
+      {
+        "classname": "tests.integration.test_chapter_group_authority_postgres.ChapterGroupAuthorityPostgresTests",
+        "name": "test_observational_realization_preserves_zero_changes_across_lost_response",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.integration.test_chapter_model_effects_postgres.ChapterModelEffectsPostgresTests",
+        "name": "test_canonical_chapter_outcome_obeys_frozen_router_with_fixture_evidence",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.integration.test_content_authority_runtime_postgres.ContentAuthorityRuntimePostgresTests",
+        "name": "test_all_registered_codecs_execute_through_postgresql_authority",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[False]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[True]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[causal-preparation]",
+        "status": "FAILED"
+      },
+      {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[multi_preparation]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[process_recovery]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_grounding]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_reject_plan]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[acceptance_recovery]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[operator_plan_change]",
+        "status": "PASSED"
+      },
+      {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[long_novel_pilot]",
+        "status": "PASSED"
+      }
+    ]
+  },
+  "corrected_postgres_source": "80caedd02377270937ad76851725a28652fd12ce",
+  "corrected_postgres": {
+    "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/causal-frontier-final-postgres-80caedd0.xml",
+    "sha256": "sha256:774faacfe7254f3ff75eda104d30e854c3ea87f5a8929a242666489c0136dbf5",
+    "tests": 1,
+    "passed": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "cases": [
+      {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[causal-preparation]",
+        "status": "PASSED"
+      }
+    ]
+  },
+  "case_coverage": [
+    {
+      "case": {
+        "classname": "tests.integration.test_chapter_group_authority_postgres.ChapterGroupAuthorityPostgresTests",
+        "name": "test_observational_realization_preserves_zero_changes_across_lost_response",
+        "status": "PASSED"
+      },
+      "validation_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+      "final_scoped_result": "PASSED",
+      "original_failure_retained": false
+    },
+    {
+      "case": {
+        "classname": "tests.integration.test_chapter_model_effects_postgres.ChapterModelEffectsPostgresTests",
+        "name": "test_canonical_chapter_outcome_obeys_frozen_router_with_fixture_evidence",
+        "status": "PASSED"
+      },
+      "validation_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+      "final_scoped_result": "PASSED",
+      "original_failure_retained": false
+    },
+    {
+      "case": {
+        "classname": "tests.integration.test_content_authority_runtime_postgres.ContentAuthorityRuntimePostgresTests",
+        "name": "test_all_registered_codecs_execute_through_postgresql_authority",
+        "status": "PASSED"
+      },
+      "validation_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+      "final_scoped_result": "PASSED",
+      "original_failure_retained": false
+    },
+    {
+      "case": {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[False]",
+        "status": "PASSED"
+      },
+      "validation_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+      "final_scoped_result": "PASSED",
+      "original_failure_retained": false
+    },
+    {
+      "case": {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[True]",
+        "status": "PASSED"
+      },
+      "validation_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+      "final_scoped_result": "PASSED",
+      "original_failure_retained": false
+    },
+    {
+      "case": {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[causal-preparation]",
+        "status": "FAILED"
+      },
+      "validation_source": "80caedd02377270937ad76851725a28652fd12ce",
+      "final_scoped_result": "PASSED",
+      "original_failure_retained": true
+    },
+    {
+      "case": {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[multi_preparation]",
+        "status": "PASSED"
+      },
+      "validation_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+      "final_scoped_result": "PASSED",
+      "original_failure_retained": false
+    },
+    {
+      "case": {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[process_recovery]",
+        "status": "PASSED"
+      },
+      "validation_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+      "final_scoped_result": "PASSED",
+      "original_failure_retained": false
+    },
+    {
+      "case": {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_grounding]",
+        "status": "PASSED"
+      },
+      "validation_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+      "final_scoped_result": "PASSED",
+      "original_failure_retained": false
+    },
+    {
+      "case": {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_reject_plan]",
+        "status": "PASSED"
+      },
+      "validation_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+      "final_scoped_result": "PASSED",
+      "original_failure_retained": false
+    },
+    {
+      "case": {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[acceptance_recovery]",
+        "status": "PASSED"
+      },
+      "validation_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+      "final_scoped_result": "PASSED",
+      "original_failure_retained": false
+    },
+    {
+      "case": {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[operator_plan_change]",
+        "status": "PASSED"
+      },
+      "validation_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+      "final_scoped_result": "PASSED",
+      "original_failure_retained": false
+    },
+    {
+      "case": {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[long_novel_pilot]",
+        "status": "PASSED"
+      },
+      "validation_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+      "final_scoped_result": "PASSED",
+      "original_failure_retained": false
+    }
+  ],
+  "denominator": 13,
+  "source_80caedd0_all_13_rerun": false,
+  "production_source_equivalence": "code-equivalence.json",
+  "qualification": "FOCUSED_SCOPED_COVERAGE_ONLY",
+  "full_matrix": "NOT_RUN",
+  "no_skip_xfail_or_case_renaming": true
+}

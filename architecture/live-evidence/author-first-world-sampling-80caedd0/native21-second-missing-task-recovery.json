@@ -1,0 +1,31 @@
+{
+  "schema_version": "native-preparation-successor-progress.v1",
+  "at": "2026-10-19T03:20:37.323792+00:00",
+  "source_sha": "1235e62f6e783edd2044e957be43a4a98494270c",
+  "source_operation_id": "2c4fb7ef-243d-4006-acbb-af93c121b397",
+  "consumer_operation_id": "e1721b3f-4294-4d54-a2f6-3be5b9b6c67b",
+  "retained_verified_preparations": 45,
+  "new_effects": [
+    {
+      "effect_id": "08cd73d4-a5c3-4bfd-8a79-2ddf843f9a7f",
+      "status": "SUCCEEDED",
+      "stage": "context_fidelity",
+      "task_hash": "sha256:f9a057079b88b6f68ab5b7854fa7fd177a80f4dbebb426603de0b985f92f31c0",
+      "same_task_as_isolated_unknown": true,
+      "previous_completed_task_repeated": false
+    },
+    {
+      "effect_id": "06723798-554f-4384-b9bd-9243de6a9f4d",
+      "status": "SUCCEEDED",
+      "stage": "context_fidelity",
+      "task_hash": "sha256:3ebeef7b06e53a4709c2c4a773c4e0f685becb3a7c0831c9fbbf535155cfa878",
+      "same_task_as_isolated_unknown": false,
+      "previous_completed_task_repeated": false
+    }
+  ],
+  "duplicate_completed_preparation_calls": 0,
+  "original_unknown_preserved": true,
+  "unknown_usage_not_settled": true,
+  "actual_main_dispatch": "NOT_YET_AT_CHECKPOINT",
+  "chapter_delivery": "PENDING"
+}

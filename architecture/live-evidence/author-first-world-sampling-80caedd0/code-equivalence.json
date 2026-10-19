@@ -1,0 +1,33 @@
+{
+  "at": "2026-10-19T04:31:18.559217+00:00",
+  "source_sha": "80caedd02377270937ad76851725a28652fd12ce",
+  "source_root": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/causal-frontier-source/novel-forge",
+  "argv": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/ruff",
+    "check",
+    "src/novel_forge/modules/story_planning_runtime/execution.py",
+    "src/novel_forge/modules/story_planning_runtime/world_sampling.py",
+    "tests/integration/current_chapter_wire_support.py",
+    "tests/integration/current_planning_wire_support.py",
+    "tests/integration/narrative_reality_vertical_support.py",
+    "tests/integration/operator_plan_change_support.py",
+    "tests/integration/synthesis_production_support.py",
+    "tests/integration/test_chapter_group_authority_postgres.py",
+    "tests/integration/test_chapter_model_effects_postgres.py",
+    "tests/integration/test_content_authority_runtime_postgres.py",
+    "tests/integration/test_core_functional_loops_postgres.py",
+    "tests/integration/world_causal_production_support.py",
+    "tests/integration/world_process_recovery_support.py",
+    "tests/unit/test_current_chapter_wire_fixture.py",
+    "tests/unit/test_world_sample_frozen_schema.py"
+  ],
+  "ruff_version": "ruff 0.15.20",
+  "status": "PASS",
+  "source_clean": true,
+  "unchanged_production_trees": {
+    "src": "3d1254d0daa037fd1a49e83220e1983ee081d5cf",
+    "config": "cd960f3e9164f78c2ad53624c3bc822f01a3f041",
+    "architecture/manifests": "e1dc2e886950378390a5513df94f28fcc3cff57f"
+  },
+  "previous_focused_source": "102892aa3124ebc874442abfaa23d680fa522e42"
+}

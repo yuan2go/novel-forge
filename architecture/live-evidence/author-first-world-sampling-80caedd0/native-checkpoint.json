@@ -1,0 +1,68 @@
+{
+  "schema_version": "novel-forge.native-working-checkpoint.v1",
+  "at": "2026-10-19T04:35:48.227848+00:00",
+  "implementation_source_sha": "80caedd02377270937ad76851725a28652fd12ce",
+  "manuscript_runtime_source_sha": "1235e62f6e783edd2044e957be43a4a98494270c",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "book_id": "book:wp-nf-author-first-20261017",
+  "input_mode": "RESOLVED_AUTHORITY_INPUT",
+  "input_snapshot_id": "sha256:55701ad07a4258f33bd832bb08a92ef138c85c4be93772f4788a4df9605f3876",
+  "production_profile": {
+    "asset_version_id": "authority-output:4e23fd5b-3021-4724-9601-ee5bec7ded61:book.bootstrap.production_profile:v1",
+    "content_hash": "sha256:3e0b8eb95d4d6664a2c085d63a7bb1f75c657f56e420347088758a00e954f8e8",
+    "full_book_target_chapters": 600,
+    "frozen_author_workflow": {
+      "mode": "AUTHOR_FIRST",
+      "version": "author-workflow.v1",
+      "deep_review": false
+    }
+  },
+  "current_delivery_window": 100,
+  "current_chapter": 20,
+  "book_state": "READY",
+  "book_version": 145,
+  "accepted_through_chapter": 0,
+  "author_choice": "NOT_GRANTED",
+  "formal_acceptance": "NOT_GRANTED",
+  "active_planning_operation_id": "e1721b3f-4294-4d54-a2f6-3be5b9b6c67b",
+  "active_planning_status": "EXECUTING",
+  "preparation_stage_receipts": [
+    {
+      "stage": "context_compress",
+      "status": "SUCCEEDED",
+      "count": 22
+    },
+    {
+      "stage": "context_fidelity",
+      "status": "SUCCEEDED",
+      "count": 59
+    }
+  ],
+  "completed_call_not_a_semantic_pass": true,
+  "retained_preparation_results": 45,
+  "original_unknowns": [
+    {
+      "external_effect_id": "ab7a4e94-e5e6-40eb-9e65-62cb8b1b7685",
+      "effect_status": "UNKNOWN",
+      "budget_status": "HELD_UNKNOWN",
+      "settled_amount": null,
+      "business_commit_right": "REVOKED",
+      "activation_right": "REVOKED"
+    },
+    {
+      "external_effect_id": "0cfeecce-c642-495c-be34-b768db8065c2",
+      "effect_status": "UNKNOWN",
+      "budget_status": "HELD_UNKNOWN",
+      "settled_amount": null,
+      "business_commit_right": "REVOKED",
+      "activation_right": "REVOKED"
+    }
+  ],
+  "first_new_chapter_delivery": "PENDING",
+  "hundred_chapter_delivery": "NOT_COMPLETED",
+  "literary_qualification": "NOT_PROVEN",
+  "overall_production_qualification": "NOT_PROVEN",
+  "native_writer_pid": 83076,
+  "source_watcher_pid": 87612,
+  "export_watcher_pid": 83230
+}

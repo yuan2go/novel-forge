@@ -1,0 +1,169 @@
+{
+  "source_sha": "33e567473541ffe7778df52af462a76ac377599b",
+  "status": "RUNNING_WITH_FAILURE_EVENTS_RETAINED",
+  "raw_failure_file": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/original-matrix-failures-checkpoint-80caedd0.jsonl",
+  "raw_failure_file_sha256": "sha256:4e53e1dd6216b6e34f4c091743610a821eddefe128f3a9b69927bce900eda70d",
+  "failure_events": 39,
+  "failed_nodes": [
+    {
+      "node_id": "tests/integration/test_chapter_group_authority_postgres.py::ChapterGroupAuthorityPostgresTests::test_observational_realization_preserves_zero_changes_across_lost_response",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_chapter_model_effects_postgres.py::ChapterModelEffectsPostgresTests::test_canonical_chapter_outcome_obeys_frozen_router_with_fixture_evidence",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_content_authority_runtime_postgres.py::ContentAuthorityRuntimePostgresTests::test_all_registered_codecs_execute_through_postgresql_authority",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[False]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[True]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[causal-preparation]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[intra-chapter]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[multi_preparation]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[historical_disclosure]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[process_recovery]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[smoke_command]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[on_camera_preparation]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[on_camera_missing]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[on_camera_observer_drift]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[preparation_expiry]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[reader_partial]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[character_disclosure]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[reader_misdirect]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[mixed_disclosure]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[withhold_disclosure]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[intra_chapter_missing]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[intra_chapter_cycle]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[manual_director]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[acceptance_recovery]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[provider_recovery]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[concurrent_workers]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[perturbed_foundation]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_grounding]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_retained_original]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_process_memo]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_process_support]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_process_artifact]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_reject_plan]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_reject_dialogue]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_reject_deleted]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_reject_memo]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[operator_plan_change]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_core_functional_loops_postgres.py::test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[long_novel_pilot]",
+      "phase": "call"
+    },
+    {
+      "node_id": "tests/integration/test_corpus_ingestion_postgres.py::test_native_cli_curated_analysis_controls_results_and_relation_guards[True]",
+      "phase": "call"
+    }
+  ],
+  "backend_pass": 8478,
+  "migration_compatibility_pass": 1137,
+  "full_qualification": "NOT_PROVEN",
+  "live_append_only_source": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/novel-forge-p0-33e567473541-c98beacd2ac544b8bce7c0c071b03824/postgresql-pytest-collection.failures.jsonl"
+}
