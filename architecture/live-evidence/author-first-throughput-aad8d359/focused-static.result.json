@@ -1,0 +1,92 @@
+{
+  "source_sha": "aad8d3597daa66e0daf1a5f488691de9ffb03ee4",
+  "source_clean_before_after": true,
+  "results": [
+    {
+      "argv": [
+        "ruff",
+        "check",
+        "src/novel_forge/cli/manuscript.py",
+        "src/novel_forge/modules/book_authority/manuscript.py",
+        "src/novel_forge/modules/book_authority/working_policy.py",
+        "src/novel_forge/modules/book_authority/working_prose.py",
+        "src/novel_forge/modules/chapter_authority/domain_handlers.py",
+        "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+        "src/novel_forge/modules/chapter_authority/provider_views.py",
+        "src/novel_forge/modules/context_builder/semantic_units.py",
+        "src/novel_forge/modules/context_builder/task_compression.py",
+        "src/novel_forge/modules/longform_narrative/scheduling.py",
+        "src/novel_forge/modules/narrative_state/working_memory.py",
+        "tests/integration/test_author_first_manuscript_postgres.py",
+        "tests/unit/test_creation_coordination.py",
+        "tests/unit/test_longform_working_history.py",
+        "tests/unit/test_semantic_context_units.py",
+        "tests/unit/test_working_manuscript_revision.py",
+        "tests/unit/test_working_memory.py",
+        "tests/unit/test_working_prose_projection.py"
+      ],
+      "exit_code": 0,
+      "log": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-0.log"
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "HEAD^",
+        "HEAD"
+      ],
+      "exit_code": 0,
+      "log": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-1.log"
+    },
+    {
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+        "-m",
+        "novel_forge.tools.documentation_reality",
+        "--repo-root",
+        "."
+      ],
+      "exit_code": 0,
+      "log": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-2.log"
+    },
+    {
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+        "-m",
+        "novel_forge.tools.test_reality",
+        "--repo-root",
+        "."
+      ],
+      "exit_code": 0,
+      "log": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-3.log"
+    },
+    {
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+        "-m",
+        "novel_forge.tools.instruction_surface",
+        "--repo-root",
+        "."
+      ],
+      "exit_code": 0,
+      "log": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-4.log"
+    },
+    {
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+        "scripts/check_module_manifest.py"
+      ],
+      "exit_code": 0,
+      "log": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-5.log"
+    },
+    {
+      "argv": [
+        "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+        "scripts/check_architecture_fitness.py"
+      ],
+      "exit_code": 0,
+      "log": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-6.log"
+    }
+  ]
+}

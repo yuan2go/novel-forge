@@ -1,0 +1,15 @@
+{
+  "schema_version": "source-bound-verification-supplement.v1",
+  "tested_source_sha": "aad8d3597daa66e0daf1a5f488691de9ffb03ee4",
+  "repository_parent_sha": "215abd7d0abf4a158d7454ed72237486d201b040",
+  "at": "2026-10-19T09:21:54.530132+00:00",
+  "change": "ADD_FOCUSED_VALIDATION_ARTIFACTS_ONLY",
+  "original_publication_snapshot_preserved": true,
+  "unrelated_parallel_code_retained": true,
+  "main_merge_performed_by_this_turn": false,
+  "source_tests_are_not_merged_head_qualification": true,
+  "current_source_full_matrix": "RUNNING",
+  "merged_head_full_matrix": "NOT_RUN",
+  "production_resume": "NOT_RUN_BY_AUTHOR_PAUSE",
+  "literary_qualification": "INCOMPLETE"
+}

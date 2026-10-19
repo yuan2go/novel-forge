@@ -1,0 +1,96 @@
+{
+  "source_sha": "aad8d3597daa66e0daf1a5f488691de9ffb03ee4",
+  "repository_parent_sha": "215abd7d0abf4a158d7454ed72237486d201b040",
+  "files": [
+    {
+      "path": "assertion-rationale.json",
+      "sha256": "5a255180da01a4eba6f31afdae51ed214bc05078487ce1f7f9db6b6e1e8297dc",
+      "bytes": 996
+    },
+    {
+      "path": "classifications.json",
+      "sha256": "c3041f4323ce0cb3d3fc88408ba9bb9ae5dd3c6a9a257b38bd2d96a94c72fa24",
+      "bytes": 3128
+    },
+    {
+      "path": "continuation-checkpoint.json",
+      "sha256": "6fabe9197ffe5ce3c3dcb28c4b6daa9e6b874eea6b92454526c33619bbb44832",
+      "bytes": 1746
+    },
+    {
+      "path": "focused-architecture.log",
+      "sha256": "923c8c6c7536f3c992d787f39bf5eb7db96a02c8ded7bcd2b2d2ed482ecb0e05",
+      "bytes": 3189
+    },
+    {
+      "path": "focused-docs.log",
+      "sha256": "8322a1fc075dfdd12c2ab17d90b6acf0cd60dad25e7ce9b8e88e482f53cff03d",
+      "bytes": 771
+    },
+    {
+      "path": "focused-native-postgres.xml",
+      "sha256": "55129d032671cfb3b7faef5cf8fc4f0f85afdaa571841da924627d756c4f2592",
+      "bytes": 632
+    },
+    {
+      "path": "focused-ruff.log",
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "bytes": 19
+    },
+    {
+      "path": "focused-static.result.json",
+      "sha256": "4ab733591aee3aefe3dc95d76c99c8a3a683f8dbaefe67cd2a9b29e638adb3bb",
+      "bytes": 4066
+    },
+    {
+      "path": "focused-unit.xml",
+      "sha256": "b84b9f8ef37f38b3a4edd8c8c900c068d7802caee54ea0abec0b222b12fee6c2",
+      "bytes": 97408
+    },
+    {
+      "path": "focused.command.json",
+      "sha256": "1f5f58fc57294328ed25b3cc5c31fd4e8d6d23b911540d85d77542fa5a733e99",
+      "bytes": 2660
+    },
+    {
+      "path": "focused.result.json",
+      "sha256": "16e85d6b68365c917d24180c7261d187a3a8bc985dbd949604aedb256f823d8d",
+      "bytes": 4352
+    },
+    {
+      "path": "formal-matrix-snapshot.json",
+      "sha256": "141d40ba248a9965b5cf3984f2d21e52051d3fb676e21ce54ebf6ae0504b7013",
+      "bytes": 2574
+    },
+    {
+      "path": "formal.command.json",
+      "sha256": "b9e324c014bcb0da244a5640506fbc03fb354a61bd7bb2ab8dfb9fc6ea23d7b3",
+      "bytes": 1265
+    },
+    {
+      "path": "prospective-readonly-request.json",
+      "sha256": "9d9144135cb494fbe3cf0ffdc7e7d2d31f10852f981eafbfafe8de263c66fd07",
+      "bytes": 4527
+    },
+    {
+      "path": "publication-snapshot.json",
+      "sha256": "77775fc38a18dbbb033db2ef357ede9824c4a9521401a9b5db0227347302f416",
+      "bytes": 1692
+    },
+    {
+      "path": "scope.json",
+      "sha256": "355ee0a228b1121a59440b99d98a594aa6cf923f5c272a897ebeec322747bd7b",
+      "bytes": 1094
+    },
+    {
+      "path": "throughput-reconciled.json",
+      "sha256": "85d9e89fcf47516463f50757d5bb865e9c38ce28ad73df174cbcb198ddfe2cec",
+      "bytes": 31310
+    },
+    {
+      "path": "verification-custody.json",
+      "sha256": "b2a08bfd3fb31cf693f22e930b5fce2a5142f51d214acb0ed455dc994cc12e8f",
+      "bytes": 675
+    }
+  ]
+}
