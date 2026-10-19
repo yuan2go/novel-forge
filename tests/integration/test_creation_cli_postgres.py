@@ -372,14 +372,14 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
 
         if mode == "world-causal-dead-letter-replay":
             from novel_forge.modules.command_kernel import generation_policy
-            current_generation_operation = generation_policy.pure_generation_operation
+            current_generation_graph = generation_policy.generation_graph
 
             def historical_attempt_policy(cursor, operation_id, project_id):
                 if legacy_block and operation_id == legacy_block[0] and not historical_classifier_restored:
                     return False
-                return current_generation_operation(cursor, operation_id, project_id)
+                return current_generation_graph(cursor, operation_id, project_id)
 
-            monkeypatch.setattr(generation_policy, "pure_generation_operation", historical_attempt_policy)
+            monkeypatch.setattr(generation_policy, "generation_graph", historical_attempt_policy)
 
         def historical_gate_checkpoint(preparation, **values):
             try:
@@ -547,7 +547,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         "--workspace-id", harness.workspace_id + "-new", "--book-id", project + "-book", "--input-file", str(input_file),
         "--idempotency-key", "durable", "--creative-selection", "AUTHOR_COMPARISON", "--repository-root", str(root),
         "--execution-template-file", str(root / "config/execution_templates/creative_validation.json")])
-    if mode.startswith("capacity-"):
+    if mode.startswith("capacity-") or mode == "world-disclosure-capacity-inheritance":
         # COMPATIBILITY: injected material-budget failures belong to the original frozen 64K Planning policy.
         args.creation_policy_file = root / "tests/fixtures/creation/frozen-capacity-policy-6b69b22.json"
     if mode.startswith("world-"):
@@ -762,6 +762,8 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
             uow.cursor.execute("SELECT to_jsonb(a) FROM authority_attempt a WHERE operation_id=%s ORDER BY attempt_number", [source_id])
             attempts = [row[0] for row in uow.cursor.fetchall()]
             assert attempts and all(row["status"] == "FAILED_RETRYABLE" for row in attempts)
+            if require_dead_letter:
+                assert len(attempts) == attempts[-1]["max_attempts"]
             uow.cursor.execute("SELECT to_jsonb(e),to_jsonb(b) FROM authority_external_effect e JOIN authority_budget_reservation b USING(external_effect_id) WHERE e.operation_id=%s ORDER BY e.external_effect_id", [source_id])
             receipts = uow.cursor.fetchall()
             assert len(receipts) == 2
@@ -1031,7 +1033,7 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
         assert world_calls[0]["world_preparation"]["transition_contract"]["version"] == "world-transition-payload.v2"
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute("SELECT content#>>'{contract,contract_version}',content#>>'{contract,reality,disclosure_fields_contract}' FROM authority_asset_version v JOIN authority_asset a USING(asset_id) WHERE a.project_id=%s AND a.asset_type='world_preparation_source'",[project])
-            assert uow.cursor.fetchall() == [("world-preparation-source.v3","world-disclosure-fields.v2")]
+            assert uow.cursor.fetchall() == [("world-preparation-source.v4","world-disclosure-fields.v2")]
     if mode.startswith("world-disclosure-"):
         from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
         assert len(disclosure_failures) == len(world_calls) == len(primary_calls) == 1
@@ -1053,6 +1055,10 @@ def test_durable_creation_compares_nonfirst_candidate_and_worker_resumes_exact_s
                 assert capacity_faults == [successor]
                 uow.cursor.execute("SELECT successor_operation_id,target_runtime,decision_evidence FROM authority_story_planning_runtime_continuation WHERE source_operation_id=%s",[successor])
                 successor,capacity_runtime,capacity_decision = uow.cursor.fetchone()
+                allocation = capacity_runtime["planning_capacity"]
+                assert allocation["prior_task_tokens"] == 64_000
+                assert allocation["prior_task_tokens"] < allocation["allocated_task_tokens"] <= allocation["single_request_ceiling"]
+                assert allocation["external_intents_at_source"] == 0
                 assert capacity_runtime["world_host_revalidation"] == runtime["world_host_revalidation"]
                 assert capacity_decision["world_revalidation_inheritance"] == "world-revalidation-inheritance.v1"
                 uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE operation_id=%s AND request_payload->>'stage' LIKE 'world_candidates.%%'",[successor])
