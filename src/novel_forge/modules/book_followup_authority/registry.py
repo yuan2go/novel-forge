@@ -80,6 +80,7 @@ class BookFollowupHandlerRegistry:
             ),
             LONGFORM_RECAP_DEFINITION: ("longform_recap", "longform.recap.report"),
         }[definition_name]
+        from novel_forge.modules.book_authority.memory_backfill import commit_backfill_sidecar
         return AuthorityHandlerRegistration(
             definition_name=definition_name,
             definition_version=definition_version,
@@ -90,6 +91,7 @@ class BookFollowupHandlerRegistry:
             role="primary",
             completion_topic=f"book_followup.{definition_name}.materialized",
             handler=handler,
+            commit_output=commit_backfill_sidecar if definition_name == "working_memory_extract" else None,
         )
 
     @property
