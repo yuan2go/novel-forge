@@ -1,0 +1,50 @@
+{
+  "schema_version": "novel-forge.native-working-recovery-checkpoint.v1",
+  "at": "2026-10-19T02:56:50.846260+00:00",
+  "source_sha": "1235e62f6e783edd2044e957be43a4a98494270c",
+  "evidence_ceiling": "EXECUTABLE",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "effective_chapters": 20,
+  "effective_body_han": 85832,
+  "accepted_through_chapter": 0,
+  "author_selection": "NOT_GRANTED",
+  "formal_acceptance": "NOT_GRANTED",
+  "goal": {
+    "full_book_chapters": 600,
+    "first_delivery_chapters": 100,
+    "body_han": [
+      4000,
+      5000
+    ]
+  },
+  "next_group": {
+    "logical_key": "chapter-group:containing:21",
+    "source_operation_id": "d76de9db-8d6e-4f0b-b519-227d8ff790d8",
+    "control_operation_id": "3c6b4211-c0c4-4913-b513-1873bb9c8cbe",
+    "successor_operation_id": "2c4fb7ef-243d-4006-acbb-af93c121b397",
+    "status": "NATIVE_PREPARATION_RUNNING",
+    "retained_preparations": 37,
+    "chapter_delivery": "PENDING"
+  },
+  "hundred_chapter_delivery": "NOT_COMPLETED",
+  "formal_matrix": {
+    "running_source": "33e567473541ffe7778df52af462a76ac377599b",
+    "backend_pass": 8478,
+    "migration_compatibility_pass": 1137,
+    "postgresql_integration": "RUNNING",
+    "latest_source": "1235e62f6e783edd2044e957be43a4a98494270c",
+    "latest_source_matrix": "QUEUED_NOT_RUN_YET"
+  },
+  "optional_deepseek_review": {
+    "runtime_source": "080036038958a130fac551143ab9e42ae131e205",
+    "chapter17_20": "CORRECTLY_REJECTED_BOTH_ATTEMPTS",
+    "future_chapters": [
+      21,
+      100
+    ],
+    "authorized_total_usd": "10",
+    "authorization_increased": false
+  },
+  "literary_qualification": "NOT_PROVEN",
+  "overall_production_qualification": "NOT_PROVEN"
+}

@@ -1,0 +1,25 @@
+{
+  "source_sha": "1235e62f6e783edd2044e957be43a4a98494270c",
+  "same_book": "book:wp-nf-author-first-20261017",
+  "semantic_hashes_unchanged": true,
+  "results": [
+    {
+      "domain": "story_planning",
+      "pack_id": "story_planning_pack.creative.ce6c639932c945aedd3608cb",
+      "pack_version": "2.19.0",
+      "old_release": "06472af72535eef994328e9ffe0dadea2066d8b9",
+      "new_release": "1235e62f6e783edd2044e957be43a4a98494270c",
+      "manifest_hash": "sha256:005471e22f3e6a2999130b21f3b532ce622ba0599f29aefae4f760a32543661c",
+      "artifact_catalog_hash": "sha256:7470eb6ab74d3f665c29cbb3bb31caa717e0e5fcc7370f0354f5edb3d53a1aa9"
+    },
+    {
+      "domain": "chapter",
+      "pack_id": "chapter_generation_pack.creative.ce6c639932c945aedd3608cb",
+      "pack_version": "3.2.0",
+      "old_release": "06472af72535eef994328e9ffe0dadea2066d8b9",
+      "new_release": "1235e62f6e783edd2044e957be43a4a98494270c",
+      "manifest_hash": "sha256:6c2259aa20c146ba84666f6c825216a2ceb5e01b293afdf96d392a9798f17349",
+      "artifact_catalog_hash": "sha256:e11dcd1982c4e676d854657f990ef22197c4938950fa7d7b394d71d93dff6f49"
+    }
+  ]
+}

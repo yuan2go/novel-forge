@@ -1,0 +1,47 @@
+{
+  "schema_version": "native-preparation-successor-progress.v1",
+  "at": "2026-10-19T02:55:49.084956+00:00",
+  "source_sha": "1235e62f6e783edd2044e957be43a4a98494270c",
+  "source_operation_id": "d76de9db-8d6e-4f0b-b519-227d8ff790d8",
+  "consumer_operation_id": "2c4fb7ef-243d-4006-acbb-af93c121b397",
+  "retained_verified_preparations": 37,
+  "new_effects": [
+    {
+      "effect_id": "a44d7940-0460-47fd-8ef4-54942429cda1",
+      "stage": "context_fidelity",
+      "status": "SUCCEEDED",
+      "task_hash": "sha256:a83a370fbdfcf69f792ce9e00a0662ca4be6fd8e2a6c36c89049ef3256b484e7",
+      "previous_completed_task_repeated": false,
+      "same_task_as_isolated_unknown": true
+    },
+    {
+      "effect_id": "7600552c-e56f-4d00-800a-bc6d9b37f51b",
+      "stage": "context_compress",
+      "status": "SUCCEEDED",
+      "task_hash": "sha256:8e1e1cac9d54f7006b0b4eaddad048e6f6ff311724a0a1556ea19cbca70ae622",
+      "previous_completed_task_repeated": false,
+      "same_task_as_isolated_unknown": false
+    },
+    {
+      "effect_id": "d58da033-9ada-4746-8a28-f7cbfe8ff284",
+      "stage": "context_fidelity",
+      "status": "SUCCEEDED",
+      "task_hash": "sha256:e4e310a397d8c04332d6701dac2ff159e2bebb86c86fb8c90a7dfabc588e9d83",
+      "previous_completed_task_repeated": false,
+      "same_task_as_isolated_unknown": false
+    },
+    {
+      "effect_id": "d5b387f7-5425-46f8-a079-4865057b9f9a",
+      "stage": "context_fidelity",
+      "status": "READY",
+      "task_hash": "sha256:bce176c461c4a1c7e9c9f0e4028d853a2afbd9e80292273a31dec40b9921597e",
+      "previous_completed_task_repeated": false,
+      "same_task_as_isolated_unknown": false
+    }
+  ],
+  "duplicate_completed_preparation_calls": 0,
+  "original_unknown_preserved": true,
+  "unknown_usage_not_settled": true,
+  "actual_main_dispatch": "NOT_YET_AT_CHECKPOINT",
+  "chapter_delivery": "PENDING"
+}

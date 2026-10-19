@@ -1,0 +1,74 @@
+{
+  "at": "2026-10-19T02:42:58.003602+00:00",
+  "source_sha": "06472af72535eef994328e9ffe0dadea2066d8b9",
+  "result": {
+    "manual_resolution_id": "e7caac96-8e6a-4428-a14e-89012425eeb8",
+    "decision": "ISOLATE_PURE_GENERATION",
+    "operation_status": "FAILED_FINAL",
+    "replayed": false,
+    "successor_required": true
+  },
+  "replay": {
+    "manual_resolution_id": "e7caac96-8e6a-4428-a14e-89012425eeb8",
+    "decision": "ISOLATE_PURE_GENERATION",
+    "replayed": true
+  },
+  "before": {
+    "operation": [
+      "WAITING_EXTERNAL_RESULT",
+      3,
+      "writing-craft-native-operator",
+      "e4b99400-7068-4ec8-aaa3-109a0de4478e:chapter_group_plan.generate:21",
+      "e4b99400-7068-4ec8-aaa3-109a0de4478e"
+    ],
+    "book": [
+      20,
+      0,
+      "READY",
+      145
+    ],
+    "unknown_request_hash": "sha256:474c478eb375df361ba6a5cd7ca3a10140ff1f9f86f4f899652e7dabafba3ad8",
+    "unknown_effect_status": "UNKNOWN",
+    "unknown_budget": [
+      "HELD_UNKNOWN",
+      null
+    ],
+    "prepared_count": 37,
+    "prepared_receipts_hash": "sha256:e69b4f7e7b035039b87a772ff1dc0121ea3bd8c0422eeee6e24270ae913382b0"
+  },
+  "after": {
+    "operation": [
+      "FAILED_FINAL",
+      4,
+      "writing-craft-native-operator",
+      "e4b99400-7068-4ec8-aaa3-109a0de4478e:chapter_group_plan.generate:21",
+      "e4b99400-7068-4ec8-aaa3-109a0de4478e"
+    ],
+    "book": [
+      20,
+      0,
+      "READY",
+      145
+    ],
+    "unknown_request_hash": "sha256:474c478eb375df361ba6a5cd7ca3a10140ff1f9f86f4f899652e7dabafba3ad8",
+    "unknown_effect_status": "UNKNOWN",
+    "unknown_budget": [
+      "HELD_UNKNOWN",
+      null
+    ],
+    "prepared_count": 37,
+    "prepared_receipts_hash": "sha256:e69b4f7e7b035039b87a772ff1dc0121ea3bd8c0422eeee6e24270ae913382b0"
+  },
+  "isolation_rights": {
+    "contract_version": "pure-generation-isolation.v1",
+    "operation_id": "d76de9db-8d6e-4f0b-b519-227d8ff790d8",
+    "book_id": "book:wp-nf-author-first-20261017",
+    "business_commit_right": "REVOKED",
+    "activation_right": "REVOKED"
+  },
+  "main_dispatch_count": 0,
+  "actual_original_preparation_calls": 38,
+  "settled_preparations": 37,
+  "unknown_preparation_calls": 1,
+  "new_provider_calls": 0
+}

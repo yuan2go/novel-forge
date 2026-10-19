@@ -1,0 +1,37 @@
+{
+  "schema_version": "native-recovery-and-verification-classification.v1",
+  "at": "2026-10-19T02:56:50.846260+00:00",
+  "source_sha": "1235e62f6e783edd2044e957be43a4a98494270c",
+  "root_causes": [
+    {
+      "first_failure": "Group21 context_fidelity stream disconnected after911322ms",
+      "classification": "REAL_PROVIDER_TRANSPORT_FAILURE_UNKNOWN",
+      "resolution": "Native Kernel isolation revoked old submission and activation rights; retain UNKNOWN and HELD_UNKNOWN and37 settled preparations",
+      "status": "ISOLATED_WITH_HISTORY_PRESERVED"
+    },
+    {
+      "first_failure": "Ordinary Creation first-source recovery requested absent legacy Book.creation_pilot",
+      "classification": "FIRST_NATIVE_ACCOUNT_EVIDENCE_ROUTING_OMISSION",
+      "resolution": "Validate exact original settled preparation authentication and frozen main capacity binding, reconstruct executable/account/entitlement/configuration hash, and retain existing Formation/author/template gates",
+      "status": "PASS_REAL_ORDINARY_ENTRY_V12_REGISTRATION_AND_LINKED_CHILD"
+    },
+    {
+      "first_failure": "Original unknown fidelity supplied no result",
+      "classification": "RESULT_NOT_RECOVERABLE_FROM_ORIGINAL_UNKNOWN",
+      "resolution": "After revocation, linked successor completed the identical task under a new Effect; original usage remains unknown; no duplicate completed preparation task observed",
+      "status": "PASS_REAL_SUCCESSOR_FIDELITY"
+    }
+  ],
+  "focused_final_source": {
+    "sha": "1235e62f6e783edd2044e957be43a4a98494270c",
+    "unit": 317,
+    "postgresql": 52,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "docs": "PASS",
+    "ruff": "PASS"
+  },
+  "literary_qualification": "NOT_PROVEN",
+  "overall_production_qualification": "NOT_PROVEN"
+}
