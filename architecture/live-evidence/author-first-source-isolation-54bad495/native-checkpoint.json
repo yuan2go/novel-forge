@@ -1,0 +1,38 @@
+{
+  "at": "2026-10-19T07:18:31.071385+00:00",
+  "source_sha": "393415967a4ad42abaef11d62a93f0468d5fe4c2",
+  "production_schema": "20261019_0234_settled_preparation_capacity",
+  "migration_235_production_deployment": "NOT_RUN",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "book_state": {
+    "current_chapter": 20,
+    "accepted_through_chapter": 0,
+    "state": "READY",
+    "version": 145
+  },
+  "effective_chapters": 20,
+  "effective_body_han": 85832,
+  "target_chapters": 100,
+  "full_book_target": 600,
+  "required_body_han": [
+    4000,
+    5000
+  ],
+  "writer_pid": 39617,
+  "planning_operation": "1a2a38b9-ab7a-454d-aa55-770bd6dc8fcd",
+  "preparation_effects": [
+    {
+      "stage": "context_fidelity",
+      "status": "SUCCEEDED",
+      "count": 42
+    },
+    {
+      "stage": "context_compress",
+      "status": "SUCCEEDED",
+      "count": 19
+    }
+  ],
+  "chapter21_draft": "PENDING",
+  "author_choice": "NOT_GRANTED",
+  "production_mutated_by_observation": false
+}

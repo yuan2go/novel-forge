@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261016_0222_planning_host_frozen_definition",
+  "migration_head": "20261019_0235_source_isolation_convergence",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -7192,6 +7192,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/retained_working.py",
           "symbol": "continue_retained_working"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_policy.py",
+          "symbol": "select_working_policy"
         }
       ],
       "domain_symbols": [
@@ -7214,6 +7218,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/manuscript.py",
           "symbol": "resolve_working_source"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_policy.py",
+          "symbol": "selected_working_policy"
         }
       ],
       "commands_operations": [
@@ -7238,7 +7246,8 @@
           "terminal completion state",
           "immutable manuscript delivery and separate writing cursor",
           "versioned author workflow adoption",
-          "explicit immutable unaccepted retained-original working continuation; original Provider failure remains separate"
+          "explicit immutable unaccepted retained-original working continuation; original Provider failure remains separate",
+          "prospective versioned working-prose policy selection without profile or request rewrite"
         ],
         "write_rule": "Only the named owner may commit this state through its governed application and unit of work.",
         "evidence": [
@@ -7257,6 +7266,10 @@
           {
             "path": "src/novel_forge/modules/book_authority/retained_working.py",
             "symbol": "continue_retained_working"
+          },
+          {
+            "path": "src/novel_forge/modules/book_authority/working_policy.py",
+            "symbol": "select_working_policy"
           }
         ]
       },
@@ -7280,6 +7293,10 @@
         {
           "path": "src/novel_forge/modules/book_authority/retained_working.py",
           "symbol": "continue_retained_working"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_policy.py",
+          "symbol": "select_working_policy"
         }
       ],
       "persistence": [
@@ -8769,6 +8786,14 @@
         {
           "path": "src/novel_forge/modules/reader_calibration/manuscript_blind.py",
           "symbol": "public_from_private_mapping"
+        },
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_citations.py",
+          "symbol": "citation_catalog"
+        },
+        {
+          "path": "src/novel_forge/modules/book_followup_authority/prose_citations.py",
+          "symbol": "resolve_indexed_citations"
         }
       ],
       "commands_operations": [
@@ -8905,6 +8930,30 @@
         {
           "path": "tests/unit/test_reader_calibration.py",
           "symbol": "test_kernel_manuscript_mapping_rebuild_prevents_replacement_of_saved_prose"
+        },
+        {
+          "path": "tests/unit/test_prose_citation_diagnostics.py",
+          "symbol": "test_report_binding_precedes_missing_quote_diagnosis"
+        },
+        {
+          "path": "tests/unit/test_prose_citation_diagnostics.py",
+          "symbol": "test_literal_failure_distinguishes_missing_and_ambiguous_without_disclosing_prose"
+        },
+        {
+          "path": "tests/unit/test_prose_citation_diagnostics.py",
+          "symbol": "test_handler_rejects_window_source_substitution_before_model_invocation"
+        },
+        {
+          "path": "tests/unit/test_indexed_prose_citations.py",
+          "symbol": "test_model_selects_frozen_passage_without_retyping_quotation_or_coordinates"
+        },
+        {
+          "path": "tests/unit/test_indexed_prose_citations.py",
+          "symbol": "test_indexed_provider_view_supplies_ids_beside_complete_unchanged_prose_and_binds_schema"
+        },
+        {
+          "path": "tests/unit/test_indexed_prose_citations.py",
+          "symbol": "test_unknown_passage_id_is_local_output_failure_while_remote_outcome_remains_unknown"
         }
       ],
       "qualification_state": "EXECUTABLE",
@@ -9546,6 +9595,71 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261016_0222_planning_host_frozen_definition.py",
           "id": "20261016_0222_planning_host_frozen_definition",
           "locator": "MIGRATION_ID = \"20261016_0222_planning_host_frozen_definition\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261018_0223_working_plan_input_continuation.py",
+          "id": "20261018_0223_working_plan_input_continuation",
+          "locator": "MIGRATION_ID = \"20261018_0223_working_plan_input_continuation\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261018_0224_working_regeneration_isolation.py",
+          "id": "20261018_0224_working_regeneration_isolation",
+          "locator": "MIGRATION_ID = '20261018_0224_working_regeneration_isolation'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261018_0225_impacted_working_plan_continuation.py",
+          "id": "20261018_0225_impacted_working_plan_continuation",
+          "locator": "MIGRATION_ID = '20261018_0225_impacted_working_plan_continuation'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261018_0226_semantic_preparation_continuation.py",
+          "id": "20261018_0226_semantic_preparation_continuation",
+          "locator": "MIGRATION_ID = \"20261018_0226_semantic_preparation_continuation\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261018_0227_completed_preparation_handoff.py",
+          "id": "20261018_0227_completed_preparation_handoff",
+          "locator": "MIGRATION_ID = \"20261018_0227_completed_preparation_handoff\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261018_0228_terminal_preparation_handoff.py",
+          "id": "20261018_0228_terminal_preparation_handoff",
+          "locator": "MIGRATION_ID = '20261018_0228_terminal_preparation_handoff'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261019_0229_routing_observation_preparation_recovery.py",
+          "id": "20261019_0229_routing_observation_preparation_recovery",
+          "locator": "MIGRATION_ID = '20261019_0229_routing_observation_preparation_recovery'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261019_0230_unsent_preparation_lineage.py",
+          "id": "20261019_0230_unsent_preparation_lineage",
+          "locator": "MIGRATION_ID = '20261019_0230_unsent_preparation_lineage'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261019_0231_prepared_main_handoff.py",
+          "id": "20261019_0231_prepared_main_handoff",
+          "locator": "MIGRATION_ID = '20261019_0231_prepared_main_handoff'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261019_0232_first_isolated_preparation_custody.py",
+          "id": "20261019_0232_first_isolated_preparation_custody",
+          "locator": "MIGRATION_ID = '20261019_0232_first_isolated_preparation_custody'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261019_0233_acknowledged_preparation_routing.py",
+          "id": "20261019_0233_acknowledged_preparation_routing",
+          "locator": "MIGRATION_ID = '20261019_0233_acknowledged_preparation_routing'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261019_0234_settled_preparation_capacity.py",
+          "id": "20261019_0234_settled_preparation_capacity",
+          "locator": "MIGRATION_ID = '20261019_0234_settled_preparation_capacity'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261019_0235_source_isolation_convergence.py",
+          "id": "20261019_0235_source_isolation_convergence",
+          "locator": "MIGRATION_ID = '20261019_0235_source_isolation_convergence'"
         }
       ],
       "external_effects": {
@@ -9745,6 +9859,11 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261015_0217_craft_context_convergence.py",
           "id": "20261015_0217_craft_context_convergence",
           "locator": "MIGRATION_ID = \"20261015_0217_craft_context_convergence\""
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261019_0235_source_isolation_convergence.py",
+          "id": "20261019_0235_source_isolation_convergence",
+          "locator": "MIGRATION_ID = '20261019_0235_source_isolation_convergence'"
         }
       ],
       "external_effects": {
@@ -10549,7 +10668,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:efa3039ed3b015e717e66a4e737e74dcc88d781060331e500c0c6a8058179d09"
+    "implementation_tree_sha": "sha256:397ed3132510afd7a3cea508bb6c34dbbb38fa21eda17e700e5c7d381cd14360"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

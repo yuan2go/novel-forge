@@ -393,6 +393,12 @@ def test_authorized_bridge_reaches_existing_analysis_and_governance(
             {"source_work_asset_version_id": content["source_work_asset_version_id"]},
             source_analysis=False,
         )
+    nested = {"source_work_asset_version_id": content["source_work_asset_version_id"]}
+    for _ in range(80):
+        nested = {"evidence": nested}
+    for large_input in (nested, {"evidence":[*[{} for _ in range(55000)], nested]}):
+        with pytest.raises(KernelError, match="CORPUS_RAW_CONTENT_FORBIDDEN"):
+            require_corpus_consumption(DATABASE_URL, corpus.project, large_input, source_analysis=False)
     corpus.run(
         {
             "action": "retire_source",
@@ -2197,8 +2203,8 @@ if os.environ.get('SOURCE_READING_PLANNING_CRASH_ONCE'):
 if os.environ.get('SOURCE_READING_CRASH_ONCE'):
  from novel_forge.modules.source_import.execution import PostgresContentIntelligenceExecutionPort
  original=PostgresContentIntelligenceExecutionPort._execute
- def crash_after_receipt(self, *, worker, spec):
-  result=original(self,worker=worker,spec=spec)
+ def crash_after_receipt(self, *, worker, spec, reuse_effect_id=""):
+  result=original(self,worker=worker,spec=spec,reuse_effect_id=reuse_effect_id)
   path=Path(os.environ['SOURCE_READING_CRASH_ONCE'])
   if spec.input_payload.get('reading_context',{}).get('phase')=='OBSERVE' and not path.exists():
    path.write_text(worker.causation_id)

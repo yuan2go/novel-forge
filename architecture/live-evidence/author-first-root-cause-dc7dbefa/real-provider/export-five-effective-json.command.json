@@ -1,0 +1,26 @@
+{
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "argv": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "-m",
+    "novel_forge.cli.authority",
+    "authority-manuscript",
+    "export",
+    "--book-run-id",
+    "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "--versions",
+    "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+    "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+    "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+    "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+    "authority-output:fa8caa0f-61ca-40ab-b15c-4648b70d2027:chapter.best_candidate:v1",
+    "--chapters",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "--output",
+    "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01/exports/native-working-chapters-01-05.json"
+  ]
+}

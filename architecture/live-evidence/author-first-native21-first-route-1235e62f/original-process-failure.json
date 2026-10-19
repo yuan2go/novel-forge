@@ -1,0 +1,15 @@
+{
+  "execution_id": "planning-execution:ab7a4e94-e5e6-40eb-9e65-62cb8b1b7685:16f2ca02-76e4-4906-bd0a-20456f8d1814",
+  "status": "FAILED",
+  "elapsed_ms": 911322,
+  "input_sha256": "98cbffa0924d6a7b6c3fcc148d48ec16b33c9197806d95570a7369eee1aa5053",
+  "request_digest": "97c50300339083485e512bad150e38671fa3742fa4aa8b13dbe75b26b9fe89f2",
+  "returncode": 1,
+  "result_integrity": "MISSING",
+  "termination_reason": null,
+  "failure_reason": "local process exited with code 1",
+  "remote_outcome": "UNESTABLISHED",
+  "usage": "UNKNOWN",
+  "local_deadline_termination": false,
+  "source_sha": "06472af72535eef994328e9ffe0dadea2066d8b9"
+}

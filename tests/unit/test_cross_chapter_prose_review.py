@@ -459,7 +459,8 @@ def test_high_score_cannot_replace_unresolved_or_regressed_candidate():
         cross_chapter_review=True,
         resolved_issue_codes=("issue",),
         preservation_checks=tuple(
-            {"status": "PRESERVED"} for _ in PRESERVATION_DIMENSIONS
+            {"dimension": dimension, "status": "PRESERVED", "reason": "The revised passage retains this dimension.",
+             "evidence": {"quote": "revised prose"}} for dimension in PRESERVATION_DIMENSIONS
         ),
     )
 
@@ -479,6 +480,12 @@ def test_high_score_cannot_replace_unresolved_or_regressed_candidate():
         selected(replace(challenger, preservation_checks=({"status": "REGRESSED"},)))
         == "a"
     )
+    assert selected(replace(challenger, preservation_checks=tuple(
+        {**check, "dimension": PRESERVATION_DIMENSIONS[0]} for check in challenger.preservation_checks))) == "a"
+    for status in ("UNCERTAIN", "REGRESSED"):
+        assert selected(replace(challenger, preservation_checks=tuple(
+            {**check, "status": status} if index == 0 else check
+            for index, check in enumerate(challenger.preservation_checks)))) == "a"
 
 
 def test_provider_views_isolate_history_and_schema_keeps_legacy_contract():

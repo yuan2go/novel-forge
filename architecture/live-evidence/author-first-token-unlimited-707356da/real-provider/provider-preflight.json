@@ -1,0 +1,11 @@
+{
+  "source_sha": "809e81f9548fc3bb6ab6bffdb06453aa7506062d",
+  "request_sha256": "2571604f926f6d210b81a1ff60eecf48670eca31ecab015853006bde3495d52c",
+  "provider_calls": 0,
+  "paid_channel": "DISABLED",
+  "database": "nf_author_first_native",
+  "membership_identity_matches": true,
+  "status": "BLOCKED",
+  "error_type": "FileNotFoundError",
+  "error": "[Errno 2] No such file or directory: '/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01/skills/chapter-outline/legacy-v1.md'"
+}

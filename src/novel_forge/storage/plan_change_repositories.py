@@ -121,6 +121,28 @@ class PlanChangeRepository:
                 "PlanChange activation requires an approved decision",
             )
 
+    def reconcile_replaced_target_impact(self, proposal_id: str) -> bool:
+        self.cursor.execute(
+            """INSERT INTO authority_plan_change_impact(
+                impact_id,proposal_id,project_id,source_asset_version_id,impacted_asset_version_id,
+                dependency_path,execution_scope,previous_freshness,target_freshness,automatic_mutation_allowed,recorded_by_operation_id)
+            SELECT 'plan-impact:'||proposal.proposal_id||':'||old.asset_version_id,
+                proposal.proposal_id,proposal.project_id,old.asset_version_id,old.asset_version_id,
+                jsonb_build_array(old.asset_version_id),old.execution_scope,old.freshness,'STALE',
+                old.execution_scope='SPECULATIVE',proposal.activation_operation_id
+            FROM authority_plan_change_proposal proposal
+            JOIN story_plan_binding old ON old.project_id=proposal.project_id AND old.book_id=proposal.book_id
+              AND old.asset_version_id=proposal.target_asset_version_id AND old.freshness='STALE'
+              AND old.execution_scope IN ('PLANNED','SPECULATIVE','FROZEN') AND old.execution_scope=proposal.target_execution_scope
+            JOIN active_story_plan_version active ON active.project_id=proposal.project_id AND active.book_id=proposal.book_id
+              AND active.logical_key=proposal.target_logical_key AND active.asset_version_id=proposal.proposed_asset_version_id
+            WHERE proposal.proposal_id=%s AND proposal.status='ACTIVE'
+              AND proposal.approval_operation_id IS NOT NULL AND proposal.activation_operation_id IS NOT NULL
+            ON CONFLICT(proposal_id,impacted_asset_version_id) DO NOTHING""",
+            [proposal_id],
+        )
+        return self.cursor.rowcount == 1
+
     def record_impacts(
         self,
         *,
@@ -135,6 +157,13 @@ class PlanChangeRepository:
                 impacted_asset_version_id, dependency_path,
                 invalidation_path
             ) AS (
+                SELECT binding.asset_version_id,
+                       ARRAY[binding.asset_version_id]::TEXT[],
+                       ARRAY[]::TEXT[]
+                FROM story_plan_binding AS binding
+                WHERE binding.project_id=%s AND binding.asset_version_id=%s
+                  AND binding.execution_scope IN ('PLANNED','SPECULATIVE','FROZEN')
+                UNION ALL
                 SELECT edge.dependent_asset_version_id,
                        ARRAY[
                            edge.source_asset_version_id,
@@ -172,6 +201,7 @@ class PlanChangeRepository:
                        binding.freshness,
                        BOOL_OR(
                            'MARK_STALE'=ANY(impact.invalidation_path)
+                           OR impact.impacted_asset_version_id=%s
                        ) OVER (
                            PARTITION BY impact.impacted_asset_version_id
                        ) AS must_mark_stale
@@ -189,6 +219,9 @@ class PlanChangeRepository:
                 project_id,
                 source_asset_version_id,
                 project_id,
+                source_asset_version_id,
+                project_id,
+                source_asset_version_id,
                 project_id,
             ],
         )
@@ -206,7 +239,7 @@ class PlanChangeRepository:
                 previous
                 if scope == "EXECUTED"
                 else "STALE"
-                if bool(must_mark_stale) and scope in {"PLANNED", "SPECULATIVE"}
+                if str(impacted_version) == source_asset_version_id or bool(must_mark_stale) and scope in {"PLANNED", "SPECULATIVE"}
                 else "IMPACTED"
             )
             automatic = scope == "SPECULATIVE"

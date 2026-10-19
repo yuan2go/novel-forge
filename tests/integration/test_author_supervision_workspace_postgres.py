@@ -173,7 +173,10 @@ def test_author_review_grant_recovers_new_attempt_without_rewriting_frozen_block
     blocked = deepcopy(frozen.content)
     requirement = blocked["task"]["declared_requirements"]["cross_model_review"]
     assert blocked["status"] == "BLOCKED"
-    assert "CROSS_MODEL_REVIEW_SOURCE_POLICY_REQUIRED" in blocked["candidates"][0]["rejected_reasons"]
+    assert blocked["task"]["declared_requirements"]["pure_generation"] is True
+    assert "AUTHOR_SUPERVISION_TASK_AUTHORIZATION_REQUIRED" in blocked["candidates"][0]["rejected_reasons"]
+    from novel_forge.modules.production_execution.cross_model_review import reviewer_rejection
+    assert reviewer_rejection(requirement, {}) == "CROSS_MODEL_REVIEW_SOURCE_POLICY_REQUIRED"
     assert requirement["schema_version"] == "cross-model-review.v2"
     assert requirement["authorized_reviewer"] == {}
     assert requirement["target_asset_version_id"] == draft.asset_version_id

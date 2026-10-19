@@ -1,0 +1,6 @@
+126 past-chapter same-Book source resolutions verified
+Traceback (most recent call last):
+  File "<stdin>", line 8, in <module>
+  File "/tmp/nf-author-first-20261017/verify_real_history.py", line 24, in verify
+    assert identity in current_assets and digest(original) == digest(current_assets[identity]), identity
+AssertionError: c189bbc4-b194-487f-a864-789aeddd9b34

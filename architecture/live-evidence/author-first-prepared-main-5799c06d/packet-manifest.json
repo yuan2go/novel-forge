@@ -1,0 +1,65 @@
+{
+  "schema_version": "novel-forge.evidence-packet-manifest.v1",
+  "files": [
+    {
+      "path": "index.json",
+      "bytes": 1806,
+      "sha256": "86ce7f09f70743d8a4548abf60a4ba61c41e2670739e13c387659b1cec6fa7b4"
+    },
+    {
+      "path": "native19-corpus-consumption-working.green.json",
+      "bytes": 493,
+      "sha256": "5f24bd78bb2018bf6145b81a2860c5effe9a2c0d782638749b2bf0e5129fc4c6"
+    },
+    {
+      "path": "native19-planning-dispatch-5799c06d.actual.json",
+      "bytes": 10292,
+      "sha256": "c3195c00b4f92a1fcb3a602eeb9cec9026f6d53f98f422f0b7c60995c370f184"
+    },
+    {
+      "path": "native19-prepared-main-5799c06d.dispatched.json",
+      "bytes": 2358,
+      "sha256": "eb8911de279068831d3107acdd7c0c654e82d5cedbda8eb754f90932cf36efab"
+    },
+    {
+      "path": "original-corpus-pre-submit-failure.json",
+      "bytes": 2850,
+      "sha256": "9b6f689b2094e91e3bd7cc4ad14e045c883952124583087c8fa0974ed72e9430"
+    },
+    {
+      "path": "prepared-main-5799c06d-exact-head.xml.gz",
+      "bytes": 4094,
+      "sha256": "384a6b42b00cfa05e3b90e29142a548b459995f01d5f0680b4521d4d02aa3aed"
+    },
+    {
+      "path": "prepared-main-docs-5799c06d-exact.json",
+      "bytes": 771,
+      "sha256": "3999290068c22aafabe14a1a21f942683db122c5e98958c3c8b11241fd0419a9"
+    },
+    {
+      "path": "prepared-main-sql-working-v1.xml.gz",
+      "bytes": 1854,
+      "sha256": "aedeea23ae1e7d52e5f3c7d9652b21ecdf83038935e86768b2bd9bfffac1b075"
+    },
+    {
+      "path": "prepared-main-sql-working-v2.xml.gz",
+      "bytes": 2537,
+      "sha256": "d44418fd93717ec705c610b81e7e823cb4124eeefd061a3db01fea2a1c0c3fb0"
+    },
+    {
+      "path": "prepared-main-unit-working-v1.xml.gz",
+      "bytes": 6341,
+      "sha256": "4b565af40e258d4518de9ebf8aa296e7857b27fef1a6b4d765d3e4722be172ae"
+    },
+    {
+      "path": "prepared-main-unit-working-v4.xml.gz",
+      "bytes": 4872,
+      "sha256": "26f67e9080b84bb4eba73391baf5be7b4d5d4b4f47763b305407e7be222aab08"
+    },
+    {
+      "path": "production-native-upgrade-230-to-231-5799c06d.json",
+      "bytes": 45988,
+      "sha256": "e778c533224802ed78b59e22bad3a7299e0dc66c90e8289a6ebe16c055bf6f6c"
+    }
+  ]
+}

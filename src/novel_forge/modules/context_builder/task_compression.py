@@ -7,7 +7,7 @@ import re
 from typing import Any
 
 from novel_forge.modules.command_kernel.errors import KernelError
-from novel_forge.modules.context_contracts import ContextCandidate, ContextClass
+from novel_forge.modules.context_contracts import ContextCandidate, ContextClass, FROZEN_COMPRESSION_REQUEST_MAX_UNITS
 from novel_forge.modules.narrative_state.reality import narrative_hash
 
 from .task_context import (
@@ -31,11 +31,23 @@ def _payload(candidate: ContextCandidate) -> dict[str, Any]:
     }
 
 
+def _exact_original_restoration(candidate, units, chosen):
+    if set(chosen) != {unit["unit_id"] for unit in units}:
+        return None
+    original = _payload(candidate)
+    if semantic_units.reconstruct(candidate, units, chosen) != original:
+        return None
+    return {"method": "EXACT_COMPLETE_ORIGINAL_PAYLOAD", "source_asset_version_id": candidate.asset_version_id,
+        "source_content_hash": candidate.content_digest, "payload_hash": narrative_hash(original),
+        "selected_unit_ids": sorted(chosen), "provider_evidence_claimed": False}
+
+
 def _history_accounting_payload(payload):
+    from novel_forge.modules.book_authority.working_prose import LONGFORM_POLICY_VERSIONS
     from novel_forge.modules.chapter_authority.provider_views import compile_working_history_transport
 
     summary = payload.get("safe_summary")
-    if isinstance(summary, str) and any(version in summary for version in ("working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7")):
+    if isinstance(summary, str) and any(version in summary for version in LONGFORM_POLICY_VERSIONS):
         try:
             parsed = json.loads(summary)
         except (ValueError, TypeError):
@@ -48,6 +60,7 @@ def _history_accounting_payload(payload):
 
 
 def _candidate_tokens(candidate: ContextCandidate) -> tuple[int, str]:
+    from novel_forge.modules.book_authority.working_prose import POLICY_VERSIONS
     payload = _payload(candidate)
     if candidate.asset_type == "chapter_execution_intent" and (candidate.provenance or {}).get("working_artifact"):
         try:
@@ -56,7 +69,7 @@ def _candidate_tokens(candidate: ContextCandidate) -> tuple[int, str]:
             intent = None
         working = intent.get("working_manuscript") if isinstance(intent, dict) else None
         if (isinstance(working, dict) and isinstance(working.get("projection_policy"), dict)
-            and working["projection_policy"].get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"}):
+            and working["projection_policy"].get("version") in POLICY_VERSIONS):
             from novel_forge.modules.chapter_authority.provider_views import compile_exact_context_references
             encoded, _ = compile_exact_context_references(_history_accounting_payload({**payload, 'safe_summary': intent}), structured_transport=True)
             return max(1, serialized_token_upper_bound(encoded) + 64), "STRUCTURED_WORKING_INTENT"
@@ -378,8 +391,15 @@ def compile_task_context(
                     **({"semantic_contract": semantic_units.SEMANTIC_CONTRACT} if semantic else {}),
                 }
 
+            fit_results = {}
             def fits(group):
-                return len(group) <= 256 and (chunk_fits(chunk_payload(group, target=min(SYSTEM_CONTEXT_WINDOW_TOKENS, token_budget))) if chunk_fits else token_counter(group) <= compression_input_tokens)
+                if len(group) > FROZEN_COMPRESSION_REQUEST_MAX_UNITS:
+                    return False
+                chunk = chunk_payload(group, target=min(SYSTEM_CONTEXT_WINDOW_TOKENS, token_budget)) if chunk_fits else group
+                key = narrative_hash(chunk)
+                if key not in fit_results:
+                    fit_results[key] = chunk_fits(chunk) if chunk_fits else token_counter(group) <= compression_input_tokens
+                return fit_results[key]
 
             if chunk_fits and not semantic:
                 units = _split_oversized_units(units, fits, preserve_quotes=tuple(task.get("preserve_quotes") or ()))
@@ -388,7 +408,9 @@ def compile_task_context(
                 [{key: unit[key] for key in ("unit_id", "text", "kind", "required")} for unit in units])
             position = 0
             while position < len(visible_units):
-                low, high, stop = position + 1, min(len(visible_units), position + 256), position
+                low, high, stop = position + 1, min(len(visible_units), position + FROZEN_COMPRESSION_REQUEST_MAX_UNITS), position
+                if fits(visible_units[position:high]):
+                    stop, low = high, high + 1
                 while low <= high:
                     middle = (low + high) // 2
                     if fits(visible_units[position:middle]):
@@ -427,8 +449,13 @@ def compile_task_context(
             restored = set()
             evidence = []
             assessments = []
+            exact_restorations = []
             candidate_target = max(1, remaining * candidate.estimated_tokens // max(1, sum(item.estimated_tokens for item in eligible)))
-            if semantic:
+            if semantic and stage_sources and task.get("capacity_policy") == "complete-request-capacity.v1":
+                other_tokens = sum(replacements.get(item.asset_version_id, item).estimated_tokens
+                    for item in normalized if item.asset_version_id != candidate.asset_version_id)
+                candidate_target = max(mandatory_amounts[candidate.asset_version_id], token_budget - other_tokens)
+            elif semantic:
                 current_others = sum(replacements.get(item.asset_version_id, item).estimated_tokens for item in normalized if item.asset_version_id != candidate.asset_version_id and item not in eligible)
                 pending = [item for item in eligible if item.asset_version_id not in replacements]
                 optional_space = max(0, token_budget - current_others - sum(item.estimated_tokens for item in replacements.values()) - sum(mandatory_amounts[item.asset_version_id] for item in pending))
@@ -464,14 +491,27 @@ def compile_task_context(
                     optional = sorted((unit for unit in group if unit["unit_id"] in chosen - mandatory_chosen),
                         key=lambda unit: (not bool(unit.get("semantic_risk")), unit["order"]))
                     suggested = set(chosen)
-                    while optional and token_counter(semantic_units.reconstruct(candidate, units, mandatory_chosen | chosen)) > candidate_target:
-                        optional = optional[:len(optional) // 2]
-                        chosen = semantic_units.close_dependencies(units, required | {unit["unit_id"] for unit in optional}, external_refs=external_refs)
+                    if optional and token_counter(semantic_units.reconstruct(candidate, units, mandatory_chosen | chosen)) > candidate_target:
+                        for count in range(len(optional) - 1, -1, -1):
+                            proposed = semantic_units.close_dependencies(units,
+                                required | {unit["unit_id"] for unit in optional[:count]}, external_refs=external_refs)
+                            amount = token_counter(semantic_units.reconstruct(candidate, units, mandatory_chosen | proposed))
+                            if amount <= candidate_target or count == 0:
+                                chosen = proposed
+                                break
                     budget_removed = sorted(suggested - chosen)
                     chosen_for_check = chosen & allowed
                 else:
                     chosen_for_check = chosen
                 restored.update(required - set(selected))
+                exact = _exact_original_restoration(candidate, units, chosen) if semantic and len(groups) == 1 else None
+                if exact:
+                    exact_restorations.append(exact)
+                    restored.update(chosen - set(selected))
+                    keep.update(chosen)
+                    evidence.append(dict(selected_result.get("_execution_evidence") or {}))
+                    call_count += 1
+                    continue
                 verdict = dict(model_call("context_fidelity", {**chunk, "selected_unit_ids": sorted(chosen_for_check)}))
                 missing = set(verdict.get("missing_unit_ids") or ())
                 distorted = set(verdict.get("distorted_unit_ids") or ())
@@ -481,18 +521,22 @@ def compile_task_context(
                 elif missing or distorted or verdict.get("supported") is not True or verdict.get("coverage_complete") is not True:
                     if missing and not distorted and verdict.get("supported") is True:
                         chosen.update(missing)
-                        check = dict(model_call("context_fidelity", {**chunk, "selected_unit_ids": sorted(chosen & allowed)}))
-                        assessments.append({
-                            "task": chunk, "selected_unit_ids": selected,
-                            "fidelity_selected_unit_ids": sorted(chosen),
-                            "fidelity": {key: value for key, value in check.items() if key != "_execution_evidence"},
-                            "compressor_evidence": dict(selected_result.get("_execution_evidence") or {}),
-                            "fidelity_evidence": dict(check.get("_execution_evidence") or {}),
-                            "recheck": True,
-                        })
-                        evidence.append(dict(check.get("_execution_evidence") or {}))
-                        if check.get("supported") is not True or check.get("coverage_complete") is not True or check.get("missing_unit_ids") or check.get("distorted_unit_ids"):
-                            chosen = allowed
+                        exact = _exact_original_restoration(candidate, units, chosen) if semantic and len(groups) == 1 else None
+                        if exact:
+                            exact_restorations.append(exact)
+                        else:
+                            check = dict(model_call("context_fidelity", {**chunk, "selected_unit_ids": sorted(chosen & allowed)}))
+                            assessments.append({
+                                "task": chunk, "selected_unit_ids": selected,
+                                "fidelity_selected_unit_ids": sorted(chosen),
+                                "fidelity": {key: value for key, value in check.items() if key != "_execution_evidence"},
+                                "compressor_evidence": dict(selected_result.get("_execution_evidence") or {}),
+                                "fidelity_evidence": dict(check.get("_execution_evidence") or {}),
+                                "recheck": True,
+                            })
+                            evidence.append(dict(check.get("_execution_evidence") or {}))
+                            if check.get("supported") is not True or check.get("coverage_complete") is not True or check.get("missing_unit_ids") or check.get("distorted_unit_ids"):
+                                chosen = allowed
                     else:
                         chosen = allowed
                     restored.update(chosen - set(selected))
@@ -532,6 +576,8 @@ def compile_task_context(
             trace = {"source_asset_version_id": candidate.asset_version_id, "source_content_hash": candidate.content_digest, "source_revision": candidate.source_revision, "source_binding": source_binding, "source_binding_role": "FROZEN_PROVIDER_CONTEXT_CUSTODY" if stage_sources else "ORIGINAL_ASSET", "original_expression_path": (candidate.provenance or {}).get("original_expression_path"), "task_hash": narrative_hash(task), boundary_key: boundary, "policy_version": TASK_CONTEXT_POLICY_VERSION, "method": "host-bound-extractive-semantic.v2", "selected_unit_ids": sorted(keep), "source_units": [{"unit_id": unit["unit_id"], "source_path": unit.get("source_path", [unit["field"]]), "index": unit.get("index"), "unit_hash": narrative_hash(unit["text"]), "kind": unit["kind"], **({"source_offsets": unit["source_offsets"]} if "source_offsets" in unit else {})} for unit in units if unit["unit_id"] in keep], "restored_unit_ids": sorted(restored), "result_content_hash": narrative_hash(payload), "forward_check": "EXACT_HOST_SOURCE_UNITS", "reverse_check": "REQUIRED_UNITS_AND_INDEPENDENT_SEMANTIC_CHECK_OR_FULL_LOCAL_RESTORE", "model_execution_evidence": evidence, "routing_assessments": assessments}
             if writer_projection:
                 trace["writer_projection_version"] = candidate.provenance["writer_projection_version"]
+            if exact_restorations:
+                trace["exact_original_restorations"] = exact_restorations
             if semantic:
                 trace.update(method="host-bound-extractive-semantic.v3", semantic_contract=semantic_units.SEMANTIC_CONTRACT,
                     source_units=semantic_units.source_audit(units, keep), source_catalog=semantic_units.source_audit(units, {unit["unit_id"] for unit in units}),

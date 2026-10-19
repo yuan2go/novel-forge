@@ -1,0 +1,54 @@
+{
+  "source_sha": "393415967a4ad42abaef11d62a93f0468d5fe4c2",
+  "files": [
+    {
+      "path": "focused-command.json",
+      "bytes": 3284,
+      "sha256": "6e9ec78dcb8dff5d53e7d6cc68c333639fa37ec1142791f6ef5e3d049de33325"
+    },
+    {
+      "path": "focused-postgres.xml",
+      "bytes": 5948,
+      "sha256": "1b5c36252bd8a572da051f7d0e61335fa4eb85e992edc1c7fe04619a9d36eb6f"
+    },
+    {
+      "path": "focused-result.json",
+      "bytes": 435,
+      "sha256": "47b545c81a3048ccebb15e4064db336db99abf40a70b1668872f2aeb6024bdb0"
+    },
+    {
+      "path": "focused-unit.xml",
+      "bytes": 95644,
+      "sha256": "94901639cef755ae8eb345121fd86572bbdd80ee0c19d3320caba55101ff9cab"
+    },
+    {
+      "path": "native-dispatched-sources.json",
+      "bytes": 11336,
+      "sha256": "cf4baca86f1ec64dab6bec514cf06c514d9f803ad1d5bb8def90983666e80936"
+    },
+    {
+      "path": "native-pack-revalidation.json",
+      "bytes": 1138,
+      "sha256": "d96796b32620ca96c7bfdf2a144c62502d1e8cd4b75d83b5e31904318a807595"
+    },
+    {
+      "path": "native-recovery-and-replay.json",
+      "bytes": 3028,
+      "sha256": "245df9fa0e77e05ffd447f214fbf097260db255d747b536e9d2bc184e0c34010"
+    },
+    {
+      "path": "native-upgrade-restore.json",
+      "bytes": 724,
+      "sha256": "97f867b233861b1b68b0ce233bcbad0007a8f8c15da0cfda4c371b193a8fad48"
+    },
+    {
+      "path": "scope.json",
+      "bytes": 2721,
+      "sha256": "cdf3a854340cf9d00de745078705fc66026ecf03799bcb957e39f8036f9e1e84"
+    }
+  ],
+  "evidence_ceiling": "EXECUTABLE",
+  "main_provider_dispatch": "REAL_PROVIDER",
+  "new_chapter_delivery": "PENDING",
+  "production_qualification": "NOT_PROVEN"
+}

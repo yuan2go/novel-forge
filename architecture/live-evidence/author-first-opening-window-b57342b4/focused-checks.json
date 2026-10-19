@@ -1,0 +1,493 @@
+{
+  "source_sha": "b57342b4e15241e722bcbc5ac67a68cd4063d11f",
+  "before_source_sha": "80caedd02377270937ad76851725a28652fd12ce",
+  "before": {
+    "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/creation-cli-reproduction-80caedd0.xml",
+    "sha256": "sha256:6827099343e584fe81781ba44f0c321980f8e6847fbca6657285c627d98faa7f",
+    "counts": {
+      "PASS": 2,
+      "FAIL": 2,
+      "ERROR": 0,
+      "SKIP": 0
+    },
+    "cases": [
+      {
+        "classname": "tests.integration.test_creation_cli_postgres",
+        "name": "test_native_start_freezes_current_work_and_reuses_original_formation[admission-boundaries]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.integration.test_creation_cli_postgres",
+        "name": "test_native_start_freezes_current_work_and_reuses_original_formation[controlled-process-main-chain]",
+        "status": "FAIL"
+      },
+      {
+        "classname": "tests.integration.test_creation_cli_postgres",
+        "name": "test_native_start_freezes_current_work_and_reuses_original_formation[native-generated-title]",
+        "status": "FAIL"
+      },
+      {
+        "classname": "tests.integration.test_creation_cli_postgres",
+        "name": "test_native_start_freezes_current_work_and_reuses_original_formation[headroom-catalog-admission]",
+        "status": "PASS"
+      }
+    ]
+  },
+  "after": {
+    "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/opening-window-final-postgres-b57342b4.xml",
+    "sha256": "sha256:eca1bd63e9e2f9bd1b78270bc493a6e76abcdf07a0e4ffa89c29dcdc5a156af5",
+    "counts": {
+      "PASS": 4,
+      "FAIL": 0,
+      "ERROR": 0,
+      "SKIP": 0
+    },
+    "cases": [
+      {
+        "classname": "tests.integration.test_creation_cli_postgres",
+        "name": "test_native_start_freezes_current_work_and_reuses_original_formation[admission-boundaries]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.integration.test_creation_cli_postgres",
+        "name": "test_native_start_freezes_current_work_and_reuses_original_formation[controlled-process-main-chain]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.integration.test_creation_cli_postgres",
+        "name": "test_native_start_freezes_current_work_and_reuses_original_formation[native-generated-title]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.integration.test_creation_cli_postgres",
+        "name": "test_native_start_freezes_current_work_and_reuses_original_formation[headroom-catalog-admission]",
+        "status": "PASS"
+      }
+    ]
+  },
+  "unit": {
+    "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/opening-window-final-unit-b57342b4.xml",
+    "sha256": "sha256:1d0a8061ce5c7e432f50720e98b2ed01eeff2ddff096e308dda8decc3301d0c8",
+    "counts": {
+      "PASS": 82,
+      "FAIL": 0,
+      "ERROR": 0,
+      "SKIP": 0
+    },
+    "cases": [
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_distinguishes_waits_without_a_new_business_state[WAITING_OPENING_DEPENDENCY-TECHNICAL_WAIT]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_distinguishes_waits_without_a_new_business_state[WAITING_APPROVAL-AUTHOR_DECISION]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_distinguishes_waits_without_a_new_business_state[PAUSED-AUTHOR_DECISION]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_distinguishes_waits_without_a_new_business_state[FORMATION_RECONCILIATION_OR_LEASE_REQUIRED-RECONCILIATION_REQUIRED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_distinguishes_waits_without_a_new_business_state[COMPLETED-COMPLETED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_distinguishes_waits_without_a_new_business_state[ABORTED-CANCELLED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_distinguishes_waits_without_a_new_business_state[SCHEMA_VALIDATION_FAILED-OWNER_RECOVERY_REQUIRED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_distinguishes_waits_without_a_new_business_state[FORMATION_CURRENT_FAILURE_REQUIRES_CORRECTION-OWNER_RECOVERY_REQUIRED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_distinguishes_waits_without_a_new_business_state[GENERATION_NO_PROGRESS-OWNER_RECOVERY_REQUIRED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_worker_records_setup_refusal_before_any_provider_dispatch[creation-binding]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_worker_records_setup_refusal_before_any_provider_dispatch[creation-policy]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_worker_records_setup_refusal_before_any_provider_dispatch[creation-principal]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_worker_records_setup_refusal_before_any_provider_dispatch[book_phase-binding]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_worker_records_setup_refusal_before_any_provider_dispatch[book_phase-policy]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_worker_records_setup_refusal_before_any_provider_dispatch[book_phase-principal]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_book_scope_failure_records_only_a_still_claimed_job[CLAIMED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_book_scope_failure_records_only_a_still_claimed_job[RETRY_WAIT]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_book_scope_preserves_inner_owner_failure_without_terminalizing_again",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_recovery_versions_and_isolation_counts_are_not_material_progress",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_healthy_or_unknown_wait_does_not_become_a_no_progress_failure[YIELDED_CHECKPOINT]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_healthy_or_unknown_wait_does_not_become_a_no_progress_failure[WAITING_LEASE_OR_DEPENDENCY]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_healthy_or_unknown_wait_does_not_become_a_no_progress_failure[WAITING_OPENING_DEPENDENCY]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_healthy_or_unknown_wait_does_not_become_a_no_progress_failure[WAITING_CHAPTER_DEPENDENCY]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_healthy_or_unknown_wait_does_not_become_a_no_progress_failure[FORMATION_RECONCILIATION_OR_LEASE_REQUIRED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_formation_v5_freezes_author_comparison_and_creation_profiles",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_native_creation_freezes_current_method_bindings_and_keeps_legacy_replay",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_generated_title_request_is_explicit_and_preserves_author_title",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_installer_uses_actual_versioned_capacity_contract[v1-3.0.3]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_installer_uses_actual_versioned_capacity_contract[v2-3.0.4]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_installer_uses_actual_versioned_capacity_contract[v3-3.1.0]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_job_is_an_operational_envelope_with_stable_takeover_identity",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_worker_and_cli_resolve_the_same_project_pack_without_cross_project_resume",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_creation_freezes_generation_instructions_and_rejects_runtime_policy_drift",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_unknown_capacity_is_an_operator_configuration_wait_not_an_unknown_effect",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_exhausted_content_repairs_require_a_new_decision_not_a_technical_retry[PLANNING_RESULT_REPAIR_BOUND_EXCEEDED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_exhausted_content_repairs_require_a_new_decision_not_a_technical_retry[PLANNING_REPAIR_BOUND_EXCEEDED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_author_fixed_direction_reuses_one_exact_approved_input_with_continuous_profiles",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_formation_recovery_blocks_legacy_cli_unknown_before_policy_or_retry_mutation",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_authorized_formation_continue_is_not_denied_by_historical_failures[MODEL_EFFECT_RETRYABLE_PLANNING]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_coordination",
+        "name": "test_authorized_formation_continue_is_not_denied_by_historical_failures[MODEL_EFFECT_FINAL_PLANNING]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_original_cancellation_between_hooks_prevents_next_recovery",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_forward_recovery_hooks_cannot_bypass_creation_checkpoints[cancel]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_forward_recovery_hooks_cannot_bypass_creation_checkpoints[deadline]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_forward_recovery_hooks_cannot_bypass_creation_checkpoints[lease]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_forward_recovery_hooks_cannot_bypass_creation_checkpoints[action-limit]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_derived_recovery_repeated_success_is_finitely_bounded",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_deadline_between_hooks_prevents_next_mutation",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_lost_execution_lease_between_hooks_propagates_before_next_mutation",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_original_unknown_remote_receipt_blocks_all_recovery_hooks",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_remote_uncertainty_between_hooks_blocks_next_action",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_historical_generation_pause_resumes_owned_runnable_successor",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_operator_pause_blocks_the_next_recovery_hook",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_exhausted_recovery_preserves_intervening_author_or_terminal_checkpoint[PAUSED-AUTHOR_PAUSE-PAUSED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_exhausted_recovery_preserves_intervening_author_or_terminal_checkpoint[ABORTED--CANCELLED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_exhausted_recovery_preserves_intervening_author_or_terminal_checkpoint[CANCELLED--CANCELLED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_exhausted_recovery_preserves_intervening_author_or_terminal_checkpoint[COMPLETED--COMPLETED]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_exhausted_recovery_pause_binds_observed_book_version",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_pause_rejects_stale_version_before_mutating_saga_or_book",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_operator_pause_during_recovery_blocks_the_following_action",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_pause_after_unknown_isolation_prevents_successor_dispatch",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_shared_book_driver_recovers_only_owned_unstarted_planning_deployment[recover]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_shared_book_driver_recovers_only_owned_unstarted_planning_deployment[cancel]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_shared_book_driver_recovers_only_owned_unstarted_planning_deployment[paused]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_shared_book_driver_recovers_only_owned_unstarted_planning_deployment[deadline]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_shared_book_driver_recovers_only_owned_unstarted_planning_deployment[unresolved]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_shared_book_driver_recovers_only_owned_unstarted_planning_deployment[unbound]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_shared_book_driver_recovers_only_owned_unstarted_planning_deployment[foreign]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_creation_recovery_control",
+        "name": "test_shared_book_driver_recovers_only_owned_unstarted_planning_deployment[unchanged]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_book_opening_runtime_job_allows_only_one_attempt",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_workflow_node_runtime_identity_is_not_claimable_by_legacy_workers",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_book_opening_claim_seams_select_exact_versioned_contracts",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_workflow_node_execute_seam_rejects_a_legacy_claim",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_book_opening_runtime_identity_rejects_cross_version_pairs[BOOK_OPENING_WORKFLOW_NODE_EXECUTE-book_opening]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_book_opening_runtime_identity_rejects_cross_version_pairs[BOOK_OPENING_EXECUTE-book_opening_workflow_v1]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_terminal_heartbeat_preserves_only_the_received_and_verified_node_result[heartbeat-True-False]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_terminal_heartbeat_preserves_only_the_received_and_verified_node_result[heartbeat-False-True]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_terminal_heartbeat_preserves_only_the_received_and_verified_node_result[response_loss-True-True]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_terminal_heartbeat_preserves_only_the_received_and_verified_node_result[other_exit_failure-True-True]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_production_claim_falls_through_to_exact_legacy_drain_after_v3_is_empty",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_production_claim_never_crosses_to_legacy_when_v3_is_available",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_production_dispatch_executes_legacy_successor_only_via_legacy_seam",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.unit.test_book_opening_runtime_job_policy",
+        "name": "test_production_dispatch_rejects_cross_pair_before_any_executor",
+        "status": "PASS"
+      }
+    ]
+  },
+  "scripted_postgresql_not_real_manuscript_evidence": true,
+  "no_test_or_assertion_changed": true,
+  "development_collection_failure_missing_pythonpath_retained": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/opening-window-unit-development-v1.xml"
+}

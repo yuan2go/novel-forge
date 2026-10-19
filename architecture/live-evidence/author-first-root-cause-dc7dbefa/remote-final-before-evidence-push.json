@@ -1,0 +1,19 @@
+{
+  "ls_remote": "e5f1da7d1649610370500d960cad4e06083c69d9\trefs/heads/codex/wp-nf-author-first-continuation-01\n9f41f0c75108f708a9a77e6c8da89826cf00987e\trefs/heads/main\n",
+  "pr182": {
+    "mergeCommit": {
+      "oid": "9f41f0c75108f708a9a77e6c8da89826cf00987e"
+    },
+    "mergedAt": "2026-10-17T10:46:48Z",
+    "number": 182,
+    "state": "MERGED"
+  },
+  "pr183_before_push": {
+    "headRefOid": "e5f1da7d1649610370500d960cad4e06083c69d9",
+    "isDraft": true,
+    "number": 183,
+    "state": "OPEN",
+    "url": "https://github.com/yuan2go/novel-forge/pull/183"
+  },
+  "main_merged_by_task": false
+}

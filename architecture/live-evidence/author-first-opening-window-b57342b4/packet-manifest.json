@@ -1,0 +1,47 @@
+{
+  "schema_version": "checked-evidence-manifest.v1",
+  "source_sha": "b57342b4e15241e722bcbc5ac67a68cd4063d11f",
+  "files": [
+    {
+      "path": "classification.json",
+      "sha256": "sha256:be6067550916f41367fa006c01fc1061392f5f4d8875f73112f07b86ff83805a"
+    },
+    {
+      "path": "documentation-reality.json",
+      "sha256": "sha256:5ae26caa960775ccf1394156ed4f9971a2edbeca42cb264a8916f0caea2a97fe"
+    },
+    {
+      "path": "focused-checks.json",
+      "sha256": "sha256:3ad35714a3e7835dd644b7e4116eb78f96fa5b0a865430ebb11c5c096320c99a"
+    },
+    {
+      "path": "focused-command.json",
+      "sha256": "sha256:ece8321bd9d20c7aa7d20b914cdeffd68392198ee9ff3b69833d5311e8824311"
+    },
+    {
+      "path": "focused-postgres.xml",
+      "sha256": "sha256:eca1bd63e9e2f9bd1b78270bc493a6e76abcdf07a0e4ffa89c29dcdc5a156af5"
+    },
+    {
+      "path": "focused-result.json",
+      "sha256": "sha256:239317c0e1746d3adf13d349acd61e58daefdf3cbed99b5d8e504bbecb9c6912"
+    },
+    {
+      "path": "focused-unit.xml.gz",
+      "sha256": "sha256:8e6c41448e4b4f1626fe4ee10b390bf73d7574c70943790860f98812738a21dc"
+    },
+    {
+      "path": "full-matrix-queue.json",
+      "sha256": "sha256:a8c8f59926fd174b0858e63e65ba09fb0bb4d86ec4f5933d646eecefe05f59bf"
+    },
+    {
+      "path": "index.json",
+      "sha256": "sha256:36d0e82f600f2a71c4905fbea3d9dfb2c06ee86bc845c815ab465d014a0b56ea"
+    },
+    {
+      "path": "native-preparation-checkpoint.json",
+      "sha256": "sha256:2acebda22444ef7d8a03391efaf4c0d37ee00b878e2d68f3fece9a85d4f77632"
+    }
+  ],
+  "raw_prose_or_provider_payloads_committed": false
+}

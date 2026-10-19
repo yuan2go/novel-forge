@@ -158,6 +158,55 @@ def test_recovery_finds_each_completed_context_chunk_before_selecting_latest(mon
         assert seen == ['chunk1', 'chunk2']
 
 
+@pytest.mark.parametrize("error,stage,version,working,reuse", [
+    ("REVIEW_RESOLUTION_CHECKS_REQUIRED", "rereview", "3.10.0", True, False),
+    ("REVIEW_RESOLUTION_CHECKS_REQUIRED", "rereview", "3.9.4", True, True),
+    ("REVIEW_RESOLUTION_CHECKS_REQUIRED", "rereview", "3.10.0", False, True),
+    ("REVIEW_RESOLUTION_CHECKS_REQUIRED", "revision", "3.10.0", True, True),
+    ("PROGRAMMING_BUG", "rereview", "3.10.0", True, True),
+    ("DELIVERY_COORDINATION_FAILED", "revision", "3.10.0", True, True),
+])
+def test_known_invalid_working_rereview_does_not_reconsume_foreign_ledger_result(monkeypatch, error, stage, version, working, reuse):
+    from contextlib import nullcontext
+    from types import SimpleNamespace
+    from novel_forge.modules.chapter_authority import receipt_recovery
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest
+    ensure_migrated()
+    with transaction() as connection, connection.cursor() as cursor:
+        for table in ('authority_operation', 'authority_attempt', 'authority_external_effect'):
+            cursor.execute(f'CREATE TEMP TABLE {table} AS SELECT * FROM public.{table} WITH NO DATA')
+        cursor.execute("INSERT INTO authority_operation(operation_id,project_id,workspace_id,actor_id,trace_id,correlation_id) VALUES ('ledger-op','p','w','actor','trace','root')")
+        cursor.execute("INSERT INTO authority_attempt(attempt_id,operation_id,attempt_number,status,result) VALUES ('old','ledger-op',1,'FAILED_RETRYABLE',%s)", [Jsonb({'error_code': error})])
+        payload = {'review': {'issues': []}, 'revision': {'text': '完整已保存的修订稿'}}
+        cursor.execute("INSERT INTO authority_external_effect(external_effect_id,request_hash,request_payload,operation_id,project_id,status,effect_type) VALUES ('retained-ledger','original-hash',%s,'ledger-op','p','SUCCEEDED','model.invoke')",
+            [Jsonb({'stage': stage, 'input': payload, '_production_execution': {'attempt_id': 'old', 'book_id': 'book'}})])
+        cursor.execute("SELECT to_jsonb(a) FROM authority_attempt a")
+        original_attempt = cursor.fetchone()[0]
+        cursor.execute("SELECT to_jsonb(e) FROM authority_external_effect e")
+        original_effect = cursor.fetchone()[0]
+        uow = SimpleNamespace(cursor=cursor, repositories=SimpleNamespace(external_effects=None))
+        monkeypatch.setattr(receipt_recovery, 'AuthorityUnitOfWork', lambda *args: nullcontext(uow))
+        seen = []
+        def verified(_uow, _repository, _context, effect_id, **kwargs):
+            seen.append(effect_id)
+            return {'budget_reservation_status': 'SETTLED', 'provider_evidence': {
+                'result': {'resolution_checks': []}, 'provider_id': 'fixture', 'model_id': 'fixture',
+                'prompt_version': 'fixture', 'skill_version': 'fixture', 'real_model_call': False,
+                'usage': {'availability': 'UNAVAILABLE', 'measurement': 'UNKNOWN'},
+                'cost': {'availability': 'UNAVAILABLE', 'measurement': 'UNKNOWN', 'currency': 'UNKNOWN'}}}
+        monkeypatch.setattr(receipt_recovery, '_read_verified_success', verified)
+        command = {'book_id': 'book', **({'preparation_report': {'working_revision': {'contract_version': 'chapter-working-revision.v1'}}} if working else {})}
+        request = ChapterHandlerRequest('ledger-op', 'p', 'w', 'trace', 'root', command, (),
+            attempt_id='new', database_url=DATABASE_URL, definition_version=version)
+        result = receipt_recovery.consume_completed_generation_result(request, stage=stage, payload=payload)
+        assert (result is not None) is reuse
+        assert seen == (['retained-ledger'] if reuse else [])
+        cursor.execute("SELECT to_jsonb(a) FROM authority_attempt a")
+        assert cursor.fetchone()[0] == original_attempt
+        cursor.execute("SELECT to_jsonb(e) FROM authority_external_effect e")
+        assert cursor.fetchone()[0] == original_effect
+
+
 def test_completed_revalidation_graph_preserves_unknown_cost_and_rejects_live_outcomes():
     from novel_forge.modules.command_kernel.step_successor_v2 import _require_reconciled_graph
     ensure_migrated()

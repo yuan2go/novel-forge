@@ -1445,7 +1445,7 @@ class StoryPlanningGenerationApplication:
                     )
 
     def _require_frozen_realization_slice(
-        self, command: StoryPlanningGenerationCommand
+        self, command: StoryPlanningGenerationCommand, *, uow: AuthorityUnitOfWork | None = None
     ) -> dict[str, Any]:
         """SECURITY: Resolve Chapter elaboration identity from Planning Authority itself.
 
@@ -1459,7 +1459,8 @@ class StoryPlanningGenerationApplication:
                 "NARRATIVE_REALIZATION_REQUIRED",
                 "ChapterPlan generation requires a Frozen Narrative Realization slice",
             )
-        with AuthorityUnitOfWork(self.database_url) as uow:
+        from contextlib import nullcontext
+        with (nullcontext(uow) if uow is not None else AuthorityUnitOfWork(self.database_url)) as uow:
             current = NarrativeRealizationRepository(
                 uow.cursor
             ).require_current_for_chapter(
@@ -1518,7 +1519,7 @@ class StoryPlanningGenerationApplication:
             )
             if existing is not None:
                 raise _ChapterProjectionAlreadyMaterialized(existing)
-            self._require_frozen_realization_slice(generation_command)
+            self._require_frozen_realization_slice(generation_command, uow=uow)
             binding = (candidate["content"].get("constraint_envelope") or {}).get(
                 "world_preparation"
             )
@@ -1818,6 +1819,11 @@ class StoryPlanningGenerationApplication:
                 "PLANNING_GENERATION_COMMAND_IDENTITY_DRIFT",
                 "replay must use the exact immutable admitted Planning command",
             )
+        if row[2] == "RECONCILIATION_REQUIRED" and not row[4]:
+            from .runtime_continuation import follow
+            continued = follow(self, str(row[0]), command, principal=principal, execution_probe=execution_probe)
+            if continued is not None:
+                return continued
         if row[2] in {'FAILED_FINAL', 'DEAD_LETTER'} and not row[4] and command.world_preparation_request:
             from .world_optional import follow_optional_failure
             deferred = follow_optional_failure(self, command=command, operation_id=str(row[0]), principal=principal, execution_probe=execution_probe)
@@ -1843,7 +1849,20 @@ class StoryPlanningGenerationApplication:
                     [row[0]],
                 )
                 source_version = int(uow.cursor.fetchone()[0])
-            if failure and (failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] == "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED"
+            query_preparation = False
+            if failure and (failure[0] == "PROGRAMMING_BUG" and failure[2] == "canceling statement due to statement timeout" or failure[0] == "PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED") and command.runtime_continuation_id:
+                from .runtime_continuation import require_binding
+                from .preparation_recovery import MULTI_OWNER_HANDOFF_CONTRACTS
+                query_preparation = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"].get("preparation_handoff", {}).get("contract_version") in MULTI_OWNER_HANDOFF_CONTRACTS
+            prepared_main_failure = False
+            if failure and failure[0] == 'EFFECT_RETRYABLE_FAILURE_RECORDED' and command.runtime_continuation_id:
+                from .preparation_recovery import PRE_SUBMIT_FAILURE
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    uow.cursor.execute("SELECT last_error FROM authority_external_effect WHERE operation_id=%s AND request_payload->>'stage'=%s", [row[0],command.generator_operation_name])
+                    main_failures = uow.cursor.fetchall()
+                prepared_main_failure = len(main_failures) == 1 and main_failures[0][0] == PRE_SUBMIT_FAILURE
+            if failure and (prepared_main_failure or query_preparation or (failure[0] == "CONTEXT_COMPRESSION_TASK_INVALID" and failure[2] == "CONTEXT_COMPRESSION_TASK_INVALID: compression needs a bounded source chunk and frozen task boundary") or failure[1] == "PROVIDER_SCHEMA_REJECTED" or failure[0] in {"PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN"}
+                or (failure[0] == "MANUSCRIPT_CONTEXT_INVALID" and failure[2] == "MANUSCRIPT_CONTEXT_INVALID: Only the selected preceding writing history can be read")
                 or (failure[0] == "PROGRAMMING_BUG" and len(failure) > 2 and str(failure[2] or "").startswith("PROTECTED_CONTEXT_BUDGET_EXCEEDED:")) or (
                     failure[0] == "PROVIDER_ROUTING_BLOCKED"
                     and command.generator_operation_name in {"arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"})):
@@ -1862,7 +1881,7 @@ class StoryPlanningGenerationApplication:
                     register(self, str(row[0]), project_id=command.project_id, principal=principal,
                         expected_source_version=source_version,
                         decision_evidence={"authorization_ref": "NATIVE_CONTINUOUS_CREATION_TEMPLATE",
-                            "reason": "Equivalent transport Schema correction with trusted completed stages retained" if failure[1] == "PROVIDER_SCHEMA_REJECTED" else "Pre-send capacity correction after exact frozen failure with verified completed preparation retained"},
+                            "reason": "Current working Planning input-scope correction before any preparation or Provider dispatch" if failure[0] == "MANUSCRIPT_CONTEXT_INVALID" else "Equivalent transport Schema correction with trusted completed stages retained" if failure[1] == "PROVIDER_SCHEMA_REJECTED" else "Pre-send capacity correction after exact frozen failure with verified completed preparation retained"},
                         trace_id=command.trace_id, correlation_id=command.correlation_id)
                 except KernelError as error:
                     if error.code != "PLANNING_RUNTIME_CONTINUATION_FAILURE_NOT_ALLOWED":

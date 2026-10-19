@@ -1,0 +1,75 @@
+{
+  "schema_version": "author-first-owned-recovery-checkpoint.v1",
+  "at": "2026-10-18T17:57:00.371746+00:00",
+  "source_sha": "5f5abbcb9e435ba44a0679e568de4d555f38462c",
+  "native_worker_source_sha": "f118967013e6fdc35c56de3a5724176696428b3d",
+  "base_main_sha": "9f41f0c75108f708a9a77e6c8da89826cf00987e",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "database": {
+    "name": "nf_author_first_native",
+    "port": 56437,
+    "cluster_system_identifier": "7697608597895058057",
+    "schema_head": "230",
+    "same_original_database": true
+  },
+  "template": "creative-execution-template.v12",
+  "native_packs": {
+    "planning": "2.19.0",
+    "chapter": "3.2.0",
+    "optional_prose_review": "1.7.0"
+  },
+  "delivery": {
+    "effective_chapters": 18,
+    "body_han": 77424,
+    "accepted_through_chapter": 0,
+    "author_selection": "NOT_GRANTED",
+    "first_round_target": 100,
+    "full_book_target": 600
+  },
+  "recovery": {
+    "v9_registration_operation_id": "3d964e16-2067-485f-b6e3-91d016f2c7b5",
+    "active_planning_operation_id": "b85c20d5-95aa-4fa8-9c56-4cf9c8086d8d",
+    "registration": "SUCCEEDED_NATIVE",
+    "retained_preparations": 68,
+    "context_hash": "sha256:c499ac10cb12076207eb9c4b1780b39e87dbbb1234ceb2e0291268d6a1358b40",
+    "chapter19": "REAL_PROVIDER_PREPARATION_IN_PROGRESS_NO_NEW_PROSE",
+    "automatic_consumption": "REQUIRES_FINAL_PROVIDER_INPUT_TRACE_NOT_YET_PROVEN",
+    "new_exact_old_task_redispatches_at_checkpoint": 0,
+    "later_unknown_after_unsent_carriers": "NOT_RUN",
+    "owner_scope_fix_installation": "QUEUED_AFTER_NATIVE_PAUSE_AND_RELEASED_SUBMISSION_RIGHTS"
+  },
+  "validation": {
+    "focused_exact_head_tests": 97,
+    "focused_failures": 0,
+    "focused_errors": 0,
+    "focused_skips": 0,
+    "ruff": "PASS",
+    "documentation_reality": "PASS_DEVELOPMENT_IMPLEMENTATION_TREE",
+    "two_axis_review": "PASS_STATIC",
+    "a60_full_matrix": "RUNNING_BACKEND_PASS_MIGRATION_COMPATIBILITY_IN_PROGRESS",
+    "5f_full_matrix": "QUEUED_AFTER_PRIOR_CLEANUP_PASS_ZERO_RESOURCES",
+    "production_qualification": "NOT_PROVEN",
+    "literary_qualification": "NOT_PROVEN",
+    "full100": "NOT_COMPLETE",
+    "human_review": "NOT_RUN_USER_REQUESTED_MODEL_REVIEW",
+    "deepseek": "REAL_EXACT_BOUND_REVIEWS_01_TO_16_COMPLETE_17_TO_18_REJECTED_REPAIR_SCOPE"
+  },
+  "failure_classification": {
+    "query_timeout": "PRODUCTION_SQL_SCALING_DEFECT_FIXED_ADDITIVE229_EXACT131_ROWS_PRESERVED",
+    "lineage_depth": "INFRASTRUCTURE_EDGES_MISCOUNTED_AS_CONTENT_DEFECT_FIXED_NO_CONTENT_ALLOWANCE_INCREASE",
+    "mixed_isolation_ancestry": "CODE_AND_PG_VERIFIED_NATIVE_LATER_UNKNOWN_PENDING",
+    "optional_review_backend": "SAVED_RESULT_SCAN_OWNER_SCOPE_DEFECT_EXACT_REPRO_FIXED",
+    "focused_missing_backup_directory": "ENVIRONMENT_SETUP_FAILURE_RETAINED_THEN_CONFIGURED",
+    "new_parameterized_receipt_collision": "TEST_FIXTURE_MESSAGE_ID_COLLISION_FIXED_WITH_UNIQUE_NATIVE_RECEIPTS_PAYLOAD_CONFLICT_PROTECTION_RETAINED",
+    "deepseek17_18_scope": "CORRECT_REJECTION_NO_REVISION_AUTHORITY",
+    "unknown_usage": "PRESERVED_NO_FORGED_SETTLEMENT"
+  },
+  "private_material_excluded": [
+    "manuscript prose",
+    "Provider raw response",
+    "credentials",
+    "runtime environment",
+    "database dump"
+  ],
+  "proof_ceiling": "EXECUTABLE_FOCUSED_RECOVERY; REAL_PROVIDER_WORKING_DELIVERY18; NO_OVERALL_QUALIFICATION"
+}

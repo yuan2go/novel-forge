@@ -40,6 +40,8 @@ class CandidateEvidence:
     remaining_issue_codes: tuple[str, ...] = ()
     review_target_text_hash: str = ""
     review_report_type: str = ""
+    review_content: dict[str, Any] | None = None
+    review_content_hash: str = ""
 
 
 def retained_candidate_evidence(workspace_id: str, content: dict[str, Any]) -> CandidateEvidence:
@@ -79,6 +81,66 @@ def _supported_resolution(check, text):
     except KernelError:
         return False
     return True
+
+
+def _empty_history_applicability(previous, challenger, length_repair_scope):
+    from novel_forge.modules.review.diagnostics import prose_hash
+    source_review_fields = ("review_version_id", "initial_review_version_id", "selected_review",
+        "candidate_comparison", "selected_source_asset_version_id", "source_draft_version_id",
+        "revision_contract_version", "prior_review_evidence")
+    source_ledger_fields = ("issues", "unresolved_issues", "resolved_issue_codes", "remaining_issue_codes",
+        "issue_lineage", "resolution_checks", "quality_resolution_checks", "resolution_claimed_issue_codes",
+        "issue_resolutions", "new_issues", "regression_issue_codes")
+    if ((previous.workspace_asset_version_id and previous.workspace_asset_version_id != previous.asset_version_id)
+            or previous.resolved_issue_codes or previous.remaining_issue_codes
+            or previous.resolution_checks or previous.quality_resolution_checks
+            or any(field in previous.content for field in source_review_fields)
+            or any(field in previous.content and previous.content[field] != [] for field in source_ledger_fields)
+            or previous.content.get("resolution_summary")):
+        return None
+    initial, reviewed = previous.review_content, challenger.review_content
+    if (length_repair_scope is None or not isinstance(initial, dict) or not isinstance(reviewed, dict)
+            or not previous.review_content_hash or not challenger.review_content_hash
+            or initial.get("diagnostic_contract_version") != "actionable-diagnostics.v1"
+            or reviewed.get("diagnostic_contract_version") != "actionable-diagnostics.v1"
+            or initial.get("report_type") != "ReviewReport" or reviewed.get("report_type") != "ReReviewReport"
+            or initial.get("issues") != [] or reviewed.get("issues") != []
+            or previous.blocker_codes or challenger.blocker_codes
+            or challenger.resolution_checks or challenger.quality_resolution_checks
+            or challenger.resolved_issue_codes or challenger.remaining_issue_codes
+            or initial.get("target_asset_version_id") != previous.asset_version_id
+            or initial.get("target_text_hash") != prose_hash(str(previous.content.get("text") or ""))
+            or reviewed.get("initial_review_version_id") != previous.review_asset_version_id
+            or reviewed.get("original_draft_version_id") != previous.asset_version_id
+            or reviewed.get("revision_version_id") != challenger.asset_version_id
+            or reviewed.get("target_text_hash") != prose_hash(str(challenger.content.get("text") or ""))
+            or initial.get("context_bundle_version_id") != length_repair_scope.get("context_asset_version_id")
+            or reviewed.get("context_bundle_version_id") != initial.get("context_bundle_version_id")):
+        return None
+    ledger_fields = ("unresolved_issues", "resolved_issue_codes", "remaining_issue_codes", "issue_lineage",
+        "resolution_checks", "new_issues", "regression_issue_codes")
+    for report in (initial, reviewed):
+        if any(field in report and report[field] != [] for field in ledger_fields) or report.get("prior_review_evidence"):
+            return None
+        summary = report.get("resolution_summary") or {}
+        if any(summary.get(field, []) != [] for field in ("denominator_issue_codes", "resolved_issue_codes",
+                "unresolved_issue_codes", "new_regression_issue_codes")):
+            return None
+    window = initial.get("cross_chapter_window")
+    if (not isinstance(window, dict) or not window.get("source_window_hash")
+            or reviewed.get("cross_chapter_window") != window
+            or window.get("target_candidate_asset_version_id") != previous.asset_version_id
+            or window.get("target_candidate_text_hash") != initial["target_text_hash"]):
+        return None
+    return {"contract_version": "preservation-applicability.v1", "dimension": "RESOLVED_ISSUES",
+        "status": "NOT_APPLICABLE", "evidence_class": "HOST_VERIFIED_EMPTY_DIAGNOSIS_LEDGER",
+        "initial_review_asset_version_id": previous.review_asset_version_id,
+        "initial_review_content_hash": previous.review_content_hash,
+        "rereview_asset_version_id": challenger.review_asset_version_id,
+        "rereview_content_hash": challenger.review_content_hash,
+        "source_asset_version_id": previous.asset_version_id, "source_text_hash": initial["target_text_hash"],
+        "revision_asset_version_id": challenger.asset_version_id, "revision_text_hash": reviewed["target_text_hash"],
+        "context_asset_version_id": initial["context_bundle_version_id"], "source_window_hash": window["source_window_hash"]}
 
 
 def compare_candidates(
@@ -165,6 +227,11 @@ def compare_candidates(
                 for check in challenger.quality_resolution_checks)
     from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
 
+    applicability = _empty_history_applicability(previous, challenger, length_repair_scope)
+    def preservation_failed(check):
+        return check.get("status") != "PRESERVED" and not (applicability
+            and check.get("dimension") == "RESOLVED_ISSUES" and check.get("status") == "UNCERTAIN")
+
     if previous.content.get("text") == challenger.content.get("text"):
         selected = previous
         reason = CandidateStopReason.MARGINAL_IMPROVEMENT
@@ -175,8 +242,9 @@ def compare_candidates(
         improved = False
     elif challenger.cross_chapter_review and (
         set(previous.blocker_codes) & set(challenger.blocker_codes)
-        or not scope_preserved and any(check.get("status") != "PRESERVED" for check in challenger.preservation_checks)
+        or not scope_preserved and any(preservation_failed(check) for check in challenger.preservation_checks)
         or len(challenger.preservation_checks) != len(PRESERVATION_DIMENSIONS)
+        or {check.get("dimension") for check in challenger.preservation_checks} != set(PRESERVATION_DIMENSIONS)
     ):
         selected = previous
         reason = CandidateStopReason.ESCALATION_REQUIRED
@@ -245,6 +313,7 @@ def compare_candidates(
         "score_evidence_class": "MODEL_JUDGMENT",
         "literary_quality_proven": False,
         "length_measurement": length_measurement,
+        **({"preservation_applicability": applicability} if applicability else {}),
         "new_blocker_codes": new_blockers,
         "resolved_blocker_codes": resolved_blockers,
         "selected_asset_version_id": selected.asset_version_id,

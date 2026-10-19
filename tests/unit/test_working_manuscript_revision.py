@@ -92,6 +92,162 @@ def test_revision_purpose_reaches_rendered_model_task(monkeypatch, stage):
     assert task['working_revision_request']['core_story_change_authorized'] is False
 
 
+@pytest.mark.parametrize('codes', [[], ['CURRENT-1'], ['CURRENT-1', 'CURRENT-2']])
+def test_working_rereview_binds_only_its_initial_diagnosis_ledger(monkeypatch, codes):
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset
+    from novel_forge.modules.chapter_authority import review_window
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder, _materialize_production_codex_prompt
+    from novel_forge.modules.chapter_authority.provider_output_contracts import initial_review_resolution_scope, _validate
+    from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    from novel_forge.modules.review.cross_chapter import resolution_checks
+    from tests.unit.test_capability_pack_artifact_materialization import _prompt_materialization
+
+    initial = {'issues': [{'code': code, 'severity': 'minor'} for code in codes]}
+    purpose = {'contract_version': CONTRACT, 'reason': '旧请求 OLD-1 已拒绝；本次保留原稿并修正篇幅。'}
+    request = ChapterHandlerRequest('rereview', 'p', 'w', 'trace', 'root',
+        {'preparation_report': {'working_revision': purpose}},
+        (ChapterInputAsset('original', 'draft_chapter', 'original-hash', {'text': '原稿'}),
+         ChapterInputAsset('revision', 'draft_version', 'revision-hash', {'text': '新修订'}),
+         ChapterInputAsset('context', 'context_bundle', 'context-hash', {}),
+         ChapterInputAsset('initial-review', 'review_report', canonical_hash(initial), initial)),
+        definition_version='3.10.0')
+    monkeypatch.setattr(review_window, 'prepare_review_window', lambda *args: None)
+    *_, payload = review_window.prepare_native_review(request, stage='rereview')
+    assert 'review_resolution_scope' not in payload
+    scope = initial_review_resolution_scope(initial)
+    assert scope == {'contract_version': 'initial-review-resolution-scope.v1',
+        'initial_review_content_hash': canonical_hash(initial), 'diagnosis_codes': codes}
+    schema, ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage='rereview', request_payload={'input': payload}, prompt_contract_version='v15')
+    checks = schema['properties']['resolution_checks_by_code']
+    assert set(checks['properties']) == set(checks['required']) == set(codes)
+    assert checks['additionalProperties'] is False
+    assert 'resolution_checks' not in schema['properties']
+    from novel_forge.modules.chapter_authority.provider_output_contracts import is_work_review_schema_ref
+    assert is_work_review_schema_ref(ref)
+    assert is_work_review_schema_ref(ref.removesuffix(':initial-review-resolution-scope-v1'))
+    assert not is_work_review_schema_ref(ref + ':unknown')
+    disposition = {'status': 'SATISFIED', 'preservation': 'PRESERVED', 'evidence': {'quote': '新修订'}, 'reason': '已逐项核对'}
+    valid = {code: deepcopy(disposition) for code in codes}
+    _validate(checks, valid, path='checks')
+    for invalid in [{**valid, 'OLD-1': disposition}, *[{key: value for key, value in valid.items() if key != code} for code in codes]]:
+        with pytest.raises(ValueError):
+            _validate(checks, invalid, path='checks')
+    if len(codes) == 2:
+        with pytest.raises(ValueError):
+            _validate(checks, {codes[0]: disposition}, path='checks')
+    normalized = normalize_model_output('rereview', {'score': 40, 'issues': [], 'resolution_checks_by_code': valid}, output_schema_ref=ref)
+    assert normalized['decision'] == 'PASSED'
+    assert [item['code'] for item in normalized['resolution_checks']] == codes
+    assert normalized['resolution_checks'] == [{**disposition, 'code': code} for code in codes]
+    assert normalize_model_output('rereview', normalized, output_schema_ref=ref) == normalized
+    with pytest.raises(KernelError, match='MODEL_RESPONSE_INVALID'):
+        normalize_model_output('rereview', {**normalized, 'resolution_checks': [{'code': 'FOREIGN'}]}, output_schema_ref=ref)
+    materialization = _prompt_materialization({'context_segments': []})
+    materialization['output_schema'] = {'ref': ref, 'content': schema}
+    prompt, _ = _materialize_production_codex_prompt(stage='rereview', inputs=payload, materialization=materialization,
+        target_scope={'scope_kind': 'chapter', 'scope_id': 'chapter-3', 'chapter_number': 3})
+    assert 'initial-review-resolution-scope.v1' in prompt and canonical_hash(initial) in prompt
+    assert 'OLD-1' in prompt
+    assert 'review_resolution_scope' not in payload
+    old_schema, old_ref = PostgresChapterExecutionContractBinder._provider_output_contract(stage='rereview',
+        request_payload={'input': {key: value for key, value in payload.items() if key != 'working_revision_request'}}, prompt_contract_version='v15')
+    assert old_ref == ref.removesuffix(':initial-review-resolution-scope-v1')
+    materialization['output_schema'] = {'ref': old_ref, 'content': old_schema}
+    old_prompt, _ = _materialize_production_codex_prompt(stage='rereview', inputs=payload, materialization=materialization,
+        target_scope={'scope_kind': 'chapter', 'scope_id': 'chapter-3', 'chapter_number': 3})
+    assert 'initial-review-resolution-scope.v1' not in old_prompt
+    assert 'resolution_checks_by_code' not in old_prompt
+    with pytest.raises(KernelError, match='REVIEW_RESOLUTION_CHECKS_REQUIRED'):
+        resolution_checks({'resolution_checks': [{'code': 'OLD-1'}]}, initial, '新修订')
+
+
+@pytest.mark.parametrize('drift', [None, 'changed-evidence', 'duplicate-code', 'missing-code'])
+def test_scoped_rereview_survives_canonical_json_key_reordering_without_content_drift(drift):
+    from novel_forge.modules.production_execution.backends import ResultNormalizer
+    from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
+    ref = 'schema:chapter-provider-output:rereview:cross-chapter-v6:repair-scope-v1:initial-review-resolution-scope-v1'
+    checks = {'Z-LAST': {'status': 'RESOLVED', 'preservation': 'PRESERVED', 'evidence': {'quote': '后段'}, 'reason': '确切后段修复'},
+        'A-FIRST': {'status': 'UNRESOLVED', 'preservation': 'PRESERVED', 'evidence': {'quote': '前段'}, 'reason': '前段仍未解决'}}
+    first = normalize_model_output('rereview', {'score': 90, 'issues': [], 'resolution_checks_by_code': checks}, output_schema_ref=ref)
+    persisted = ResultNormalizer.normalize({'result': first})
+    persisted['resolution_checks'] = [{**value, 'code': code} for code, value in checks.items()]
+    if drift == 'changed-evidence':
+        persisted['resolution_checks'][0]['evidence'] = {'quote': '擅自改变的引文'}
+    elif drift == 'duplicate-code':
+        persisted['resolution_checks'][1] = deepcopy(persisted['resolution_checks'][0])
+    elif drift == 'missing-code':
+        persisted['resolution_checks'].pop()
+    if drift:
+        with pytest.raises(KernelError, match='MODEL_RESPONSE_INVALID'):
+            normalize_model_output('rereview', persisted, output_schema_ref=ref)
+    else:
+        replay = normalize_model_output('rereview', persisted, output_schema_ref=ref)
+        assert replay == first
+        assert replay['resolution_checks_by_code'] == checks
+        assert [item['code'] for item in replay['resolution_checks']] == sorted(checks)
+        assert normalize_model_output('rereview', ResultNormalizer.normalize({'result': replay}), output_schema_ref=ref) == replay
+
+
+@pytest.mark.parametrize('drift', ['changed-review', 'changed-hash', 'foreign-code', 'missing-code'])
+def test_rereview_frozen_resolution_schema_rejects_changed_ledger(drift):
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder, _materialize_production_codex_prompt
+    from tests.unit.test_capability_pack_artifact_materialization import _prompt_materialization
+    review = {'issues': [{'code': 'CURRENT', 'severity': 'minor'}]}
+    payload = {'review': review, 'working_revision_request': {'contract_version': CONTRACT}, 'draft': {'text': '正文'}}
+    schema, ref = PostgresChapterExecutionContractBinder._provider_output_contract(stage='rereview', request_payload={'input': payload}, prompt_contract_version='v15')
+    if drift == 'changed-review':
+        payload['review'] = {'issues': []}
+    elif drift == 'changed-hash':
+        payload['review'] = {**review, 'changed': True}
+    elif drift == 'foreign-code':
+        schema['properties']['resolution_checks_by_code']['properties']['FOREIGN'] = {}
+    else:
+        schema['properties']['resolution_checks_by_code']['properties'].pop('CURRENT')
+    materialization = _prompt_materialization({})
+    materialization['output_schema'] = {'ref': ref, 'content': schema}
+    with pytest.raises(KernelError, match='REVIEW_RESOLUTION_SCOPE_INVALID'):
+        _materialize_production_codex_prompt(stage='rereview', inputs=payload, materialization=materialization,
+            target_scope={'scope_kind': 'chapter', 'scope_id': 'chapter-3', 'chapter_number': 3})
+
+
+@pytest.mark.parametrize('version', ['3.9.3', '3.9.4'])
+def test_historical_working_rereview_keeps_its_original_schema(monkeypatch, version):
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset
+    from novel_forge.modules.chapter_authority import review_window
+    from novel_forge.modules.chapter_authority.execution_gateway import PostgresChapterExecutionContractBinder
+    request = ChapterHandlerRequest('rereview', 'p', 'w', 'trace', 'root',
+        {'preparation_report': {'working_revision': {'contract_version': CONTRACT, 'reason': '旧诊断 OLD-1'}}},
+        (ChapterInputAsset('original', 'draft_chapter', 'hash', {'text': '原稿'}),
+         ChapterInputAsset('revision', 'draft_version', 'hash', {'text': '新稿'}),
+         ChapterInputAsset('context', 'context_bundle', 'hash', {}),
+         ChapterInputAsset('review', 'review_report', 'hash', {'issues': []})),
+        definition_version=version)
+    monkeypatch.setattr(review_window, 'prepare_review_window', lambda *args: None)
+    *_, payload = review_window.prepare_native_review(request, stage='rereview')
+    assert 'review_resolution_scope' not in payload
+    schema, ref = PostgresChapterExecutionContractBinder._provider_output_contract(
+        stage='rereview', request_payload={'input': payload}, legacy_contract=True, prompt_contract_version='v3')
+    assert 'initial-review-resolution-scope' not in ref
+    assert 'minItems' not in schema['properties']['resolution_checks']
+
+
+@pytest.mark.parametrize('suffix', ['', ':initial-review-resolution-scope-v1'])
+def test_current_review_scope_markers_do_not_reintroduce_a_score_gate(suffix):
+    from novel_forge.modules.chapter_authority.model_effects import normalize_model_output
+    ref = 'schema:chapter-provider-output:rereview:cross-chapter-v6:delivered-card-scope-v1:repair-scope-v1'
+    raw = {'score': 40, 'issues': [], 'resolution_checks': [], 'knowledge_checks': []}
+    wire = {key: value for key, value in raw.items() if key != 'resolution_checks'}
+    current = normalize_model_output('rereview', {**wire, 'resolution_checks_by_code': {}} if suffix else raw, output_schema_ref=ref + suffix)
+    assert current['decision'] == 'PASSED'
+    assert current['score'] == 40
+    assert current['review_decision_contract'] == 'work-review-decision.v1'
+    historical = normalize_model_output('rereview', raw,
+        output_schema_ref='schema:chapter-provider-output:rereview:v4')
+    assert historical['decision'] == 'NEEDS_REVISION'
+
+
 @pytest.mark.parametrize('purpose', ['absent', 'stale', 'current'])
 def test_requested_structural_aesthetic_repair_uses_matching_scope_and_body_contract(purpose):
     from novel_forge.modules.review.diagnostics import structural_repair_scope, validate_prose_repair_scope
@@ -343,6 +499,29 @@ def test_only_unresolved_explicit_major_contradiction_blocks_propagation(kind, s
     assert source.content == {"text": "真实正文"}
 
 
+def test_propagation_batch_reads_reviews_once_but_rechecks_on_the_next_invocation():
+    from novel_forge.modules.book_authority.manuscript import require_prose_propagation_batch
+    from novel_forge.modules.review.diagnostics import prose_hash
+    review = {"target_asset_version_id": "draft:a", "target_text_hash": prose_hash("真实正文"),
+        "issues": [{"code": "contradiction", "judgment_kind": "SEMANTIC_CONTRADICTION", "severity": "major", "status": "OPEN"}]}
+    class Cursor:
+        def __init__(self): self.calls, self.reviews = 0, []
+        def execute(self, sql, params):
+            self.calls += 1
+            assert params == ["project", ["draft:a", "draft:b"]]
+        def fetchall(self): return self.reviews
+    cursor = Cursor()
+    sources = [SimpleNamespace(asset_version_id=identity, asset_type="draft_chapter", content={"text": "真实正文"})
+               for identity in ("draft:a", "draft:b")]
+    uow, book = SimpleNamespace(cursor=cursor), {"project_id": "project"}
+    require_prose_propagation_batch(uow, book, sources)
+    assert cursor.calls == 1
+    cursor.reviews = [("new-review", review)]
+    with pytest.raises(KernelError, match="MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED"):
+        require_prose_propagation_batch(uow, book, sources)
+    assert cursor.calls == 2
+
+
 @pytest.mark.parametrize("resolved", [False, True])
 def test_later_review_omission_cannot_remove_an_earlier_major_contradiction(resolved):
     from novel_forge.modules.book_authority.manuscript import require_prose_propagation
@@ -377,7 +556,7 @@ def test_frozen_later_context_rechecks_new_major_finding_before_execution(monkey
     monkeypatch.setattr(manuscript, "freeze_working_context", lambda *args, **kwargs: snapshot)
     def major(*args):
         raise KernelError("MANUSCRIPT_MAJOR_CONTRADICTION_UNRESOLVED", "new concrete Review finding")
-    monkeypatch.setattr(manuscript, "require_prose_propagation", major)
+    monkeypatch.setattr(manuscript, "require_prose_propagation_batch", major)
     uow = SimpleNamespace(repositories=SimpleNamespace(asset_documents=SimpleNamespace(require=lambda **kwargs: source)))
     manuscript.verify_working_context(uow, book, snapshot, require_current=False)
     snapshot["target_chapter"] = 2
@@ -456,11 +635,24 @@ def test_retained_working_revision_body_is_readable_without_new_call_qualificati
 
 
 @pytest.mark.parametrize("owned", [True, False])
-def test_unselected_materialized_revision_is_readable_without_projecting_review_or_selection(monkeypatch, owned):
+@pytest.mark.parametrize("kind,identity,integrity", [
+    ("draft_version", {"project_id": "project"}, True),
+    ("draft_chapter", {}, True),
+    ("best_draft_candidate", {}, True),
+    ("draft_chapter", {"project_id": "other"}, True),
+    ("draft_chapter", {"project_id": "project", "book_id": "other"}, True),
+    ("draft_chapter", {"project_id": "project", "workspace_id": "other"}, True),
+    ("draft_chapter", {"chapter": 4}, True),
+    ("draft_chapter", {"project_id": "project"}, False),
+])
+def test_unselected_materialized_revision_is_readable_without_projecting_review_or_selection(monkeypatch, owned, kind, identity, integrity):
     from novel_forge.modules.book_authority import manuscript
 
-    source = SimpleNamespace(asset_type="draft_version", asset_version_id="typed", content_hash="hash",
-        content={"project_id": "project", "chapter": 3, "text": "完整物化修订正文。"})
+    content = {"chapter": 3, "text": "完整物化修订正文。", **identity}
+    source = SimpleNamespace(asset_type=kind, asset_version_id="typed", content_hash=manuscript.canonical_hash(content) if integrity else "sha256:" + "0" * 64,
+        content=content)
+    definition = {"draft_version": "chapter.revision.apply", "draft_chapter": "chapter.draft.generate",
+        "best_draft_candidate": "chapter.candidate.select_best"}[kind]
     class Uow:
         def __init__(self, *args):
             self.cursor = self
@@ -472,19 +664,25 @@ def test_unselected_materialized_revision_is_readable_without_projecting_review_
             pass
         def execute(self, sql, params):
             assert "authority_operation_output_asset" in sql and "output.role='primary'" in sql
-            assert "op.definition_name=%s" in sql and "chapter.revision.apply" in params
+            assert "op.definition_name=%s" in sql and definition in params
             assert "UPDATE" not in sql and "INSERT" not in sql
         def fetchone(self):
             return next(self.rows)
     monkeypatch.setattr(manuscript, "AuthorityUnitOfWork", Uow)
     principal = SimpleNamespace(require=lambda permission, project: None)
-    if owned:
+    conflicting = any(key in identity and identity[key] != expected for key, expected in
+        (("project_id", "project"), ("book_id", "book"), ("workspace_id", "workspace"), ("chapter", 3)))
+    if owned and not conflicting and integrity:
         actual = manuscript.require_retained_model_candidate("test", project_id="project", book_run_id="run",
             asset_version_id="typed", principal=principal)
         assert actual["text"] == source.content["text"] and actual["raw_text"] is None
         assert actual["completeness"] == "COMPLETE"
         assert {actual[key] for key in ("review_status", "selection_status", "acceptance_status")} == {"NOT_PROJECTED"}
         assert actual["publication"] == "NOT_AUTHORIZED"
+    elif owned and not conflicting and not integrity:
+        with pytest.raises(KernelError, match="MANUSCRIPT_CANDIDATE_HASH_INVALID"):
+            manuscript.require_retained_model_candidate("test", project_id="project", book_run_id="run",
+                asset_version_id="typed", principal=principal)
     else:
         with pytest.raises(KernelError, match="another source or Book"):
             manuscript.require_retained_model_candidate("test", project_id="project", book_run_id="run",
@@ -858,3 +1056,158 @@ def test_cancelled_revision_does_not_rebind_or_withhold_already_selected_prose(m
     monkeypatch.setattr(manuscript, "_optional_document", lambda *_: SimpleNamespace(content=selection))
     assert manuscript._selected_working_dependencies(SimpleNamespace(cursor=Cursor()), book, source) is None
     assert source.content["text"] == "正文"
+
+
+@pytest.mark.parametrize('prior,status,size,expected', [
+    (None, 'EXECUTING', 10, 'LENGTH_REVISION_PENDING'),
+    (('original-root', 'operator'), 'EXECUTING', 10, 'LENGTH_REVISION_PENDING'),
+    (('original-root', 'operator'), 'SUCCEEDED', 10, 'LENGTH_REVISION_APPLIED'),
+    (('original-root', 'operator'), 'SUCCEEDED', 4, 'REVISED_LENGTH_TARGET_UNMET'),
+    (('original-root', 'operator'), 'CANCELLED', 10, 'LENGTH_REVISION_BLOCKED'),
+])
+def test_explicit_length_delivery_reuses_native_revision_and_selects_only_compliant_candidate(monkeypatch, prior, status, size, expected):
+    from novel_forge.cli import manuscript as cli
+    from novel_forge.modules.book_authority import manuscript
+    from novel_forge.storage import authority_uow
+    from unittest.mock import Mock
+
+    book = {'book_run_id': 'run', 'project_id': 'p', 'current_chapter': 1, 'version': 7, 'state': 'READY'}
+    unit = {'chapter': 1, 'asset_version_id': 'draft:1', 'content_hash': 'sha256:' + 'a' * 64,
+        'length': {'actual': 1, 'target': {'minimum': 8, 'maximum': 12}}}
+    monkeypatch.setattr(manuscript, 'require_manuscript', lambda *a, **k: {'units': [unit]})
+    class Cursor:
+        def execute(self, sql, params):
+            self.sql = sql
+        def fetchone(self):
+            return (8,) if self.sql.startswith('SELECT version') else None if self.sql.startswith('SELECT attempt.result') else prior
+    class Uow:
+        cursor = Cursor()
+        repositories = SimpleNamespace(asset_documents=SimpleNamespace(require=lambda **k:
+            SimpleNamespace(asset_type='best_draft_candidate', content={'text': '字' * size})))
+        def __init__(self, *_): pass
+        def __enter__(self): return self
+        def __exit__(self, *_): pass
+    monkeypatch.setattr(authority_uow, 'AuthorityUnitOfWork', Uow)
+    revised = Mock(return_value={'root_operation_id': 'original-root', 'status': status,
+        'stages': [{'asset_version_id': 'native-best', 'output_key': 'chapter.best_candidate', 'status': 'SUCCEEDED'}]})
+    selected = Mock()
+    monkeypatch.setattr(cli, '_run_working_revision_command', revised)
+    monkeypatch.setattr(cli, 'run_manuscript_command', selected)
+    from novel_forge.modules.chapter_authority import working_revision
+    monkeypatch.setattr(working_revision, 'revalidate_completed_length_candidate', lambda *a, **k: None)
+    result = cli._ensure_native_work_length(SimpleNamespace(database_url='unused'),
+        SimpleNamespace(work_window_seconds=300, book_run_id='run'), book=book, principal=SimpleNamespace(principal_id='operator'))
+    assert result['status'] == expected
+    command = revised.call_args.args[1]
+    assert command.action == ('continue-revision' if prior else 'revise')
+    assert command.revision_root == ('original-root' if prior else '')
+    assert command.expected_version == 7 and '8—12' in command.reason
+    assert selected.call_count == (1 if expected == 'LENGTH_REVISION_APPLIED' else 0)
+    if selected.called:
+        selection = selected.call_args.args[1]
+        assert selection.action == 'use-working-candidate' and selection.candidate_version == 'native-best'
+        assert selection.expected_version == 7
+
+
+@pytest.mark.parametrize('target,chapter', [(None, 1), ({'minimum': 8, 'maximum': 12}, 1)])
+def test_length_delivery_refuses_unbound_or_earlier_underlength_without_revision(monkeypatch, target, chapter):
+    from novel_forge.cli import manuscript as cli
+    from novel_forge.modules.book_authority import manuscript
+    from unittest.mock import Mock
+    monkeypatch.setattr(manuscript, 'require_manuscript', lambda *a, **k: {'units': [
+        {'chapter': chapter, 'length': {'actual': 1, 'target': target}}]})
+    revision = Mock(side_effect=AssertionError('No replacement may be admitted'))
+    monkeypatch.setattr(cli, '_run_working_revision_command', revision)
+    book = {'book_run_id': 'run', 'project_id': 'p', 'current_chapter': 2, 'state': 'READY'}
+    if target is None:
+        with pytest.raises(KernelError, match='MANUSCRIPT_LENGTH_TARGET_REQUIRED'):
+            cli._ensure_native_work_length(SimpleNamespace(database_url='unused'), SimpleNamespace(), book=book, principal=None)
+    else:
+        result = cli._ensure_native_work_length(SimpleNamespace(database_url='unused'), SimpleNamespace(), book=book, principal=None)
+        assert result['status'] == 'EARLIER_OR_ACTIVE_CHAPTER_REQUIRES_NATIVE_REVISION'
+    revision.assert_not_called()
+
+
+@pytest.mark.parametrize('state,active,chapter,settles', [
+    ('CHAPTER_RUNNING', 'original-request', 6, True),
+    ('CHAPTER_SUBMITTED', 'original-request', 6, True),
+    ('CHAPTER_COMPLETED', 'original-request', 6, True),
+    ('CHAPTER_WAITING_RETRY', 'original-request', 6, True),
+    ('CHAPTER_FAILED_RETRYABLE', 'original-request', 6, True),
+    ('CHAPTER_ACCEPTANCE_PENDING', 'original-request', 6, True),
+    ('CANON_PENDING', 'original-request', 6, True),
+    ('CHAPTER_FAILED_TERMINAL', 'original-request', 6, False),
+    ('CHAPTER_RUNNING', '', 6, False),
+    ('CHAPTER_RUNNING', 'original-request', 4, False),
+    ('CHAPTER_RUNNING', 'original-request', 7, False),
+    ('PAUSED', 'original-request', 6, False),
+    ('ABORTED', 'original-request', 6, False),
+    ('COMPLETED', 'original-request', 6, False),
+    ('READY', 'original-request', 6, False),
+])
+def test_length_delivery_settles_only_the_saved_active_frontier_before_revision(monkeypatch, state, active, chapter, settles):
+    from novel_forge.cli import manuscript as cli
+    from novel_forge.modules.book_authority import manuscript
+    from unittest.mock import Mock
+    monkeypatch.setattr(manuscript, 'require_manuscript', lambda *a, **k: {'units': [
+        {'chapter': chapter, 'length': {'actual': 3961, 'target': {'minimum': 4000, 'maximum': 5000}}}]})
+    revision = Mock(side_effect=AssertionError('Active or unrelated Chapter cannot be revised'))
+    monkeypatch.setattr(cli, '_run_working_revision_command', revision)
+    book = {'book_run_id': 'run', 'project_id': 'p', 'current_chapter': 5,
+        'state': state, 'active_chapter_request_id': active}
+    result = cli._ensure_native_work_length(SimpleNamespace(database_url='unused'), SimpleNamespace(), book=book, principal=None)
+    if settles:
+        assert result is None
+    else:
+        assert result['status'] == 'EARLIER_OR_ACTIVE_CHAPTER_REQUIRES_NATIVE_REVISION'
+    revision.assert_not_called()
+
+
+@pytest.mark.parametrize('scope,status,kind,severity,blocked', [
+    ('FUTURE_REPLAN', 'OPEN', 'SEMANTIC_CONFLICT', 'blocking', True),
+    ('INVESTIGATE', 'OPEN', 'UNCERTAIN', 'major', False),
+    ('FUTURE_REPLAN', 'OPEN', 'AESTHETIC_SUGGESTION', 'minor', False),
+    ('FUTURE_REPLAN', 'OPEN', 'SEMANTIC_CONFLICT', 'minor', False),
+    ('FUTURE_REPLAN', 'RESOLVED', 'SEMANTIC_CONFLICT', 'blocking', False),
+    ('LOCAL_PROSE', 'OPEN', 'SEMANTIC_CONFLICT', 'blocking', False),
+])
+def test_working_length_repair_does_not_dispatch_for_a_plan_owned_diagnosis(monkeypatch, scope, status, kind, severity, blocked):
+    from novel_forge.modules.chapter_authority.contracts import ChapterHandlerRequest, ChapterInputAsset, ChapterNode
+    from novel_forge.modules.chapter_authority.handlers import build_chapter_handler_registry
+    from novel_forge.modules.revision import domain
+    from novel_forge.modules.review.domain import evaluate_review_result
+    from unittest.mock import Mock
+    text = '本场尚待既有规划解决首课与劳动的先后。'
+    issue = {'code': 'SCHEDULE', 'severity': severity, 'judgment_kind': kind,
+        'message': '首课与劳动日程待核实', 'category': 'PLAN_EXECUTABILITY', 'violated_constraint': '冻结日程',
+        'revision_goal': '交回有权限的决策层', 'preserve': ['保留原稿'], 'acceptance_criteria': ['冻结日程可执行'],
+        'evidence': {'start': 0, 'end': len(text), 'quote': text},
+        'repair': {'root_cause': 'UNCERTAIN' if scope == 'INVESTIGATE' else 'CHAPTER_STRUCTURE',
+            'problem_owner': 'PROSE' if scope == 'LOCAL_PROSE' else 'UNKNOWN' if scope == 'INVESTIGATE' else 'PLAN',
+            'repair_scope': scope, 'revision_goal': '交回有权限的决策层', 'preserve': ['保留原稿'],
+            'resolution_criteria': ['冻结日程可执行']}}
+    review = evaluate_review_result(project_id='project', target_asset_version_id='draft',
+        context_bundle_version_id='context', chapter=16, prose_text=text, provider_evidence={},
+        result={'diagnostic_contract_version': 'actionable-diagnostics.v1',
+            'decision': 'NEEDS_REVISION', 'score': 40, 'issues': [issue]})
+    review['issues'][0]['status'] = status
+    request = ChapterHandlerRequest('revision', 'project', 'workspace', 'trace', 'root',
+        {'preparation_report': {'working_revision': {'contract_version': CONTRACT}}},
+        (ChapterInputAsset('draft', 'draft_chapter', 'draft-hash', {'text': text}),
+         ChapterInputAsset('review', 'review_report', 'review-hash', review),
+         ChapterInputAsset('context', 'context_bundle', 'context-hash', {})), definition_version='3.10.0')
+    monkeypatch.setattr(domain, 'freeze_chapter_length_scope', lambda *a, **k: {'minimum': 4000, 'maximum': 5000})
+    provider = Mock()
+    provider.invoke.side_effect = RuntimeError('dispatch reached')
+    if blocked:
+        with pytest.raises(KernelError, match='MANUSCRIPT_PLAN_CHANGE_REQUIRED') as exc:
+            build_chapter_handler_registry(provider).require(ChapterNode.REVISION).execute(request)
+        provider.invoke.assert_not_called()
+        assert exc.value.details['review_asset_version_id'] == 'review'
+        assert exc.value.details['source_asset_version_id'] == 'draft'
+        assert exc.value.details['authority'] == 'PROPOSAL_ONLY'
+        assert exc.value.details['diagnosis_codes'] == ['SCHEDULE']
+    else:
+        with pytest.raises(RuntimeError, match='dispatch reached'):
+            build_chapter_handler_registry(provider).require(ChapterNode.REVISION).execute(request)
+        provider.invoke.assert_called_once()

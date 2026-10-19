@@ -6,7 +6,7 @@ from novel_forge.modules.authority_handler_runtime import (
 )
 from novel_forge.modules.command_kernel.errors import KernelError
 from .contracts import ReaderOutcomeModelPort
-from .prose_review import prose_review_invoke_payload, validate_window_report
+from .prose_review import prose_review_invoke_payload, validate_window_report, validate_window_source_binding
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,6 +78,7 @@ class LongformProseReviewHandler:
                     work_intent=content["schema_version"] in {"longform-prose-window.v2", "longform-prose-window.v3"},
                 )
                 run_id, manifest = rows[0]
+                validate_window_source_binding(manifest=manifest, window=content["window"])
                 if (
                     manifest["sources"]
                     != current["sources"][: len(manifest["sources"])]
@@ -108,10 +109,13 @@ class LongformProseReviewHandler:
                         )
 
         assert_current()
+        from .prose_recovery import literal_citation_retry_feedback
+        invocation = prose_review_invoke_payload(content)
+        invocation.update(literal_citation_retry_feedback(request, source=source, payload=invocation))
         result = self.model_port.invoke(
             request,
             stage="longform_prose_review",
-            payload=prose_review_invoke_payload(content),
+            payload=invocation,
             reservation_tokens=content["policy"]["context_token_budget"],
             pre_send_assertion=lambda: assert_current(dispatch=True),
         )

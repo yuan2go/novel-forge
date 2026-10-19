@@ -91,7 +91,8 @@ class WorldPreparationRepository:
                 if validate_actor_output(raw, task) != output:
                     raise KernelError("WORLD_ACTOR_PROPOSAL_DRIFT", "actor receipt differs from its private frozen projection")
                 proposals.append(output)
-            require_actor_judgments(contract(action["generation"])["output"], proposals)
+            require_actor_judgments(contract(action["generation"])["output"], proposals,
+                agency=source['reality'].get('epistemic_contract') == 'world-agency.v2')
         elif action.get("actor_proposals"):
             raise KernelError("WORLD_ACTOR_POLICY_REQUIRED", "actor proposals cannot appear on the unified world path")
         if require_current:

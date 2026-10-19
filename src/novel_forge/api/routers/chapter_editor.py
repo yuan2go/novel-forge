@@ -59,6 +59,8 @@ class AuthorWorkflowRequest(BaseModel):
 class ManuscriptRevisionRequest(AuthorWorkflowRequest):
     chapter: int = Field(ge=1, strict=True)
     reason: str = Field(min_length=1)
+    regeneration_proposal_id: str = ""
+    corrected_chapter_plan_version_id: str = ""
 
 
 class ManuscriptExportRequest(BaseModel):
@@ -356,7 +358,9 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
             if authority.require(request.book_run_id)["project_id"] != request.project_id:
                 raise KernelError("AUTHOR_BOOK_SCOPE_CONFLICT", "Working revision requires this exact Project")
             result = ctx.services.chapter_application.admit_manuscript_revision(authority=authority,
-                principal=principal, **request.model_dump(exclude={"project_id"}))
+                principal=principal, **({"supervisor": ctx.services.book_production.supervisor}
+                    if request.regeneration_proposal_id or request.corrected_chapter_plan_version_id else {}),
+                **request.model_dump(exclude={"project_id"}, exclude_defaults=True))
             return {**asdict(result), "book_run_id": request.book_run_id}
         return execute(submit)
 

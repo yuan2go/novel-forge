@@ -142,8 +142,10 @@ class ChapterAuthorityScheduler:
 
     def tick(self, *, project_id: str, root_operation_id: str) -> ChapterSchedulerTick:
         root, saga, children = self._graph_state(project_id, root_operation_id)
-        from .working_revision import ROOT_VERSION as WORKING_REVISION_ROOT, NODES as WORKING_REVISION_NODES, require_working_revision_frontier
-        working_revision = root["definition_version"] == WORKING_REVISION_ROOT
+        from .working_revision import ROOT_VERSIONS as WORKING_ROOTS, REGENERATION_ROOT, NODES as WORKING_REVISION_NODES, REGENERATION_NODES, require_working_revision_frontier
+        working_revision = root["definition_version"] in WORKING_ROOTS
+        if root["definition_version"] == REGENERATION_ROOT:
+            WORKING_REVISION_NODES = REGENERATION_NODES
         if working_revision and root["status"] not in {"SUCCEEDED", "CANCELLED", "FAILED_FINAL", "DEAD_LETTER", "CANCELLATION_REQUESTED"}:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 require_working_revision_frontier(uow, root=root)
@@ -169,7 +171,7 @@ class ChapterAuthorityScheduler:
             trace_id=root["trace_id"],
             correlation_id=root["correlation_id"],
         )
-        if root["definition_version"] in {"3.10.0", "3.10.0-author-first.v1", WORKING_REVISION_ROOT} and root["status"] == "CANCELLATION_REQUESTED":
+        if root["definition_version"] in {"3.10.0", "3.10.0-author-first.v1", *WORKING_ROOTS} and root["status"] == "CANCELLATION_REQUESTED":
             coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
             _, _, existing = self._graph_state(project_id, root_operation_id)
             cancellable = next(((node, child) for node, child in existing.items()
@@ -179,7 +181,7 @@ class ChapterAuthorityScheduler:
                 coordinated = coordinate_saga(self.database_url, context, saga["saga_id"])
             return ChapterSchedulerTick(root_operation_id, saga["saga_id"], coordinated["status"], root_operation_id,
                 "", "CANCELLATION_REQUESTED", "cancel_existing_children_only")
-        if root["definition_version"] in {"3.10.0", "3.10.0-author-first.v1", WORKING_REVISION_ROOT} and root["status"] == "WAITING_GATE":
+        if root["definition_version"] in {"3.10.0", "3.10.0-author-first.v1", *WORKING_ROOTS} and root["status"] == "WAITING_GATE":
             blocked = self._admission_gate(root_operation_id, project_id)
             if blocked:
                 with AuthorityUnitOfWork(self.database_url) as uow:
@@ -311,7 +313,7 @@ class ChapterAuthorityScheduler:
                     node=node,
                 )
             except KernelError as error:
-                if root["definition_version"] not in {"3.10.0", "3.10.0-author-first.v1", WORKING_REVISION_ROOT} or WorkerFailureClassifier.classify(error) is not WorkerFailureClass.FINAL_FAILURE:
+                if root["definition_version"] not in {"3.10.0", "3.10.0-author-first.v1", *WORKING_ROOTS} or WorkerFailureClassifier.classify(error) is not WorkerFailureClass.FINAL_FAILURE:
                     raise
                 fresh_root, fresh_saga, fresh_children = self._graph_state(project_id, root_operation_id)
                 if node in fresh_children or fresh_root["status"] not in {"EXECUTING", "WAITING_CHILDREN"}:
@@ -867,6 +869,7 @@ class ChapterAuthorityScheduler:
         if limit <= 0:
             raise ValueError("pending root limit must be positive")
         from novel_forge.modules.command_kernel.routing_bootstrap import CHAPTER_SAMPLE_READABLE_VERSIONS
+        from .working_revision import ROOT_VERSIONS
 
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
@@ -886,7 +889,7 @@ class ChapterAuthorityScheduler:
                     OR (operation.definition_name LIKE 'chapter.provider.sample.%%'
                         AND operation.definition_version = ANY(%s))
                   )
-                  AND NOT (operation.definition_version IN ('3.10.0','3.10.0-author-first.v1','3.10.0-working-revision.v1') AND operation.status='WAITING_GATE'
+                  AND NOT (operation.definition_version=ANY(%s) AND operation.status='WAITING_GATE'
                     AND COALESCE(latest_transition.reason, '') LIKE %s AND COALESCE(latest_transition.reason, '') LIKE %s)
                   AND saga.status NOT IN (
                     'SUCCEEDED', 'COMPENSATED', 'COMPENSATION_FAILED',
@@ -895,7 +898,7 @@ class ChapterAuthorityScheduler:
                 ORDER BY operation.created_at, operation.operation_id
                 LIMIT %s
                 """,
-                [list(CHAPTER_SAMPLE_READABLE_VERSIONS), '%"gate": "chapter_technical_admission.v2"%',
+                [list(CHAPTER_SAMPLE_READABLE_VERSIONS), ['3.10.0', '3.10.0-author-first.v1', *ROOT_VERSIONS], '%"gate": "chapter_technical_admission.v2"%',
                     '%"implementation_identity": "' + _admission_implementation_identity() + '"%', limit],
             )
             rows = uow.cursor.fetchall()
@@ -915,7 +918,7 @@ class ChapterAuthorityScheduler:
             and gate.get("implementation_identity") and gate.get("node") in {item.value for item in ChapterNode}) else None
 
     def _require_technical_gate_frontier(self, uow, root, saga):
-        from .working_revision import ROOT_VERSION
+        from .working_revision import ROOT_VERSIONS
         from novel_forge.modules.command_kernel.step_successor import require_live_chapter_frontier
         from novel_forge.modules.command_kernel.step_successor_v2 import _require_reconciled_graph
         from novel_forge.modules.command_kernel.derived_step_revalidation import _settled_graph
@@ -925,7 +928,7 @@ class ChapterAuthorityScheduler:
         uow.cursor.execute("SELECT to_jsonb(o),business_deadline_at FROM authority_operation o WHERE operation_id=%s AND project_id=%s FOR UPDATE",
             [root["operation_id"], root["project_id"]])
         row = uow.cursor.fetchone()
-        if (not row or row[0]["definition_version"] not in {"3.10.0", "3.10.0-author-first.v1", ROOT_VERSION} or row[0]["definition_name"] != "chapter.slice.run"
+        if (not row or row[0]["definition_version"] not in {"3.10.0", "3.10.0-author-first.v1", *ROOT_VERSIONS} or row[0]["definition_name"] != "chapter.slice.run"
             or row[0]["status"] not in {"EXECUTING", "WAITING_CHILDREN", "WAITING_GATE"}
             or any(row[0].get(key) != root.get(key) for key in ("workspace_id", "actor_id", "command_payload", "input_asset_snapshot", "definition_snapshot"))):
             raise KernelError("CHAPTER_TECHNICAL_GATE_SCOPE_DRIFT", "Technical admission may only retain its exact unfinished native Root")
@@ -1007,7 +1010,9 @@ class ChapterAuthorityScheduler:
         timeline_ordinal: int = 0,
         activate_immediately: bool = False,
     ) -> dict[str, Any]:
-        from .working_revision import ROOT_VERSION as WORKING_REVISION_ROOT, NODES as WORKING_REVISION_NODES
+        from .working_revision import ROOT_VERSION as WORKING_REVISION_ROOT, ROOT_VERSIONS as WORKING_ROOTS, REGENERATION_ROOT, NODES as WORKING_REVISION_NODES, REGENERATION_NODES
+        if root["definition_version"] == REGENERATION_ROOT:
+            WORKING_REVISION_NODES = REGENERATION_NODES
         inputs: list[dict[str, str]] = []
         effective_overrides = dict(input_overrides or {})
         for source in _input_nodes(node):
@@ -1076,7 +1081,7 @@ class ChapterAuthorityScheduler:
                     if str(item.get("asset_type") or "")
                     in (
                         {"story_state_snapshot", "canon_snapshot", "style_policy"}
-                        if root["definition_version"] in {"3.6.0", "3.7.0", "3.8.0", "3.9.0", "3.10.0", "3.10.0-author-first.v1"}
+                        if root["definition_version"] in {"3.6.0", "3.7.0", "3.8.0", "3.9.0", "3.10.0", "3.10.0-author-first.v1", *WORKING_ROOTS}
                         else {"story_state_snapshot", "canon_snapshot"}
                     )
                 )
@@ -1194,7 +1199,7 @@ class ChapterAuthorityScheduler:
                 saga_id,
                 operation_id,
                 timeline_step_key or node.value,
-                timeline_ordinal or (WORKING_REVISION_NODES.index(node) + 1 if root["definition_version"] == WORKING_REVISION_ROOT else list(ChapterNode).index(node) + 1),
+                timeline_ordinal or (WORKING_REVISION_NODES.index(node) + 1 if root["definition_version"] in WORKING_ROOTS else list(ChapterNode).index(node) + 1),
                 "",
             )
         for dependency_id in dependency_ids:

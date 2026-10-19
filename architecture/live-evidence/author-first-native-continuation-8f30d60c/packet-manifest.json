@@ -1,0 +1,75 @@
+{
+  "schema_version": "checked-evidence-manifest.v1",
+  "files": [
+    {
+      "path": "prose-counts-01-18.json",
+      "sha256": "sha256:148d1efd388ce34e9df0c0bf5836bd65c2958743196c850abd2528a7d31ec273"
+    },
+    {
+      "path": "exact-export-readback-01-18.json",
+      "sha256": "sha256:ab2eec7b44bb4cb059a88f2c031520813ea1cf960c73c7d6f56dcedf71f2db12"
+    },
+    {
+      "path": "chapter18-planning-actual-inputs.json",
+      "sha256": "sha256:e95cf95563b8b1c816109506c4a8adf08a81da426f4b6037f53684b74770c928"
+    },
+    {
+      "path": "chapter18-writer-actual-inputs.json",
+      "sha256": "sha256:d0d11ebffb1b5d83b4611c5dea503e203c26214a6b4a7554cab39d4f3f9256c1"
+    },
+    {
+      "path": "chapter18-local-memo-inputs.json",
+      "sha256": "sha256:ac880c5023554066a61e0ac811b7c3a2255f418bcdd21570221336d29a75b89b"
+    },
+    {
+      "path": "acknowledged-cancellation-4a120dc5.json",
+      "sha256": "sha256:56e476259fdf6e0b3eabb0afbcaeb6a01f7fb3d393012c379cba104643d28109"
+    },
+    {
+      "path": "native-preparation-handoff-registration.json",
+      "sha256": "sha256:a0cd451e341185a9d97bc969bee67cf65404ee40e9121e0f5f62b6177f9e21c3"
+    },
+    {
+      "path": "native-exact-receipt-readonly-probe.json",
+      "sha256": "sha256:88f0562ba1f8d7110375ec327a2147daacbb6c17bfb52c10e1fe1be5e217dab2"
+    },
+    {
+      "path": "d0-preflight-8f30d60c.json",
+      "sha256": "sha256:b00ee4057648d6ab75aae0787755ae64107155333f9431b45312da447abac208"
+    },
+    {
+      "path": "formal-matrix-8f30d60c-failed.json",
+      "sha256": "sha256:90ee347bd7f0a1d8f93ab43821f85c40b132289bed98cf10005235cdb8718169"
+    },
+    {
+      "path": "checks/author-chain-impacted-working-final.xml.gz",
+      "sha256": "sha256:0d29fb6ad92301fe8921c921eae9c52e38aa4b7b12b9749755d009e57ed23c6f",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; not same-SHA formal qualification"
+    },
+    {
+      "path": "checks/author-chain-impacted-postgres-working-final.xml.gz",
+      "sha256": "sha256:936e11815fd455a62a77923185ea9b7aa28851cf3ecfac532e1853edbc70c320",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; not same-SHA formal qualification"
+    },
+    {
+      "path": "checks/direct-impact-recovery-working.xml.gz",
+      "sha256": "sha256:2b5b738f7c45bd27aa9482dded729c4807ac58387fdeb33604899dc6efd3ffe2",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; not same-SHA formal qualification"
+    },
+    {
+      "path": "checks/convergence-migration-head-227-working.xml.gz",
+      "sha256": "sha256:78e99f72b9fd54bc6d3b2f1070ecf11d82fdec525e9c8f4b3d8988e985613637",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; not same-SHA formal qualification"
+    },
+    {
+      "path": "native-upgrade-226-to-227.json",
+      "sha256": "sha256:1f45e1855c70c6b5f9a35850946cbda3362979de402ab35f81042281afef3dce"
+    },
+    {
+      "path": "index.json",
+      "sha256": "sha256:a710eee02a314e1285e426788b8c51a201779f90900c9deb732b740ea94fe67a"
+    }
+  ],
+  "raw_prose_and_provider_payloads": "RETAINED_PRIVATELY_OUTSIDE_GIT",
+  "historical_failures": "PRESERVED"
+}

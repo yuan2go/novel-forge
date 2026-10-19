@@ -1,0 +1,56 @@
+{
+  "operation_id": "94764907-662e-4e51-8689-7936204c9903",
+  "status": "SUCCEEDED",
+  "owner": "PROVIDER_ROUTING",
+  "policy": {
+    "reason": "native creation template; paid channel: PAID_TEMPLATE_NOT_CONFIGURED",
+    "policy_version": "author-first-output-capacity-medium-20261017",
+    "task_overrides": [],
+    "execution_templates": [
+      {
+        "version": "creative-execution-template.v12",
+        "book_id": "book:wp-nf-author-first-20261017",
+        "mode": "CREATIVE_VALIDATION",
+        "allowed_candidates": [
+          "codex-cli:gpt-6.1-sol:medium"
+        ],
+        "member_authorization_ref": "user-authorization:WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01",
+        "deepseek": null,
+        "optional_enhancements": [
+          "review",
+          "rereview",
+          "canon_extraction",
+          "canon_support",
+          "quality_structural",
+          "quality_commercial",
+          "quality_source_originality",
+          "quality_longform",
+          "quality_platform"
+        ],
+        "world_future_preparation": "DISABLED",
+        "require_literary_qualification": false,
+        "require_independent_review": false,
+        "require_pack_human_approval": false,
+        "repair_routing": {
+          "version": "native-repair-routing.v2",
+          "max_same_route_repairs": 2
+        },
+        "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
+        "canon_validation_contract": "grounded-canon-validation.v2",
+        "chapter_graph_recovery": "RETAIN_SETTLED_CREATIVE_RESULT",
+        "quality_corrections": {
+          "maximum_passes": 4,
+          "maximum_unchanged_candidates": 2,
+          "version": "quality-correction-control.v1"
+        },
+        "author_workflow": {
+          "version": "author-workflow.v1",
+          "mode": "AUTHOR_FIRST",
+          "deep_review": false
+        }
+      }
+    ]
+  },
+  "policy_hash": "0950035b38636b7615009402d0aa79da3b2e6f58f0aa620c1d31cb2c2557e23e",
+  "replayed": false
+}

@@ -1,0 +1,35 @@
+{
+  "model": "gpt-6.1-sol",
+  "effect_status": "SUCCEEDED",
+  "request_hash": "sha256:047b08f001d0a44ac092bdecbc92c5f93c65cd46b370702d56efa52a7cee3e28",
+  "dispatch": {
+    "dispatch_id": "d77461a8-1ac6-4351-8984-6154605c433c",
+    "generation": 1,
+    "status": "SUCCEEDED"
+  },
+  "receipt": {
+    "receipt_id": 666,
+    "payload_hash": "sha256:418513aab1f7fbc1934d2ee9f9ea144a583ca81bff6583f721791d2a51ce4fe5",
+    "status": "VERIFIED"
+  },
+  "provider_evidence": {
+    "real_model_call": true,
+    "fixture_protocol_only": false,
+    "prompt_version": "prompt-system:story-planning-pack@v12",
+    "skill_version": "chapter-outline@chapter-outline-qualification-v4"
+  },
+  "execution_identity": {
+    "operation_id": "21e0115a-7a11-4ce9-aa2e-06691e85d47f",
+    "attempt_id": "6de2ea80-7ac5-41e2-92ea-2373c5f35562",
+    "project_id": "project:wp-nf-author-first-20261017",
+    "book_id": "book:wp-nf-author-first-20261017"
+  },
+  "planning_candidate": {
+    "asset_version_id": "authority-output:21e0115a-7a11-4ce9-aa2e-06691e85d47f:story_planning.candidate:v1",
+    "content_hash": "sha256:44ee18827869b69005232533ca2cd4f3166db58c353a3f55912217baf09dbdeb"
+  },
+  "effect_adapter": "production_execution_gateway",
+  "provider_id": "codex-cli",
+  "provider_model_id": "gpt-6.1-sol",
+  "backend_id": "codex-cli"
+}

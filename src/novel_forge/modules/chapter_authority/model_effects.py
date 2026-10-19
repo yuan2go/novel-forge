@@ -534,9 +534,11 @@ class ExternalEffectChapterModelPort:
         elif task_scoped:
             from .context_compression_provider import task_provider_output_reserve
 
-            output_target = task_provider_output_reserve(
-                stage, route, router_binding_pending=getattr(self.adapter, "provider_router", None) is not None,
-            )
+            output_target = frozen_prose_output_tokens(request, stage)
+            if output_target is None:
+                output_target = task_provider_output_reserve(
+                    stage, route, router_binding_pending=getattr(self.adapter, "provider_router", None) is not None,
+                )
         frozen_reservation = frozen_metadata.get("provider_reservation_policy")
         if existing_intent is not None and isinstance(frozen_reservation, Mapping):
             reservation_contract = dict(frozen_reservation)
@@ -2075,6 +2077,18 @@ def _normalize_model_output(
     if stage in {"retrieval_query_expansion", *CONTEXT_MODEL_STAGES}:
         return dict(raw)
     if stage in {"review", "rereview"}:
+        if stage == "rereview" and output_schema_ref.endswith(":initial-review-resolution-scope-v1"):
+            checks = raw.get("resolution_checks_by_code")
+            if not isinstance(checks, dict) or any(not isinstance(code, str) or not isinstance(value, dict) or "code" in value for code, value in checks.items()):
+                raise KernelError("MODEL_RESPONSE_INVALID", "Scoped ReReview requires its exact keyed resolution protocol")
+            projected = [{**checks[code], "code": code} for code in sorted(checks)]
+            if "resolution_checks" in raw:
+                prior = raw["resolution_checks"]
+                if (not isinstance(prior, list)
+                        or any(not isinstance(item, dict) or not isinstance(item.get("code"), str) for item in prior)
+                        or sorted(prior, key=lambda item: item["code"]) != projected):
+                    raise KernelError("MODEL_RESPONSE_INVALID", "Scoped ReReview projection changed its keyed dispositions")
+            raw = {**raw, "resolution_checks": projected}
         score_value = raw.get("score")
         if not isinstance(score_value, (int, float)) or isinstance(score_value, bool):
             raise KernelError(
@@ -2125,6 +2139,8 @@ def _normalize_model_output(
                 if "resolution_checks" in raw
                 else {}
             ),
+            **({"resolution_checks_by_code": raw["resolution_checks_by_code"]}
+               if stage == "rereview" and output_schema_ref.endswith(":initial-review-resolution-scope-v1") else {}),
             **({"knowledge_checks": raw["knowledge_checks"]} if "knowledge_checks" in raw else {}),
             **({"craft_checks": raw["craft_checks"]} if "craft_checks" in raw else {}),
             **({"quality_resolution_checks": raw["quality_resolution_checks"]} if "quality_resolution_checks" in raw else {}),
@@ -2346,3 +2362,16 @@ __all__ = [
 def task_scoped_prose_review(request, stage):
     windows = [item for item in request.inputs if item.asset_type == 'longform_prose_review_window']
     return stage == 'longform_prose_review' and len(windows) == 1 and windows[0].content.get('schema_version') == 'longform-prose-window.v3'
+
+
+def frozen_prose_output_tokens(request, stage):
+    if not task_scoped_prose_review(request, stage):
+        return None
+    window = next(item for item in request.inputs if item.asset_type == 'longform_prose_review_window')
+    policy = window.content.get('policy', {})
+    if 'provider_output_tokens' not in policy:
+        return None
+    tokens = policy['provider_output_tokens']
+    if type(tokens) is not int or tokens <= 0:
+        raise KernelError('LONGFORM_PROSE_POLICY_INVALID', 'Frozen review output allocation must be positive tokens')
+    return tokens

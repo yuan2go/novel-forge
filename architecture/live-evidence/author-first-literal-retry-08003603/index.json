@@ -1,0 +1,57 @@
+{
+  "schema_version": "novel-forge.native-working-recovery-checkpoint.v1",
+  "at": "2026-10-19T02:25:15.830940+00:00",
+  "source_sha": "080036038958a130fac551143ab9e42ae131e205",
+  "main_generation_runtime_source": "06472af72535eef994328e9ffe0dadea2066d8b9",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "evidence_ceiling": "EXECUTABLE",
+  "goal": {
+    "full_book_chapters": 600,
+    "first_delivery_chapters": 100,
+    "body_han": [
+      4000,
+      5000
+    ]
+  },
+  "effective_chapters": 20,
+  "effective_body_han": 85832,
+  "accepted_through_chapter": 0,
+  "author_selection": "NOT_GRANTED",
+  "formal_acceptance": "NOT_GRANTED",
+  "earlier_exact_export_packet": "../author-first-native20-effective-06472af7/packet-manifest.json",
+  "hundred_chapter_delivery": "NOT_COMPLETED",
+  "optional_review": {
+    "chapters": [
+      17,
+      20
+    ],
+    "run_id": "6c2ec777-918c-41f4-8440-36ab878df569",
+    "operation_id": "e5de650e-6675-40cb-8eb2-17cfc1319a46",
+    "review_complete": false,
+    "attempts": 2,
+    "maximum_attempts": 2,
+    "third_call": "NOT_AUTHORIZED_BY_FROZEN_ALLOWANCE",
+    "total_authorized_usd": "10",
+    "settled_project_usd": "0.41186288",
+    "rejected_windows_remain_in_denominator": true
+  },
+  "full_formal_matrix": {
+    "running_source": "33e567473541ffe7778df52af462a76ac377599b",
+    "backend_pass": 8478,
+    "migration_compatibility_pass": 1137,
+    "postgresql_integration": "RUNNING",
+    "latest_source": "080036038958a130fac551143ab9e42ae131e205",
+    "latest_matrix": "QUEUED_NOT_RUN_YET",
+    "full_qualification": "NOT_PROVEN"
+  },
+  "next_review_scope": {
+    "chapters": [
+      21,
+      100
+    ],
+    "native_provider": true,
+    "existing_authorization": true,
+    "manuscript_or_canon_mutation": false
+  },
+  "literary_qualification": "NOT_PROVEN"
+}

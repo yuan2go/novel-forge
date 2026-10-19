@@ -1,0 +1,39 @@
+{
+  "source_sha": "aad8d3597daa66e0daf1a5f488691de9ffb03ee4",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "book_version": 146,
+  "state": "PAUSED",
+  "current_chapter": 20,
+  "accepted_through_chapter": 0,
+  "retained_operation": "1a2a38b9-ab7a-454d-aa55-770bd6dc8fcd",
+  "operation_state": "EXECUTING",
+  "attempt_state": "CHECKPOINTED",
+  "frozen_input_rewritten": false,
+  "production_policy_selected": false,
+  "production_code_deployed": false,
+  "next_steps": [
+    "Keep author pause until an explicit resume request",
+    "Reconcile retained Group21 frozen v7 correction through its existing owner; do not relabel it as an unsent v8 request",
+    "At a settled guarded READY/PAUSED checkpoint, use authority-manuscript select-working-policy with complete v8 policy, exact Book version and idempotency key",
+    "Inspect source-bound memory gaps and exact older original passages before selecting future historical query terms",
+    "Resume only after author instruction; measure actual effective chapters per wall hour and read exported prose"
+  ],
+  "native_resume_authorized": false,
+  "reverified_at": "2026-10-19T17:14:02.021153+08:00",
+  "effect_status_counts": {
+    "UNKNOWN": 25,
+    "FAILED_RETRYABLE": 3,
+    "SUCCEEDED": 920,
+    "FAILED_FINAL": 2
+  },
+  "production_profile_version": "authority-output:4e23fd5b-3021-4724-9601-ee5bec7ded61:book.bootstrap.production_profile:v1",
+  "production_profile_hash": "sha256:3e0b8eb95d4d6664a2c085d63a7bb1f75c657f56e420347088758a00e954f8e8",
+  "production_policy": {
+    "queries": [],
+    "version": "working-prose-projection.v7",
+    "guidance_mode": "COMBINED",
+    "max_characters": null,
+    "history_chapters": 128,
+    "recent_complete_chapters": 2
+  }
+}

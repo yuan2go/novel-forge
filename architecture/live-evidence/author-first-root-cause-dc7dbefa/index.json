@@ -1,0 +1,361 @@
+{
+  "schema_version": "author-first-root-cause-evidence.v1",
+  "work_package": "WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01",
+  "base_sha": "9f41f0c75108f708a9a77e6c8da89826cf00987e",
+  "production_fix_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "final_test_fixture_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "evidence_ceiling": "EXECUTABLE",
+  "task_status": "SCOPED_REPAIRS_AND_FIVE_CHAPTER_REAL_NATIVE_SAMPLE_COMPLETED",
+  "formal_P0": "NOT_RUN",
+  "production_qualification": "NOT_RUN",
+  "literary_qualification": "NOT_RUN",
+  "author_acceptance": "NOT_GRANTED",
+  "goals": {
+    "full_chapters": 600,
+    "han_per_chapter": [
+      4000,
+      5000
+    ],
+    "first_delivery_window": 100
+  },
+  "previous_preserved_evidence": [
+    "../author-first-continuation-recovery-496f3740/index.json",
+    "../author-first-token-unlimited-707356da/index.json"
+  ],
+  "root_findings": {
+    "local_inherited_output_clamp": {
+      "classification": "DEFECT_FIXED_707356da",
+      "cause_of_observed_World_truncation": "NOT_PROVEN"
+    },
+    "default_pure_generation_mode": {
+      "classification": "WIRING_DEFECT_FIXED_dc7dbefa",
+      "generic_base_instruction_bytes": 21779,
+      "actual_pure_instruction_bytes": 836,
+      "historical_absent_field": "ORIGINAL_BEHAVIOR_RETAINED",
+      "instruction_argument_unsupported_hypothesis": "DISPROVED_BY_INSTALLED_CLI_SESSION_METADATA",
+      "actual_success_instruction_hash_check": "ENFORCED"
+    },
+    "optional_Reader_deployment": {
+      "classification": "DEFAULT_GATE_DEFECT_FIXED_74ce9739",
+      "explicit_Reader_source_guard": "RETAINED"
+    },
+    "output_failure_classification": {
+      "classification": "DEFECT_FIXED_dc7dbefa",
+      "before": "PROVIDER_STREAM_INTERRUPTED_RETRYABLE",
+      "after": "PROVIDER_OUTPUT_CAPACITY_EXHAUSTED_CORRECT_OUTPUT_CAPACITY_OR_CONTRACT",
+      "remote_outcome": "UNESTABLISHED"
+    },
+    "medium_pre_send_refusal": {
+      "classification": "CORRECT_TEMPLATE_MODEL_UNAUTHORIZED",
+      "provider_invoked": false,
+      "resolution": "NATIVE_VERSIONED_EXECUTION_TEMPLATE_SUCCESSOR_SAME_MEMBERSHIP_MODEL_NO_PAID_EXPANSION"
+    },
+    "deployment_race_fixture": {
+      "classification": "STALE_MANUAL_RUNTIME_SETUP_CORRECTED_367194f1",
+      "risk_coverage": "SAME_OLD_WORKER_CONCURRENT_REPLACEMENT_AND_EXACT_DEPLOYMENT_ASSERTIONS_RETAINED"
+    },
+    "claimed_scope_initialization": {
+      "classification": "PRODUCTION_FAILURE_CONVERGENCE_DEFECT_FIXED_da7acab2",
+      "first_failure": "Scope restoration raised before inner owner failure handler; generic failure also violated Opening coordinator ownership",
+      "repair": "Record original setup refusal through owning Opening Authority or generic RuntimeJob owner; preserve inner phase recovery"
+    },
+    "native_default_sample_coverage": {
+      "classification": "TEST_COVERAGE_GAP_CORRECTED_f6fa6563",
+      "default_memo": "FROZEN_EXECUTION_INTENT_LOCAL_PROJECTION_NOT_RUN_MODEL",
+      "original_six_samples": "EXPLICIT_MEMO_ENHANCEMENT_RETAINED",
+      "new_seventh_sample": "UNCHANGED_DEFAULT_TEMPLATE_WRITER_UNKNOWN_AND_DELIVERY_RECOVERY"
+    },
+    "opening_window": {
+      "classification": "PRODUCTION_SCHEDULING_DEFECT_FIXED_99358aca",
+      "repair": "Single Opening node claim returns control to Creation deadline loop; historical compatibility drain remains intact."
+    },
+    "frozen_repair_source_and_replay": {
+      "classification": "PRODUCTION_FROZEN_POLICY_DEFECT_FIXED_e5f1da7d",
+      "preflight": "ORIGINAL_RECORDED_ROUTE_OR_EXACT_PARENT_EFFECT",
+      "governed_replay": "SAVED_RECEIPT_POLICY_ADMISSION",
+      "historical_native_replay": "ORIGINAL_EVIDENCE_VERSION_UNCHANGED",
+      "counter_and_stage_allowances": "UNCHANGED"
+    },
+    "generation_retry_document": {
+      "classification": "STALE_CURRENT_DOC_CORRECTED_ff2049d3",
+      "current_generation_cumulative_ban": false,
+      "frozen_stage_repair_allowances": "UNCHANGED",
+      "counter_reset": false
+    }
+  },
+  "checks": {
+    "units_final": {
+      "tests": 135,
+      "failures": 0,
+      "skips": 0,
+      "source_sha": "367194f1d2ffe4d7acf2654f88a4800a03dd9d31",
+      "junit": "checks/root-clean-sha-units.xml",
+      "latest_source_validation": false
+    },
+    "unchanged_boundary_units": {
+      "source_sha": "dc7dbefa",
+      "tests": 133,
+      "failures": 0,
+      "skips": 0
+    },
+    "native_chains": {
+      "source_sha": "dc7dbefa",
+      "cases": 2,
+      "saved_chapters_per_case": 8,
+      "real_provider": false,
+      "han_per_scripted_draft": 26,
+      "accepted_through_chapter": 0,
+      "actual_prompt_hash_matches": 65
+    },
+    "clean_final_sha_native": {
+      "source_sha": "367194f1d2ffe4d7acf2654f88a4800a03dd9d31",
+      "cases": 1,
+      "saved_chapters": 8,
+      "real_provider": false,
+      "actual_prompt_hash_matches": 32,
+      "working_source_binding_occurrences": 222
+    },
+    "deployment_race": {
+      "source_sha": "367194f1d2ffe4d7acf2654f88a4800a03dd9d31",
+      "cases": 1,
+      "status": "PASS"
+    },
+    "dependency_failure": "Retained tokenizers missing-dependency failure; pinned optional dependency installed only under task test-deps; same boundary checks subsequently passed",
+    "review_followup": {
+      "source_sha": "da7acab23ab65dac4c82de02dd0bbb2e089617b4",
+      "units": 144,
+      "capacity_and_owner_postgresql": 13,
+      "native_scripted_chains": 1,
+      "saved_chapters": 8,
+      "accepted_through_chapter": 0,
+      "prompt_process_hash_matches": 32
+    },
+    "frozen_history": {
+      "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+      "units": {
+        "tests": 189,
+        "failures": 0,
+        "skips": 0
+      },
+      "postgres": {
+        "tests": 2,
+        "failures": 0,
+        "skips": 0
+      },
+      "documentation": "PASS",
+      "fitness": "PASS",
+      "focused_lint": "PASS"
+    },
+    "default_template": {
+      "source_sha": "f6fa6563",
+      "evidence": "default-template-f6fa6563/index.json",
+      "original_six_optional_memo_cases": "RETAINED",
+      "seventh_unchanged_default_case": "PASS"
+    },
+    "opening_scheduling": {
+      "source_sha": "99358aca42d5a39a2996ef1484357ecf41b37bfa",
+      "evidence": "opening-window-99358aca/index.json",
+      "units": 50,
+      "native_default_and_enhanced_cases": 2,
+      "saved_chapters_each": 8,
+      "historical_memo_cases": 1,
+      "real_provider": false
+    },
+    "final_real_audits": {
+      "runtime_source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+      "actual_prompt_process_hash_matches": 92,
+      "successful": 83,
+      "unknown": 9,
+      "working_source_occurrences": 116,
+      "local_memos": 5,
+      "local_memo_source_occurrences": 10,
+      "book_owner_source_resolutions": 126,
+      "old_asset_versions_preserved": 1594,
+      "old_terminal_effects_preserved": 59,
+      "native_compilation_lifecycle_transitions": 2,
+      "unknown_commit_rights_revoked_and_accounting_retained": 9,
+      "exact_export_files": 20,
+      "chapters": 5,
+      "accepted_through_chapter": 0,
+      "status": "PASS"
+    },
+    "final_operator_document": {
+      "source_sha": "ff2049d37d550fd505715e0e6db8d2b4516d6501",
+      "documentation": "PASS",
+      "architecture_fitness_and_subordinate_manifests": "PASS",
+      "raw": "checks/final-doc-sync.json"
+    }
+  },
+  "real_provider": {
+    "book_id": "book:wp-nf-author-first-20261017",
+    "formation_run_id": "story-formation:b21252b1bd3fcc4aa608d57686c1f65b0138c638812d3daa1df8f961b02e2bba",
+    "source_runtime_sha": "MIXED_EXACT_PER_PROCESS_METADATA",
+    "World": "ACTIVE_SAVED_NATIVE_CANDIDATE",
+    "current_stage": "PAUSED_AFTER_FIVE_SAVED_EFFECTIVE_CHAPTERS",
+    "completed_real_chapters": 5,
+    "unknown_historical_calls": 9,
+    "current_reasoning": "medium",
+    "World_success_usage": {
+      "output_tokens": 8511,
+      "reasoning_output_tokens": 211
+    },
+    "actual_HTTP_request_body": "NOT_OBSERVED",
+    "numeric_upstream_output_limit": "NOT_OBSERVED",
+    "Character_Cast": "ACTIVE_SAVED_NATIVE_CANDIDATE",
+    "World_success_runtime_sha": "dc7dbefa",
+    "planning_continuation_runtime_sha": "367194f1",
+    "actual_dispatch_checkpoint": {
+      "readback": "real-provider/actual-dispatch-readback.json.gz",
+      "proof": "real-provider/actual-dispatch-readback-dispatch.json",
+      "input_hash_matches": 42,
+      "successful_result_inputs": 38,
+      "unknown_result_inputs": 4,
+      "working_source_bindings": 0,
+      "source_versions": [
+        {
+          "release_sha": "809e81f9548fc3bb6ab6bffdb06453aa7506062d",
+          "verified_successful_result": true,
+          "dispatch_inputs": 5
+        },
+        {
+          "release_sha": "809e81f9548fc3bb6ab6bffdb06453aa7506062d",
+          "verified_successful_result": false,
+          "dispatch_inputs": 3
+        },
+        {
+          "release_sha": "74ce97399a45b1c3063a80eb9bfe3456379bd59a",
+          "verified_successful_result": false,
+          "dispatch_inputs": 1
+        },
+        {
+          "release_sha": "dc7dbefab352e2438e3e5ac9f6ad3b75652f52ab",
+          "verified_successful_result": true,
+          "dispatch_inputs": 2
+        },
+        {
+          "release_sha": "367194f1d2ffe4d7acf2654f88a4800a03dd9d31",
+          "verified_successful_result": true,
+          "dispatch_inputs": 31
+        }
+      ]
+    },
+    "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "manuscript_continuation_runtime_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+    "frozen_delivery_window": 100,
+    "accepted_through_chapter": 0,
+    "normal_length_real_chapters": 5,
+    "first_draft_han": [
+      3802,
+      3988,
+      4102,
+      3799,
+      3620
+    ],
+    "first_draft_evidence": "real-provider/first-draft/index.json",
+    "effective_han": [
+      4424,
+      4467,
+      4102,
+      4304,
+      4406
+    ],
+    "author_selection": "NOT_GRANTED",
+    "formal_acceptance": "NOT_GRANTED",
+    "first_effective_source": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+    "latest_network_recovery": "real-provider/unknown-isolation-final.json",
+    "frozen_resource_policy": "real-provider/book-resource-policy-readback.json",
+    "natural_groups": [
+      [
+        1,
+        4
+      ],
+      [
+        5,
+        8
+      ]
+    ],
+    "cross_group_preparation": "real-provider/cross-group-preparation-actual-input.json",
+    "transport_inspection": "real-provider/installed-cli-transport-inspection.json",
+    "effective_prose_body_han": [
+      4424,
+      4467,
+      4102,
+      4304,
+      4401
+    ],
+    "book_version": 39,
+    "current_chapter": 5,
+    "next_chapter": 6,
+    "state": "PAUSED",
+    "effective_prose_body_han_total": 21698,
+    "actual_dispatch_final": "real-provider/actual-dispatch-final-e5-dispatch.json",
+    "local_memo_final": "real-provider/actual-dispatch-final-e5-local-memo.json",
+    "book_source_resolution_final": "real-provider/actual-book-source-resolution.json",
+    "history_preservation": "real-provider/history-preservation-final-e5.json",
+    "exports": "real-provider/final-exports/native-working-chapters-01-05.json",
+    "template_control_operation_id": "94764907-662e-4e51-8689-7936204c9903",
+    "template_policy_hash": "0950035b38636b7615009402d0aa79da3b2e6f58f0aa620c1d31cb2c2557e23e",
+    "template": {
+      "version": "creative-execution-template.v12",
+      "book_id": "book:wp-nf-author-first-20261017",
+      "mode": "CREATIVE_VALIDATION",
+      "allowed_candidates": [
+        "codex-cli:gpt-6.1-sol:medium"
+      ],
+      "member_authorization_ref": "user-authorization:WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01",
+      "deepseek": null,
+      "optional_enhancements": [
+        "review",
+        "rereview",
+        "canon_extraction",
+        "canon_support",
+        "quality_structural",
+        "quality_commercial",
+        "quality_source_originality",
+        "quality_longform",
+        "quality_platform"
+      ],
+      "world_future_preparation": "DISABLED",
+      "require_literary_qualification": false,
+      "require_independent_review": false,
+      "require_pack_human_approval": false,
+      "repair_routing": {
+        "version": "native-repair-routing.v2",
+        "max_same_route_repairs": 2
+      },
+      "chapter_contract_recovery": "KNOWN_SETTLED_CONTRACT_REPAIR",
+      "canon_validation_contract": "grounded-canon-validation.v2",
+      "chapter_graph_recovery": "RETAIN_SETTLED_CREATIVE_RESULT",
+      "quality_corrections": {
+        "maximum_passes": 4,
+        "maximum_unchanged_candidates": 2,
+        "version": "quality-correction-control.v1"
+      },
+      "author_workflow": {
+        "version": "author-workflow.v1",
+        "mode": "AUTHOR_FIRST",
+        "deep_review": false
+      }
+    },
+    "unresolved_transport": "Five Writer failures have actual stream network/body decoding errors; isolation and native linked successors recovered. Upstream component and approximately900s duration cause remain unresolved; token limit cause NOT_OBSERVED.",
+    "sample_boundary": "Five effective chapters, four native revisions; not100 chapters, stable first-pass length or long-form literary qualification."
+  },
+  "task_storage": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01",
+  "review_followup_source_sha": "da7acab23ab65dac4c82de02dd0bbb2e089617b4",
+  "review_followup_evidence": "review-followup/index.json",
+  "default_template_evidence": "default-template-f6fa6563/index.json",
+  "opening_window_evidence": "opening-window-99358aca/index.json",
+  "frozen_history_evidence": "frozen-history-e5f1da7d/index.json",
+  "check_scope_note": "Each check retains its own source SHA and raw denominator. Earlier scoped passes are not relabelled as latest-SHA formal P0; no aggregate count is formed from overlapping selectors.",
+  "runtime_source_fingerprint": {
+    "release_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+    "algorithm": "sha256 of git ls-tree -r --full-tree rows excluding architecture/live-evidence/",
+    "tracked_entries": 7636,
+    "sha256": "sha256:089302fb54f50f433887f249fe7e9a2ebc1054da80c3f36b71e84367d33ea434",
+    "reason": "Historical pre-doc-sync fingerprint retained; current exact runtime/operator-doc boundary is source-boundary.json."
+  },
+  "operator_document_sha": "ff2049d37d550fd505715e0e6db8d2b4516d6501",
+  "source_boundary": "source-boundary.json",
+  "file_manifest": "file-manifest.json",
+  "final_sample": "real-provider/final-sample.json"
+}

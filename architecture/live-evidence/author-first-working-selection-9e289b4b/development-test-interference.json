@@ -1,0 +1,18 @@
+{
+  "status": "FAIL_RETAINED_NOT_PRODUCT_REGRESSION",
+  "tests": 49,
+  "passed": 48,
+  "failures": 1,
+  "first_failure": "DeadlockDetected: RowShareLock versus module fixture TRUNCATE AccessExclusiveLock",
+  "secondary_failures": [
+    "OPERATION_NOT_FOUND",
+    "RUNTIME_JOB_FENCE_STALE"
+  ],
+  "cause": "Two caller-owned pytest processes incorrectly shared the disposable test database; exact focused rerun started while a native fixture was still active",
+  "original_artifact_sha256": "sha256:b1a9f75ba8e124dc92720d424ddc42a1bedce0ac6946e31cf1f3b3302774a030",
+  "original_artifact_retained_privately": true,
+  "production_database_affected": false,
+  "affected_default_author_first_case_serialized_rerun": "PASS_EXACT_9e289b4b",
+  "deleted_assertions": 0,
+  "skips_added": 0
+}

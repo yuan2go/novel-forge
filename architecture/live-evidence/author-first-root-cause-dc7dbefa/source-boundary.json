@@ -1,0 +1,13 @@
+{
+  "runtime_source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "operator_document_sha": "ff2049d37d550fd505715e0e6db8d2b4516d6501",
+  "runtime_tree_sha256_excluding_evidence_and_exact_operator_doc": "sha256:387cd7e5f1337d22e6396962fac359cd4e2f1cbbeb5487d5ae7ca415af04e95a",
+  "excluded_paths": [
+    "architecture/live-evidence/",
+    "docs/runtime-operations.md"
+  ],
+  "all_other_tracked_paths_byte_identical": true,
+  "final_non_evidence_baseline_sha": "ff2049d37d550fd505715e0e6db8d2b4516d6501",
+  "final_non_evidence_tree_sha256": "sha256:a50ec7b8ecd2d62a500952c057c06c0e2d981a127ea1a00e62b3e0315e2e6cbe",
+  "only_additional_non_evidence_change": "docs/runtime-operations.md: historical generation retry ceiling is not current policy; stage repair allowance unchanged."
+}

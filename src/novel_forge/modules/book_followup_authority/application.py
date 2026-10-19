@@ -250,14 +250,56 @@ class BookFollowupAuthorityApplication:
         )
 
     def run_or_recover(self, admission: BookFollowupAdmission):
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute('SELECT definition_name FROM authority_operation WHERE operation_id=%s AND project_id=%s',
+                [admission.operation_id,admission.project_id])
+            row = uow.cursor.fetchone()
+        reconciler = self._reconcile_prose_state if (row and row[0] == 'longform.prose_review'
+            and getattr(self.prose_model_port,'adapter',None) is not None) else None
         return ContentAuthorityScheduler(
             self.database_url,
             registry=self.registry,  # INVARIANT: shared scheduling cannot create another Attempt runtime.
             worker_id=self.worker_id,
+            external_state_reconciler=reconciler,
         ).run_or_recover(
             operation_id=admission.operation_id,
             project_id=admission.project_id,
         )
+
+    def _reconcile_prose_state(self, worker):
+        from novel_forge.modules.command_kernel.errors import KernelError
+        from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, reconcile_external_effect
+        from novel_forge.modules.production_execution import ExecutionRecoveryAction
+
+        adapter = self.prose_model_port.adapter
+        authorize = getattr(adapter,'for_recovery',None)
+        if not callable(authorize):
+            raise KernelError('MODEL_EFFECT_RECOVERY_AUTHORIZATION_MISSING','Review reconciliation requires the original execution adapter')
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            uow.cursor.execute("""SELECT external_effect_id,request_payload FROM authority_external_effect
+                WHERE operation_id=%s AND project_id=%s AND effect_type='model.invoke'
+                  AND status IN ('DISPATCHING','DISPATCHED','UNKNOWN','RECONCILIATION_REQUIRED')
+                ORDER BY created_at,external_effect_id""", [worker.causation_id,worker.project_id])
+            effects = uow.cursor.fetchall()
+        if not effects:
+            raise KernelError('EXTERNAL_EFFECT_RECONCILIATION_REQUIRED','No unresolved original review receipt was found')
+        for effect_id,payload in effects:
+            metadata = payload.get('_production_execution') or {}
+            if (metadata.get('operation_id') != worker.causation_id or metadata.get('attempt_id') != worker.attempt_id
+                    or metadata.get('project_id') != worker.project_id or not metadata.get('fencing_token')):
+                raise KernelError('MODEL_EFFECT_EXECUTION_IDENTITY_INVALID','Review recovery must retain its original Attempt and execution fence')
+            recovery = authorize(execution_id='chapter-execution:'+effect_id,external_effect_id=effect_id,
+                operation_id=worker.causation_id,attempt_id=worker.attempt_id,
+                execution_fencing_token=int(metadata['fencing_token']),recovery_fencing_token=worker.fencing_token,
+                recovery_worker_id=worker.worker_id,action=ExecutionRecoveryAction.QUERY,
+                trace_id=worker.trace_id,correlation_id=worker.correlation_id)
+            outcome = reconcile_external_effect(self.database_url,EffectCommandContext(worker.causation_id,
+                worker.project_id,worker.worker_id,worker.trace_id,worker.correlation_id),
+                effect_id=effect_id,adapter=recovery,attempt_command=worker)
+            if outcome['outcome'] in {'not_found','failed_final','cancelled'}:
+                raise KernelError('CONTENT_RECOVERY_TERMINAL','The original review query settled as '+outcome['outcome'])
+            if outcome['outcome'] != 'success':
+                raise KernelError('EXTERNAL_EFFECT_RECONCILIATION_REQUIRED','The original review result remains unestablished')
 
     def prepare_screenplay_sample(self, command: Any, *, principal: Principal) -> dict[str, Any]:
         from .screenplay_sampling import prepare_screenplay_sample

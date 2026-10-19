@@ -1770,6 +1770,10 @@ class _RevisionHandler:
             from novel_forge.modules.revision.domain import freeze_chapter_length_scope
             length_scope = freeze_chapter_length_scope(draft.content, source_asset_version_id=draft.asset_version_id,
                 context=effective_context_content(request, context), context_asset_version_id=context.asset_version_id)
+        if length_scope is not None and (request.command.get("preparation_report") or {}).get("working_revision"):
+            from novel_forge.modules.revision.domain import require_working_length_repair_scope
+            require_working_length_repair_scope(draft=draft.content, draft_id=draft.asset_version_id,
+                review=review.content, review_id=review.asset_version_id, context_id=context.asset_version_id)
         if length_scope is None and request.effective_definition_version == "3.10.0" and not request.command.get("chapter_sampling"):
             from novel_forge.modules.revision.domain import retain_reviewed_draft
             retained = retain_reviewed_draft(draft=draft.content, draft_id=draft.asset_version_id,
@@ -1950,6 +1954,8 @@ class _BestCandidateHandler:
                 score=previous_score,
                 blocker_codes=tuple(previous_blockers),
                 review_asset_version_id=previous_review_id,
+                review_content=previous_review.content if existing_best is None else None,
+                review_content_hash=previous_review.content_hash if existing_best is None else "",
             ),
             challenger=CandidateEvidence(
                 asset_version_id=revision.asset_version_id,
@@ -1968,6 +1974,8 @@ class _BestCandidateHandler:
                 remaining_issue_codes=tuple(rereview.content.get("remaining_issue_codes") or []),
                 review_target_text_hash=str(rereview.content.get("target_text_hash") or ""),
                 review_report_type=str(rereview.content.get("report_type") or ""),
+                review_content=rereview.content,
+                review_content_hash=rereview.content_hash,
             ),
             minimum_net_improvement=threshold,
             length_repair_scope=revision.content.get("chapter_length_repair_scope"),
@@ -3005,9 +3013,10 @@ class _ExportHandler:
         publish_gate = request.require_input("publish_gate_report")
         restored = None
         if request.definition_version == "3.10.0" and publish_gate.content.get("gate") == "PUBLISH_GATE_BLOCKED":
-            from .publication_recovery import revalidate_frozen_publication
-            restored = revalidate_frozen_publication(request, revision=revision, publish_gate=publish_gate)
-            publish_gate = restored
+            from .publication_recovery import has_publication_successor, revalidate_frozen_publication
+            if has_publication_successor(request):
+                restored = revalidate_frozen_publication(request, revision=revision, publish_gate=publish_gate)
+                publish_gate = restored
         output = _output(
             ChapterNode.EXPORT,
             build_export_package(

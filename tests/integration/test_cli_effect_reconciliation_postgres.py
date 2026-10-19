@@ -8,7 +8,7 @@ from novel_forge.modules.command_kernel.manual_effect_resolution import External
 from tests.integration.authority_postgres_support import DATABASE_URL, ensure_migrated, identifier, insert_definition, insert_operation, transaction
 
 
-def seed(production=False, held=False, stage="world.design.generate"):
+def seed(production=False, held=False, stage="world.design.generate", book_id=None):
     ensure_migrated()
     project, operation, definition = (identifier(x) for x in ("project", "operation", "definition"))
     with transaction() as c, c.cursor() as q:
@@ -17,7 +17,7 @@ def seed(production=False, held=False, stage="world.design.generate"):
     context = EffectCommandContext(operation, project, "operator", "trace", "correlation")
     adapter = FakeDeterministicProvider("success")
     effect = plan_external_effect(DATABASE_URL, context, effect_type="model.invoke", provider=adapter.provider,
-        capability="model.test", stable_idempotency_key=identifier("key"), request_payload={"stage": stage, **({"_production_execution": {"attempt_id": "original-attempt"}} if production else {})},
+        capability="model.test", stable_idempotency_key=identifier("key"), request_payload={"stage": stage, **({"_production_execution": {"attempt_id": "original-attempt", **({"book_id":book_id} if book_id else {})}} if production else {})},
         max_attempts=2, reversible=False, provider_capability_profile=adapter.capability_profile)["external_effect_id"]
     reservation = reserve_provider_budget(DATABASE_URL, BudgetReservationRequest(operation_id=operation, project_id=project,
         external_effect_id=effect, stable_idempotency_key=identifier("budget"), provider=adapter.provider,
@@ -578,7 +578,7 @@ def test_legacy_retryable_cli_uncertainty_queries_original_identity(outcome):
         assert connection.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s", [effect]).fetchone()[0] == 1
 
 
-def test_saved_result_scan_uses_owned_versions_and_keeps_book_actor_operation_scope():
+def test_saved_result_scan_uses_owned_versions_and_keeps_book_actor_operation_scope(monkeypatch):
     from types import SimpleNamespace
     from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
     from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
@@ -607,15 +607,49 @@ def test_saved_result_scan_uses_owned_versions_and_keeps_book_actor_operation_sc
         evidence_store=SimpleNamespace(get_record=get_record)))
     with transaction() as c:
         actor = c.execute('SELECT actor_id FROM authority_operation WHERE operation_id=%s', [context.operation_id]).fetchone()[0]
+        definition = c.execute('SELECT definition_name FROM authority_operation WHERE operation_id=%s', [context.operation_id]).fetchone()[0]
+        c.execute('UPDATE authority_operation SET root_operation_id=operation_id WHERE operation_id=%s', [context.operation_id])
     principal = SimpleNamespace(principal_id=actor, require=lambda *args: None)
     args = dict(database_url=DATABASE_URL, project_id=context.project_id, book_id='same-book', principal=principal)
     with pytest.raises(Captured):
         recover_saved_local_results(transport, **args)
     assert seen == ['original-session']
+    from novel_forge.modules.command_kernel.generation_isolation import recover_book_generations, recover_chapter_generations
+    from novel_forge.modules.chapter_authority import receipt_recovery
+    from novel_forge.modules.production_execution.gateway import ExecutionBackendRegistry
+    from novel_forge.modules.story_planning_runtime import gateway_result_recovery
+    from novel_forge.modules.command_kernel import execution_window
+    monkeypatch.setattr(gateway_result_recovery, 'recover_completed_planning_outputs', lambda *a, **kw: False)
+    monkeypatch.setattr(execution_window, 'continue_saved_result_finalization', lambda *a, **kw: False)
+    registry = ExecutionBackendRegistry()
+    optional_record = SimpleNamespace(request=SimpleNamespace(), handle=SimpleNamespace())
+    optional_transport = SimpleNamespace(session_for_project=lambda _: SimpleNamespace(
+        evidence_store=SimpleNamespace(get_record=lambda _: optional_record),
+        gateway=SimpleNamespace(backends=registry, admission=SimpleNamespace(
+            resolve_route=lambda _: SimpleNamespace(backend_id='remote-provider-deepseek')))))
+    application = SimpleNamespace(database_url=DATABASE_URL, execution_binder=SimpleNamespace(
+        resolver=SimpleNamespace(execution_preparer=SimpleNamespace(execution_transport=optional_transport))))
+    assert recover_book_generations(application, project_id=context.project_id, book_id='same-book', principal=principal) is False
+    monkeypatch.setattr(receipt_recovery, 'recover_completed_chapter_results', lambda *a, **kw: False)
+    authority = SimpleNamespace(database_url=DATABASE_URL,
+        require=lambda _: {'project_id':context.project_id, 'book_id':'same-book', 'active_chapter_request_id':'active-chapter'},
+        require_chapter_request=lambda _: {'chapter_root_operation_id':'other-root'},
+        chapter_port=SimpleNamespace(application=SimpleNamespace(_model_port=SimpleNamespace(adapter=optional_transport))))
+    assert recover_chapter_generations(authority, book_run_id='same-book-run', principal=principal) is False
+    authority.require_chapter_request = lambda _: {'chapter_root_operation_id':context.operation_id}
+    with pytest.raises(ValueError, match='execution backend is not registered: remote-provider-deepseek'):
+        recover_chapter_generations(authority, book_run_id='same-book-run', principal=principal)
+    with transaction() as c:
+        assert c.execute('SELECT status FROM authority_external_effect WHERE external_effect_id=%s', [effect]).fetchone()[0] == 'UNKNOWN'
+    for scope in ({'operation_definition_name':definition}, {'root_operation_id':context.operation_id}):
+        with pytest.raises(Captured):
+            recover_saved_local_results(transport, **args, **scope)
+    assert seen == ['original-session'] * 3
     for changed in ({'book_id':'other-book'}, {'operation_ids':['unrelated-operation']},
+                    {'operation_definition_name':'unrelated-definition'}, {'root_operation_id':'unrelated-root'},
                     {'principal':SimpleNamespace(principal_id='other-actor', require=lambda *args: None)}):
         assert recover_saved_local_results(transport, **{**args, **changed}) is False
-    assert seen == ['original-session']
+    assert seen == ['original-session'] * 3
 
 
 def test_planning_original_success_without_usage_correction_keeps_execution_identity():
@@ -640,3 +674,32 @@ def test_planning_original_success_without_usage_correction_keeps_execution_iden
     assert candidate.evidence.execution_id == 'original-execution'
     with transaction() as c:
         assert c.execute('SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s',[effect]).fetchone()[0] == 1
+
+
+@pytest.mark.parametrize('owner', ['definition', 'root'])
+def test_saved_success_accounting_recovers_only_the_selected_owner(owner):
+    from types import SimpleNamespace
+    from novel_forge.modules.command_kernel.external_effect_runtime import accept_external_effect_receipt
+    from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
+
+    seeded = seed(production=True, held=True, book_id='synthetic-book')
+    context, effect, dispatch, *_ = seeded
+    _, evidence = production_confirmation(seeded)
+    receipt = identifier('scoped-original-complete')
+    accept_external_effect_receipt(DATABASE_URL, context, dispatch_id=dispatch['dispatch_id'],
+        provider=FakeDeterministicProvider('success').provider, receipt_id=receipt,
+        message_id=receipt, payload_hash=_hash(evidence), provider_correlation_id='original',
+        generation=1, outcome='success', evidence=evidence)
+    with transaction() as c:
+        c.execute('UPDATE authority_operation SET root_operation_id=operation_id WHERE operation_id=%s', [context.operation_id])
+        actor, definition = c.execute('SELECT actor_id,definition_name FROM authority_operation WHERE operation_id=%s', [context.operation_id]).fetchone()
+        before = c.execute('SELECT to_jsonb(b) FROM authority_budget_reservation b WHERE external_effect_id=%s', [effect]).fetchone()[0]
+    principal = SimpleNamespace(principal_id=actor, require=lambda *args: None)
+    args = dict(database_url=DATABASE_URL, project_id=context.project_id, book_id='synthetic-book', principal=principal)
+    key, value = ('operation_definition_name',definition) if owner=='definition' else ('root_operation_id',context.operation_id)
+    assert recover_saved_local_results(None, **args, **{key:'unrelated-owner'}) is False
+    with transaction() as c:
+        assert c.execute('SELECT to_jsonb(b) FROM authority_budget_reservation b WHERE external_effect_id=%s', [effect]).fetchone()[0] == before
+    assert recover_saved_local_results(None, **args, **{key:value}) is True
+    with transaction() as c:
+        assert c.execute('SELECT status,actual_tokens FROM authority_budget_reservation WHERE external_effect_id=%s', [effect]).fetchone() == ('SETTLED',150)

@@ -1,0 +1,53 @@
+{
+  "schema_version": "checked-evidence-manifest.v1",
+  "files": [
+    {
+      "path": "production-native-upgrade-228-to-229-1c0e28d6.json",
+      "sha256": "sha256:e22b9194b6abd695869138138d3dc65afe8b441271526e7bf9acb4e0e665f520"
+    },
+    {
+      "path": "production-native-upgrade-229-to-230-f1189670.json",
+      "sha256": "sha256:eace817ec1e784f28130344e24aaad91ae5595932e078cda7027cc1921802338"
+    },
+    {
+      "path": "routing-observation-index-audit-positive-exact-rows.json",
+      "sha256": "sha256:69e4fce8f384388d287a12bb9881ee4575f4438d55b5debe318704b5684e6c59"
+    },
+    {
+      "path": "native-v9-lineage-preparation-f1189670.registered.json",
+      "sha256": "sha256:1a64b4393bc103c73558dac3cc0b086c68dad5f59bdb9f9f3798f3fb62f0cb34"
+    },
+    {
+      "path": "native-unsent-carriers-working.json",
+      "sha256": "sha256:f08c8933f4e950a570f66aed62fef0226dc94a286e79b8a29b8049b663808df9"
+    },
+    {
+      "path": "v9-new-effects-no-retained-redispatch-f1189670.checkpoint1.json",
+      "sha256": "sha256:81a3b3313af830d4238e75c4f2e8f8d785eafca09673ea32783bc9ad01751cda"
+    },
+    {
+      "path": "optional-recovery-owner-proof-5f5abbcb.json",
+      "sha256": "sha256:79a789a3e4e7a99beaa9b637a58053176065cfc8d8c9fe855a91647a7134affa"
+    },
+    {
+      "path": "optional-recovery-owner-red.xml.gz",
+      "sha256": "sha256:75b58f1528d025760387b63a90c9c522fe4196ac7883f6ec4c332de7b700a3c7"
+    },
+    {
+      "path": "optional-recovery-owner-working-v2.xml.gz",
+      "sha256": "sha256:f4185d437a17b582851aac4344c91e0875eaf915d507052f6d69999bf274eeba"
+    },
+    {
+      "path": "optional-recovery-owner-pg-final.xml.gz",
+      "sha256": "sha256:f7c2abf64281d11a6466da64a0a1a8da40e7ea11bad14952d0f209eb3d194c96"
+    },
+    {
+      "path": "owned-recovery-5f5abbcb-exact-head.xml.gz",
+      "sha256": "sha256:a60de460f56e5255528e73aed0664f63c78f274a17fb0f7c78df5a0a94357e4a"
+    },
+    {
+      "path": "index.json",
+      "sha256": "sha256:a871276e9acdd7b088c732e3597ef1dd912e28a6487672681fa71e9bf1e6833b"
+    }
+  ]
+}

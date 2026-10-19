@@ -62,7 +62,10 @@ def validate_observations(memory: Mapping[str, Any], text: str, *, available_cau
         raise KernelError("WORKING_MEMORY_INVALID", "Observation identity or located evidence changed")
 
 
-def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str], max_characters: int, dependency_closed: bool = False) -> dict[str, Any]:
+def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str], max_characters: int | None, dependency_closed: bool = False,
+                           recent_complete_from: int | None = None) -> dict[str, Any]:
+    if max_characters is None and (not dependency_closed or type(recent_complete_from) is not int):
+        raise KernelError("WORKING_MEMORY_SELECTION_POLICY_REQUIRED", "Unallocated retrieval requires scoped latest observations and dependency closure")
     entries, coverage, known = [], [], set()
     for source in sources:
         memory = source.get("observations")
@@ -91,10 +94,17 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
         -int(row["observation_id"] in current), -row["source"]["chapter"], row["location"]["start"]))
     selected, omitted, remaining = [], [], max_characters
     for entry in ranked:
+        if recent_complete_from is not None and not (
+                entry["observation_id"] in current or entry["kind"] == "PROMISE"
+                or entry["source"]["chapter"] >= recent_complete_from
+                or any(q.casefold() in (entry["claim"] + entry["subject"] + entry["state_key"]).casefold() for q in queries)):
+            omitted.append(entry["observation_id"])
+            continue
         size = len(json.dumps(entry, ensure_ascii=False, sort_keys=True))
-        if size <= remaining:
+        if remaining is None or size <= remaining:
             selected.append({**entry, "state_role": "LATEST_OBSERVATION" if entry["observation_id"] in current else "HISTORICAL_OBSERVATION"})
-            remaining -= size + 80
+            if remaining is not None:
+                remaining -= size + 80
         else:
             omitted.append(entry["observation_id"])
     if dependency_closed:

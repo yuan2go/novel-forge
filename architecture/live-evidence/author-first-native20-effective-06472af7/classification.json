@@ -1,0 +1,89 @@
+{
+  "schema_version": "native-recovery-and-verification-classification.v1",
+  "at": "2026-10-19T01:54:32.155522+00:00",
+  "root_causes": [
+    {
+      "first_failure": "Writer20 real Provider stream disconnected after 915059ms",
+      "classification": "REAL_PROVIDER_CONNECTION_FAILURE_UNKNOWN",
+      "resolution": "Native pure-generation isolation revoked old submission rights before linked Writer successor; UNKNOWN and HELD_UNKNOWN remain",
+      "status": "RECOVERED_WITH_ORIGINAL_HISTORY"
+    },
+    {
+      "first_failure": "First complete Draft20 3943 Han",
+      "classification": "GENERATED_FIRST_DRAFT_LENGTH_TARGET_UNMET",
+      "resolution": "Native Review/Revision/ReReview/Best, exact first Draft retained and candidate-exported; effective body4199",
+      "status": "PASS_LENGTH_ONLY"
+    },
+    {
+      "first_failure": "ReReview20 pre-send complete capacity484529>475000, zero Effect",
+      "classification": "LOSSLESS_INPUT_TRANSPORT_OMISSION",
+      "resolution": "Versioned complete-string edit transport, exact decoded equality; same route, all19 full prior sources; original Attempt retained, same child retry",
+      "capacity_preparation_before": 484529,
+      "capacity_preparation_after": 466340,
+      "capacity_preparation_output_reserve": 1,
+      "final_actual_admission_total_reserved": 475000,
+      "final_actual_output_tokens": 8661,
+      "unchanged_route_limit": 475000,
+      "actual_provider_input_tokens": "NOT_INFERRED_FROM_UPPER_BOUND",
+      "status": "PASS_REAL_DISPATCH_AND_RESULT"
+    },
+    {
+      "first_failure": "Working selection after completed ReReview: AUTHOR_WORKFLOW_RECONCILIATION_REQUIRED",
+      "classification": "ACKNOWLEDGED_UNSENT_PREPARATION_RETIREMENT_OMISSION",
+      "resolution": "Reuse exact v11/v12 custody and native ACK/pause validators only for working selection, same BookRun, released reservation and no main send; old Effect/Attempt/cancellation unchanged",
+      "status": "PASS_NATIVE_WORKING_SELECTION"
+    },
+    {
+      "first_failure": "Optional DeepSeek17-20 source read LockNotAvailable before run admission",
+      "classification": "READ_ONLY_CHECKPOINT_LOCK_CONTENTION",
+      "resolution": "Original failure retained; restart same native idempotency keys after verifying no prior17-20 run or Provider call; source-read-only lock retry",
+      "status": "NATIVE_REVIEW_STARTED_RESULT_PENDING"
+    }
+  ],
+  "focused_final_source": {
+    "sha": "06472af72535eef994328e9ffe0dadea2066d8b9",
+    "unit": 387,
+    "postgresql": 52,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "docs": "PASS"
+  },
+  "formal_5eb": {
+    "status": "FAIL",
+    "failure_reason": "migration-compatibility failed",
+    "cleanup": {
+      "phases": [
+        {
+          "compose_project": "nf-p0-6634a8cc01ee4c2a9d648b4e2ff81e85",
+          "phase": "postgresql",
+          "receipt": "compose-resource-ownership-nf-p0-6634a8cc01ee4c2a9d648b4e2ff81e85.json",
+          "remaining_resource_count": 0,
+          "resource_count": 2,
+          "run_id": "p0-6634a8cc01ee4c2a9d648b4e2ff81e85",
+          "status": "PASS"
+        }
+      ],
+      "remaining_resource_count": 0,
+      "status": "PASS"
+    },
+    "original_report_retained": true
+  },
+  "formal_33e": {
+    "status": "RUNNING_MIGRATION_COMPATIBILITY",
+    "source_sha": "33e567473541ffe7778df52af462a76ac377599b",
+    "backend_junit_pass": 8478,
+    "migration_failure_events_at_checkpoint": 0,
+    "downstream_gates": "NOT_RUN_AT_CHECKPOINT"
+  },
+  "formal_064": {
+    "status": "QUEUED_AFTER_33E_AND_VERIFIED_CLEANUP",
+    "downstream_gates": "NOT_RUN",
+    "scope": "FULL_CANONICAL_MATRIX_UNCHANGED_NO_SKIPS"
+  },
+  "overall_production_qualification": "NOT_PROVEN",
+  "literary_qualification": "NOT_PROVEN",
+  "source_d0_preflight": "BLOCKED_RETRIEVAL_MEMBERSHIP_ACCOUNTING_BINDING",
+  "ci_changes": false,
+  "published_migration_changes": false
+}

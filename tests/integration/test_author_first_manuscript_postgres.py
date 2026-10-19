@@ -75,8 +75,12 @@ def prepare_context_model_stages(transport, monkeypatch):
     monkeypatch.setattr(handlers, "build_context_bundle", prepare_two_model_stages)
 
 
-@pytest.mark.parametrize("completed_sibling,recoverable_result,enhanced_working", [(False, False, False), (True, False, False), (False, True, False), (False, False, True), (False, False, "memory"), (False, False, "progression")], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result", "enhanced-working-interruption", "working-memory-interruption", "working-progression-interruption"])
-def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, runtime_clock, completed_sibling, recoverable_result, enhanced_working):
+@pytest.mark.parametrize("completed_sibling,recoverable_result,enhanced_working,default_template", [
+    (False, False, False, False), (True, False, False, False), (False, True, False, False),
+    (False, False, True, False), (False, False, "memory", False), (False, False, "progression", False),
+    (False, False, False, True),
+], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result", "enhanced-working-interruption", "working-memory-interruption", "working-progression-interruption", "default-author-first"])
+def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, runtime_clock, completed_sibling, recoverable_result, enhanced_working, default_template):
     harness = CapabilityPackPostgresHarness("author-first")
     project = harness.project_id + "-native"
     root = Path(__file__).resolve().parents[2]
@@ -108,6 +112,19 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
     }, monkeypatch, transport)
     env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+    if not completed_sibling and not recoverable_result and not enhanced_working:
+        catalog = json.loads(env["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
+        catalog["contract_version"] = "codex-router-models.v2"
+        for model in catalog["models"]:
+            model["output_limit"] = None
+        env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(catalog)
+        env["NOVEL_FORGE_CODEX_OUTPUT_RESERVATION_POLICY"] = "codex-cli-context-headroom.v1"
+        env.pop("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT", None)
+        monkeypatch.delenv("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT", raising=False)
+        from novel_forge.modules.book_authority import reader_pack
+        def unavailable_optional_reader(*_args, **_kwargs):
+            raise RuntimeError("optional Reader deployment is unavailable")
+        monkeypatch.setattr(reader_pack, "ensure_creation_reader_pack", unavailable_optional_reader)
     executable = Path(env["NOVEL_FORGE_CODEX_EXECUTABLE"])
     executable.write_text(executable.read_text().replace(
         ' target.write_bytes(',
@@ -128,7 +145,7 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         current_project[:] = [request.project_id]
         if request.stage in {"context_compress", "context_fidelity"}:
             compression_calls.append((request.operation_id, request.stage))
-        failure_stage = "context_fidelity" if completed_sibling else "memo"
+        failure_stage = "context_fidelity" if completed_sibling else "draft" if default_template else "memo"
         if not recoverable_result and request.stage == failure_stage and not stream_failures:
             layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
             layout.result_path("interrupt-stream").write_text("controlled fault")
@@ -164,7 +181,8 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
                 uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o
                     JOIN authority_external_effect e USING(operation_id)
-                    WHERE o.project_id=%s AND o.definition_name='chapter.memo.generate' AND e.status='UNKNOWN'""", [book["project_id"]])
+                    WHERE o.project_id=%s AND o.definition_name=%s AND e.status='UNKNOWN'""",
+                    [book["project_id"], "chapter.draft.generate" if default_template else "chapter.memo.generate"])
                 original = uow.cursor.fetchone()
             if original is None:
                 return native_recovery(authority, **options)
@@ -185,6 +203,9 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
                 outcomes = list(pool.map(lambda _: native_recovery(authority, **options), range(2)))
             assert sum(outcomes) == 1
             admission_checked.append(True)
+            if default_template:
+                authority.pause(book['book_run_id'], reason='Controlled author pause after UNKNOWN isolation',
+                    principal=options['principal'])
             return True
         monkeypatch.setattr(generation_isolation, "recover_chapter_generations", verify_atomic_recovery)
     env["NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"] = "native-creation-operator"
@@ -206,10 +227,11 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     args = parser.parse_args(["authority-creation", "start", "--input-file", str(source),
         "--repository-root", str(root), "--maximum-ticks", "100",
         "--foreground"])
-    template = json.loads((root / args.execution_template_file).read_text())
-    template["optional_enhancements"] = sorted(set(template["optional_enhancements"]) | {"memo"})
-    args.execution_template_file = tmp_path / "memo-enhanced-template.json"
-    args.execution_template_file.write_text(json.dumps(template))
+    if not default_template:
+        template = json.loads((root / args.execution_template_file).read_text())
+        template["optional_enhancements"] = sorted(set(template["optional_enhancements"]) | {"memo"})
+        args.execution_template_file = tmp_path / "memo-enhanced-template.json"
+        args.execution_template_file.write_text(json.dumps(template))
     if enhanced_working:
         creation_policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
         creation_policy["profiles"]["production_profile"]["content"]["working_prose_policy"] = {
@@ -225,6 +247,15 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     from novel_forge.api import authority_dependencies
     build_book = authority_dependencies.build_book_production_composition
     interruptions = []
+    opening_window_expired = False
+    if default_template:
+        from novel_forge.modules.book_authority import creation_runtime
+        clock = creation_runtime.monotonic
+        monkeypatch.setattr(creation_runtime, "monotonic", lambda: clock() + (args.work_window_seconds + 1 if opening_window_expired else 0))
+    def expire_after_opening_node(checkpoint):
+        nonlocal opening_window_expired
+        if default_template and checkpoint == "after_workflow_node_payload" and not opening_window_expired:
+            opening_window_expired = True
     def fail_delivery_once(checkpoint):
         if checkpoint == "after_manuscript_delivery" and not interruptions:
             interruptions.append(checkpoint)
@@ -232,8 +263,50 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     def with_interrupt(*values, **options):
         composition = build_book(*values, **options)
         composition.authority.failure_injector = fail_delivery_once
+        if default_template:
+            composition.opening.fault_injector = expire_after_opening_node
         return composition
     monkeypatch.setattr(authority_dependencies, "build_book_production_composition", with_interrupt)
+    initial_book_plan_versions = []
+    if default_template:
+        args.yield_after_window = True
+        checkpoint = run_creation_command(settings, args)
+        assert checkpoint["stop_reason"] == "YIELDED_CHECKPOINT", checkpoint
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT project_id,workspace_id,book_id FROM authority_story_formation_run WHERE formation_run_id=%s",
+                [checkpoint["formation_run_id"]])
+            args.project_id, args.workspace_id, args.book_id = uow.cursor.fetchone()
+            uow.cursor.execute("""SELECT generator_operation_name,count(*) FROM authority_story_planning_generation
+                WHERE project_id=%s AND generator_operation_name IN ('book_plan.generate','volume_plan.generate','arc_plan.generate')
+                GROUP BY generator_operation_name""", [args.project_id])
+            assert dict(uow.cursor.fetchall()) == {"book_plan.generate": 3}
+            uow.cursor.execute("""SELECT candidate_asset_version_id,input_snapshot_hash FROM authority_story_planning_generation
+                WHERE project_id=%s AND generator_operation_name='book_plan.generate' ORDER BY operation_id""", [args.project_id])
+            initial_book_plan_versions = uow.cursor.fetchall()
+            assert all(row[0] for row in initial_book_plan_versions)
+        args.action, args.formation_run_id = "continue", checkpoint["formation_run_id"]
+        args.yield_after_window = False
+        paused = run_creation_command(settings, args)
+        assert paused['stop_reason'] == 'PAUSED', paused
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute('SELECT root_operation_id FROM authority_operation WHERE operation_id=%s', [stream_failures[0]])
+            chapter_root = uow.cursor.fetchone()[0]
+        def chapter_counts():
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute('''SELECT
+                    (SELECT count(*) FROM authority_external_effect effect JOIN authority_operation operation USING(operation_id) WHERE operation.root_operation_id=%s),
+                    (SELECT count(*) FROM authority_attempt attempt JOIN authority_operation operation USING(operation_id) WHERE operation.root_operation_id=%s),
+                    (SELECT count(*) FROM authority_operation WHERE root_operation_id=%s AND definition_name='chapter.draft.generate')''', [chapter_root] * 3)
+                return uow.cursor.fetchone()
+        original_counts = chapter_counts()
+        assert original_counts[2] == 2
+        assert run_creation_command(settings, args)['stop_reason'] == 'PAUSED'
+        assert chapter_counts() == original_counts
+        from dataclasses import replace
+        from novel_forge.cli.manuscript import run_manuscript_command
+        resumed = run_manuscript_command(replace(settings, root=root), parser.parse_args(['authority-manuscript', 'resume',
+            '--book-run-id', paused['book_run_id'], '--reason', 'Explicit author resume of the original chapter']))
+        assert resumed['state'] != 'PAUSED'
     with pytest.raises(RuntimeError, match="controlled interruption"):
         started = run_creation_command(settings, args)
         raise AssertionError({key: started.get(key) for key in ("stop_reason", "reason_code", "reason")})
@@ -297,7 +370,20 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         assert book["accepted_through_chapter"] == 0
         uow.cursor.execute("SELECT definition_name,count(*) FROM authority_operation WHERE project_id=%s GROUP BY definition_name", [project])
         counts = dict(uow.cursor.fetchall())
-        assert counts["chapter.draft.generate"] == 6
+        assert counts["chapter.draft.generate"] == 6 + int(default_template)
+        if default_template:
+            uow.cursor.execute("""SELECT count(*) FROM authority_external_effect
+                WHERE project_id=%s AND request_payload->>'stage'='memo'""", [project])
+            assert uow.cursor.fetchone() == (0,)
+            uow.cursor.execute("""SELECT memo.content->>'enhancement_status',count(*)
+                FROM authority_operation operation JOIN authority_operation_output_asset output USING(operation_id)
+                JOIN authority_asset_version memo USING(asset_version_id)
+                WHERE operation.project_id=%s AND operation.definition_name='chapter.memo.generate'
+                  AND output.role='primary' AND memo.content->>'qualification'='INPUT_FALLBACK'
+                  AND memo.content #>> '{execution_evidence,source}'='FROZEN_EXECUTION_INTENT'
+                  AND memo.content #>> '{execution_evidence,model_call}'='NOT_RUN'
+                GROUP BY memo.content->>'enhancement_status'""", [project])
+            assert uow.cursor.fetchall() == [("NOT_REQUESTED", 6)]
         assert not any(count for name, count in counts.items() if name.startswith(("chapter.review.", "chapter.quality.", "chapter.canon.", "chapter.revision.")))
     from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
     principal = build_trusted_principal_resolver().resolve_api_principal()
@@ -325,10 +411,57 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     manifest = current_manuscript(DATABASE_URL, book=book, principal=principal)
     assert len(manifest["units"]) == 8 and book["current_chapter"] == 8 and book["accepted_through_chapter"] == 0
     assert [unit["asset_version_id"] for unit in manifest["units"][:6]] == prefix_versions
+    if default_template:
+        authority = PostgresBookAuthority(DATABASE_URL, chapter_port=None, followup_application=None,
+            application_build_id=harness.application_build_id, commit_sha=harness.release_sha)
+        from novel_forge.modules.command_kernel.errors import KernelError
+        from novel_forge.modules.book_authority.working_policy import select_working_policy, selected_working_policy
+        from novel_forge.modules.book_authority.manuscript import freeze_working_context
+        selected = json.loads((Path(__file__).resolve().parents[2] / 'config/execution_templates/creation_inputs.json').read_text())['profiles']['production_profile']['content']['working_prose_policy']
+        authority.pause(book['book_run_id'], reason='Keep production paused while selecting future inputs', principal=principal)
+        paused = authority.require(book['book_run_id'])
+        chosen = select_working_policy(authority, book['book_run_id'], policy=selected,
+            expected_version=paused['version'], reason='Use located historical retrieval', idempotency_key=project+':choose-retrieval', principal=principal)
+        assert chosen['state'] == 'PAUSED'
+        assert authority.require(book['book_run_id'])['production_profile_version'] == book['production_profile_version']
+        assert select_working_policy(authority, book['book_run_id'], policy=selected,
+            expected_version=paused['version'], reason='Use located historical retrieval', idempotency_key=project+':choose-retrieval', principal=principal)['replayed']
+        with pytest.raises(KernelError, match='WORKING_PROSE_POLICY_IDEMPOTENCY_CONFLICT'):
+            select_working_policy(authority, book['book_run_id'], policy={**selected, 'queries': ['other']},
+                expected_version=paused['version'], reason='Use located historical retrieval', idempotency_key=project+':choose-retrieval', principal=principal)
+        from dataclasses import replace
+        with pytest.raises(KernelError, match='WORKING_PROSE_POLICY_IDEMPOTENCY_CONFLICT'):
+            select_working_policy(authority, book['book_run_id'], policy=selected,
+                expected_version=paused['version'], reason='Use located historical retrieval', idempotency_key=project+':choose-retrieval',
+                principal=replace(principal, principal_id='another-author'))
+        with pytest.raises(KernelError, match='AUTHOR_WORKFLOW_CHECKPOINT_REQUIRED'):
+            select_working_policy(authority, book['book_run_id'], policy=selected,
+                expected_version=paused['version'], reason='Stale checkpoint', idempotency_key=project+':choose-stale', principal=principal)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            current = authority.require(book['book_run_id'])
+            assert selected_working_policy(uow, current, None) == selected
+            assert selected_working_policy(uow, current, None, target_chapter=1) is None
+            frozen = freeze_working_context(uow, current, current['current_chapter']+1)
+            assert frozen['projection_policy'] == selected
+            assert frozen['accepted_through_chapter'] == 0
+            assert current['state'] == 'PAUSED'
+        second_policy = {**selected, 'queries': ['bridge']}
+        replacement = select_working_policy(authority, book['book_run_id'], policy=second_policy,
+            expected_version=current['version'], reason='Retrieve a specific earlier obligation', idempotency_key=project+':choose-retrieval-2', principal=principal)
+        assert replacement['policy_asset_version_id'] != chosen['policy_asset_version_id']
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            current = authority.require(book['book_run_id'])
+            assert selected_working_policy(uow, current, None) == second_policy
+            uow.cursor.execute('SELECT lifecycle,content FROM authority_asset_version WHERE asset_version_id=%s', [chosen['policy_asset_version_id']])
+            old_policy = uow.cursor.fetchone()
+            assert old_policy[0] == 'SUPERSEDED' and old_policy[1]['working_prose_policy'] == selected
+        authority.resume(book['book_run_id'], reason='Explicit fixture author resume after policy pause check', principal=principal)
+        book = authority.require(book['book_run_id'])
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT context_snapshot FROM authority_book_manuscript_delivery WHERE book_run_id=%s AND chapter_number=6", [book["book_run_id"]])
         sixth_context = uow.cursor.fetchone()[0]
-        sixth_has_direct_first_dependency = any(row["chapter"] == 1 for row in sixth_context["sources"])
+        from novel_forge.modules.book_authority.working_prose import working_source_rows
+        sixth_has_direct_first_dependency = any(row["chapter"] == 1 for row in working_source_rows(sixth_context))
         uow.cursor.execute("SELECT context_snapshot FROM authority_book_manuscript_delivery WHERE book_run_id=%s AND chapter_number=7", [book["book_run_id"]])
         frozen_working = uow.cursor.fetchone()[0]
         sources = frozen_working["sources"]
@@ -376,15 +509,16 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
             def invoke(self, request, *, stage, payload, **options):
                 window = request.require_input("longform_prose_review_window").content
                 assert payload["prose_diagnosis_contract"] == "prose-root-cause.v1"
-                span = window["window"]["spans"][0]
-                return ModelProviderResult(output={"schema_version": "longform-prose-review.v3",
+                from novel_forge.modules.book_followup_authority.prose_citations import citation_catalog
+                assert payload["prose_citation_locator_contract"] == "indexed-prose-citation.v1"
+                citation = next(iter(citation_catalog(window["window"])))
+                return ModelProviderResult(output={"schema_version": "longform-prose-review.v5",
                     "manifest_digest": window["manifest_digest"], "window_id": window["window"]["window_id"],
                     "reviewed_dimensions": list(PROSE_DIMENSIONS), "findings": [{
                         "lineage_id": "controlled-future-plot:" + window["window"]["window_id"], "dimension": "motivation_cost", "judgment": "ISSUE",
                         "severity": "MAJOR", "confidence": 0.8, "claim": "Controlled future-plot diagnosis.",
                         "rationale": "Test source binding and native repair routing only.",
-                        "evidence": [{"asset_version_id": span["asset_version_id"], "text_hash": span["text_hash"],
-                            "quote": span["text"]}],
+                        "evidence": [{"citation_id": citation}],
                         "repair": {"root_cause": "UPPER_PLOT", "problem_owner": "PLAN", "repair_scope": "FUTURE_REPLAN",
                             "revision_goal": "Review future plot intent.", "preserve": ["Selected manuscripts."],
                             "resolution_criteria": ["Bind an exact future plan candidate."]}}]},
@@ -511,7 +645,11 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     assert [unit["chapter"] for unit in exported.json()["units"]] == [2]
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         uow.cursor.execute("SELECT count(*) FROM authority_operation WHERE project_id=%s AND definition_name='chapter.draft.generate'", [project])
-        assert uow.cursor.fetchone()[0] == 8
+        assert uow.cursor.fetchone()[0] == 8 + int(default_template)
+        if default_template:
+            uow.cursor.execute("""SELECT candidate_asset_version_id,input_snapshot_hash FROM authority_story_planning_generation
+                WHERE project_id=%s AND generator_operation_name='book_plan.generate' ORDER BY operation_id""", [project])
+            assert uow.cursor.fetchall() == initial_book_plan_versions
     if not completed_sibling and not recoverable_result:
         from tests.integration.migration_window_postgres_support import restored_generation_backup
         with restored_generation_backup(DATABASE_URL, backup_root=tmp_path / "chapter-joint-backup",

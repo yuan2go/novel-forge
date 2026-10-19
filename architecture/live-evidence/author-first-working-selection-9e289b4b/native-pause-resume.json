@@ -1,0 +1,80 @@
+{
+  "schema_version": "native-working-pause-resume-proof.v1",
+  "at": "2026-10-18T19:18:55.560165+00:00",
+  "source_sha": "9e289b4bb40c1346de8f60bad556345dfd790fbf",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "pause_checkpoint": {
+    "chapter": 19,
+    "state": "PAUSED",
+    "version": 135,
+    "accepted_through_chapter": 0
+  },
+  "resumed_checkpoint": {
+    "state": "READY",
+    "current_chapter": 19,
+    "version": 136,
+    "accepted_through_chapter": 0,
+    "active_chapter_request_id": null
+  },
+  "operations": [
+    {
+      "operation_id": "8675bb4c-91b0-4ce8-911c-44c8c6f064b7",
+      "status": "SUCCEEDED",
+      "definition_version": "1.0.0",
+      "command_payload": {
+        "payload": {
+          "action": "working_manuscript_select",
+          "reason": "按本书冻结目标将当前完整工作稿原生修订为4000—5000汉字；保留原稿、已发生事件、人物知识和前文因果，不用重复解释或无关情节凑字数；不授予作者认可或正式接纳。",
+          "chapter": 19,
+          "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+          "expected_version": 133,
+          "candidate_asset_version_id": "authority-output:90250101-c3db-423f-9305-b74ce4ad98ef:chapter.best_candidate:v1"
+        },
+        "project_id": "project:wp-nf-author-first-20261017",
+        "input_asset_version_ids": [
+          "authority-output:90250101-c3db-423f-9305-b74ce4ad98ef:chapter.best_candidate:v1"
+        ]
+      },
+      "input_asset_snapshot": [
+        {
+          "project_id": "project:wp-nf-author-first-20261017",
+          "content_hash": "sha256:6129c1105c98966f2f70ca7097618fa8475b4fcef27d4ee3a47312ab9c1e4e9e",
+          "asset_version_id": "authority-output:90250101-c3db-423f-9305-b74ce4ad98ef:chapter.best_candidate:v1"
+        }
+      ]
+    },
+    {
+      "operation_id": "5e3c4fc4-03d6-4524-aab8-f2103e1c4ca7",
+      "status": "SUCCEEDED",
+      "definition_version": "1.0.0",
+      "command_payload": {
+        "payload": {
+          "action": "pause",
+          "reason": "Requested manuscript round reached chapter 19; frozen delivery window retained",
+          "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e"
+        },
+        "project_id": "project:wp-nf-author-first-20261017",
+        "input_asset_version_ids": []
+      },
+      "input_asset_snapshot": []
+    },
+    {
+      "operation_id": "154890e3-6a71-4299-af01-c830bed4e2c2",
+      "status": "SUCCEEDED",
+      "definition_version": "1.0.0",
+      "command_payload": {
+        "payload": {
+          "state": "READY",
+          "action": "resume",
+          "reason": "从第19章原生暂停检查点恢复，继续首期100章工作稿；不授予正式接纳",
+          "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e"
+        },
+        "project_id": "project:wp-nf-author-first-20261017",
+        "input_asset_version_ids": []
+      },
+      "input_asset_snapshot": []
+    }
+  ],
+  "resumed_via": "ORDINARY_AUTHORITY_MANUSCRIPT_RESUME_EXPECTED_VERSION_135",
+  "next_command": "ORDINARY_AUTHORITY_MANUSCRIPT_CONTINUE_TO_100"
+}

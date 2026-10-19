@@ -1,0 +1,150 @@
+{
+  "source_sha": "f6fa656359805e081905c556d2b0a01fb3fda66d",
+  "production_fix_sha": "da7acab23ab65dac4c82de02dd0bbb2e089617b4",
+  "production_files_changed_since_fix": false,
+  "evidence_class": "SCRIPTED_NATIVE_POSTGRESQL",
+  "status": "PASS",
+  "cases": 2,
+  "saved_chapters_per_case": 8,
+  "han_per_original_draft": 26,
+  "edited_first_candidate_han": 30,
+  "accepted_through_chapter_per_case": 0,
+  "formal_P0": "NOT_RUN",
+  "real_provider": "NOT_RUN",
+  "literary_qualification": "NOT_RUN",
+  "default_template": {
+    "readback": "88a19f48de2a4524.json.gz",
+    "template_modification": "NONE",
+    "failure_stage": "draft",
+    "saved_chapters": 8,
+    "actual_process_input_hash_matches": 26,
+    "successful_result_inputs": 25,
+    "unknown_result_inputs": 1,
+    "local_memos": 8,
+    "memo_provider_calls": 0,
+    "local_memo_working_source_occurrences": 28,
+    "provider_working_source_occurrences": 194,
+    "natural_chapter_groups": 3,
+    "draft_operation_count": 9,
+    "successful_draft_count": 8,
+    "unknown_draft_count": 1
+  },
+  "explicit_memo_enhancement": {
+    "readback": "c60aa707c29c6ae5.json.gz",
+    "template_modification": "EXPLICIT_OPTIONAL_MEMO",
+    "failure_stage": "memo",
+    "actual_process_input_hash_matches": 33,
+    "successful_result_inputs": 32,
+    "unknown_result_inputs": 1,
+    "local_failed_enhancement_memos": 1,
+    "provider_working_source_occurrences": 222
+  },
+  "prior_coverage_correction": {
+    "previous_native_samples": "Original six parameter cases explicitly enabled Memo enhancement; retain as that evidence, not the unchanged default template. All six remain in the test matrix; default-author-first is a seventh case.",
+    "retained_failed_probe": "review-default-memo-native.log failed because the probe incorrectly expected a default Memo Provider interruption. Default local Memo is correct current behavior, not a production defect. The probe and partial readback remain preserved.",
+    "new_default_assertions": "Writer UNKNOWN isolation/atomic rollback/concurrent successor/causality, delivery failure replay, same-Book continuation across Groups, exact export, zero acceptance, local frozen Memo source and no optional quality/Canon dispatch"
+  },
+  "reviews": {
+    "spec": "NO_SUBSTANTIVE_FINDING",
+    "standards": "NO_SUBSTANTIVE_FINDING"
+  },
+  "files": [
+    {
+      "path": "503feabf8f3d338d-failure.txt",
+      "bytes": 14085,
+      "sha256": "sha256:f87694760fd50964d6a1cabaeae10dd41011a6ee4784b18ab48c96df96bf059d"
+    },
+    {
+      "path": "88a19f48de2a4524-dispatch.json",
+      "bytes": 148554,
+      "sha256": "sha256:60eba4fcaea6e4af74725e62c2b7165b8f61dcf08e632c396ffe1159b3db6921"
+    },
+    {
+      "path": "88a19f48de2a4524-local-memo.json",
+      "bytes": 18080,
+      "sha256": "sha256:4bd44d1c63b0d009dca296b5c2bfefe1b05faa59e636994a2c66badc5149812f"
+    },
+    {
+      "path": "88a19f48de2a4524-prose.json",
+      "bytes": 4706,
+      "sha256": "sha256:58999e6d45730423bbff9205c0c00fb9001d52e0e7cc8b27b1b4b92c7725b5db"
+    },
+    {
+      "path": "88a19f48de2a4524.json.gz",
+      "bytes": 18890240,
+      "sha256": "sha256:2dcc59611d490bf72d3f12942d114a40f1a1f4005d2ddd2788b20a83ab8011c3"
+    },
+    {
+      "path": "c60aa707c29c6ae5-dispatch.json",
+      "bytes": 171505,
+      "sha256": "sha256:ca5d906bfa7e5f0271bca6bcaf18fd9dca6e4890257ea8c409620144031750df"
+    },
+    {
+      "path": "c60aa707c29c6ae5-local-memo.json",
+      "bytes": 1111,
+      "sha256": "sha256:f58e910ac386e0d914617ff558785dc442782bf17a9a000d0aac78607a0ac105"
+    },
+    {
+      "path": "c60aa707c29c6ae5-prose.json",
+      "bytes": 4705,
+      "sha256": "sha256:6d343a3629b29831c4c8213b88c5d1e20ade4fca648f7f8940d95895a3550403"
+    },
+    {
+      "path": "c60aa707c29c6ae5.json.gz",
+      "bytes": 19751719,
+      "sha256": "sha256:7995526e1291abba7e908844146d15302986619bf47729686bda6a2642c325ab"
+    },
+    {
+      "path": "fa2b6143bf5a645f-prose.json",
+      "bytes": 736,
+      "sha256": "sha256:bc7f6225e518867de47e8f13a087b3a74b7e51fa3b1f3d39ef9eda88db72fc6c"
+    },
+    {
+      "path": "fa2b6143bf5a645f.json.gz",
+      "bytes": 8192389,
+      "sha256": "sha256:3df0f5af84eb0a3d5e6e5b4d99c7afe5e66a27f8ee73a659334e950058e459d2"
+    },
+    {
+      "path": "review-default-and-enhanced-native.log",
+      "bytes": 2174,
+      "sha256": "sha256:1e4da86787c8cd3bf0fe57e238fcef03c95ebaf8c952f2bd9925b1c271c68bdb"
+    },
+    {
+      "path": "review-default-and-enhanced-native.xml",
+      "bytes": 942,
+      "sha256": "sha256:12f7226bd47e07b1175cce395f461507c35884076aaff85f61af12d9a59a35eb"
+    },
+    {
+      "path": "review-default-documentation.json",
+      "bytes": 771,
+      "sha256": "sha256:2f16dc847d6914ebb9506539066c9f9388d57e27420e3047e5fc1981a37901eb"
+    },
+    {
+      "path": "review-default-memo-native.log",
+      "bytes": 14571,
+      "sha256": "sha256:0c7f7dc02d7529ae1ec887836a30dbc84f424787fe264d6d0c19668e28e427cc"
+    },
+    {
+      "path": "verify_dispatch.py",
+      "bytes": 4114,
+      "sha256": "sha256:c59bbccfb75de3cb898dc61e92b9bc7ce37a25c18168d49f335870fc7dfff722"
+    },
+    {
+      "path": "verify_local_memo.py",
+      "bytes": 4104,
+      "sha256": "sha256:e1c17e639dadebb1dee53ec9227cd3a578eec942de9cbccb481a36f5e612c249"
+    }
+  ],
+  "scripted_fixture_scope": {
+    "full_book_target": 8,
+    "initial_delivery_window": 6,
+    "extended_delivery_window": 8,
+    "requested_han_range": [
+      800,
+      4000
+    ],
+    "actual_scripted_original_han": 26,
+    "genre": "social mystery",
+    "purpose": "Deterministic engineering fault coverage only; separate from the real 600-chapter cultivation Book and 100-chapter delivery window."
+  }
+}

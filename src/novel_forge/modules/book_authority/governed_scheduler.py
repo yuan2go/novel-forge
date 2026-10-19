@@ -44,6 +44,10 @@ class PostgresBookAuthorityScheduler:
         }
     )
 
+    @classmethod
+    def coordinates_active_chapter(cls, state: str) -> bool:
+        return state in cls._CHAPTER_RECONCILIATION_STATES | cls._CHAPTER_ACCEPTANCE_STATES
+
     def __init__(
         self,
         authority: PostgresBookAuthority,

@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "source_sha": "5799c06df20d15b578d264ddfb01e400bb573ba2",
+  "native_export_schema": "retained-manuscript-candidate.v1",
+  "chapter": 19,
+  "asset_version_id": "authority-output:3c1abd63-e5bf-4b99-8352-a6ec014379f6:chapter.draft:v1",
+  "content_hash": "sha256:6ebef2677b99bbeb26180412696bd84fa6069c0f0a4af976dd0f095fd5563b80",
+  "han": 3854,
+  "below_frozen_target": true,
+  "original_preserved": true,
+  "native_exact_json_and_markdown_readback": true,
+  "markdown_sha256": "70aa5e3d368618f268497a0cd6b439744fa484c8ea9fdcdb3cca1b176e4f2123",
+  "accepted_through_chapter": 0,
+  "native_revision_in_progress": true,
+  "publication": "NOT_AUTHORIZED"
+}

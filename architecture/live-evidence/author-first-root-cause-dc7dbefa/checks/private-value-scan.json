@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "files_scanned": 433,
+  "configured_private_values_checked": 1,
+  "hits": [],
+  "actual_secret_values_printed": false,
+  "not_a_general_security_qualification": true
+}

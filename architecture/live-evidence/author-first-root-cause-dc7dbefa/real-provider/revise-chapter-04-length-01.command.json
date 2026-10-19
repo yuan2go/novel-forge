@@ -1,0 +1,23 @@
+{
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "argv": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "-m",
+    "novel_forge.cli.authority",
+    "authority-manuscript",
+    "revise",
+    "--book-run-id",
+    "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "--chapter",
+    "4",
+    "--expected-version",
+    "27",
+    "--idempotency-key",
+    "wp-nf-author-first-20261017:chapter-04:length-repair-01",
+    "--reason",
+    "首稿按HAN_CHARACTERS_V1为3799，未达冻结4000—5000汉字。保留原稿，经原生chapter-length-repair.v1全章修订到4400—4700汉字，冻结上下限不变。保留第三章带回木料已实际用于支护、旧入口仍封闭、旧石承托不拆、只清出两掌长缝口且尚未补缝放水的行动后果。补足手掌酸痛对握持交接的影响、许照川由追求表面齐整转向看实际承托的自主选择、陆守拙对支护受限使用的确认与两人的具体反应。压缩跨章重复的工具清点、擦洗和吃饭段落，不靠重复工法解释凑字；不改变本组终点，不提前补好渠缝或引入未登场人物与未经学习的修为。仅作技术性工作稿修订使用，不授予作者正式选稿或接纳。",
+    "--foreground",
+    "--work-window-seconds",
+    "300"
+  ]
+}

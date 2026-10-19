@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "<stdin>", line 5, in <module>
+  File "/tmp/nf-author-first-20261017/verify_real_history.py", line 34, in verify
+    old_compilation, = [r for r in before["tables"]["authority_capability_pack_compilation"] if r["compiled_asset_version_id"] == identity]
+                                   ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyError: 'authority_capability_pack_compilation'

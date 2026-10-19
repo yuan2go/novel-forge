@@ -1,0 +1,26 @@
+{
+  "evidence_class": "READ_ONLY_ACTUAL_SCHEMA_LOCAL_BOUND_INSPECTION",
+  "read_at": "2026-10-17T20:14:42.504416+00:00",
+  "local_bound_inspection": "PASS",
+  "general_json_schema_meta_validation": "NOT_RUN; optional jsonschema is not installed in existing runtime; initial import failure retained as tooling condition",
+  "not_a_general_satisfiability_or_upstream_health_proof": true,
+  "no_provider_call_or_prose_created": true,
+  "checks": [
+    {
+      "operation_id": "cf59d8b5-8b5e-4e3f-b884-66b7e238d2a9",
+      "schema_sha256": "sha256:9f3e21d33d06456a9923b333be93a376f4b9e8d8e691eb34c4bb0b9ad8c6f2a4",
+      "schema_bytes": 8664,
+      "dictionary_nodes_checked": 61,
+      "obvious_local_bound_conflicts": [],
+      "process_status_at_read": "RUNNING"
+    },
+    {
+      "operation_id": "6e6a32f7-cd51-4cdc-bbc5-ca51aa04c9cf",
+      "schema_sha256": "sha256:9f3e21d33d06456a9923b333be93a376f4b9e8d8e691eb34c4bb0b9ad8c6f2a4",
+      "schema_bytes": 8664,
+      "dictionary_nodes_checked": 61,
+      "obvious_local_bound_conflicts": [],
+      "process_status_at_read": "FAILED"
+    }
+  ]
+}

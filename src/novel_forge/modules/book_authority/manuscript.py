@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from hashlib import sha256
+from json import dumps
 from typing import Any
 
 from novel_forge.modules.chapter_authority.author_editor import _session_ref, source_draft_content, text_hash
@@ -110,25 +111,39 @@ def blocking_working_cli_outcomes(cursor: Any, *, project_id: str, book_id: str,
     return [item for item in outcomes if item["operation_id"] not in optional]
 
 
-def _require_workflow_checkpoint(uow: Any, book: dict[str, Any], expected_version: int) -> dict[str, Any]:
+def _require_workflow_checkpoint(uow: Any, book: dict[str, Any], expected_version: int, *, working_selection: bool = False) -> dict[str, Any]:
     uow.cursor.execute("SELECT book_id FROM authority_book WHERE book_id=%s FOR UPDATE", [book["book_id"]])
     uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s FOR UPDATE", [book["book_run_id"]])
     current = uow.cursor.fetchone()[0]
     if current["version"] != expected_version or current["active_chapter_request_id"] or current["state"] not in {"READY", "PAUSED"}:
         raise KernelError("AUTHOR_WORKFLOW_CHECKPOINT_REQUIRED", "Switch only at a settled idle Book checkpoint; active work retains its frozen policy and original effects")
-    uow.cursor.execute("""SELECT 1 FROM authority_external_effect e JOIN authority_operation op USING(operation_id)
+    uow.cursor.execute("""SELECT e.external_effect_id,op.operation_id FROM authority_external_effect e JOIN authority_operation op USING(operation_id)
         WHERE op.project_id=%s AND (e.request_payload #>> '{_production_execution,book_id}'=%s
             OR op.root_operation_id=%s OR op.root_operation_id IN (
                 SELECT chapter_root_operation_id FROM authority_book_chapter_request WHERE book_run_id=%s))
           AND NOT authority_generation_isolated(e.external_effect_id)
-          AND e.status IN ('READY','DISPATCHING','DISPATCHED','UNKNOWN','FAILED_RETRYABLE','RECONCILIATION_REQUIRED','CANCELLATION_REQUESTED') LIMIT 1""",
+          AND e.status IN ('READY','DISPATCHING','DISPATCHED','UNKNOWN','FAILED_RETRYABLE','RECONCILIATION_REQUIRED','CANCELLATION_REQUESTED')""",
         [book["project_id"], book["book_id"], book["root_operation_id"], book["book_run_id"]])
-    if uow.cursor.fetchone():
+    blockers = [dict(external_effect_id=row[0],operation_id=row[1]) for row in uow.cursor.fetchall()]
+    if working_selection:
+        from novel_forge.modules.story_planning_runtime.preparation_recovery import retired_pre_submit_main
+        from novel_forge.modules.story_planning_runtime.fresh_preparation_custody import retired_paused_intent
+        blockers = [item for item in blockers if not retired_pre_submit_main(uow,
+            project_id=book['project_id'],book_id=book['book_id'],effect_id=item['external_effect_id'])
+            and not retired_paused_intent(uow, project_id=book['project_id'],book_id=book['book_id'],
+                book_run_id=book['book_run_id'],effect_id=item['external_effect_id'])]
+        blockers = blocking_working_cli_outcomes(uow.cursor, project_id=book['project_id'],book_id=book['book_id'],
+            book_run_id=book['book_run_id'],outcomes=blockers)
+    if blockers:
         raise KernelError("AUTHOR_WORKFLOW_RECONCILIATION_REQUIRED", "Reconcile original unsettled effects before switching generation policy; existing manuscripts remain readable")
     from novel_forge.modules.production_execution.execution_template import BOOK_USAGE_SQL
-    uow.cursor.execute("SELECT 1 FROM authority_budget_reservation r LEFT JOIN authority_external_effect e USING(external_effect_id) WHERE r.project_id=%s AND r.status='HELD_UNKNOWN' AND NOT authority_generation_isolated(e.external_effect_id) AND " + BOOK_USAGE_SQL + " LIMIT 1",
+    uow.cursor.execute("SELECT COALESCE(r.operation_id,e.operation_id) FROM authority_budget_reservation r LEFT JOIN authority_external_effect e USING(external_effect_id) WHERE r.project_id=%s AND r.status='HELD_UNKNOWN' AND NOT authority_generation_isolated(e.external_effect_id) AND " + BOOK_USAGE_SQL,
         [book["project_id"], book["book_id"], book["book_id"], book["book_id"]])
-    if uow.cursor.fetchone():
+    budgets = [dict(operation_id=row[0]) for row in uow.cursor.fetchall()]
+    if working_selection:
+        budgets = blocking_working_cli_outcomes(uow.cursor, project_id=book['project_id'],book_id=book['book_id'],
+            book_run_id=book['book_run_id'],outcomes=budgets)
+    if budgets:
         raise KernelError("AUTHOR_WORKFLOW_RECONCILIATION_REQUIRED", "Original unknown consumption remains reserved; reconcile its receipt before adopting a successor generation policy")
     return current
 
@@ -221,7 +236,8 @@ def _optional_document(uow, project_id, logical_ref):
 
 
 def select_working_candidate(authority, book_run_id, *, chapter, candidate_asset_version_id,
-                             expected_version, idempotency_key, reason, principal):
+                             expected_version, idempotency_key, reason, principal,
+                             length_revalidation_root_operation_id=""):
     from novel_forge.modules.chapter_authority.author_editor import require_source
     from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
     book = authority.require(book_run_id)
@@ -230,37 +246,50 @@ def select_working_candidate(authority, book_run_id, *, chapter, candidate_asset
     if not reason.strip() or type(chapter) is not int or chapter < 1:
         raise KernelError("MANUSCRIPT_WORK_SELECTION_INVALID", "Require an exact chapter and work revision reason")
     def commit(uow, operation_id, checkpoint):
-        current = _require_workflow_checkpoint(uow, book, expected_version)
+        current = _require_workflow_checkpoint(uow, book, expected_version, working_selection=True)
         if effective_workflow(uow.cursor, current) != AUTHOR_WORKFLOW or chapter <= current["accepted_through_chapter"] or chapter > current["current_chapter"]:
             raise KernelError("MANUSCRIPT_WORK_SELECTION_INVALID", "Work selection requires a delivered unaccepted chapter in this author-first run")
         source = selected_source(uow, current, chapter)
         scope = {key: current[key] for key in ("project_id", "workspace_id", "book_id")}
         scope["chapter"] = chapter
         candidate = require_source(uow, scope, candidate_asset_version_id)
+        result_revalidation = None
         if candidate.asset_type == "author_edit_candidate":
+            if length_revalidation_root_operation_id:
+                raise KernelError("MANUSCRIPT_LENGTH_REVALIDATION_INVALID", "Completed result reuse requires a native length revision")
             if candidate.content.get("base_asset_version_id") != source.asset_version_id or candidate.content.get("base_asset_hash") != source.content_hash:
                 raise KernelError("MANUSCRIPT_WORK_SELECTION_STALE", "Working candidate must revise this exact current source")
             if candidate.content.get("source_provenance", {}).get("kind") != "ASSISTANT_REVISION_PROPOSAL":
                 raise KernelError("MANUSCRIPT_WORK_SELECTION_INVALID", "Human author input uses its separate author choice")
         else:
-            from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION, CONTRACT, require_working_revision_frontier
+            from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSIONS, REGENERATION_ROOT, CONTRACT, require_working_revision_frontier
             uow.cursor.execute("""SELECT to_jsonb(root) FROM authority_operation_output_asset output
                 JOIN authority_operation child USING(operation_id)
                 JOIN authority_operation root ON root.operation_id=child.root_operation_id
                 WHERE output.asset_version_id=%s AND output.role='primary' AND child.status='SUCCEEDED'
-                  AND child.project_id=%s AND child.definition_name IN ('chapter.revision.apply','chapter.candidate.select_best')""",
+                  AND child.project_id=%s AND child.definition_name IN ('chapter.revision.apply','chapter.candidate.select_best','chapter.draft.generate')""",
                 [candidate.asset_version_id, current["project_id"]])
             origins = uow.cursor.fetchall()
             origin = origins[0][0] if len(origins) == 1 else {}
             binding = (origin.get("command_payload", {}).get("preparation_report") or {}).get("working_revision") or {}
             if (candidate.asset_type not in {"draft_version", "best_draft_candidate"}
-                    or origin.get("definition_version") != ROOT_VERSION
+                    and not (candidate.asset_type == "draft_chapter" and origin.get("definition_version") == REGENERATION_ROOT)
+                    or origin.get("definition_version") not in ROOT_VERSIONS
                     or origin.get("status") in {"CANCELLED", "CANCELLATION_REQUESTED"}
                     or binding.get("contract_version") != CONTRACT or binding.get("book_run_id") != book_run_id
                     or binding.get("source_asset_version_id") != source.asset_version_id
                     or binding.get("source_content_hash") != source.content_hash):
                 raise KernelError("MANUSCRIPT_WORK_SELECTION_STALE", "Native working revision must bind this exact current source")
             require_working_revision_frontier(uow, root=origin, book_run_id=book_run_id)
+            if length_revalidation_root_operation_id:
+                from novel_forge.modules.chapter_authority.working_revision import revalidate_completed_length_candidate
+                if (candidate.asset_type != "draft_version" or not candidate.content.get("chapter_length_repair_scope")
+                        or origin["operation_id"] != length_revalidation_root_operation_id):
+                    raise KernelError("MANUSCRIPT_LENGTH_REVALIDATION_INVALID", "Reuse must bind this exact native length revision")
+                result_revalidation = revalidate_completed_length_candidate(uow, root_operation_id=origin["operation_id"],
+                    book_run_id=book_run_id, principal=principal)
+                if not result_revalidation or result_revalidation["candidate_asset_version_id"] != candidate.asset_version_id:
+                    raise KernelError("MANUSCRIPT_LENGTH_REVALIDATION_REJECTED", "Saved length correction requires supported comparison and preservation")
         validate_complete_prose(source_draft_content(candidate))
         require_prose_propagation(uow, current, candidate)
         session = _optional_document(uow, current["project_id"], _session_ref(scope))
@@ -273,6 +302,8 @@ def select_working_candidate(authority, book_run_id, *, chapter, candidate_asset
             "source_content_hash": source.content_hash, "selected_asset_version_id": candidate.asset_version_id,
             "selected_content_hash": candidate.content_hash, "actor_id": principal.principal_id, "reason": reason,
             "authority": "AUTHORIZED_WORK_VERSION_USAGE", "author_selection": "NOT_GRANTED", "formal_acceptance": "NOT_GRANTED"}
+        if result_revalidation:
+            content["result_revalidation"] = result_revalidation
         selection = uow.repositories.asset_documents.materialize_output(AuthorityAssetWriteCommand(
             operation_id=operation_id, project_id=current["project_id"], asset_id=previous.asset_id if previous else "book-work-selection:" + operation_id,
             asset_type="book_working_manuscript_selection", schema_version=content["version"], logical_ref=_working_selection_ref(current, chapter),
@@ -283,10 +314,13 @@ def select_working_candidate(authority, book_run_id, *, chapter, candidate_asset
         checkpoint("after_working_manuscript_selection")
         return {"book_run_id": book_run_id, "chapter": chapter, "selection_asset_version_id": selection.asset_version_id,
             "source_asset_version_id": candidate.asset_version_id, "author_selection": "NOT_GRANTED", "formal_acceptance": "NOT_GRANTED"}
+    payload = {"chapter": chapter, "candidate_asset_version_id": candidate_asset_version_id,
+        "expected_version": expected_version, "reason": reason}
+    if length_revalidation_root_operation_id:
+        payload["length_revalidation_root_operation_id"] = length_revalidation_root_operation_id
     return authority._execute_mutation(book=book, action="working_manuscript_select", event_type="book.working_manuscript.selected",
         idempotency_key=idempotency_key, actor_id=principal.principal_id, trace_id=idempotency_key, correlation_id=book["root_operation_id"],
-        causation_id=book["root_operation_id"], payload={"chapter": chapter, "candidate_asset_version_id": candidate_asset_version_id,
-            "expected_version": expected_version, "reason": reason}, handler=commit,
+        causation_id=book["root_operation_id"], payload=payload, handler=commit,
         input_assets=authority.resolve_asset_refs(project_id=book["project_id"], asset_version_ids=(candidate_asset_version_id,)))
 
 
@@ -360,13 +394,13 @@ def resolve_working_source(uow: Any, book: dict[str, Any], chapter: int, *, pref
 
 
 def _working_dependency_binding(book, selection, source, root):
-    from novel_forge.modules.chapter_authority.working_revision import CONTRACT, ROOT_VERSION
+    from novel_forge.modules.chapter_authority.working_revision import CONTRACT, ROOT_VERSIONS
     binding = (root.get("command_payload", {}).get("preparation_report") or {}).get("working_revision") or {}
     chapter = source_draft_content(source)["chapter"]
     refs = {row["asset_version_id"]: row["content_hash"] for row in root.get("input_asset_snapshot", [])}
     inputs = binding.get("source_inputs") or {}
     previous = binding.get("previous_sources", [])
-    if (root.get("definition_name") != "chapter.slice.run" or root.get("definition_version") != ROOT_VERSION
+    if (root.get("definition_name") != "chapter.slice.run" or root.get("definition_version") not in ROOT_VERSIONS
             or root.get("definition_snapshot", {}).get("policy", {}).get("working_revision_contract") != CONTRACT
             or root.get("status") in {"CANCELLED", "CANCELLATION_REQUESTED"}
             or any(root.get(key) != book[key] for key in ("project_id", "workspace_id"))
@@ -430,7 +464,7 @@ def _selected_working_dependencies(uow, book, source):
         JOIN authority_operation child USING(operation_id)
         JOIN authority_operation root ON root.operation_id=child.root_operation_id
         WHERE output.asset_version_id=%s AND output.role='primary' AND child.status='SUCCEEDED'
-          AND child.project_id=%s AND child.definition_name IN ('chapter.revision.apply','chapter.candidate.select_best')""",
+          AND child.project_id=%s AND child.definition_name IN ('chapter.revision.apply','chapter.candidate.select_best','chapter.draft.generate')""",
         [source.asset_version_id, book["project_id"]])
     origins = uow.cursor.fetchall()
     if len(origins) != 1:
@@ -513,13 +547,15 @@ def working_dependency_changes(uow: Any, book: dict[str, Any]) -> tuple[list[Any
 
 def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
                            projection_policy: Any = "FROM_PROFILE", scheduling_policy: Any = None) -> dict[str, Any]:
-    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, LONGFORM_POLICY_VERSIONS, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, RESOLVED_POLICY_VERSIONS, WORKING_SCHEDULE_POLICY, freeze_source_history, project_working_sources, working_instruction, working_prose_policy
+    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, LONGFORM_POLICY_VERSIONS, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, RESOLVED_POLICY_VERSIONS, RETRIEVAL_POLICY_VERSION, WORKING_SCHEDULE_POLICY, freeze_source_history, project_working_sources, working_instruction, working_prose_policy
 
     schedule_policy = scheduling_policy
     if projection_policy == "FROM_PROFILE":
         profile_id = book.get("production_profile_version")
         profile = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=profile_id) if profile_id else None
         projection_policy = working_prose_policy(profile.content) if profile else None
+        from .working_policy import selected_working_policy
+        projection_policy = selected_working_policy(uow, book, projection_policy, target_chapter=chapter)
         schedule_policy = profile.content.get("working_schedule_policy") if profile else None
     projection_policy = working_prose_policy({"working_prose_policy": projection_policy})
     if schedule_policy is not None and (schedule_policy != WORKING_SCHEDULE_POLICY or not projection_policy
@@ -532,13 +568,16 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     if projection_policy and projection_policy["version"] == PROGRESSION_POLICY_VERSION and chapter - 1 > history:
         raise KernelError("WORKING_PROSE_HISTORY_INCOMPLETE", "Progression requires every predecessor source within its declared history allocation")
     longform = bool(projection_policy and projection_policy["version"] in LONGFORM_POLICY_VERSIONS)
+    resolved = []
     for number in range(1 if longform else max(1, chapter - history), chapter):
         resolution = None
         if projection_policy and projection_policy["version"] in RESOLVED_POLICY_VERSIONS:
             source, resolution = resolve_working_source(uow, book, number)
         else:
             source = selected_source(uow, book, number)
-        require_prose_propagation(uow, book, source)
+        resolved.append((number, source, resolution))
+    require_prose_propagation_batch(uow, book, [source for _, source, _ in resolved])
+    for number, source, resolution in resolved:
         text = source_draft_content(source)["text"]
         rows.append({"chapter": number, "asset_version_id": source.asset_version_id,
             "content_hash": source.content_hash, "text_hash": text_hash(text),
@@ -555,9 +594,11 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
     memory_packet = None
     if memory_enabled:
         from novel_forge.modules.narrative_state.working_memory import compile_working_memory, bind_packet_coverage
+        retrieval = projection_policy["version"] == RETRIEVAL_POLICY_VERSION
         memory_packet = compile_working_memory(rows, queries=projection_policy["queries"],
-                                               max_characters=projection_policy["max_characters"] // 3 if projection_policy["max_characters"] is not None else max(1, sum(len(row["text"]) for row in rows)),
-                                               dependency_closed=projection_policy["version"] == "working-prose-projection.v7")
+                                               max_characters=None if retrieval else projection_policy["max_characters"] // 3 if projection_policy["max_characters"] is not None else max(1, sum(len(row["text"]) for row in rows)),
+                                               dependency_closed=projection_policy["version"] in {"working-prose-projection.v7", RETRIEVAL_POLICY_VERSION},
+                                               recent_complete_from=chapter - projection_policy["recent_complete_chapters"] if retrieval else None)
     source_history = None
     if projection_policy:
         rows = project_working_sources(rows, target_chapter=chapter, policy=projection_policy, memory=memory_packet)
@@ -674,24 +715,42 @@ def _require_scope_proposal_review(uow, book, source):
         "Keep the complete expanded-scope candidate readable; exact-source preservation is required before downstream use")
 
 
-def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any) -> None:
+def _prose_reviews(uow, book, source_ids):
+    predicate = "=ANY(%s)" if isinstance(source_ids, list) else "=%s"
+    uow.cursor.execute(f"""SELECT v.asset_version_id,v.content FROM authority_operation_output_asset output
+        JOIN authority_operation operation USING(operation_id)
+        JOIN authority_asset_version v USING(asset_version_id)
+        JOIN authority_asset asset ON asset.asset_id=v.asset_id
+        WHERE operation.project_id=%s AND operation.status='SUCCEEDED'
+          AND asset.asset_type IN ('review_report','re_review_report')
+          AND COALESCE(v.content->>'revision_version_id',v.content->>'target_asset_version_id'){predicate}
+        ORDER BY operation.created_at""", [book["project_id"], source_ids])
+    return uow.cursor.fetchall()
+
+
+def require_prose_propagation_batch(uow, book, sources):
+    if not sources:
+        return
+    lineages = {source.asset_version_id: tuple(_prose_source_lineage(uow, book, source)) for source in sources}
+    aliases = list(dict.fromkeys(identity for lineage in lineages.values() for version in lineage
+        for identity in (version.asset_version_id, source_draft_content(version).get("selected_source_asset_version_id") or version.asset_version_id)))
+    reviews = {identity: [] for identity in aliases}
+    for identity, content in _prose_reviews(uow, book, aliases):
+        reviews[content.get("revision_version_id") or content.get("target_asset_version_id")].append((identity, content))
+    for source in sources:
+        require_prose_propagation(uow, book, source, lineage=lineages[source.asset_version_id], review_index=reviews)
+
+
+def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any, *, lineage=None, review_index=None) -> None:
     from novel_forge.modules.review.diagnostics import major_contradiction_codes, prose_hash
     _require_scope_proposal_review(uow, book, source)
     pending, seen_reviews = {}, {}
-    for version in _prose_source_lineage(uow, book, source):
+    for version in lineage if lineage is not None else _prose_source_lineage(uow, book, source):
         content = source_draft_content(version)
         aliases = list(dict.fromkeys([version.asset_version_id, content.get("selected_source_asset_version_id") or version.asset_version_id]))
         reviews = {}
         for source_id in aliases:
-            uow.cursor.execute("""SELECT v.asset_version_id,v.content FROM authority_operation_output_asset output
-                JOIN authority_operation operation USING(operation_id)
-                JOIN authority_asset_version v USING(asset_version_id)
-                JOIN authority_asset asset ON asset.asset_id=v.asset_id
-                WHERE operation.project_id=%s AND operation.status='SUCCEEDED'
-                  AND asset.asset_type IN ('review_report','re_review_report')
-                  AND COALESCE(v.content->>'revision_version_id',v.content->>'target_asset_version_id')=%s
-                ORDER BY operation.created_at""", [book["project_id"], source_id])
-            reviews.update(uow.cursor.fetchall())
+            reviews.update(_prose_reviews(uow, book, source_id) if review_index is None else review_index[source_id])
         embedded = content.get("selected_review")
         if isinstance(embedded, dict):
             reviews[embedded.get("selection_review_source_asset_version_id")] = embedded
@@ -749,14 +808,16 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
         if not current:
             raise KernelError("MANUSCRIPT_DEPENDENCY_CHANGED", "A selected predecessor changed; retain the result and rebind only affected continuation")
     projected_sources = {row["chapter"]: row for row in snapshot["sources"]} if enhanced else {}
+    source_documents = {item["asset_version_id"]: uow.repositories.asset_documents.require(
+        project_id=book["project_id"], asset_version_id=item["asset_version_id"]) for item in history_sources}
+    if require_current:
+        require_prose_propagation_batch(uow, book, list(source_documents.values()))
     for item in history_sources:
         if require_current and enhanced and snapshot["projection_policy"]["version"] in RESOLVED_POLICY_VERSIONS:
             _, resolution = resolve_working_source(uow, book, item["chapter"])
             if resolution != item["source_resolution"]:
                 raise KernelError("MANUSCRIPT_DEPENDENCY_CHANGED", "Effective source selection lineage changed after freeze")
-        source = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=item["asset_version_id"])
-        if require_current:
-            require_prose_propagation(uow, book, source)
+        source = source_documents[item["asset_version_id"]]
         if source.content_hash != item["content_hash"] or text_hash(source_draft_content(source)["text"]) != item["text_hash"]:
             raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working manuscript source failed its exact version binding")
         if snapshot.get("working_memory"):
@@ -780,6 +841,84 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
         if enhanced and (len(source_draft_content(source)["text"]) != item["source_characters"]
                 or any(source_draft_content(source)["text"][p["start"]:p["end"]] != p["text"] for p in projected_sources.get(item["chapter"], {}).get("passages", []))):
             raise KernelError("MANUSCRIPT_SOURCE_HASH_INVALID", "Working passage does not match its exact source range")
+
+
+def _current_planning_correction(uow, *, book, operation, request, refs, target):
+    evidence = request.get("change_evidence_version_ids") or []
+    if (operation["definition_name"] != "story_planning.generate"
+            or target != writing_frontier(book) or target <= book.get("accepted_through_chapter", target)
+            or book.get("state") not in {"READY", "PAUSED"} or book.get("active_chapter_request_id")
+            or not operation.get("actor_id") or request.get("actor_id") != operation["actor_id"]
+            or not evidence or any(version not in refs for version in evidence)
+            or request.get("generator_operation_name") not in {"chapter_group_plan.generate", "chapter_plan.generate"}):
+        return False
+    uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_asset_version v
+        JOIN authority_asset a USING(asset_id)
+        JOIN authority_operation_output_asset output USING(asset_version_id)
+        JOIN authority_operation author ON author.operation_id=output.operation_id
+        JOIN story_plan_binding binding ON binding.project_id=a.project_id AND binding.book_id=%s
+          AND binding.asset_version_id=v.content->>'target_plan_version_id'
+        LEFT JOIN active_story_plan_version active ON active.binding_id=binding.binding_id
+        JOIN authority_asset_version plan_version ON plan_version.asset_version_id=binding.asset_version_id
+        WHERE v.asset_version_id=ANY(%s) AND a.project_id=%s AND author.workspace_id=%s
+          AND a.asset_type='replan_request' AND v.lifecycle='ACTIVE' AND v.eligibility='ELIGIBLE' AND v.governance='CLEAR'
+          AND author.definition_name='planning.change_request.author' AND author.status='SUCCEEDED'
+          AND author.actor_id=%s AND output.role='primary'
+          AND v.content->>'contract_version'='operator-planning-change-request.v1'
+          AND v.content->>'authority_boundary'='FUTURE_PLAN_PROPOSAL_ONLY'
+          AND v.content->>'book_id'=%s AND v.content->>'accepted_through_chapter'=%s
+          AND v.content->>'affected_scope'=binding.contract_type
+          AND ((binding.freshness='CURRENT' AND active.binding_id IS NOT NULL) OR (binding.freshness='IMPACTED' AND EXISTS(
+            SELECT 1 FROM authority_plan_change_proposal correction
+            JOIN active_story_plan_version parent ON parent.project_id=correction.project_id
+              AND parent.book_id=correction.book_id AND parent.asset_version_id=correction.proposed_asset_version_id
+            JOIN authority_operation activation ON activation.operation_id=correction.activation_operation_id
+            WHERE correction.proposal_id=v.content->>'upstream_plan_change_proposal_id'
+              AND correction.project_id=a.project_id AND correction.book_id=binding.book_id
+              AND correction.status='ACTIVE' AND correction.target_contract_type='CHAPTER_GROUP'
+              AND authority_working_group_prefix_preserved(correction.project_id,correction.book_id,
+                correction.proposed_asset_version_id,binding.parent_version_id,activation.actor_id,activation.workspace_id,%s)
+              AND activation.status='SUCCEEDED' AND activation.actor_id=author.actor_id
+              AND EXISTS(SELECT 1 FROM authority_book_manuscript_delivery delivered
+                JOIN authority_book_chapter_request original USING(chapter_request_id)
+                WHERE delivered.book_run_id=%s AND delivered.chapter_number=%s
+                  AND original.chapter_plan_version=binding.asset_version_id
+                  AND original.parent_group_version_id=binding.parent_version_id)
+              AND NOT EXISTS(SELECT 1 FROM active_story_plan_version competing
+                WHERE competing.project_id=binding.project_id AND competing.book_id=binding.book_id
+                  AND competing.logical_key=binding.logical_key))))
+          AND binding.logical_key=%s
+          AND binding.execution_scope IN ('PLANNED','FROZEN')
+          AND ((binding.contract_type='CHAPTER_GROUP' AND %s='chapter_group_plan.generate'
+              AND %s BETWEEN (plan_version.content->'chapter_range'->>0)::integer AND (plan_version.content->'chapter_range'->>1)::integer)
+            OR (binding.contract_type='CHAPTER' AND %s='chapter_plan.generate'
+              AND (plan_version.content->>'chapter_number')::integer=%s))
+          AND v.content_hash=%s::jsonb->>v.asset_version_id
+          AND NOT EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancellation
+            WHERE cancellation.project_id=%s AND %s=cancellation.formation_run_id || ':production'))""",
+        [book["book_id"], evidence, book["project_id"], book["workspace_id"], operation["actor_id"],
+         book["book_id"], str(book["accepted_through_chapter"]), target, book["book_run_id"], target, request.get("logical_key"), request["generator_operation_name"], target,
+         request["generator_operation_name"], target, dumps(refs), book["project_id"], book["stable_idempotency_key"]])
+    return uow.cursor.fetchone() == (True,)
+
+
+def _current_regeneration_history(uow, *, book, operation, request, target):
+    from novel_forge.modules.chapter_authority.working_regeneration import ROOT_VERSION
+    from novel_forge.modules.chapter_authority.working_revision import require_working_revision_frontier
+    if target != writing_frontier(book):
+        return False
+    uow.cursor.execute("""SELECT to_jsonb(root) FROM authority_operation child
+        JOIN authority_operation root ON root.operation_id=child.root_operation_id
+        WHERE child.operation_id=%s AND child.project_id=%s AND child.workspace_id=%s
+          AND root.project_id=child.project_id AND root.workspace_id=child.workspace_id
+          AND root.actor_id=child.actor_id""", [operation['operation_id'], operation['project_id'], operation['workspace_id']])
+    row = uow.cursor.fetchone()
+    root = row[0] if row else {}
+    if (root.get("definition_version") != ROOT_VERSION or root.get("actor_id") != operation.get("actor_id")
+            or root.get("command_payload", {}).get("preparation_report") != request.get("preparation_report")):
+        return False
+    require_working_revision_frontier(uow, root=root, book_run_id=book["book_run_id"])
+    return True
 
 
 def historical_working_inputs(uow: Any, operation: dict[str, Any]) -> tuple[str, frozenset[str]]:
@@ -807,10 +946,13 @@ def historical_working_inputs(uow: Any, operation: dict[str, Any]) -> tuple[str,
         raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Historical working inputs require the exact author-first Book")
     book = {**row[0], "author_workflow": AUTHOR_WORKFLOW}
     target = working["target_chapter"]
-    if (not isinstance(target, int) or target != writing_frontier(book) + 1
+    regeneration = _current_regeneration_history(uow, book=book, operation=operation, request=request, target=target) if name.startswith("chapter.") else False
+    if (type(target) is not int or target != writing_frontier(book) + 1
+            and not _current_planning_correction(uow, book=book, operation=operation, request=request, refs=refs, target=target)
+            and not regeneration
             or any(not isinstance(source.get("chapter"), int) or not 0 < source["chapter"] < target for source in working["sources"])):
         raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Only the selected preceding writing history can be read")
-    if name.startswith("chapter."):
+    if name.startswith("chapter.") and not regeneration:
         uow.cursor.execute("""SELECT r.command_payload->'preparation_report'->'working_manuscript'
             FROM authority_book_chapter_request r JOIN authority_operation o
               ON o.root_operation_id=r.chapter_root_operation_id
@@ -828,6 +970,9 @@ def historical_working_inputs(uow: Any, operation: dict[str, Any]) -> tuple[str,
 def require_historical_input_scope_repair(cursor: Any, source: dict[str, Any], policy: dict[str, Any], target_version: str) -> bool:
     if policy.get("contract_version") != "chapter-historical-input-scope-repair.v1":
         return False
+    if policy.get('input_scope_projection') == 'current-working-root-owner.v1':
+        _require_current_regeneration_scope_repair(cursor, source, policy, target_version)
+        return True
     working = (source["command_payload"].get("preparation_report") or {}).get("working_manuscript")
     refs = {item["asset_version_id"] for item in source["input_asset_snapshot"]}
     if (source["definition_name"] != "chapter.memo.generate" or source["definition_version"] != "3.10.0"
@@ -1066,7 +1211,7 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
             [book_run_id, project_id, asset_version_id, typed, payload.get("operation_id"), typed, definition, output_key])
         row = uow.cursor.fetchone()
         if row is None:
-            from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION, CONTRACT
+            from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSIONS, CONTRACT
             uow.cursor.execute("""SELECT book.book_id,book.workspace_id,(root.command_payload->>'chapter')::integer
                 FROM authority_book_production book
                 JOIN authority_operation root ON root.command_payload#>>'{preparation_report,working_revision,book_run_id}'=book.book_run_id
@@ -1074,19 +1219,22 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
                 JOIN authority_operation_output_asset output ON output.operation_id=op.operation_id
                 WHERE book.book_run_id=%s AND book.project_id=%s AND root.project_id=book.project_id
                   AND root.workspace_id=book.workspace_id AND root.command_payload->>'book_id'=book.book_id
-                  AND root.definition_name='chapter.slice.run' AND root.definition_version=%s
+                  AND root.definition_name='chapter.slice.run' AND root.definition_version=ANY(%s)
                   AND root.command_payload#>>'{preparation_report,working_revision,contract_version}'=%s
                   AND op.project_id=book.project_id AND op.workspace_id=book.workspace_id
                   AND output.asset_version_id=%s AND (%s IS TRUE OR op.operation_id=%s)
                   AND (%s IS FALSE OR (op.status='SUCCEEDED' AND output.role='primary'
                     AND op.definition_name=%s AND output.output_key=%s))""",
-                [book_run_id, project_id, ROOT_VERSION, CONTRACT, asset_version_id,
+                [book_run_id, project_id, list(ROOT_VERSIONS), CONTRACT, asset_version_id,
                  typed, payload.get("operation_id"), typed, definition, output_key])
             row = uow.cursor.fetchone()
         if typed:
-            if (row is None or source.content.get("project_id") != project_id
-                    or source.content.get("chapter") != row[2]):
+            if (row is None or source.content.get("chapter") != row[2]
+                    or any(field in source.content and source.content[field] != expected
+                        for field, expected in (("project_id", project_id), ("workspace_id", row[1]), ("book_id", row[0])))):
                 raise KernelError("MANUSCRIPT_CANDIDATE_SCOPE_INVALID", "Retained output belongs to another source or Book")
+            if canonical_hash(source.content) != source.content_hash:
+                raise KernelError("MANUSCRIPT_CANDIDATE_HASH_INVALID", "Retained typed source bytes changed")
             validate_complete_prose(source.content)
             return {"version": "retained-manuscript-candidate.v1", "kind": "RETAINED_TYPED_CANDIDATE",
                 "project_id": project_id, "book_id": row[0], "workspace_id": row[1], "book_run_id": book_run_id,
@@ -1120,3 +1268,42 @@ def require_retained_model_candidate(database_url, *, project_id, book_run_id, a
             "source_external_effect_id": payload.get("external_effect_id", ""), "source_effect_status": effect[0] if effect else "UNKNOWN",
             "source_failure_codes": [item[0] for item in failures if item[0]],
             "publication": "NOT_AUTHORIZED"}
+
+
+def _require_current_regeneration_scope_repair(cursor, source, policy, target_version):
+    from types import SimpleNamespace
+    from novel_forge.storage.authority_repositories import AuthorityRepositories
+
+    if (source['definition_name'] != 'chapter.execution_intent.prepare' or source['definition_version'] != '3.10.0'
+            or target_version != '3.10.0' or source['status'] != 'FAILED_FINAL'
+            or not policy.get('release_sha') or policy['release_sha'] == source['definition_snapshot'].get('commit_sha')
+            or policy.get('input_snapshot') != source['input_asset_snapshot']):
+        raise KernelError('HISTORICAL_INPUT_SCOPE_REPAIR_INVALID', 'Retain the exact unsent current working Intent failure')
+    cursor.execute('SELECT status,result FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number', [source['operation_id']])
+    attempts = cursor.fetchall()
+    if (len(attempts) != 1 or attempts[0][0] != 'FAILED_FINAL'
+            or attempts[0][1].get('error_code') != 'MANUSCRIPT_CONTEXT_INVALID'
+            or attempts[0][1].get('error_message') != 'MANUSCRIPT_CONTEXT_INVALID: Only the selected preceding writing history can be read'):
+        raise KernelError('HISTORICAL_INPUT_SCOPE_REPAIR_INVALID', 'Retain the one original owner-projection failure')
+    cursor.execute('''SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_operation_output_asset WHERE operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_attempt_capability_pack_snapshot WHERE operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_saga_step_successor WHERE successor_operation_id=%s),
+        EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+          WHERE attempt.operation_id=%s AND lease.status='HELD')''', [source['operation_id']] * 6)
+    if any(cursor.fetchone()):
+        raise KernelError('HISTORICAL_INPUT_SCOPE_REPAIR_INVALID', 'Preserve prepared, dispatched, leased or previously succeeded work')
+    uow = SimpleNamespace(cursor=cursor, repositories=AuthorityRepositories(cursor))
+    book_id, history = historical_working_inputs(uow, source)
+    if book_id != source['command_payload']['book_id'] or not history:
+        raise KernelError('HISTORICAL_INPUT_SCOPE_REPAIR_INVALID', 'The repaired native owner and all original historical source hashes must pass')
+    cursor.execute('''SELECT d.deployment_id FROM authority_capability_pack_activation activation
+        JOIN authority_capability_pack_deployment d ON d.deployment_id=activation.active_deployment_id
+        JOIN authority_capability_pack_compilation compilation USING(compilation_id)
+        WHERE activation.project_id=%s AND activation.workspace_id=%s AND activation.book_id=%s
+          AND activation.workflow_definition_ref='chapter_authority_slice@3.10.0'
+          AND d.deployment_id=%s AND d.deployment_status='ACTIVE' AND compilation.release_sha=%s''',
+        [source['project_id'], source['workspace_id'], book_id, policy.get('target_deployment_id'), policy['release_sha']])
+    if cursor.fetchone() != (policy.get('target_deployment_id'),):
+        raise KernelError('HISTORICAL_INPUT_SCOPE_REPAIR_INVALID', 'Require the exact current deployed owner projection correction')

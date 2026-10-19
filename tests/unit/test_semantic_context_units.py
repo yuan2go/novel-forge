@@ -178,7 +178,7 @@ def test_capacity_fast_path_preserves_original_and_runs_no_model_but_validates_q
     assert receipt["quote_locations"]
 
 
-def semantic_preparation(data, *, limit=6000, callback=None, history_exact_chapters=None):
+def semantic_preparation(data, *, limit=6000, callback=None, history_exact_chapters=None, selected_route=None, preserve_quotes=()):
     from novel_forge.modules.context_builder.request_capacity import apply_capacity_projection, expand_semantic_history, prepare_request_capacity, project_capacity_passages
     from novel_forge.modules.chapter_authority.context_compression_provider import context_compression_task_view
     from tests.unit.test_complete_request_capacity import route
@@ -200,9 +200,9 @@ def semantic_preparation(data, *, limit=6000, callback=None, history_exact_chapt
             return {"selected_unit_ids": [*task["required_unit_ids"], *optional[:1]]}
         return {"supported": True, "coverage_complete": True, "missing_unit_ids": [], "distorted_unit_ids": []}
     projection = prepare_request_capacity(original=original, stage="draft", source_boundary=boundary,
-        route=route(method="SCRIPTED_UTF8_BYTES_EXACT_V1", model="fixture", limit=limit), measure=measure,
+        route=selected_route or route(method="SCRIPTED_UTF8_BYTES_EXACT_V1", model="fixture", limit=limit), measure=measure,
         model_call=call, chunk_fits=lambda chunk: len(json.dumps(chunk, ensure_ascii=False).encode()) < 18000,
-        semantic_contract=semantic.SEMANTIC_CONTRACT, history_exact_chapters=history_exact_chapters)
+        semantic_contract=semantic.SEMANTIC_CONTRACT, history_exact_chapters=history_exact_chapters, preserve_quotes=preserve_quotes)
     return original, projection, calls
 
 
@@ -295,17 +295,20 @@ def test_budget_allocation_reserves_required_quotes_in_later_chunks():
     import json
     boundary = {'kind': 'FROZEN_STAGE_INPUTS', 'project_id': 'p', 'book_id': 'b',
         'sources': [{'asset_version_id': 'context', 'content_hash': 'frozen'}]}
-    original = candidate('\n\n'.join(['ordinary ' + 'x' * 80 for _ in range(5)] + ['must keep last.']),
+    original = candidate('\n\n'.join(['ordinary ' + 'x' * 80 for _ in range(15)] + ['must keep last.']),
         provenance={'frozen_input_boundary': boundary})
     task = {'stage': 'draft', 'semantic_contract': semantic.SEMANTIC_CONTRACT, 'frozen_input_boundary': boundary,
         'source_projection_hash': 'frozen', 'preserve_quotes': ['must keep last.']}
+    compression_calls = []
     def call(stage, chunk):
         if stage == 'context_compress':
+            compression_calls.append(chunk)
             return {'selected_unit_ids': [unit['unit_id'] for unit in chunk['units'] if not unit.get('context_only')]}
         return {'supported': True, 'coverage_complete': True, 'missing_unit_ids': [], 'distorted_unit_ids': []}
     result, _ = compile_task_context([original], task=task, token_budget=300, required_asset_types=(),
-        model_call=call, compression_input_tokens=16000, chunk_fits=lambda chunk: len(chunk['units']) <= 2,
+        model_call=call, compression_input_tokens=16000, chunk_fits=lambda chunk: len(json.dumps(chunk).encode()) <= 4500,
         token_counter=lambda value: len(json.dumps(value)))
+    assert len(compression_calls) > 1
     assert 'must keep last.' in result[0].safe_summary
 
 
@@ -478,3 +481,375 @@ def test_admitted_belief_and_reader_only_sources_keep_both_roles_in_actual_bundl
     assert segments['A']['narrative_function'] == 'character_belief'
     assert segments['B']['narrative_function'] == 'reader_knowledge'
     assert not receipt['deduplications']
+
+
+@pytest.mark.parametrize("provider,method", [
+    ("codex-cli", "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1"),
+    ("openai", "OPENAI_UTF8_BYTES_UPPER_BOUND_V1"),
+    ("deepseek", "DEEPSEEK_UTF8_BYTES_UPPER_BOUND_V1"),
+])
+def test_semantic_preparation_conservatively_fits_history_without_claiming_actual_overflow(provider, method):
+    from tests.unit.test_complete_request_capacity import route
+    from novel_forge.modules.context_builder.request_capacity import apply_capacity_projection
+    selected = route(method=method, model="owned-model", limit=6000)
+    selected.model_profile.model_provider = provider
+    data = {"input_manifest": {"current_draft": "Keep exact current input."}, "context_bundle": {"segments": [{
+        "asset_type": "chapter_episodic_summary", "asset_version_id": "history:v1", "content_hash": "original",
+        "safe_summary": "\n\n".join(f"第{i}段。" + "海潮拍打旧石堤。" * 40 for i in range(40)),
+        "structured_facts": [{"knowledge_owner": "阿岚", "condition": "潮尺低于二尺"}]}]}}
+    original, projection, calls = semantic_preparation(data, selected_route=selected)
+    assert calls and projection["measurement"]["before_reserved"] > 6000
+    assert projection["measurement"]["after_reserved"] <= 6000
+    final = apply_capacity_projection(original, projection)
+    assert final["input_manifest"] == original["input_manifest"]
+    assert final["context_bundle"]["segments"][0]["structured_facts"] == data["context_bundle"]["segments"][0]["structured_facts"]
+    assert selected.token_accounting_method == method
+
+
+@pytest.mark.parametrize("semantic_enabled,provider,method,evidence", [
+    (False, "codex-cli", "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1", "owned-window"),
+    (True, "codex-cli", "OPENAI_UTF8_BYTES_UPPER_BOUND_V1", "owned-window"),
+    (True, "codex-cli", "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1", ""),
+    (True, "codex-cli", "ARBITRARY_UPPER_BOUND", "owned-window"),
+])
+def test_uncertain_preparation_keeps_historical_and_unproven_accounting_rejections(semantic_enabled, provider, method, evidence):
+    from tests.unit.test_complete_request_capacity import route
+    from novel_forge.modules.context_builder.request_capacity import prepare_request_capacity
+    selected = route(method=method, model="owned-model", limit=6000)
+    selected.model_profile.model_provider = provider
+    selected.token_accounting_evidence_ref = evidence
+    with pytest.raises(KernelError, match="PROVIDER_CONTEXT_CAPACITY_UNCERTAIN"):
+        prepare_request_capacity(original={}, stage="draft", source_boundary={}, route=selected,
+            semantic_contract=semantic.SEMANTIC_CONTRACT if semantic_enabled else "",
+            measure=lambda _: (6001, 6000), model_call=lambda *_: pytest.fail("unproven preparation"), chunk_fits=lambda _: True)
+
+
+@pytest.mark.parametrize("retain_first", [False, True])
+def test_small_complete_request_excess_does_not_spread_loss_across_every_history_source(retain_first):
+    from novel_forge.modules.context_builder.request_capacity import expand_semantic_history, apply_capacity_projection
+    data = {"input_manifest": {"goal": "Continue with the known working consequences."}, "context_bundle": {"segments": [
+        {"asset_type": "chapter_episodic_summary", "asset_version_id": f"history:{i}", "content_hash": f"original:{i}",
+         "safe_summary": "\n\n".join(f"Source {i} incident {j}: " + "a" * 80 for j in range(24))}
+        for i in range(8)]}}
+    size = len(json.dumps(expand_semantic_history(data), ensure_ascii=False).encode()) + 500
+
+    def select_to_target(stage, task):
+        if retain_first and task.get("task", {}).get("source_expression", {}).get("asset_version_id") == "history:0":
+            if stage == "context_fidelity":
+                return {"supported": False, "coverage_complete": False, "missing_unit_ids": [], "distorted_unit_ids": []}
+            return {"selected_unit_ids": [unit["unit_id"] for unit in task["units"] if not unit.get("context_only")]}
+        if stage != "context_compress":
+            return None
+        chosen = [unit for unit in task["units"] if unit["required"]]
+        for unit in task["units"]:
+            if unit in chosen or unit.get("context_only"):
+                continue
+            text = "\n\n".join(row["text"] for row in [*chosen, unit])
+            amount = len(json.dumps({"safe_summary": text, "structured_facts": []}, ensure_ascii=False,
+                sort_keys=True, separators=(",", ":")).encode())
+            if amount <= task["target_tokens"]:
+                chosen.append(unit)
+        return {"selected_unit_ids": [unit["unit_id"] for unit in chosen]}
+
+    original, projection, calls = semantic_preparation(data, limit=size - 1600, callback=select_to_target)
+    assert projection["measurement"]["after_reserved"] <= size - 1600
+    final = apply_capacity_projection(original, projection)
+    changes = [old["asset_version_id"] for old, new in zip(original["context_bundle"]["segments"], final["context_bundle"]["segments"])
+               if old != new]
+    assert len(changes) == 1
+    assert sum(call["stage"] == "context_compress" for call in calls) == 1 + retain_first
+    assert changes == ["history:1" if retain_first else "history:0"]
+    assert len(projection["final_composition"]["provider_combination"]["exact_original_sources"]) == 7
+
+
+def test_required_material_floor_stops_without_repeating_identical_semantic_preparation():
+    quote = "不能删除的已发生条件。" * 100
+    data = {"context_bundle": {"segments": [{"asset_type": "chapter_episodic_summary",
+        "asset_version_id": "history:v1", "content_hash": "source",
+        "safe_summary": quote + "\n\n" + "可以省略的旧日闲谈。" * 100}]}}
+    calls = []
+    def observe(stage, task):
+        calls.append(stage)
+    with pytest.raises(KernelError, match="TASK_CONTEXT_COMPRESSION_NO_PROGRESS") as failure:
+        semantic_preparation(data, limit=1800, preserve_quotes=(quote,), callback=observe)
+    projection = failure.value.details["projection"]
+    receipt = projection["compression_receipt"]
+    assert receipt["effective_material_target_tokens"] > receipt["task_target_tokens"]
+    assert projection["measurement"]["after_reserved"] > projection["measurement"]["limit"]
+    assert calls.count("context_compress") == 1
+
+
+@pytest.mark.parametrize("newline", ["\n", "\r\n", "\n \n", "\r\n\t\r\n"])
+def test_complete_request_units_keep_native_single_line_paragraph_locations(newline):
+    original = candidate(newline.join(["她提起木桶。", "宋既明没有准她开闸。", "她把木桶放回原处。", "门外的闲谈渐渐散了。 "]))
+    historical = semantic.source_units(original, {})
+    units = semantic.source_units(original, {"semantic_contract": semantic.SEMANTIC_CONTRACT,
+        "capacity_policy": "complete-request-capacity.v1"})
+    assert len(historical) == (1 if newline in {"\n", "\r\n"} else 4)
+    assert len(units) == 4
+    assert [original.safe_summary[start:end] for start, end in (unit["source_span"] for unit in units)] == [unit["text"] for unit in units]
+    quote = newline.join(["宋既明没有准她开闸。", "她把木桶放回原处。"])
+    semantic.protect_quotes([original], {original.asset_version_id: units}, [quote])
+    assert [unit["text"] for unit in units if unit["required"]] == ["宋既明没有准她开闸。", "她把木桶放回原处。"]
+    assert semantic.reconstruct(original, units, {unit["unit_id"] for unit in units})["safe_summary"] == original.safe_summary
+    selected = semantic.reconstruct(original, units, {unit["unit_id"] for unit in units if unit["required"]})["safe_summary"]
+    assert quote in selected
+
+
+@pytest.mark.parametrize('limit', [4000, 100000])
+def test_final_risk_windows_batch_all_original_units_by_complete_request_capacity(limit):
+    original = candidate('\n\n'.join(f'她没有开第{index}道闸；此前的许可尚未生效。' for index in range(90)))
+    units = semantic.source_units(original, {})
+    chosen = {unit['unit_id'] for index,unit in enumerate(units) if index % 2}
+    calls = []
+    fixed_context = '冻结原始任务身份和完整上下文。' * 20
+    def fits(task):
+        return len(json.dumps({'fixed_context':fixed_context,'task':task},ensure_ascii=False).encode()) <= limit
+    def call(stage, task):
+        assert stage == 'context_fidelity' and fits(task)
+        calls.append(task)
+        return dict(supported=True,coverage_complete=True,missing_unit_ids=[],distorted_unit_ids=[])
+    final,proof,_ = semantic.verify_final_selection(original,units,chosen,payload=lambda group:dict(units=group),fits=fits,model_call=call)
+    assert final == chosen
+    checked = [unit for task in calls for unit in task['units']]
+    assert {unit['unit_id'] for unit in checked} == {unit['unit_id'] for unit in units}
+    assert len(checked) >= len(units) == 90
+    checked_groups = [{unit["unit_id"] for unit in task["units"]} for task in calls]
+    assert all(any({unit["unit_id"] for unit in window} <= batch for batch in checked_groups)
+        for window in semantic.final_windows(units,chosen))
+    assert proof['result_content_hash'] == semantic.narrative_hash(semantic.reconstruct(original,units,chosen))
+    if limit == 100000:
+        assert len(calls) == 1 and len(calls[0]['units']) > 32
+    else:
+        assert len(calls) > 1
+
+
+@pytest.mark.parametrize("count", [350, 600])
+def test_final_batches_obey_the_actual_frozen_consumer_without_losing_windows(count):
+    from novel_forge.modules.chapter_authority.context_compression_provider import context_compression_task_view
+
+    original = candidate('\n\n'.join(f'她没有开第{index}道闸；许可尚未生效。' for index in range(count)))
+    units = semantic.source_units(original, {})
+    chosen = {unit['unit_id'] for index, unit in enumerate(units) if index % 2}
+    boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id='p', book_id='b',
+        sources=[dict(asset_version_id='context', content_hash='frozen')])
+    def payload(group):
+        return dict(contract_version='task-context-compression.v3', semantic_contract=semantic.SEMANTIC_CONTRACT,
+            frozen_input_boundary=boundary, source_binding=boundary['sources'][0], task_fingerprint='task',
+            policy_version='policy', target_tokens=1000, units=group, required_unit_ids=[], task=dict(stage='chapter_plan.generate'))
+    calls = []
+    def call(stage, task):
+        context_compression_task_view(stage, dict(context_compression_task=task))
+        calls.append(task)
+        return dict(supported=True, coverage_complete=True, missing_unit_ids=[], distorted_unit_ids=[])
+    with pytest.raises(KernelError, match='CONTEXT_COMPRESSION_TASK_INVALID'):
+        context_compression_task_view('context_fidelity', dict(context_compression_task=payload(units)))
+    final, _, _ = semantic.verify_final_selection(original, units, chosen,
+        payload=payload, fits=lambda _: True, model_call=call)
+    assert final == chosen and len(calls) > 1
+    batches = [{unit['unit_id'] for unit in task['units']} for task in calls]
+    assert set().union(*batches) == {unit['unit_id'] for unit in units}
+    assert all(len(batch) <= 256 for batch in batches)
+    assert all(any({unit['unit_id'] for unit in window} <= batch for batch in batches)
+        for window in semantic.final_windows(units, chosen))
+
+
+def test_atomic_closure_exceeding_frozen_wire_contract_is_rejected_even_if_bytes_fit():
+    units = semantic.source_units(candidate('\n\n'.join(f'第{index}段。' for index in range(257))), {})
+    with pytest.raises(KernelError, match='TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE'):
+        semantic.pack_final_windows([units], payload=lambda group: dict(units=group), fits=lambda _: True)
+
+
+def test_batched_final_checker_restores_a_far_missing_condition_and_uncertainty():
+    original = candidate('\n\n'.join(f'只有第{index}份许可生效才可行动。' for index in range(90)))
+    units = semantic.source_units(original,{})
+    chosen = {unit['unit_id'] for index,unit in enumerate(units) if index % 2}
+    def call(stage,task):
+        return dict(supported=True,coverage_complete=True,missing_unit_ids=[] if 'text:80' in task['selected_unit_ids'] else ['text:80'],distorted_unit_ids=[])
+    final,_,_ = semantic.verify_final_selection(original,units,chosen,payload=lambda group:dict(units=group),fits=lambda _:True,model_call=call)
+    assert final == chosen | {'text:80'}
+    uncertain,proof,_ = semantic.verify_final_selection(original,units,chosen,payload=lambda group:dict(units=group),fits=lambda _:True,
+        model_call=lambda *_:dict(supported=False,coverage_complete=False,missing_unit_ids=[],distorted_unit_ids=[]))
+    assert uncertain == {unit['unit_id'] for unit in units}
+    assert proof['semantic_scope'] == 'EXACT_COMPLETE_ORIGINAL_RESTORED'
+
+
+@pytest.mark.parametrize('limit',[4000,100000])
+def test_capacity_batched_fidelity_keeps_condition_and_consequence_visible_together(limit):
+    original = candidate('\n\n'.join(f'她没有开第{index}道闸；此前的许可尚未生效。' for index in range(90)))
+    units = semantic.source_units(original,{})
+    chosen = {unit['unit_id'] for index,unit in enumerate(units) if index % 2}
+    calls = []
+    def fits(task):
+        return len(json.dumps({'frozen_context':'冻结原始任务身份和完整上下文。'*20,'task':task},ensure_ascii=False).encode()) <= limit
+    def call(stage,task):
+        visible = {unit['unit_id'] for unit in task['units']}
+        calls.append(visible)
+        missing = ['text:22'] if {'text:21','text:22'} <= visible and 'text:22' not in task['selected_unit_ids'] else []
+        return dict(supported=True,coverage_complete=not missing,missing_unit_ids=missing,distorted_unit_ids=[])
+    final,_,_ = semantic.verify_final_selection(original,units,chosen,payload=lambda group:dict(units=group),fits=fits,model_call=call)
+    assert 'text:22' in final
+    assert any({'text:21','text:22'} <= group for group in calls)
+
+
+def test_final_batching_preserves_far_dependency_closures_and_rejects_an_oversized_closure():
+    original = candidate('\n\n'.join(f'第{index}段的后果尚未确定。' for index in range(90)))
+    units = semantic.source_units(original,{})
+    units[21]['explicit_refs'] = ['far-cause']
+    units[88]['source_aliases'] = ['far-cause']
+    windows = semantic.final_windows(units,{'text:21','text:45'})
+    def payload(group):
+        return dict(frozen_context='精确冻结上下文。'*50,units=group)
+    def amount(task):
+        return len(json.dumps(task,ensure_ascii=False).encode())
+    limit = max(amount(payload(window)) for window in windows)
+    batches = semantic.pack_final_windows(windows,payload=payload,fits=lambda task:amount(task)<=limit)
+    assert all(any({unit['unit_id'] for unit in window} <= {unit['unit_id'] for unit in batch} for batch in batches) for window in windows)
+    assert any({'text:19','text:20','text:21','text:22','text:23','text:88'} <= {unit['unit_id'] for unit in batch} for batch in batches)
+    with pytest.raises(KernelError,match='TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE'):
+        semantic.pack_final_windows(windows,payload=payload,fits=lambda task:amount(task)<limit)
+
+
+@pytest.mark.parametrize("bind_route_during_probe", [False, True])
+def test_complete_compressor_group_probes_capacity_once_before_splitting(bind_route_during_probe):
+    boundary = dict(kind="FROZEN_STAGE_INPUTS", project_id="p", book_id="b", sources=[dict(asset_version_id="context", content_hash="frozen")])
+    original = candidate("\n\n".join(f"ordinary scene {index}: " + "x" * 100 for index in range(32)), provenance=dict(frozen_input_boundary=boundary))
+    task = dict(stage="draft", semantic_contract=semantic.SEMANTIC_CONTRACT, frozen_input_boundary=boundary, source_projection_hash="frozen", capacity_bindings={})
+    probes = []
+    def fits(chunk):
+        probes.append(chunk)
+        if bind_route_during_probe:
+            chunk["task"]["capacity_bindings"]["context_compress"] = {"route": "frozen-selected-route"}
+        return True
+    def call(stage, chunk):
+        if stage == "context_compress":
+            return dict(selected_unit_ids=[unit["unit_id"] for unit in chunk["units"]])
+        return dict(supported=True, coverage_complete=False,
+            missing_unit_ids=[unit["unit_id"] for unit in chunk["units"] if unit["unit_id"] not in chunk["selected_unit_ids"]], distorted_unit_ids=[])
+    result, receipt = compile_task_context([original], task=task, token_budget=250, required_asset_types=(),
+        model_call=call, compression_input_tokens=16000, chunk_fits=fits,
+        token_counter=lambda value: len(json.dumps(value).encode()), allow_restored_overflow=True)
+    assert result[0].safe_summary == original.safe_summary
+    assert receipt["compression_trace"][0]["exact_original_restorations"]
+    assert len(probes) == (2 if bind_route_during_probe else 1)
+
+
+def test_final_checker_hashes_immutable_catalog_once_for_all_capacity_probes(monkeypatch):
+    original = candidate("\n\n".join(f"ordinary paragraph {index}." for index in range(90)))
+    units = semantic.source_units(original, {})
+    audit, calls = semantic.source_audit, []
+    def checked(*args, **kwargs):
+        calls.append(1)
+        return audit(*args, **kwargs)
+    monkeypatch.setattr(semantic, "source_audit", checked)
+    selected, proof, _ = semantic.verify_final_selection(original, units, {"text:21", "text:45"},
+        payload=lambda group: dict(units=group), fits=lambda _: True,
+        model_call=lambda *_: dict(supported=True, coverage_complete=True, missing_unit_ids=[], distorted_unit_ids=[]))
+    assert selected == {"text:21", "text:45"}
+    assert proof["catalog_hash"]
+    assert len(calls) == 1
+
+
+def test_small_measured_deficit_does_not_discard_half_the_optional_proposal():
+    boundary = dict(kind='FROZEN_STAGE_INPUTS',project_id='p',book_id='b',sources=[dict(asset_version_id='context',content_hash='frozen')])
+    original = candidate('\n\n'.join(f'ordinary paragraph {index}: '+'x'*80 for index in range(10)),provenance=dict(frozen_input_boundary=boundary))
+    task = dict(stage='draft',semantic_contract=semantic.SEMANTIC_CONTRACT,frozen_input_boundary=boundary,source_projection_hash='frozen')
+    def count(value):
+        return len(json.dumps(value,ensure_ascii=False).encode())
+    target = count(dict(safe_summary=original.safe_summary,structured_facts=[])) - 10
+    local_checks = []
+    def call(stage,chunk):
+        if stage == 'context_compress':
+            return dict(selected_unit_ids=[unit['unit_id'] for unit in chunk['units'] if not unit.get('context_only')])
+        if not chunk.get('composition_check'):
+            local_checks.append(chunk)
+        return dict(supported=True,coverage_complete=True,missing_unit_ids=[],distorted_unit_ids=[])
+    result,_ = compile_task_context([original],task=task,token_budget=target,required_asset_types=(),model_call=call,
+        compression_input_tokens=16000,chunk_fits=lambda _:True,token_counter=count)
+    units = semantic.source_units(original,{})
+    assert count(semantic.reconstruct(original,units,{f'text:{index}' for index in range(9)})) > target
+    assert len(local_checks[0]['selected_unit_ids']) == 8
+    assert result[0].safe_summary.count('ordinary paragraph') == 8
+    assert result[0].estimated_tokens <= target
+
+
+@pytest.mark.parametrize('restore_all', [True, False])
+def test_chunk_restoration_proves_complete_original_without_a_redundant_model_recheck(restore_all):
+    boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id='p', book_id='b', sources=[dict(asset_version_id='context', content_hash='frozen')])
+    original = candidate('\r\n\r\n'.join('ordinary scene '+str(i)+': '+'x'*100 for i in range(4)),
+        structured_facts=({'subject': '阿岚', 'knowledge_owner': '阿岚', 'status': 'HEARSAY'},),
+        provenance=dict(frozen_input_boundary=boundary))
+    task = dict(stage='draft', semantic_contract=semantic.SEMANTIC_CONTRACT, frozen_input_boundary=boundary, source_projection_hash='frozen')
+    calls = []
+    def call(stage, chunk):
+        calls.append((stage, chunk))
+        if stage == 'context_compress':
+            return dict(selected_unit_ids=['text:0'], _execution_evidence={'execution_id': 'compress-original'})
+        omitted = [unit['unit_id'] for unit in chunk['units'] if unit['unit_id'] not in chunk['selected_unit_ids']]
+        missing = omitted if restore_all else omitted[:1]
+        if len([s for s, _ in calls if s == 'context_fidelity']) > 1:
+            missing = []
+        return dict(supported=True, coverage_complete=not missing, missing_unit_ids=missing, distorted_unit_ids=[],
+            _execution_evidence={'execution_id': 'fidelity-original'})
+    def count(value):
+        return len(json.dumps(value, ensure_ascii=False).encode())
+    result, receipt = compile_task_context([original], task=task, token_budget=250, required_asset_types=(),
+        model_call=call, compression_input_tokens=16000, chunk_fits=lambda _: True,
+        token_counter=count, allow_restored_overflow=True)
+    trace = receipt['compression_trace'][0]
+    checks = [chunk for stage, chunk in calls if stage == 'context_fidelity']
+    if restore_all:
+        assert len(checks) == 1
+        assert result[0].safe_summary == original.safe_summary
+        assert result[0].structured_facts == original.structured_facts
+        proof = trace['exact_original_restorations'][0]
+        assert proof['provider_evidence_claimed'] is False
+        assert proof['payload_hash'] == semantic.narrative_hash(dict(safe_summary=original.safe_summary, structured_facts=list(original.structured_facts)))
+        assert trace['routing_assessments'][0]['fidelity']['coverage_complete'] is False
+        assert trace['routing_assessments'][0]['extract_accepted'] is False
+    else:
+        assert len(checks) >= 2
+        assert not trace.get('exact_original_restorations')
+        assert any(item.get('recheck') for item in trace['routing_assessments'])
+    assert receipt['task_target_tokens'] == 250
+    assert receipt['capacity_admission'] == 'DEFERRED_COMPLETE_REQUEST'
+
+
+def test_complete_original_restoration_still_rejects_a_real_material_capacity_excess():
+    boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id='p', book_id='b', sources=[dict(asset_version_id='context', content_hash='frozen')])
+    original = candidate('\n\n'.join('ordinary scene '+str(i)+': '+'x'*100 for i in range(4)), provenance=dict(frozen_input_boundary=boundary))
+    def call(stage, chunk):
+        if stage == 'context_compress':
+            return dict(selected_unit_ids=['text:0'])
+        return dict(supported=True, coverage_complete=False,
+            missing_unit_ids=[unit['unit_id'] for unit in chunk['units'] if unit['unit_id'] not in chunk['selected_unit_ids']], distorted_unit_ids=[])
+    with pytest.raises(KernelError, match='TASK_CONTEXT_FIDELITY_RESTORE_EXCEEDS_BUDGET'):
+        compile_task_context([original], task=dict(stage='draft', semantic_contract=semantic.SEMANTIC_CONTRACT,
+            frozen_input_boundary=boundary, source_projection_hash='frozen'), token_budget=250,
+            required_asset_types=(), model_call=call, compression_input_tokens=16000, chunk_fits=lambda _: True,
+            token_counter=lambda value: len(json.dumps(value, ensure_ascii=False).encode()))
+
+
+def test_exact_first_chunk_proof_keeps_compressor_evidence_while_other_sources_are_checked():
+    boundary = dict(kind='FROZEN_STAGE_INPUTS', project_id='p', book_id='b', sources=[dict(asset_version_id='context', content_hash='frozen')])
+    original = candidate('\n\n'.join('protected original '+str(i)+': '+'x'*80 for i in range(3)), provenance=dict(frozen_input_boundary=boundary))
+    other = replace(original, asset_version_id='history:b', safe_summary=original.safe_summary.replace('protected original', 'optional background'))
+    calls = []
+    def call(stage, chunk):
+        calls.append((stage, chunk['source_binding']['asset_version_id']))
+        if stage == 'context_compress':
+            return dict(selected_unit_ids=[chunk['units'][0]['unit_id']], _execution_evidence=dict(execution_id='compress:'+chunk['source_binding']['asset_version_id']))
+        return dict(supported=True, coverage_complete=True, missing_unit_ids=[], distorted_unit_ids=[])
+    selected, receipt = compile_task_context([original, other], task=dict(stage='draft', semantic_contract=semantic.SEMANTIC_CONTRACT,
+        frozen_input_boundary=boundary, source_projection_hash='frozen', preserve_quotes=[original.safe_summary]),
+        token_budget=250, required_asset_types=(), model_call=call, compression_input_tokens=16000,
+        chunk_fits=lambda _: True, allow_restored_overflow=True,
+        token_counter=lambda value: len(json.dumps(value, ensure_ascii=False).encode()))
+    exact = next(item for item in selected if item.asset_version_id == original.asset_version_id)
+    assert exact.safe_summary == original.safe_summary
+    trace = next(item for item in receipt['compression_trace'] if item['source_asset_version_id'] == original.asset_version_id)
+    assert trace['routing_assessments'] == []
+    assert trace['model_execution_evidence'] == [dict(execution_id='compress:history:a')]
+    assert trace['exact_original_restorations'][0]['provider_evidence_claimed'] is False
+    assert ('context_fidelity', 'history:a') not in calls
+    assert ('context_fidelity', 'history:b') in calls

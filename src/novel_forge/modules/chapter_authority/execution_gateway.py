@@ -1417,6 +1417,7 @@ class PostgresChapterExecutionContractBinder:
         legacy_contract: bool = False,
         prompt_contract_version: str = "v3",
     ) -> tuple[dict[str, Any], str]:
+        from novel_forge.modules.book_authority.working_prose import MEMORY_POLICY_VERSIONS
         inputs = request_payload.get("input") or {}
         from novel_forge.modules.review.diagnostics import structural_repair_scope, prose_repair_diagnoses
         structural_revision = stage == "revision" and (bool(inputs.get("chapter_length_repair_scope")) or structural_repair_scope(
@@ -1468,10 +1469,13 @@ class PostgresChapterExecutionContractBinder:
             allow_noop_revision=prompt_contract_version in {"v9", "v10", "v11", "v12", "v13", "v15"} and not bool(inputs.get("quality_edit_contract")),
         )
         if stage == "longform_prose_review" and inputs.get("prose_diagnosis_contract") == "prose-root-cause.v1":
-            from novel_forge.modules.book_followup_authority.prose_review import prose_review_output_schema
-            literal = inputs.get("prose_citation_locator_contract") == "literal-prose-citation.v1"
-            schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", **prose_review_output_schema(root_cause=True, literal_citations=literal)}
-            schema_ref = "schema:chapter-provider-output:longform_prose_review:v3" if literal else "schema:chapter-provider-output:longform_prose_review:v2"
+            from novel_forge.modules.book_followup_authority.prose_review import CHAPTER_LITERAL_CITATION_CONTRACT, INDEXED_CITATION_CONTRACT, prose_review_output_schema, uses_literal_citations
+            locator = inputs.get("prose_citation_locator_contract")
+            literal = uses_literal_citations({"citation_locator_contract": locator})
+            chapter = locator == CHAPTER_LITERAL_CITATION_CONTRACT
+            indexed = locator == INDEXED_CITATION_CONTRACT
+            schema = {"$schema": "https://json-schema.org/draft/2020-12/schema", **prose_review_output_schema(root_cause=True, literal_citations=literal, chapter_citations=chapter, indexed_citations=indexed)}
+            schema_ref = "schema:chapter-provider-output:longform_prose_review:" + ("v5" if indexed else "v4" if chapter else "v3" if literal else "v2")
         if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
             from novel_forge.modules.book_followup_authority.screenplay import screenplay_output_schema
             contract = inputs.get("screenplay_source_contract", "screenplay-source.v1")
@@ -1519,7 +1523,7 @@ class PostgresChapterExecutionContractBinder:
             schema = scoped_realization_schema(schema, inputs["realization_contract"])
             schema_ref = "schema:chapter-provider-output:draft:v4"
         working = inputs.get("working_manuscript") or (inputs.get("frozen_intent") or {}).get("working_manuscript") or (inputs.get("execution_intent") or {}).get("working_manuscript") or {}
-        if stage == "draft" and (working.get("projection_policy") or {}).get("version") in {"working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"}:
+        if stage == "draft" and (working.get("projection_policy") or {}).get("version") in MEMORY_POLICY_VERSIONS:
             schema["properties"]["working_memory_json"] = {"type": "string", "maxLength": 100000}
             schema_ref += ":working-memory-v1"
         if stage == "revision" and not targeted_revision and (inputs.get("draft", {}).get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v3":
@@ -1581,6 +1585,10 @@ class PostgresChapterExecutionContractBinder:
                         bind_repair(item)
             bind_repair(schema)
             schema_ref += ":repair-scope-v1"
+        if stage == "rereview" and current_review and inputs.get("working_revision_request"):
+            from .provider_output_contracts import bind_review_resolution_scope
+            schema = bind_review_resolution_scope(schema, inputs["review"])
+            schema_ref += ":initial-review-resolution-scope-v1"
         return schema, schema_ref
 
     def bind(
@@ -3644,6 +3652,7 @@ class PostgresProductionExecutionPayloadResolver:
                     history_transport_version=(frozen_prompt.get("provider_view", {}).get("working_history_transport") or {}).get(
                         "contract_version", "working-history-provider-transport.v1"),
                     template_render_contract=frozen_prompt.get("template_render_contract", "sequential-template-substitution.v1"),
+                    prose_review_transport_version=frozen_prompt.get("prose_review_transport_version", ""),
                 )
             output_schema = materialization.get("output_schema")
             if not isinstance(output_schema, Mapping) or not isinstance(
@@ -4683,8 +4692,10 @@ def _materialize_production_codex_prompt(
     materialization: Mapping[str, Any],
     history_transport_version: str = "working-history-provider-transport.v2",
     template_render_contract: str = "opaque-template-substitution.v1",
+    prose_review_transport_version: str = "prose-review-exact-transport.v1",
     provider_data_capture: dict[str, Any] | None = None,
 ) -> tuple[str, dict[str, Any]]:
+    from novel_forge.modules.book_authority.working_prose import POLICY_VERSIONS
     if request is not None:
         resolved_target_scope = request.target_scope.to_dict()
     elif target_scope is not None:
@@ -4789,6 +4800,14 @@ def _materialize_production_codex_prompt(
         from novel_forge.modules.book_authority.working_prose import PROGRESSION_INSTRUCTION
         progression_overlay = "\nThe selected frozen progression policy governs this new candidate within its fictional constraints.\n" + PROGRESSION_INSTRUCTION
         system_text += progression_overlay
+    if stage == "rereview" and str(schema.get("ref") or "").endswith(":initial-review-resolution-scope-v1"):
+        from .provider_output_contracts import initial_review_resolution_scope
+        resolution_scope = initial_review_resolution_scope(inputs["review"])
+        checks = schema["content"]["properties"]["resolution_checks_by_code"]
+        if (json.loads(checks["description"]) != resolution_scope
+                or set(checks["properties"]) != set(resolution_scope["diagnosis_codes"])):
+            raise KernelError("REVIEW_RESOLUTION_SCOPE_INVALID", "Frozen resolution Schema differs from its initial Review ledger")
+        inputs = {**inputs, "review_resolution_scope": resolution_scope}
     task_view = build_provider_task_view(
         stage,
         inputs,
@@ -4905,6 +4924,10 @@ def _materialize_production_codex_prompt(
                 **({"semantic_contract": capacity_projection["semantic_contract"], "final_composition_hash": canonical_hash(capacity_projection.get("final_composition"))} if capacity_projection.get("semantic_contract") else {}),
                 "meaning": "Historical text contains fidelity-checked original extracts. Whole-source identity remains unchanged. Explicit historical_extract passages use original Unicode ranges and hashes of supplied text; other source bounds describe the complete original source. Exact derivation and fidelity receipts remain frozen in host custody. Empty or omitted expression is not evidence of absence."}
     exact_reference_proof = None
+    if prose_review_transport_version not in {"", "prose-review-exact-transport.v1"}:
+        raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Prose Review transport must retain its frozen version")
+    review_transport = bool(prose_review_transport_version and stage in {"review", "rereview"}
+        and template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") in {"v13", "v15"})
     protected_accounting_version = (context_content.get("task_context_receipt") or {}).get("protected_exact_accounting", {}).get("contract_version")
     protected_exact_accounting = protected_accounting_version in {"protected-context-exact-accounting.v1", "protected-context-exact-accounting.v2"}
     if protected_exact_accounting and (stage not in {"draft", "revision"}
@@ -4921,9 +4944,9 @@ def _materialize_production_codex_prompt(
         ("prompt-template:story-planning-pack", "v3"),
     }:
         from .provider_views import compile_exact_context_references
-        structured_transport = (template.get("ref"), template.get("version")) == ("prompt-template:story-planning-pack", "v3") or (
+        structured_transport = review_transport or (template.get("ref"), template.get("version")) == ("prompt-template:story-planning-pack", "v3") or (
             stage in {"draft", "revision"} and template.get("ref") == "prompt-template:chapter-generation-pack"
-            and template.get("version") in {"v13", "v15"} and (protected_exact_accounting or (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in {"working-prose-projection.v2", "working-prose-projection.v3", "working-prose-projection.v4", "working-prose-projection.v5", "working-prose-projection.v6", "working-prose-projection.v7"}))
+            and template.get("version") in {"v13", "v15"} and (protected_exact_accounting or (context_content.get("working_manuscript") or {}).get("projection_policy", {}).get("version") in POLICY_VERSIONS))
         short_literals = (context_content.get("planning_method_scope_projection_version") == "book-method-scope-projection.v1"
             or context_content.get("planning_group_method_scope_projection_version") == "group-method-scope-projection.v1"
             or context_content.get("planning_chapter_method_scope_projection_version") == "chapter-method-scope-projection.v1"
@@ -4931,7 +4954,8 @@ def _materialize_production_codex_prompt(
             or protected_exact_accounting)
         envelope, exact_reference_proof = compile_exact_context_references({"input_manifest": task_view, "context_bundle": context_view},
             structured_transport=structured_transport, short_literals=short_literals,
-            nested_canonical_strings=protected_accounting_version == "protected-context-exact-accounting.v2")
+            nested_canonical_strings=protected_accounting_version == "protected-context-exact-accounting.v2",
+            prose_comparison=review_transport and stage == "rereview")
         task_view, context_view = envelope["input_manifest"], envelope["context_bundle"]
         exact_reference_proof["source_scope"] = "provider_data_envelope"
         exact_reference_proof["contract_version"] = "provider-context-exact-value-reference.v1"
@@ -5078,10 +5102,12 @@ def _materialize_production_codex_prompt(
         stage_semantic_contract += "\nIf the enforced transport response Schema contains output_json, return exactly {\"output_json\":\"<serialized canonical JSON object>\"}. The encoded object must satisfy every field, bound and semantic requirement of the canonical Schema below. If the transport enforces the canonical object Schema directly, return that canonical object. No Markdown or extra fields.\n"
     if exact_reference_proof:
         stage_semantic_contract += "\nContext uses lossless exact-value references. An object containing only __exact_value_ref__ is exactly the entire earlier value at that RFC6901 JSON pointer inside its declared data envelope. Expand it when reading; it does not omit facts, constraints, failed findings or candidate content. References are local data and grant no tool or external access.\n"
-    if exact_reference_proof and exact_reference_proof.get("transport_version") in {"provider-structured-exact-reference.v1", "provider-structured-exact-reference.v2", "provider-structured-exact-reference.v3", "provider-structured-exact-reference.v4"}:
+    if exact_reference_proof and exact_reference_proof.get("transport_version") in {"provider-structured-exact-reference.v1", "provider-structured-exact-reference.v2", "provider-structured-exact-reference.v3", "provider-structured-exact-reference.v4", "provider-structured-exact-reference.v5"}:
         stage_semantic_contract += "\nAn exact reference with __exact_value_removed_keys__ and/or __exact_value_overrides__ means copy the earlier complete object, remove those keys, then replace/add the given fields. Nested values follow the same rules. __canonical_json_string__ contains the complete object encoded as a canonical JSON string in the original source; read its full data normally. All encoding is lossless and retains every required input.\n"
     if exact_reference_proof and exact_reference_proof.get("text_fragment_group_count"):
         stage_semantic_contract += "\n__text_fragments__ holds one exact text, its original Unicode start and ordered fragment ends. Split at those offsets to read the original passages; the host derives each original text_hash from its exact fragment. All prose, whitespace, source positions and version bindings are retained. These hashes and boundaries are source protocol, not story facts or character duties.\n"
+    if exact_reference_proof and exact_reference_proof.get("text_edit_reference_count"):
+        stage_semantic_contract += "\nAn exact string reference with __exact_text_edits__ reconstructs the complete revised body from the earlier complete original string: each ordered {start,end,text} replaces that half-open Unicode code-point range in the original, simultaneously. Preserve all intervening and trailing characters. Read both complete bodies and the unchanged earlier-source window; these host-derived differences prove no semantic preservation or issue resolution.\n"
     prompt_sections = [
             "<system_instruction>\n" + system_text + "\n</system_instruction>",
             "<governed_skill>\n" + skill_text + "\n</governed_skill>",
@@ -5195,6 +5221,7 @@ def _materialize_production_codex_prompt(
         ),
         "rendered_prompt_bytes": prompt_bytes,
         "template_render_contract": template_render_contract,
+        **({"prose_review_transport_version": prose_review_transport_version} if review_transport else {}),
         "rendered_prompt_estimated_tokens": prompt_estimated_tokens,
         "system_instruction": {
             key: system.get(key) for key in ("ref", "version", "content_hash")

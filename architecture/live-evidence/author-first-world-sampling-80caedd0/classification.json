@@ -1,0 +1,78 @@
+{
+  "schema_version": "novel-forge.repair-classification.v1",
+  "source_sha": "80caedd02377270937ad76851725a28652fd12ce",
+  "production_fix_source_sha": "102892aa3124ebc874442abfaa23d680fa522e42",
+  "issues": [
+    {
+      "first_failure": "WORLD_SAMPLE_CONTEXT_DRIFT",
+      "classification": "PRODUCTION_RECONSTRUCTION_OMISSION",
+      "cause": "Sampling omitted the native frozen Arc/obligation reference projection",
+      "fix": "Reconstruct only marked frozen contracts from the original command and source; unmarked history remains unchanged"
+    },
+    {
+      "first_failure": "WORLD_SAMPLE_PRODUCER_DRIFT",
+      "classification": "PRODUCTION_SCHEMA_RECONSTRUCTION_OMISSION",
+      "cause": "Raw factory Schema replaced the original materialized Pack Prompt/Skill compiled Schema; derived Director had the same omission",
+      "fix": "Share the original execution compiler and bind recorded Prompt/Skill, exact Schema ref/hash and Context identity"
+    },
+    {
+      "first_failure": "WORLD_PROVIDER_TRANSITION_INVALID / CAUSAL_CONTRACT_INVALID",
+      "classification": "PRODUCTION_SAMPLING_DECODER_DISPATCH_OMISSION",
+      "cause": "Sampler result review omitted the frozen agency argument",
+      "fix": "Use the frozen task agency; current and historical payload mismatches still reject"
+    },
+    {
+      "first_failure": "CHAPTER_QUALITY_GATE_BLOCKED at basic_prose_integrity 50<80 codepoints",
+      "classification": "CORRECT_REFUSAL_STALE_OBSERVATION_FIXTURE",
+      "fix": "Supply sufficient neutral fixture prose and retain zero-state-mutation and lost-response checks; threshold unchanged"
+    },
+    {
+      "first_failure": "TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED 26893>6000",
+      "classification": "CORRECT_REFUSAL_STALE_FIXTURE_CONTEXT_POLICY",
+      "fix": "Explicit 64000 fixture Context budget under its unchanged physical 2000000 route; production capacity unchanged"
+    },
+    {
+      "first_failure": "CANON_SOURCE_SPAN_INVALID / WORLD_ACTION_MODE_REQUIRED / WORLD_BACKGROUND_IDENTITY_MISMATCH",
+      "classification": "STALE_FIXTURE_WIRE",
+      "fix": "Shared final current wire conversion retains exact frozen spans, rejects foreign spans and uses canonical identity delimiters; subprocess path included"
+    },
+    {
+      "first_failure": "All-Codec assertion and unexpected native Book scope fixture",
+      "classification": "STALE_FIXTURE_REGISTRY_AND_SCOPE_EXPECTATIONS",
+      "fix": "Keep every registered command in the denominator, prove both native-record provenance refusals, account separately for the exact scope-creation operation; no fake model panel qualification"
+    },
+    {
+      "first_failure": "WORLD_BATCH_CONCURRENT_WRITE",
+      "classification": "CORRECT_REFUSAL_MISSING_FIXTURE_CAUSAL_DEPENDENCY",
+      "fix": "Declare the exact local preparation cause; validate both same-chapter events and preserve cross-chapter OPEN-debt coverage"
+    },
+    {
+      "first_failure": "New first-chapter FULFILLED assertion on source102892aa",
+      "classification": "INCORRECT_NEW_TEST_EXPECTATION_RETAINED_AS_FAILURE",
+      "fix": "Restore the original valid OPEN and empty-payoff assertions; prior accepted Reality, not same-batch execution, authorizes later fulfillment; next payoff binds the exact target event"
+    },
+    {
+      "first_failure": "Recovery fixture expected a claim during RETRY_WAIT",
+      "classification": "CORRECT_REFUSAL_STALE_FIXTURE_TIMING",
+      "fix": "Wait for durable available_at and prove early claim is refused; do not reset runtime job state"
+    },
+    {
+      "first_failure": "RUNTIME_DISPATCH_PAUSED in operator candidate generation",
+      "classification": "CORRECT_REFUSAL_STALE_FIXTURE_ORDER",
+      "fix": "Native CAS resume before candidate generation, then pause for Plan Change; accepted history and zero further dispatch assertions remain"
+    }
+  ],
+  "invariants": [
+    "Frozen source and Schema identity",
+    "Book/actor/hash/version isolation",
+    "UNKNOWN and unknown usage retained",
+    "Old commit and activation rights revoked before successor",
+    "Real complete-request physical capacity",
+    "No cumulative production token/call quota introduced",
+    "No fixture counts as real manuscript delivery",
+    "No optional Canon or review added to default graph"
+  ],
+  "formal_matrix": "QUEUED_NOT_RUN_YET",
+  "literary_qualification": "NOT_PROVEN",
+  "overall_production_qualification": "NOT_PROVEN"
+}

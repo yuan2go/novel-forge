@@ -18,6 +18,31 @@ def template(book="book", paid=None, **changes):
             "require_independent_review": False, "require_pack_human_approval": False, **changes}
 
 
+def test_current_author_template_policy_precondition_has_its_own_closed_command_version():
+    from pathlib import Path
+    from novel_forge.modules.authority_handler_runtime.policy_commands import owned_policy_definition
+    from novel_forge.modules.command_kernel.service import _validate_json_schema
+    value = json.loads((Path(__file__).parents[2] / 'config/execution_templates/author_first.json').read_text())
+    value.update(book_id='book', member_authorization_ref='member', allowed_candidates=['member'])
+    content = dict(policy_version='native', reason='Author policy change', task_overrides=[], execution_templates=[value])
+    arguments = dict(owner='PROVIDER_ROUTING', content=content, application_build_id='fixture', commit_sha='a'*40)
+    historical = owned_policy_definition(**arguments)
+    current = owned_policy_definition(**arguments, policy_precondition=True)
+    assert historical['definition_version'] == '2.1.0'
+    assert 'expected_policy_hash' not in historical['command_schema']['properties']
+    assert current['definition_version'] == '2.3.0'
+    assert current['command_schema_version'].endswith('.command.v11')
+    command = dict(project_id='project', owner='PROVIDER_ROUTING', policy=content, expected_policy_hash='a'*64)
+    _validate_json_schema(current['command_schema'], command)
+    for invalid in ({key:value for key,value in command.items() if key != 'expected_policy_hash'},
+                    {**command, 'expected_policy_hash':None}, {**command, 'unknown':True}):
+        with pytest.raises(KernelError, match='COMMAND_SCHEMA_INVALID'):
+            _validate_json_schema(current['command_schema'], invalid)
+    assert owned_policy_definition(**arguments) == historical
+    supervised = owned_policy_definition(**{**arguments, 'content':{**content, 'author_supervised_books':[]}}, policy_precondition=True)
+    assert supervised == current
+
+
 def membership():
     return replace(candidate("member"), provider="codex-cli", quota_remaining=None,
                    authorization_ref="member-grant", entitlement_role="PRIMARY",

@@ -1,0 +1,83 @@
+{
+  "at": "2026-10-19T06:33:20.986173+00:00",
+  "previous_failures": [
+    {
+      "file": "p0-source-33e56747.json",
+      "sha256": "b8bded6a70679a0100c27d03434eb613d9e55c5447d40cbdfdbad2e57c3cf0c2",
+      "status": "FAIL",
+      "cleanup": {
+        "phases": [
+          {
+            "compose_project": "nf-p0-c98beacd2ac544b8bce7c0c071b03824",
+            "phase": "postgresql",
+            "receipt": "compose-resource-ownership-nf-p0-c98beacd2ac544b8bce7c0c071b03824.json",
+            "remaining_resource_count": 0,
+            "resource_count": 2,
+            "run_id": "p0-c98beacd2ac544b8bce7c0c071b03824",
+            "status": "PASS"
+          }
+        ],
+        "remaining_resource_count": 0,
+        "status": "PASS"
+      },
+      "gates": [
+        {
+          "gate_id": "pytest-postgresql-integration",
+          "status": "FAIL",
+          "duration_seconds": 14400.426426,
+          "evidence": {
+            "error": "JUnit XML is missing: /Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/novel-forge-p0-33e567473541-c98beacd2ac544b8bce7c0c071b03824/postgresql-pytest.xml",
+            "returncode": 1,
+            "timed_out": false
+          }
+        }
+      ]
+    },
+    {
+      "file": "p0-source-a452cdc5.json",
+      "sha256": "e7ba44e505fda58111862119060bfe5cf535ff683c9036f64cf9c6952c5ae406",
+      "status": "FAIL",
+      "cleanup": {
+        "phases": [],
+        "remaining_resource_count": 0,
+        "status": "PASS"
+      },
+      "gates": [
+        {
+          "gate_id": "static-and-manifests",
+          "status": "FAIL",
+          "duration_seconds": 59.500371,
+          "evidence": {
+            "returncode": 2,
+            "stderr": "make: *** [instruction-reality-check] Error 1\n",
+            "timed_out": false
+          }
+        }
+      ]
+    }
+  ],
+  "current_full_launch": {
+    "pid": 55981,
+    "argv": [
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+      "scripts/run_p0_backend_qualification.py",
+      "--profile",
+      "local",
+      "--output",
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/p0-source-e09f3fa1.json"
+    ],
+    "cwd": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/instruction-fixture-source",
+    "source_sha": "e09f3fa160a13b54927fc2858d0eb65eb5729aac",
+    "at": "2026-10-19T06:32:18.850174+00:00",
+    "mode": "FULL_CANONICAL_MATRIX_NO_SKIPS",
+    "provider_credentials_and_routes_removed": true,
+    "private_migration_backup_directory": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/backups/p0-e09f3fa1",
+    "postgresql_client_major": 16,
+    "temp_directory": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/tmp/p0-e09f3fa1",
+    "pythonpath": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/instruction-fixture-source/src",
+    "ruff_version": "0.15.20",
+    "previous_full_failures_retained": true
+  },
+  "current_full_result": "RUNNING",
+  "qualification": "NOT_PROVEN"
+}

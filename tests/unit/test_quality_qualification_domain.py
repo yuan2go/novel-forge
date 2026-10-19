@@ -124,6 +124,48 @@ def test_manifest_rejects_scope_or_lineage_drift(
         QualityCampaignManifest.from_mapping(raw)
 
 
+def _membership_budget():
+    return {"chapter_limit": 6, "resource_policy": {
+        "resource_control_version": "billing-channel-resources.v1",
+        "execution_mode": "PROVIDER_ALLOWED", "accounting_basis": "ACCOUNT_ENTITLEMENT",
+        "authorization_ref": "author:quality-campaign", "cost_observability": "UNKNOWN",
+        "per_call_token_limit": 258400,
+    }}
+
+
+def test_membership_campaign_freezes_resources_without_cumulative_allowances():
+    raw = _manifest()
+    raw["budget_policy"] = _membership_budget()
+    manifest = QualityCampaignManifest.from_mapping(raw)
+    assert manifest.to_dict()["budget_policy"] == raw["budget_policy"]
+    raw["budget_policy"]["resource_policy"]["authorization_ref"] = "changed"
+    assert manifest.to_dict()["budget_policy"]["resource_policy"]["authorization_ref"] == "author:quality-campaign"
+
+
+@pytest.mark.parametrize("mutation", [
+    {"token_limit": 1000000}, {"cost_limit_usd": "1.00"}, {"chapter_limit": 5},
+    {"resource_policy": {}}, {"resource_policy": {**_membership_budget()["resource_policy"], "token_limit": 1000000}},
+    {"resource_policy": {**_membership_budget()["resource_policy"], "authorization_ref": ""}},
+    {"resource_policy": {**_membership_budget()["resource_policy"], "accounting_basis": "PRICED"}},
+    {"resource_policy": {**_membership_budget()["resource_policy"], "per_call_token_limit": 0}},
+])
+def test_membership_campaign_rejects_mixed_or_invalid_resource_contract(mutation):
+    raw = _manifest()
+    raw["budget_policy"] = {**_membership_budget(), **mutation}
+    with pytest.raises(ValueError):
+        QualityCampaignManifest.from_mapping(raw)
+
+
+@pytest.mark.parametrize("field", ["token_limit", "cost_limit_usd"])
+def test_historical_campaign_still_requires_its_frozen_finite_budget(field):
+    raw = _manifest()
+    original = QualityCampaignManifest.from_mapping(raw)
+    assert original.to_dict() == raw
+    del raw["budget_policy"][field]
+    with pytest.raises(ValueError, match=field):
+        QualityCampaignManifest.from_mapping(raw)
+
+
 def test_campaign_lifecycle_is_explicit_and_fail_closed() -> None:
     assert (
         transition_campaign(CampaignLifecycle.DRAFT, CampaignLifecycle.FROZEN)

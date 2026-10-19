@@ -3,6 +3,7 @@ import json
 import re
 from typing import Any, Mapping
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.context_contracts import FROZEN_COMPRESSION_REQUEST_MAX_UNITS
 from novel_forge.modules.narrative_state.contracts import (
     NarrativeObligationType,
     atomize_character_knowledge_changes,
@@ -11,6 +12,31 @@ from novel_forge.modules.narrative_state.contracts import (
 )
 
 _SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
+
+
+def initial_review_resolution_scope(review: Mapping[str, Any]) -> dict[str, Any]:
+    from novel_forge.modules.review.diagnostics import open_diagnoses
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+
+    return {"contract_version": "initial-review-resolution-scope.v1",
+        "initial_review_content_hash": canonical_hash(review),
+        "diagnosis_codes": [issue["code"] for issue in open_diagnoses(dict(review))]}
+
+
+def bind_review_resolution_scope(schema: dict[str, Any], review: Mapping[str, Any]) -> dict[str, Any]:
+    from copy import deepcopy
+
+    result = deepcopy(schema)
+    item = result["properties"].pop("resolution_checks")["items"]
+    item["properties"].pop("code")
+    item["required"].remove("code")
+    scope = initial_review_resolution_scope(review)
+    codes = scope["diagnosis_codes"]
+    result["properties"]["resolution_checks_by_code"] = _object_schema(
+        {code: deepcopy(item) for code in codes}, required=tuple(codes))
+    result["properties"]["resolution_checks_by_code"]["description"] = json.dumps(scope, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    result["required"][result["required"].index("resolution_checks")] = "resolution_checks_by_code"
+    return result
 
 
 def shared_canon_schema(schema: dict[str, Any]) -> dict[str, Any]:
@@ -982,11 +1008,11 @@ def chapter_provider_output_schema(
         schema = _retrieval_query_expansion_schema()
     elif stage == "context_compress":
         schema = _object_schema({
-            "selected_unit_ids": {"type": "array", "maxItems": 256, "uniqueItems": True,
+            "selected_unit_ids": {"type": "array", "maxItems": FROZEN_COMPRESSION_REQUEST_MAX_UNITS, "uniqueItems": True,
                                   "items": {"type": "string", "minLength": 1, "maxLength": 200}},
         }, required=("selected_unit_ids",))
     elif stage == "context_fidelity":
-        identity_array = {"type": "array", "maxItems": 256, "uniqueItems": True,
+        identity_array = {"type": "array", "maxItems": FROZEN_COMPRESSION_REQUEST_MAX_UNITS, "uniqueItems": True,
                           "items": {"type": "string", "minLength": 1, "maxLength": 200}}
         schema = _object_schema({
             "supported": {"type": "boolean"},
@@ -1063,7 +1089,8 @@ def is_targeted_revision_schema_ref(schema_ref: str) -> bool:
 def is_work_review_schema_ref(schema_ref: str) -> bool:
     return re.fullmatch(
         r"schema:chapter-provider-output:(?:review|rereview):(?:v6|cross-chapter-v6)"
-        r"(?::quality-resolution-v1)?(?::narrative-craft-v[23])?(?::repair-scope-v1)?",
+        r"(?::quality-resolution-v1)?(?::narrative-craft-v[23])?(?::delivered-card-scope-v1)?"
+        r"(?::repair-scope-v1)?(?::initial-review-resolution-scope-v1)?",
         schema_ref,
     ) is not None
 

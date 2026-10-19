@@ -61,7 +61,7 @@ from .provider_protocol_failure import codex_protocol_failure, read_codex_stream
 from .security import assert_no_inline_secrets
 from .codex_configuration import (
     CODEX_SCHEMA_PROJECTION_VERSION, CODEX_NULLABLE_SHARED_TYPES_VERSION,
-    CODEX_INPUT_ONLY_POLICY_V2, codex_input_only_overrides,
+    CODEX_INPUT_ONLY_POLICY_V2, CODEX_GENERATION_INSTRUCTIONS, codex_input_only_overrides,
     codex_output_schema, decode_codex_output, strict_codex_json_loads, CODEX_CANONICAL_JSON_SCHEMA_REF, CODEX_CANONICAL_JSON_CODEC, codex_retry_overrides, require_codex_home,
 )
 
@@ -2011,22 +2011,14 @@ class CodexCliExecutionBackend:
         route = admission.route_snapshot
         layout = self.supervisor.execution_directory.prepare(request.execution_id)
         schema_path = layout.result_path("output.schema.json")
+        from .codex_configuration import codex_protocol_schema_text
+        current_schema = codex_protocol_schema_text(payload.output_schema, schema_ref=payload.output_schema_version)
+        historical_schema = codex_protocol_schema_text(payload.output_schema, schema_ref=payload.output_schema_version, compact=False)
         frozen_schema = payload.request_payload.get("protocol_schema_json")
         if frozen_schema:
-            actual_schema = json.dumps(codex_output_schema(payload.output_schema, schema_ref=payload.output_schema_version),
-                ensure_ascii=False, sort_keys=True, indent=2) + "\n"
-            if frozen_schema != actual_schema:
+            if frozen_schema not in (current_schema, historical_schema):
                 raise ValueError("PROVIDER_PROTOCOL_SCHEMA_DRIFT")
-        schema_path.write_text(
-            json.dumps(
-                codex_output_schema(payload.output_schema, schema_ref=payload.output_schema_version),
-                ensure_ascii=False,
-                sort_keys=True,
-                indent=2,
-            )
-            + "\n",
-            encoding="utf-8",
-        )
+        schema_path.write_text(frozen_schema or historical_schema, encoding="utf-8")
         result_filename = "last-message.json"
         result_path = layout.result_path(result_filename)
         if self.account_entitlement and self.account_entitlement.billing_identity:
@@ -2116,7 +2108,9 @@ class CodexCliExecutionBackend:
                 )
         return {
             "schema_version": "novelos.model_authority_evidence.v1",
-            **({"input_only_policy": CODEX_INPUT_ONLY_POLICY_V2}
+            **({"input_only_policy": CODEX_INPUT_ONLY_POLICY_V2,
+                "generation_instructions_sha256": "sha256:" + hashlib.sha256(
+                    CODEX_GENERATION_INSTRUCTIONS.encode()).hexdigest()}
                if codex_input_only_overrides(CODEX_INPUT_ONLY_POLICY_V2)[-1] in command else {}),
             "policy_requested_model": profile.model_id,
             "frozen_route_model": route.model_id,
@@ -2198,7 +2192,8 @@ class CodexCliExecutionBackend:
                 if authority.get("input_only_policy"):
                     from .codex_configuration import owned_codex_tool_evidence
                     trace = owned_codex_tool_evidence(Path(receipt.stdout_path).read_text(encoding="utf-8"),
-                        codex_home=self.codex_home, working_directory=self.execution_policy.fixed_working_directory)
+                        codex_home=self.codex_home, working_directory=self.execution_policy.fixed_working_directory,
+                        expected_instructions_hash=str(authority.get("generation_instructions_sha256") or ""))
                     runtime_evidence["owned_tool_trace"] = trace
                     invoked = sorted(set(runtime_evidence["tools"]["invoked"]) | set(trace["invoked"]))
                     runtime_evidence["tools"]["invoked"] = invoked

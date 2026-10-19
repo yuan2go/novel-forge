@@ -1,0 +1,17 @@
+{
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "working_tree_diff": "",
+  "database": "nf_author_capacity_test",
+  "argv": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "readback_exporter_review",
+    "tests/integration/test_synthesis_formation_postgres.py::test_native_undispatched_route_repair_successor_preserves_candidate_counter_and_acceptance",
+    "tests/integration/test_synthesis_formation_postgres.py::test_native_failed_final_input_order_successor_preserves_terminal_history_and_counter",
+    "--junitxml=/tmp/nf-author-first-20261017/frozen-history-postgres.xml",
+    "--basetemp=/tmp/nf-author-first-20261017/pytest-frozen-history"
+  ]
+}

@@ -182,6 +182,17 @@ class BackendQualificationManifestTests(unittest.TestCase):
         self.assertNotIn("password", json.dumps(sanitized))
         self.assertNotIn("secret", json.dumps(sanitized))
 
+    def test_evidence_sanitizer_redacts_quoted_pytest_values(self) -> None:
+        for message in (
+            '{"api_key": "opaque-private-value", "fencing_token": 7}',
+            "{'provider_api_key': 'opaque-private-value', 'fencing_token': 7}",
+            '{"Authorization": "Bearer opaque-private-value", "fencing_token": 7}',
+        ):
+            with self.subTest(message=message):
+                result = sanitize_evidence(message)
+                self.assertNotIn("opaque-private-value", result)
+                self.assertIn("fencing_token", result)
+
     def test_complete_collection_report_fails_closed_when_a_test_file_is_absent(
         self,
     ) -> None:

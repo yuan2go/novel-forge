@@ -14,6 +14,7 @@ from tests.unit.test_story_formation_authorization import _input
 @pytest.mark.parametrize("reason,expected", [
     ("WAITING_OPENING_DEPENDENCY", "TECHNICAL_WAIT"),
     ("WAITING_APPROVAL", "AUTHOR_DECISION"),
+    ("PAUSED", "AUTHOR_DECISION"),
     ("FORMATION_RECONCILIATION_OR_LEASE_REQUIRED", "RECONCILIATION_REQUIRED"),
     ("COMPLETED", "COMPLETED"), ("ABORTED", "CANCELLED"),
     ("SCHEMA_VALIDATION_FAILED", "OWNER_RECOVERY_REQUIRED"),
@@ -23,6 +24,77 @@ from tests.unit.test_story_formation_authorization import _input
 def test_creation_distinguishes_waits_without_a_new_business_state(reason, expected):
     assert creation_wait_class(reason) == expected
 
+
+@pytest.mark.parametrize("failure_point", ["binding", "policy", "principal"])
+@pytest.mark.parametrize("entry", ["creation", "book_phase"])
+def test_creation_worker_records_setup_refusal_before_any_provider_dispatch(monkeypatch, failure_point, entry):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from novel_forge.workers import book_authority as worker
+    from novel_forge.modules.command_kernel.errors import KernelError
+
+    failure = KernelError("CREATION_EXECUTOR_BINDING_CONFLICT", "unavailable original binding")
+    binding = Mock(return_value={"codex_input_only_policy": "codex-input-only.v2", "operator_id": "operator"})
+    if failure_point == "binding":
+        binding.side_effect = failure
+    monkeypatch.setattr(worker, "PostgresBookProductionQuery", lambda _: SimpleNamespace(creation_executor_binding=binding))
+    monkeypatch.setenv("NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY", "" if failure_point == "policy" else "codex-input-only.v2")
+    principal = Mock()
+    if failure_point == "principal":
+        principal.side_effect = failure
+    monkeypatch.setattr(worker, "build_trusted_principal_resolver", lambda **_: SimpleNamespace(resolve_api_principal=principal))
+    jobs = SimpleNamespace(get=Mock(return_value={"status": "CLAIMED"}), fail=Mock())
+    monkeypatch.setattr(worker, "RuntimeJobAuthority", lambda _: jobs)
+    dispatch = Mock(side_effect=AssertionError("setup refusal cannot build a Provider"))
+    monkeypatch.setattr(worker, "build_production_execution_composition", dispatch)
+    claim = SimpleNamespace(project_id="project", subject_id="formation", runtime_job_id="job", job_kind="BOOK_COORDINATION_TICK", input_snapshot={"operator_id": "operator"})
+    with pytest.raises(KernelError) as stopped:
+        if entry == "creation":
+            worker.execute_creation_worker_claim(SimpleNamespace(database_url="unused"), claim)
+        else:
+            legacy = SimpleNamespace(query=SimpleNamespace(creation_executor_binding=binding), principal=SimpleNamespace(require=Mock()))
+            worker.execute_book_phase_with_creation_scope(SimpleNamespace(database_url="unused"), claim, legacy, dispatch)
+    assert stopped.value.code == ("CREATION_RUNTIME_POLICY_DRIFT" if failure_point == "policy" else failure.code)
+    jobs.fail.assert_called_once()
+    assert jobs.fail.call_args.args[:2] == (claim, {"code": stopped.value.code, "message": str(stopped.value)})
+    dispatch.assert_not_called()
+
+
+@pytest.mark.parametrize("status", ["CLAIMED", "RETRY_WAIT"])
+def test_book_scope_failure_records_only_a_still_claimed_job(monkeypatch, status):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from novel_forge.workers import book_authority as worker
+    from novel_forge.modules.command_kernel.errors import KernelError
+    jobs = SimpleNamespace(get=Mock(return_value={"status": status}), fail=Mock())
+    monkeypatch.setattr(worker, "RuntimeJobAuthority", lambda _: jobs)
+    failure = KernelError("PHASE_FAILED", "Original owner failure")
+    legacy = SimpleNamespace(query=SimpleNamespace(creation_executor_binding=Mock(side_effect=failure)))
+    claim = SimpleNamespace(project_id="project", subject_id="book", runtime_job_id="job", job_kind="BOOK_COORDINATION_TICK")
+    execute = Mock()
+    with pytest.raises(KernelError, match="PHASE_FAILED"):
+        worker.execute_book_phase_with_creation_scope(SimpleNamespace(database_url="unused"), claim, legacy, execute)
+    assert jobs.fail.call_count == (1 if status == "CLAIMED" else 0)
+    execute.assert_not_called()
+
+
+
+def test_book_scope_preserves_inner_owner_failure_without_terminalizing_again(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+    from novel_forge.workers import book_authority as worker
+    from novel_forge.modules.command_kernel.errors import KernelError
+    jobs = SimpleNamespace(get=Mock(), fail=Mock())
+    monkeypatch.setattr(worker, "RuntimeJobAuthority", lambda _: jobs)
+    legacy = SimpleNamespace(query=SimpleNamespace(creation_executor_binding=lambda **_: None))
+    claim = SimpleNamespace(project_id="project", subject_id="book")
+    failure = KernelError("OWNER_RECONCILIATION_REQUIRED", "Retain the durable owner outcome")
+    with pytest.raises(KernelError) as stopped:
+        worker.execute_book_phase_with_creation_scope(SimpleNamespace(database_url="unused"), claim, legacy,
+            Mock(side_effect=failure))
+    assert stopped.value is failure
+    jobs.get.assert_not_called()
+    jobs.fail.assert_not_called()
 
 def test_recovery_versions_and_isolation_counts_are_not_material_progress():
     from copy import deepcopy
@@ -101,7 +173,7 @@ def test_native_creation_freezes_current_method_bindings_and_keeps_legacy_replay
     assert creation_narrative_execution({"narrative_execution_contract": "native-narrative-execution.v2"})["chapter"]["pack_version_override"] == "3.0.4"
     profile = policy["profiles"]["production_profile"]["content"]
     current = working_prose_policy(profile)
-    assert current["version"] == "working-prose-projection.v7"
+    assert current["version"] == "working-prose-projection.v8"
     assert current["max_characters"] is None
     assert planning.manifest["context_sources"]["policy_id"] == "context-policy:chapter-generation-pack:v4"
     assert "No fixed number of turns" in working_instruction(current)
@@ -182,6 +254,19 @@ def test_worker_and_cli_resolve_the_same_project_pack_without_cross_project_resu
     assert creation_runtime_environment("p", {}) != creation_runtime_environment("other", {})
     explicit = {"NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID": "explicit"}
     assert creation_runtime_environment("p", explicit)["NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID"] == "explicit"
+
+
+def test_creation_freezes_generation_instructions_and_rejects_runtime_policy_drift():
+    import json
+    from pathlib import Path
+    from novel_forge.modules.command_kernel.errors import KernelError
+    policy = json.loads((Path(__file__).resolve().parents[2] / "config/execution_templates/creation_inputs.json").read_text())
+    assert policy["codex_input_only_policy"] == "codex-input-only.v2"
+    key = "NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY"
+    assert key not in creation_runtime_environment("p", {})
+    assert creation_runtime_environment("p", {}, input_only_policy=policy["codex_input_only_policy"])[key] == "codex-input-only.v2"
+    with pytest.raises(KernelError, match="CREATION_RUNTIME_POLICY_DRIFT"):
+        creation_runtime_environment("p", {key: ""}, input_only_policy=policy["codex_input_only_policy"])
 
 
 def test_unknown_capacity_is_an_operator_configuration_wait_not_an_unknown_effect():

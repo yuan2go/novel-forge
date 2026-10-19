@@ -8,14 +8,17 @@ from typing import Any
 def _manuscript_runtime_values(settings, *, project_id, book_run_id):
     from novel_forge.modules.book_authority.queries import PostgresBookProductionQuery
     from novel_forge.modules.book_authority.creation_runtime import creation_runtime_environment
-    if PostgresBookProductionQuery(settings.database_url).uses_creation_scope(project_id=project_id, subject_id=book_run_id):
-        return creation_runtime_environment(project_id)
+    binding = PostgresBookProductionQuery(settings.database_url).creation_executor_binding(
+        project_id=project_id, subject_id=book_run_id)
+    if binding:
+        return creation_runtime_environment(project_id, input_only_policy=binding.get("codex_input_only_policy"))
     return None
 
 
 def add_manuscript_parser(subparsers: Any) -> None:
     parser = subparsers.add_parser("authority-manuscript", help="read, edit, compare, adopt or export the current work")
-    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "revise", "continue-revision", "revision-status", "use-working-candidate", "continue-retained-working", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"))
+    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "revise", "continue-revision", "revision-status", "use-working-candidate", "continue-retained-working", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "select-working-policy", "extend-delivery-window", "pause", "resume", "continue"))
+    parser.add_argument("--working-policy-file", type=Path)
     parser.add_argument("--project-id", default="")
     parser.add_argument("--book-run-id", required=True)
     parser.add_argument("--chapter", type=int)
@@ -32,6 +35,8 @@ def add_manuscript_parser(subparsers: Any) -> None:
     parser.add_argument("--idempotency-key", default="")
     parser.add_argument("--revision-root", default="")
     parser.add_argument("--foreground", action="store_true")
+    parser.add_argument("--ensure-chapter-length", action="store_true",
+        help="Use native working revision to meet frozen chapter lengths before continuing")
     parser.add_argument("--work-window-seconds", type=int, default=300)
 
 
@@ -77,7 +82,7 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
             return retire_reference_failed_chapter(composition.authority,book_run_id=args.book_run_id,proposal_id=args.proposal_id,plan_change=composition.plan_change,principal=principal)
         finally:
             execution.close()
-    if args.action in {"use-working-candidate", "continue-retained-working", "adopt-author-workflow", "extend-delivery-window", "pause", "resume", "continue"}:
+    if args.action in {"use-working-candidate", "continue-retained-working", "adopt-author-workflow", "select-working-policy", "extend-delivery-window", "pause", "resume", "continue"}:
         from novel_forge.modules.book_authority.production import PostgresBookAuthority
         from novel_forge.modules.book_followup_authority.application import BookFollowupAuthorityApplication
         from novel_forge.modules.book_authority.manuscript import adopt_author_workflow
@@ -87,6 +92,12 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
         book = authority.require(args.book_run_id)
         if book["project_id"] != args.project_id:
             raise PermissionError("Work is outside this Project")
+        if args.action == "select-working-policy":
+            from novel_forge.modules.book_authority.working_policy import select_working_policy
+            if not args.working_policy_file:
+                raise ValueError("Require --working-policy-file with the complete versioned working prose policy")
+            return select_working_policy(authority, args.book_run_id, policy=json.loads(args.working_policy_file.read_text()),
+                expected_version=args.expected_version, idempotency_key=args.idempotency_key, reason=args.reason, principal=principal)
         if args.action == "continue-retained-working":
             from novel_forge.modules.book_authority.retained_working import continue_retained_working
             return continue_retained_working(authority, args.book_run_id, candidate_id=args.candidate_version,
@@ -97,7 +108,8 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
             from novel_forge.modules.book_authority.manuscript import select_working_candidate
             return select_working_candidate(authority, args.book_run_id, chapter=args.chapter,
                 candidate_asset_version_id=args.candidate_version, expected_version=args.expected_version,
-                idempotency_key=args.idempotency_key, reason=args.reason, principal=principal)
+                idempotency_key=args.idempotency_key, reason=args.reason, principal=principal,
+                length_revalidation_root_operation_id=getattr(args, "length_revalidation_root_operation_id", ""))
         if args.action == "extend-delivery-window":
             if args.expected_version is None or args.stop_after_chapter is None or not args.idempotency_key:
                 raise ValueError("Delivery extension requires --expected-version, --stop-after-chapter and --idempotency-key; retain them on retry")
@@ -114,8 +126,17 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
                 uow.cursor.execute("SELECT formation_run_id FROM authority_story_formation_run WHERE project_id=%s AND book_id=%s AND formation_run_id || ':production'=%s", [args.project_id, book["book_id"], book["stable_idempotency_key"]])
                 original = uow.cursor.fetchone()
             if author_first(book):
-                return _continue_native_work(settings, args, book=book, principal=principal,
+                result = _continue_native_work(settings, args, book=book, principal=principal,
                     formation_run_id=original[0] if original else '')
+                if getattr(args, "output", None) and result["status"] == "MANUSCRIPT_READY":
+                    from types import SimpleNamespace
+                    export = SimpleNamespace(**{**vars(args), "action": "export", "chapter": None,
+                        "chapters": [unit["chapter"] for unit in result["manuscript"]["units"]],
+                        "versions": [unit["asset_version_id"] for unit in result["manuscript"]["units"]]})
+                    exact = run_manuscript_command(settings, export)
+                    result["export"] = {"path": str(args.output), "manifest_digest": exact["manifest_digest"],
+                        "text_digest": exact["text_digest"]}
+                return result
             if original is None:
                 return _continue_native_work(settings, args, book=book, principal=principal)
             from novel_forge.cli.authority import _authority_parser
@@ -212,6 +233,7 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
 
 def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], principal: Any, formation_run_id: str = '') -> dict[str, Any]:
     from time import monotonic
+    from novel_forge.modules.command_kernel.errors import KernelError
     from novel_forge.api.authority_dependencies import (
         build_book_production_composition, build_chapter_authority_application,
         build_production_execution_composition, build_trusted_principal_resolver,
@@ -237,7 +259,10 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
 
     if not continuation_live():
         return report('SOURCE_CANCELLED', book)
-    if writing_frontier(book) >= target:
+    ensure_length = bool(getattr(args, "ensure_chapter_length", False))
+    if ensure_length and target < writing_frontier(book):
+        raise ValueError("Length continuation cannot precede the delivered frontier; use an exact native revision")
+    if writing_frontier(book) >= target and not ensure_length:
         return report("MANUSCRIPT_READY", book)
     if book["state"] in {"ABORTED", "CANCELLED", "COMPLETED"}:
         return report(book["state"], book)
@@ -253,13 +278,29 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
             composition.authority.resume(run, reason="Requested native manuscript continuation", principal=principal)
         for _ in range((target - writing_frontier(book) + 1) * 20):
             current = composition.authority.require(run)
+            if not continuation_live():
+                return report("SOURCE_CANCELLED", current)
+            if ensure_length and current["state"] in {"PAUSED", "ABORTED", "CANCELLED", "COMPLETED"}:
+                return report(current["state"], current)
+            if ensure_length:
+                try:
+                    length = _ensure_native_work_length(settings, args, book=current, principal=principal)
+                except KernelError as exc:
+                    result = report("NATIVE_CONTINUATION_BLOCKED", composition.authority.require(run))
+                    result["failure"] = {"code": exc.code, "message": str(exc)}
+                    return result
+                if length is not None:
+                    if length["status"] in {"LENGTH_REVISION_PENDING", "LENGTH_REVISION_APPLIED"}:
+                        continue
+                    result = report("NATIVE_LENGTH_REPAIR_REQUIRED", composition.authority.require(run))
+                    result["length_delivery"] = length
+                    return result
             if writing_frontier(current) >= target:
                 if current["state"] != "PAUSED":
                     composition.authority.pause(run, reason=f"Requested manuscript round reached chapter {target}; frozen delivery window retained", principal=principal)
                 return report("MANUSCRIPT_READY", composition.authority.require(run))
             if current["state"] in {"PAUSED", "ABORTED", "CANCELLED", "COMPLETED"}:
                 return report(current["state"], current)
-            from novel_forge.modules.command_kernel.errors import KernelError
             try:
                 outcome = drive_book(composition=composition, chapter=chapter, book_run_id=run, worker=worker,
                     maximum_ticks=1, deadline=monotonic() + 1800, continuation_live=continuation_live)
@@ -272,6 +313,106 @@ def _continue_native_work(settings: Any, args: Any, *, book: dict[str, Any], pri
         return report("YIELDED_CHECKPOINT", composition.authority.require(run))
     finally:
         execution.close()
+
+
+def _ensure_native_work_length(settings, args, *, book, principal):
+    from types import SimpleNamespace
+    from novel_forge.modules.book_authority.manuscript import require_manuscript
+    from novel_forge.modules.book_authority.governed_scheduler import PostgresBookAuthorityScheduler
+    from novel_forge.modules.chapter_authority.author_editor import source_draft_content
+    from novel_forge.modules.chapter_authority.working_revision import working_revision_status
+    from novel_forge.modules.command_kernel.errors import KernelError
+    from novel_forge.modules.revision.domain import han_characters
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+    manifest = require_manuscript(settings.database_url, project_id=book["project_id"],
+        book_run_id=book["book_run_id"], principal=principal)
+    for unit in manifest["units"]:
+        length = unit["length"]
+        target = length.get("target")
+        if not isinstance(target, dict) or not all(type(target.get(key)) is int for key in ("minimum", "maximum")):
+            raise KernelError("MANUSCRIPT_LENGTH_TARGET_REQUIRED", "Length delivery requires the frozen chapter bounds")
+        if target["minimum"] <= length["actual"] <= target["maximum"]:
+            continue
+        if (PostgresBookAuthorityScheduler.coordinates_active_chapter(book["state"]) and book.get("active_chapter_request_id")
+                and unit["chapter"] == book["current_chapter"] + 1):
+            return None
+        if unit["chapter"] != book["current_chapter"] or book["state"] != "READY" or book.get("active_chapter_request_id"):
+            return {"status": "EARLIER_OR_ACTIVE_CHAPTER_REQUIRES_NATIVE_REVISION", "chapter": unit["chapter"]}
+        key = "length-delivery:" + canonical_hash({"book": book["book_run_id"], "chapter": unit["chapter"],
+            "source": unit["asset_version_id"], "hash": unit["content_hash"], "target": target})
+        reason = (f"按本书冻结目标将当前完整工作稿原生修订为{target['minimum']}—{target['maximum']}汉字；"
+            "保留原稿、已发生事件、人物知识和前文因果，不用重复解释或无关情节凑字数；不授予作者认可或正式接纳。")
+        with AuthorityUnitOfWork(settings.database_url) as uow:
+            uow.cursor.execute("""SELECT operation_id,actor_id FROM authority_operation WHERE project_id=%s
+                AND idempotency_scope='project:chapter-slice' AND idempotency_key=%s""",
+                [book["project_id"], "working-revision:" + key])
+            prior = uow.cursor.fetchone()
+        if prior and prior[1] != principal.principal_id:
+            raise KernelError("MANUSCRIPT_REVISION_REQUEST_DRIFT", "Length continuation must retain its original actor")
+        if prior:
+            with AuthorityUnitOfWork(settings.database_url) as uow:
+                uow.cursor.execute("""SELECT attempt.result FROM authority_operation child
+                    JOIN authority_saga_step active USING(operation_id)
+                    JOIN LATERAL (SELECT result FROM authority_attempt WHERE operation_id=child.operation_id
+                        ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
+                    WHERE child.root_operation_id=%s AND child.status IN ('FAILED_RETRYABLE','FAILED_FINAL','DEAD_LETTER')
+                        AND attempt.result->>'error_code'='CHAPTER_LENGTH_REPAIR_INCOMPLETE' LIMIT 1""", [prior[0]])
+                retained_failure = uow.cursor.fetchone()
+            if retained_failure:
+                return {"status": "LENGTH_REVISION_BLOCKED", "failure": retained_failure[0],
+                    "revision": working_revision_status(settings.database_url, project_id=book["project_id"],
+                        book_run_id=book["book_run_id"], root_operation_id=prior[0], principal=principal)}
+        revision_args = SimpleNamespace(**{**vars(args), "action": "continue-revision" if prior else "revise",
+            "project_id": book["project_id"], "chapter": unit["chapter"], "expected_version": book["version"],
+            "idempotency_key": key, "reason": reason, "revision_root": prior[0] if prior else "", "foreground": True})
+        try:
+            revision = _run_working_revision_command(settings, revision_args, principal=principal)
+        except KernelError as error:
+            if error.code != "CHAPTER_LENGTH_REPAIR_INCOMPLETE":
+                raise
+            with AuthorityUnitOfWork(settings.database_url) as uow:
+                uow.cursor.execute("""SELECT operation_id FROM authority_operation WHERE project_id=%s
+                    AND idempotency_scope='project:chapter-slice' AND idempotency_key=%s AND actor_id=%s""",
+                    [book["project_id"], "working-revision:" + key, principal.principal_id])
+                root = uow.cursor.fetchone()
+            if not root:
+                raise
+            return {"status": "LENGTH_REVISION_BLOCKED", "failure": {"error_code": error.code,
+                "error_message": str(error), "failure_details": error.details},
+                "revision": working_revision_status(settings.database_url, project_id=book["project_id"],
+                    book_run_id=book["book_run_id"], root_operation_id=root[0], principal=principal)}
+        if revision["status"] != "SUCCEEDED":
+            return {"status": "LENGTH_REVISION_PENDING" if revision["status"] not in {"CANCELLED", "FAILED_FINAL", "DEAD_LETTER"}
+                else "LENGTH_REVISION_BLOCKED", "revision": revision}
+        best = [stage["asset_version_id"] for stage in revision["stages"]
+            if stage["output_key"] == "chapter.best_candidate" and stage["status"] == "SUCCEEDED"]
+        if len(best) != 1:
+            raise KernelError("MANUSCRIPT_LENGTH_CANDIDATE_REQUIRED", "Length delivery requires one completed native Best candidate")
+        length_revalidation_root_operation_id = ""
+        with AuthorityUnitOfWork(settings.database_url) as uow:
+            candidate = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=best[0])
+            actual = han_characters(source_draft_content(candidate)["text"])
+            if not target["minimum"] <= actual <= target["maximum"]:
+                from novel_forge.modules.chapter_authority.working_revision import revalidate_completed_length_candidate
+                revalidated = revalidate_completed_length_candidate(uow, root_operation_id=revision["root_operation_id"],
+                    book_run_id=book["book_run_id"], principal=principal)
+                if revalidated:
+                    length_revalidation_root_operation_id = revision["root_operation_id"]
+                    best = [revalidated["candidate_asset_version_id"]]
+                    candidate = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=best[0])
+                    actual = han_characters(source_draft_content(candidate)["text"])
+        if not target["minimum"] <= actual <= target["maximum"]:
+            return {"status": "REVISED_LENGTH_TARGET_UNMET", "chapter": unit["chapter"],
+                "candidate_asset_version_id": best[0], "actual": actual, "target": target, "revision": revision}
+        selection_args = SimpleNamespace(**{**vars(args), "action": "use-working-candidate", "project_id": book["project_id"],
+            "chapter": unit["chapter"], "candidate_version": best[0], "expected_version": book["version"],
+            "idempotency_key": key + ":select", "reason": reason,
+            "length_revalidation_root_operation_id": length_revalidation_root_operation_id})
+        run_manuscript_command(settings, selection_args)
+        return {"status": "LENGTH_REVISION_APPLIED", "chapter": unit["chapter"], "revision": revision}
+    return None
 
 
 def _run_working_revision_command(settings, args, *, principal):

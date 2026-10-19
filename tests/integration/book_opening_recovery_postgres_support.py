@@ -488,6 +488,9 @@ def create_legacy_book_opening_orphan(
         auto_approve_low_risk=False,
     )
     candidate_row = planning.require_candidate(candidate.candidate_asset_version_id)
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    candidate_document = AuthorityAssetQuery(DATABASE_URL).require(project_id=project_id,
+        asset_version_id=candidate.candidate_asset_version_id)
     evaluation_command = StoryPlanningEvaluationCommand(
         project_id=project_id,
         workspace_id=workspace_id,
@@ -499,7 +502,7 @@ def create_legacy_book_opening_orphan(
         candidate_content_hash=str(candidate_row["content_hash"]),
         evaluator_execution_class=evaluator_execution_class,
         evaluation=(scripted_qualification("book_plan.generate",
-            **qualification_profile_options(candidate_row["content"])) if scripted else None),
+            **qualification_profile_options(candidate_document.content)) if scripted else None),
         idempotency_key=f"{generation_command.idempotency_key}:semantic-evaluation",
         trace_id=generation_command.trace_id,
         correlation_id=generation_command.correlation_id,

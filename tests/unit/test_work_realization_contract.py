@@ -338,3 +338,26 @@ def test_original_frozen_bounds_without_unit_require_han_length_repair():
                 context={'context_segments': [profile]}, context_asset_version_id='context:original:v1')
         with pytest.raises(KernelError, match='CHAPTER_LENGTH_UNIT_UNSUPPORTED'):
             freeze_requirement({'context_segments': [profile]}, context_id='context:original:v1')
+
+
+@pytest.mark.parametrize('version,target,valid', [('v3', 1, True), ('v3', 2, False), ('v4', 1, True), ('v4', 2, True), ('v4', 3, True), ('v4', 4, False), ('v4', 0, False)])
+def test_group_correction_versions_preserve_the_historical_start_boundary(version, target, valid):
+    from novel_forge.modules.hierarchical_planning.realization_domain import realization_hash
+
+    value = observation_contract()
+    value['schema_version'] = 'narrative-realization-contract.' + version
+    working = {'version': 'working-manuscript-context.v1', 'project_id': value['project_id'],
+        'book_id': value['book_id'], 'book_run_id': 'original-run', 'target_chapter': target,
+        'accepted_through_chapter': 0, 'sources': []}
+    working['snapshot_hash'] = realization_hash(working)
+    value['working_manuscript'] = working
+    if valid:
+        contract = NarrativeRealizationContract.from_mapping(value)
+        assert contract.to_dict() == value
+        changed = deepcopy(value)
+        changed['working_manuscript']['target_chapter'] = 3 if target == 2 else 2
+        with pytest.raises(KernelError, match='REALIZATION_WORKING_BOUNDARY_INVALID'):
+            NarrativeRealizationContract.from_mapping(changed)
+    else:
+        with pytest.raises(KernelError, match='REALIZATION_WORKING_BOUNDARY_INVALID'):
+            NarrativeRealizationContract.from_mapping(value)

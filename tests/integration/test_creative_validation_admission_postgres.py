@@ -128,3 +128,42 @@ def test_native_pack_template_admission_has_no_human_approval_and_cannot_enter_p
     with AuthorityUnitOfWork(DATABASE_URL) as uow:
         compilation = uow.repositories.capability_packs.require_compilation(result["compilation_id"])
         assert require_validation_admission(uow.repositories.capability_packs, compilation, environment="validation", book_id=book) is None
+
+
+def test_author_first_policy_cas_preserves_frozen_22_replay_and_one_stable_23_schema(monkeypatch):
+    import json
+    from copy import deepcopy
+    import novel_forge.modules.authority_handler_runtime.policy_commands as module
+    from novel_forge.modules.production_execution.routing_runtime import PostgresRoutingRegistry
+    harness = CapabilityPackPostgresHarness('author-first-policy-cas')
+    operator = replace(harness.compiler, permissions=harness.compiler.permissions | {'book.authority.execute'})
+    value = json.loads((ROOT / 'config/execution_templates/author_first.json').read_text())
+    value.update(book_id=harness.book_ids[0], allowed_candidates=['member'], member_authorization_ref='member-authorization')
+    content = dict(policy_version='v1', reason='Frozen author policy', task_overrides=[],
+        execution_templates=[value], author_supervised_books=[])
+    arguments = dict(database_url=DATABASE_URL, owner='PROVIDER_ROUTING', project_id=harness.project_id,
+        workspace_id=harness.workspace_id, principal=operator, application_build_id=harness.application_build_id,
+        commit_sha=harness.release_sha, trace_id=harness.project_id, correlation_id=harness.project_id)
+    original = module.owned_policy_definition
+    with monkeypatch.context() as patch:
+        def historical(**kwargs):
+            return original(**{**kwargs, 'policy_precondition':False})
+        patch.setattr(module, 'owned_policy_definition', historical)
+        frozen = module.configure_owned_policy(**arguments, content=content, idempotency_key='historical-22', expected_policy_hash='')
+    replay = module.configure_owned_policy(**arguments, content=content, idempotency_key='historical-22', expected_policy_hash='')
+    assert replay['operation_id'] == frozen['operation_id'] and replay['replayed']
+    with pytest.raises(KernelError, match='IDEMPOTENCY_CONFLICT'):
+        module.configure_owned_policy(**arguments, content={**content, 'reason':'Changed request'}, idempotency_key='historical-22', expected_policy_hash='')
+    plain = deepcopy(content)
+    plain.pop('author_supervised_books')
+    plain['policy_version'] = 'v2'
+    second = module.configure_owned_policy(**arguments, content=plain, idempotency_key='current-23-plain', expected_policy_hash=frozen['policy_hash'])
+    third_content = {**plain, 'policy_version':'v3', 'author_supervised_books':[]}
+    third = module.configure_owned_policy(**arguments, content=third_content, idempotency_key='current-23-supervised', expected_policy_hash=second['policy_hash'])
+    with pytest.raises(KernelError, match='ROUTING_POLICY_VERSION_CONFLICT'):
+        module.configure_owned_policy(**arguments, content={**third_content, 'policy_version':'stale'}, idempotency_key='stale-current-23', expected_policy_hash=second['policy_hash'])
+    assert PostgresRoutingRegistry(DATABASE_URL).policy(harness.project_id)['policy_hash'] == third['policy_hash']
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute('SELECT operation_id,definition_version FROM authority_operation WHERE operation_id=ANY(%s)',
+            [[frozen['operation_id'],second['operation_id'],third['operation_id']]])
+        assert dict(uow.cursor.fetchall()) == {frozen['operation_id']:'2.2.0',second['operation_id']:'2.3.0',third['operation_id']:'2.3.0'}

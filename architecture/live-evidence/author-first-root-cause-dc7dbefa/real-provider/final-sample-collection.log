@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01/execution-checks/collect_final_sample.py", line 23, in <module>
+    assert (T/'exports/native-working-chapters-01-05.md').read_text().rstrip()==full['text'].rstrip()
+AssertionError

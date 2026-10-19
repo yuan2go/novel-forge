@@ -10,7 +10,7 @@ import tempfile
 from fastapi.testclient import TestClient
 
 from novel_forge.modules.authority_security import PrincipalType
-from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+from tests.integration.current_chapter_wire_support import current_chapter_fixture_response
 from novel_forge.modules.content_authority import ContentAuthorityApplication, ContentOperationRequest
 from novel_forge.modules.content_authority.codecs import CONTENT_CODECS
 from novel_forge.modules.story_planning_runtime.execution import planning_fixture_response
@@ -31,7 +31,8 @@ class OperatorPlanChangeTransport:
         if stage == "world_candidates.generate":
             return {"disposition": "NO_OP", "reason": "No separate world action is proposed in the operator-plan protocol fixture.", "candidates": []}
         if stage == "world_candidates.evaluate":
-            return {"evaluations": []}
+            return {"evaluations": [], **({"action_classifications": []}
+                if (inputs.get("world_preparation") or {}).get("epistemic_contract") == "world-agency.v2" else {})}
         result = planning_fixture_response(stage, inputs)
         if self.long_novel and stage == "book_plan.generate":
             result["volume_skeleton"] = [
@@ -42,7 +43,7 @@ class OperatorPlanChangeTransport:
 
     def __call__(self, stage, inputs):
         self.calls.append({"stage": stage, "inputs": inputs})
-        return default_chapter_fixture_response(stage, inputs)
+        return current_chapter_fixture_response(stage, inputs, json_envelope=False)
 
 
 def execute_operator_plan_change_vertical(*, composition, chapter, snapshot, settings, authority_api, book_target=6, pilot_cursor=0, checkpoint_observer=None):
@@ -107,9 +108,23 @@ def execute_operator_plan_change_vertical(*, composition, chapter, snapshot, set
                    narrative_search_id="", narrative_search_branch_key="", narrative_search_parent_state_asset_version_id="",
                    narrative_search_accepted_through_chapter=0, narrative_search_strategy_directive="",
                    narrative_search_planning_horizon={}, narrative_search_desired_transformation={}, narrative_search_hard_constraints=[])
+    held = authority.require(book_run_id)
+    assert held["state"] == "PAUSED" and held["accepted_through_chapter"] == 3
+    resumed_for_candidate = authority.resume(book_run_id, principal=principal,
+        reason="Fixture operator permits future candidate generation before the next explicit hold",
+        expected_version=int(held["version"]))
+    assert resumed_for_candidate["accepted_through_chapter"] == 3
     generated = post(f"/product/production/book-authority/books/{book_id}/planning-generations", command)
     candidate_id = generated["candidate_asset_version_id"]
     assert generated["status"] == "APPROVAL_PENDING"
+    checkpoint = authority.require(book_run_id)
+    if checkpoint["state"] != "PAUSED":
+        authority.pause(book_run_id, principal=principal,
+            reason="Fixture explicit hold before rebinding the approved future plan")
+    assert authority.require(book_run_id)["accepted_through_chapter"] == 3
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("SELECT COUNT(*) FROM authority_book_chapter_request WHERE book_run_id=%s AND chapter_number>3", [book_run_id])
+        assert uow.cursor.fetchone() == (0,)
     proposal = post(f"/product/production/book-authority/books/{book_id}/plan-changes", {
         "project_id": project_id, "workspace_id": workspace_id, "book_id": book_id, "actor_id": principal.principal_id,
         "trace_id": f"{project_id}:operator-proposal", "correlation_id": book_run_id,

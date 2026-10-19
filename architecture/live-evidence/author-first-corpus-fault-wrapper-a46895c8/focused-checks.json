@@ -1,0 +1,65 @@
+{
+  "source_sha": "a46895c84163f1d0be55bc7346a99e8551e13dfd",
+  "before_source_sha": "b57342b4e15241e722bcbc5ac67a68cd4063d11f",
+  "before": {
+    "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/new-formal-failures-b57342b4.xml",
+    "sha256": "sha256:c5de2aac4b576ade3e3a9320fdd5c3c94979b8b15e18ee1880c333db6012749c",
+    "counts": {
+      "PASS": 1,
+      "FAIL": 1,
+      "ERROR": 0,
+      "SKIP": 0
+    },
+    "cases": [
+      {
+        "classname": "tests.integration.test_core_functional_loops_postgres",
+        "name": "test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres[creative_reject_memo]",
+        "status": "PASS"
+      },
+      {
+        "classname": "tests.integration.test_corpus_ingestion_postgres",
+        "name": "test_native_cli_curated_analysis_controls_results_and_relation_guards[True]",
+        "status": "FAIL"
+      }
+    ]
+  },
+  "after": {
+    "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/corpus-fault-wrapper-final-postgres-a46895c8.xml",
+    "sha256": "sha256:16e238444b08ab778f1c7fcc488c28ba3b87a7d50517a9256a48cb1710938dd4",
+    "counts": {
+      "PASS": 1,
+      "FAIL": 0,
+      "ERROR": 0,
+      "SKIP": 0
+    },
+    "cases": [
+      {
+        "classname": "tests.integration.test_corpus_ingestion_postgres",
+        "name": "test_native_cli_curated_analysis_controls_results_and_relation_guards[True]",
+        "status": "PASS"
+      }
+    ]
+  },
+  "creative_memo_rejection_case_passed_on_before_source": true,
+  "production_code_equivalence": "focused-command.json",
+  "retained_prior_source_checks": {
+    "source_sha": "b57342b4e15241e722bcbc5ac67a68cd4063d11f",
+    "unit": 82,
+    "postgres_creation": 4
+  },
+  "all_previous_checks_not_claimed_as_rerun": true,
+  "scripted_evidence_not_real_provider_production": true,
+  "no_assertion_skip_xfail_or_denominator_change": true,
+  "private_transcript": {
+    "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/corpus-fault-wrapper-final-a46895c8.private/native-operations.json",
+    "sha256": "sha256:ca127543bb3516e6583ab679d9667e58f0897aea8c8965f2063fcc60ac974300",
+    "cli_operations": 130,
+    "intended_crash_exit_codes_retained": [
+      75,
+      76,
+      74
+    ],
+    "recovery_single_successful_effect_assertion_unchanged": true,
+    "source_boundary_and_replay_assertions_unchanged": true
+  }
+}

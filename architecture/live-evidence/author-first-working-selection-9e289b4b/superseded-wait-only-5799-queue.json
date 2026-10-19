@@ -1,0 +1,7 @@
+{
+  "at": "2026-10-18T19:03:39.354388+00:00",
+  "pid": 97370,
+  "status": "WAIT_ONLY_QUEUE_CANCELLED_BEFORE_ANY_FORMAL_RUN",
+  "reason": "New real working-version selection blocker after native19 revision; final corrected source must include fix",
+  "prior_a60_matrix_not_interrupted": true
+}

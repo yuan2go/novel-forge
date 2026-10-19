@@ -14,6 +14,15 @@ CONTRACT = "frozen-publication-revalidation.v2"
 LEGACY_CONTRACT = "frozen-publication-revalidation.v1"
 
 
+def has_publication_successor(request):
+    if not request.database_url:
+        return False
+    with AuthorityUnitOfWork(request.database_url) as u:
+        u.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_saga_step_successor WHERE successor_operation_id=%s AND project_id=%s)",
+            [request.operation_id, request.project_id])
+        return bool(u.cursor.fetchone()[0])
+
+
 def _source_allowed(source, current, policy, publish_gate):
     if (policy.get("contract_version") != CONTRACT or current.get("definition_version") != "3.10.0"
         or source.get("definition_name") != "chapter.export.render" or current.get("definition_name") != source.get("definition_name")

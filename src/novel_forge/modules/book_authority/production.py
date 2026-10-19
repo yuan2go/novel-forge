@@ -1678,10 +1678,12 @@ class PostgresBookAuthority:
         }
 
     def pause(
-        self, book_run_id: str, *, reason: str, principal: Principal
+        self, book_run_id: str, *, reason: str, principal: Principal, expected_version: int | None = None,
     ) -> dict[str, Any]:
         book = self.require(book_run_id)
         principal.require("book.authority.execute", book["project_id"])
+        if expected_version is not None and int(book["version"]) != expected_version:
+            raise KernelError("BOOK_MUTATION_CONFLICT", "Book checkpoint changed before its requested pause")
         if book["state"] in {
             BookProductionState.COMPLETED.value,
             BookProductionState.ABORTED.value,
@@ -2013,6 +2015,11 @@ class PostgresBookAuthority:
             operation_id: str,
             checkpoint: TransactionCheckpoint,
         ) -> dict[str, Any]:
+            from novel_forge.modules.chapter_group_authority.replan_retirement import lock_replan_roots
+            lock_replan_roots(uow.cursor, project_id=book["project_id"], book_root=book["root_operation_id"])
+            uow.cursor.execute("SELECT EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=%s)", [book["root_operation_id"]])
+            if uow.cursor.fetchone()[0]:
+                raise KernelError("BOOK_REPLAN_CANCELLED", "Cancelled Book cannot bind replacement input")
             uow.cursor.execute(
                 """
                 SELECT version, COALESCE(input_snapshot_id,''), state

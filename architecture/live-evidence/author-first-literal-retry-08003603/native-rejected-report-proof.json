@@ -1,0 +1,227 @@
+{
+  "schema_version": "native-rejected-model-review-proof.v1",
+  "at": "2026-10-19T02:23:39.507733+00:00",
+  "source_sha": "080036038958a130fac551143ab9e42ae131e205",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "run_id": "6c2ec777-918c-41f4-8440-36ab878df569",
+  "operation_id": "e5de650e-6675-40cb-8eb2-17cfc1319a46",
+  "frozen_window": {
+    "project_id": "project:wp-nf-author-first-20261017",
+    "content_hash": "sha256:5eb656af96bd37741e36918ba3d6ad002d58bdca3816d27d371d7bd8f6841c40",
+    "asset_version_id": "de7f97a6-712a-4d3d-a4bf-17c74e28f47e"
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "effect_id": "1d2cf538-6a6f-4939-a94e-fa84b8591cfb",
+      "request_hash": "sha256:4ac455eb911910c0769b205eb46aac40f90c71509d075b1f9376d5c0d07e462b",
+      "report_hash": "sha256:87db1b7c71265357514ea54e7b35f865b374ad6b70a07f72c47b1356fa1568e7",
+      "status": "SUCCEEDED",
+      "budget_status": "SETTLED",
+      "settled_usd": "0.06792632",
+      "citation_checks": [
+        {
+          "chapter": 17,
+          "quote_hash": "sha256:fdd47a7baea15d0e52c3f2465f18b3f6fa63e7acd67129e893aad789fe1aa109",
+          "exact_occurrences": 0
+        },
+        {
+          "chapter": 20,
+          "quote_hash": "sha256:78df6b1aa67c16126cb1c81de9bc5ed7577614f4a7b936a816294ac47886f890",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 17,
+          "quote_hash": "sha256:a0bf68f81e4a332772229702598636ff9b0061e32ebad322f0a64bc2d54e3f49",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 18,
+          "quote_hash": "sha256:9cb1a113f976f6f98bfd3c42c242be8177181264ff7383c881cdadc2fc888768",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 19,
+          "quote_hash": "sha256:8096d89d404348ead7ecd76cf266f624e0d3bd6738519bcf00683e2c4e8df46d",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 17,
+          "quote_hash": "sha256:e885c65e6ed7406d32d482d35746f38bd33c8e3f18e297e47fa804164f617e5b",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 18,
+          "quote_hash": "sha256:0035d98a67fe9e89a5270da1f05b6b26f9fdbc16a5e32829f1c24859daa40846",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 19,
+          "quote_hash": "sha256:826f9ba3b1eb49c8237dcbf43cf55f47d3d818deb05dd6a49f9e4c8caa89fa22",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 17,
+          "quote_hash": "sha256:a06e93c55e39fa6715a963acdd008ce341f146f088318382af08b2eb6263ab87",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 20,
+          "quote_hash": "sha256:dab4a94473f9b11c9d49f05e5a1bc1f8184f547458cfa07905947dd99de62245",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 17,
+          "quote_hash": "sha256:4c7ccb67968ba27824b13029d1294fb9d7e53fdf37927506cffcd4668509ea2e",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 18,
+          "quote_hash": "sha256:8013063d555f45c7d398758ba871c6fb978fa009a1cc00bd0bfbeb0a89373d3a",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 20,
+          "quote_hash": "sha256:575e9000b9b47b03b984abc7987bbfba589c6b3d3feef3f632f05326947bf928",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 17,
+          "quote_hash": "sha256:f8e4ee8975bcd4e3ae3155b47b81a70d920695cf162469e363ff59fb9d957e38",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 18,
+          "quote_hash": "sha256:eaa8ff46a0f0877235121f1f2ac74ae28de914aaac4c5deba0ef91c6140335ac",
+          "exact_occurrences": 0
+        },
+        {
+          "chapter": 20,
+          "quote_hash": "sha256:fde2c097845d66a2a4c656151e3e123fb59c3bac6d8df2b6c8289c38017afeb5",
+          "exact_occurrences": 1
+        }
+      ],
+      "valid_report": false,
+      "model": {
+        "model_provider": "deepseek",
+        "model_id": "deepseek-v4-pro",
+        "reasoning_effort": "high",
+        "release_sha": "0c074536f35ee8e5bc33175d5c9793dbbbb54b5f"
+      },
+      "diagnosed_correction_input": false,
+      "original_effect_bound": null,
+      "raw_result_retained": true
+    },
+    {
+      "attempt": 2,
+      "effect_id": "08962166-7703-4e5d-af55-653d822136e6",
+      "request_hash": "sha256:23c12fe8ddaec76686e0d80b49e46920f624d0ae8d8edd39c01e85b105e0c3e6",
+      "report_hash": "sha256:7b817c3384a3c2ab78e3329c6287895b9990005404775a9303652eeda557fab3",
+      "status": "SUCCEEDED",
+      "budget_status": "SETTLED",
+      "settled_usd": "0.04855268",
+      "citation_checks": [
+        {
+          "chapter": 17,
+          "quote_hash": "sha256:3803ef4fe77373631dadc7393d445fa21f50203bd0d39a9acfa464c70998ebb7",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 20,
+          "quote_hash": "sha256:78df6b1aa67c16126cb1c81de9bc5ed7577614f4a7b936a816294ac47886f890",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 17,
+          "quote_hash": "sha256:a0bf68f81e4a332772229702598636ff9b0061e32ebad322f0a64bc2d54e3f49",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 18,
+          "quote_hash": "sha256:9cb1a113f976f6f98bfd3c42c242be8177181264ff7383c881cdadc2fc888768",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 19,
+          "quote_hash": "sha256:8096d89d404348ead7ecd76cf266f624e0d3bd6738519bcf00683e2c4e8df46d",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 17,
+          "quote_hash": "sha256:e885c65e6ed7406d32d482d35746f38bd33c8e3f18e297e47fa804164f617e5b",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 18,
+          "quote_hash": "sha256:0035d98a67fe9e89a5270da1f05b6b26f9fdbc16a5e32829f1c24859daa40846",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 19,
+          "quote_hash": "sha256:826f9ba3b1eb49c8237dcbf43cf55f47d3d818deb05dd6a49f9e4c8caa89fa22",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 17,
+          "quote_hash": "sha256:a06e93c55e39fa6715a963acdd008ce341f146f088318382af08b2eb6263ab87",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 20,
+          "quote_hash": "sha256:dab4a94473f9b11c9d49f05e5a1bc1f8184f547458cfa07905947dd99de62245",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 17,
+          "quote_hash": "sha256:4c7ccb67968ba27824b13029d1294fb9d7e53fdf37927506cffcd4668509ea2e",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 18,
+          "quote_hash": "sha256:8013063d555f45c7d398758ba871c6fb978fa009a1cc00bd0bfbeb0a89373d3a",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 20,
+          "quote_hash": "sha256:575e9000b9b47b03b984abc7987bbfba589c6b3d3feef3f632f05326947bf928",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 17,
+          "quote_hash": "sha256:f8e4ee8975bcd4e3ae3155b47b81a70d920695cf162469e363ff59fb9d957e38",
+          "exact_occurrences": 1
+        },
+        {
+          "chapter": 18,
+          "quote_hash": "sha256:eaa8ff46a0f0877235121f1f2ac74ae28de914aaac4c5deba0ef91c6140335ac",
+          "exact_occurrences": 0
+        },
+        {
+          "chapter": 20,
+          "quote_hash": "sha256:fde2c097845d66a2a4c656151e3e123fb59c3bac6d8df2b6c8289c38017afeb5",
+          "exact_occurrences": 1
+        }
+      ],
+      "valid_report": false,
+      "model": {
+        "model_provider": "deepseek",
+        "model_id": "deepseek-v4-pro",
+        "reasoning_effort": "high",
+        "release_sha": "080036038958a130fac551143ab9e42ae131e205"
+      },
+      "diagnosed_correction_input": true,
+      "original_effect_bound": "1d2cf538-6a6f-4939-a94e-fa84b8591cfb",
+      "raw_result_retained": true
+    }
+  ],
+  "configured_max_attempts": 2,
+  "attempts_remaining": 0,
+  "review_complete": false,
+  "classification": "CORRECT_LITERAL_REJECTION_REPEATED_BY_REAL_PROVIDER",
+  "repair_input_actual_dispatch_verified": true,
+  "original_report_and_failure_preserved": true,
+  "manuscript_mutation": false,
+  "accepted_through_chapter": 0,
+  "authorized_total_usd": "10",
+  "literary_qualification": "NOT_PROVEN"
+}

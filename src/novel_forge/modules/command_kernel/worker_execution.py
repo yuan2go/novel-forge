@@ -75,6 +75,7 @@ _FINAL_FAILURE_CODES = frozenset(
         "BOOK_OPENING_BUDGET_EFFECT_BINDING_REQUIRED",
         "BOOK_OPENING_PROVIDER_EXECUTION_NOT_AUTHORIZED",
         "BOOK_OPENING_PROVIDER_EXECUTION_NOT_LIVE",
+        "BOOK_GENERATION_EXECUTION_NOT_LIVE",
     }
 )
 
@@ -251,6 +252,8 @@ class WorkerFailureClassifier:
             return WorkerFailureClass.MANUAL_INTERVENTION
         if code in _FINAL_FAILURE_CODES:
             return WorkerFailureClass.FINAL_FAILURE
+        if code == "LONGFORM_PROSE_CITATION_ID_UNKNOWN":
+            return WorkerFailureClass.RETRYABLE
         if "UNKNOWN" in code or "RECONCILIATION" in code:
             return WorkerFailureClass.UNKNOWN_EXTERNAL_STATE
         if (

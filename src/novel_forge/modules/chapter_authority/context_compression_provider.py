@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.context_contracts import FROZEN_COMPRESSION_REQUEST_MAX_UNITS
 from novel_forge.modules.production_execution.contracts import ExecutionRuntimeClass
 
 
@@ -57,7 +58,7 @@ def context_compression_task_view(stage: str, inputs: Mapping[str, Any]) -> dict
         or not isinstance(boundary, Mapping)
         or not isinstance(units, list)
         or not units
-        or len(units) > 256
+        or len(units) > FROZEN_COMPRESSION_REQUEST_MAX_UNITS
         or not isinstance(required, list)
         or not str(task.get(fingerprint_key) or "")
         or not str(task.get("policy_version") or "")
@@ -157,8 +158,6 @@ def context_headroom_output_reserve(route: Any, input_tokens: int, *, system_lim
     remaining = min(int(route.model_context_limit), system_limit or int(route.model_context_limit)) - input_tokens
     if remaining <= 0:
         raise KernelError("CONTEXT_CAPACITY_EXCEEDED", "Complete input leaves no model context for generation")
-    if system_limit is not None and int(route.model_output_limit) > 0:
-        remaining = min(remaining, int(route.model_output_limit))
     return remaining
 
 

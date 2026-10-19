@@ -1,0 +1,24 @@
+{
+  "at": "2026-10-19T07:18:31.076093+00:00",
+  "e09f3fa160a13b54927fc2858d0eb65eb5729aac": {
+    "status": "RUNNING",
+    "pid": 55981,
+    "backend_junit_tests": 8554,
+    "backend_failures": 0,
+    "migration_incremental_failure_events": 1,
+    "failure_journal_sha256": "aca71f267468ce2827e9ec88fd8c76c0c7174ada6d6c305de2899eaf5c9330c4",
+    "incremental_failure_fixed_here": "TEMP budget.project_id",
+    "terminal_cleanup": "PENDING"
+  },
+  "54bad495e6d1a7d7650f3ee41a691a2d76b0b815": {
+    "status": "QUEUED",
+    "queue_pid": 74563,
+    "requires_focused_exact_source_pass": true,
+    "requires_prior_owned_cleanup_pass": true,
+    "timeout_or_collection_changed": false
+  },
+  "full_qualification": "INCOMPLETE",
+  "production_qualification": "INCOMPLETE",
+  "literary_qualification": "INCOMPLETE",
+  "model_review_is_not_human_qualification": true
+}

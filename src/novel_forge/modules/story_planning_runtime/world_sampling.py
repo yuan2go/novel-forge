@@ -60,6 +60,26 @@ class FrozenWorldSample:
         return ".world_reference_sampling" if self.generation_sample else ".world_sampling"
 
 
+def _source_generation_stage(source, source_ref, selection, *, source_payload, source_task, actor_proposals=None):
+    options = {"actor_proposals": actor_proposals}
+    if "plan_reference_contract" in source_task:
+        from .application import _command_from_payload
+        from .world_preparation import world_plan_references
+
+        options["allowed_references"] = world_plan_references(source, _command_from_payload(source_payload))
+    return PlanningWorldPreparation.generation_stage(source, source_ref, selection, **options)
+
+
+def _compiled_sample_schema(stage, materialization):
+    from .execution import compile_planning_output_schema
+
+    artifacts = materialization.get("pack_artifacts") or {}
+    prompt, skill = artifacts.get("prompt_template") or {}, artifacts.get("skill") or {}
+    return compile_planning_output_schema(stage.output_schema, stage.output_schema_ref,
+        prompt_template_ref=prompt.get("ref"), prompt_template_version=prompt.get("version"),
+        skill_ref=skill.get("ref"), skill_version=skill.get("version"))
+
+
 def require_world_sample_source(database_url: str, *, project_id: str, book_id: str,
                                 source_operation_id: str, stage: str,
                                 generation_sample: dict[str, str] | None = None) -> FrozenWorldSample:
@@ -138,7 +158,8 @@ def _require_world_sample_source(cursor: Any, *, project_id: str, book_id: str,
         task = actor_task(source_contract, source_ref, actor_policy["actor_ids"][index])
         provider_stage = PlanningProviderStage(stage, task, actor_output_schema(task))
     elif stage == "world_candidates.generate":
-        provider_stage = PlanningWorldPreparation.generation_stage(source_contract, source_ref, selection, actor_proposals=actor_proposals)
+        provider_stage = _source_generation_stage(source_contract, source_ref, selection,
+            source_payload=source_payload, source_task=context.content.get("world_preparation") or {}, actor_proposals=actor_proposals)
     elif generation_sample is not None:
         from novel_forge.modules.chapter_quality_authority.reference_subject import require_reference_subject
         from .application import _command_from_payload
@@ -159,7 +180,8 @@ def _require_world_sample_source(cursor: Any, *, project_id: str, book_id: str,
         native_documents.append(generation)
         provider_stage = PlanningWorldPreparation.evaluation_stage(source_contract, source_ref,
             generation.content["contract"], _binding(generation), selection, actor_proposals=actor_proposals)
-    context_task = PlanningWorldPreparation.generation_stage(source_contract, source_ref, selection, actor_proposals=actor_proposals).task if subject else provider_stage.task
+    context_task = _source_generation_stage(source_contract, source_ref, selection,
+        source_payload=source_payload, source_task=context.content.get("world_preparation") or {}, actor_proposals=actor_proposals).task if subject else provider_stage.task
     if context.content.get("world_preparation") != context_task:
         raise KernelError("WORLD_SAMPLE_CONTEXT_DRIFT", "World task differs from the frozen production role Context")
     for document in native_documents:
@@ -243,14 +265,19 @@ def world_sample_producer_identity(database_url: str, *, frozen: FrozenWorldSamp
             [source_operation_id, command["project_id"], "world_candidates.generate" if frozen.generation_sample else frozen.stage.name])
         rows = uow.cursor.fetchall()
     producers = {}
-    source_schema = PlanningWorldPreparation.generation_stage(frozen.source.content["contract"], _binding(frozen.source),
-        frozen.context.content.get("narrative_intelligence") or {}, actor_proposals=frozen.context.content["world_preparation"].get("actor_proposals")).output_schema if frozen.generation_sample else frozen.stage.output_schema
+    source_stage = _source_generation_stage(frozen.source.content["contract"], _binding(frozen.source),
+        frozen.context.content.get("narrative_intelligence") or {}, source_payload=command,
+        source_task=frozen.context.content["world_preparation"],
+        actor_proposals=frozen.context.content["world_preparation"].get("actor_proposals")) if frozen.generation_sample else frozen.stage
     for content, digest in rows:
         materialization = content.get("contract") or {}
         selected = materialization.get("context_selection") or []
+        source_schema, source_schema_ref = _compiled_sample_schema(source_stage, materialization)
+        sample_schema, sample_schema_ref = _compiled_sample_schema(frozen.stage, materialization)
         if (digest != authorization_hash(content) or len(selected) != 1
             or selected[0].get("asset_version_id") != frozen.context.asset_version_id
             or selected[0].get("content_hash") != frozen.context.content_hash
+            or materialization.get("output_schema", {}).get("ref") != source_schema_ref
             or materialization.get("output_schema", {}).get("content_hash") != authorization_hash(dict(source_schema))):
             raise KernelError("WORLD_SAMPLE_PRODUCER_DRIFT", "World sample must retain the exact native Prompt, Context and Schema")
         if frozen.generation_sample:
@@ -260,13 +287,13 @@ def world_sample_producer_identity(database_url: str, *, frozen: FrozenWorldSamp
             materialization["stage"] = frozen.stage.name
             materialization["context_selection"][0].update(content=frozen.derived_context,
                 content_hash=authorization_hash(frozen.derived_context))
-            materialization["output_schema"] = {"ref": frozen.stage.output_schema_ref,
-                "content_hash": authorization_hash(dict(frozen.stage.output_schema)), "content": dict(frozen.stage.output_schema)}
+            materialization["output_schema"] = {"ref": sample_schema_ref,
+                "content_hash": authorization_hash(dict(sample_schema)), "content": dict(sample_schema)}
         _, prompt_evidence = _materialize_production_codex_prompt(target_scope=TargetScope(
             scope_kind=scope_kind, scope_id=command["logical_key"], project_id=command["project_id"], book_id=command["book_id"]).to_dict(),
             stage=frozen.stage.name, inputs={"world_preparation": dict(frozen.stage.task)}, materialization=materialization)
         producer = producer_contract_identity(prompt_evidence, materialization,
-            schema_identity=world_schema_evidence_identity(frozen.stage.output_schema, frozen.stage.output_schema_ref))
+            schema_identity=world_schema_evidence_identity(sample_schema, sample_schema_ref))
         producers[authorization_hash(producer)] = producer
     if len(producers) != 1:
         raise KernelError("WORLD_SAMPLE_PRODUCER_REQUIRED", "World sampling requires one compatible native producer materialization")
@@ -323,8 +350,10 @@ def world_sample_result_review(frozen: FrozenWorldSample, result: dict[str, Any]
             if frozen.stage.task.get("actor_proposals"):
                 from novel_forge.modules.worldbuilding.actor_isolation import require_actor_judgments
 
-                require_actor_judgments(result, frozen.stage.task["actor_proposals"])
-            decoded = decode_world_generation({key: value for key, value in result.items() if key not in {"knowledge_translations", "actor_adjudications"}})
+                require_actor_judgments(result, frozen.stage.task["actor_proposals"],
+                    agency=frozen.stage.task.get('epistemic_contract') == 'world-agency.v2')
+            decoded = decode_world_generation({key: value for key, value in result.items() if key not in {"knowledge_translations", "actor_adjudications"}},
+                agency=frozen.stage.task.get("epistemic_contract") == "world-agency.v2")
             validate_generated_candidates(decoded, policy)
             from .knowledge_translation import validate_knowledge_translations
             selection = frozen.context.content.get("narrative_intelligence") or {}

@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 from datetime import date, datetime
 import hashlib
 import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 from typing import Any, Mapping
 from uuid import uuid4
 
@@ -18,9 +20,6 @@ from psycopg.types.json import Jsonb
 from novel_forge.api.authority_dependencies import (
     build_chapter_authority_application,
     build_production_execution_composition,
-)
-from novel_forge.infrastructure.production_execution_composition import (
-    ProductionExecutionComposition,
 )
 from novel_forge.infrastructure.settings import IndustrialSettings
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -69,6 +68,8 @@ from novel_forge.tools.implementation_tree_identity import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 CONFIG_PATH = ROOT / "config/provider/d0-codex-cli-probe.json"
 PROOF_SCOPE = {
     "schema_version": "novel-forge.qualification-proof-scope.v1",
@@ -420,7 +421,8 @@ def _outside_repository(path: Path) -> bool:
 
 
 def _provider_readiness(
-    *, provider: str, model: str, env: Mapping[str, str], codex_login_available: bool
+    *, provider: str, model: str, env: Mapping[str, str], codex_login_available: bool,
+    capability: str = "model.retrieval",
 ) -> dict[str, Any]:
     credentials_available = (
         codex_login_available
@@ -460,8 +462,14 @@ def _provider_readiness(
     ]
     if missing:
         blockers.append("RUNTIME_ACCOUNTING_CONTRACT_MISSING")
+    if capability == "model.retrieval" and provider == "codex-cli" and (
+        env.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") == "ACCOUNT_ENTITLEMENT"
+        or env.get("NOVEL_FORGE_RESOURCE_CONTROL_VERSION") == "billing-channel-resources.v1"
+    ):
+        blockers.append("ENGINEERING_QUALIFICATION_BLOCKED:MEMBERSHIP_RETRIEVAL_RESOURCE_BINDING_MISSING")
     return {
         "provider": provider,
+        "capability": capability,
         "model": model,
         "credential_status": "AVAILABLE" if credentials_available else "MISSING",
         "credential_observation": "CLI_LOGIN_STATUS"
@@ -478,7 +486,8 @@ def _provider_readiness(
     }
 
 
-def _current_preflight(args: argparse.Namespace) -> dict[str, Any]:
+def _current_preflight(args: argparse.Namespace, *, readiness_env: Mapping[str, str] | None = None,
+                       capability: str = "model.retrieval") -> dict[str, Any]:
     commit_sha = _git("rev-parse", "HEAD")
     identity = build_implementation_tree_identity(ROOT)
     clean = not bool(_git("status", "--porcelain", "--untracked-files=normal"))
@@ -500,8 +509,9 @@ def _current_preflight(args: argparse.Namespace) -> dict[str, Any]:
     readiness = _provider_readiness(
         provider=args.provider,
         model=args.model,
-        env=os.environ,
+        env=os.environ if readiness_env is None else readiness_env,
         codex_login_available=login_available,
+        capability=capability,
     )
     blockers = list(readiness["blockers"])
     if commit_sha != args.expected_sha:
@@ -774,6 +784,9 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
         raise RuntimeError("qualification HEAD differs from --expected-sha")
     if _git("status", "--porcelain", "--untracked-files=normal"):
         raise RuntimeError("real Provider qualification requires a clean worktree")
+    if getattr(args, 'prose_review_run_id', ''):
+        from scripts.book_prose_qualification import run_book_prose_qualification
+        return run_book_prose_qualification(args, root=ROOT, commit_sha=commit_sha)
     preflight = _current_preflight(args)
     if preflight["status"] != "READY_FOR_LIVE_QUALIFICATION":
         return preflight
@@ -896,15 +909,7 @@ def _run(args: argparse.Namespace) -> dict[str, Any]:
     )
     initial_execution = build_production_execution_composition(settings, env=env)
     fault_gateway = OneShotAmbiguousResponseGateway(initial_execution.gateway)
-    fault_execution = ProductionExecutionComposition(
-        gateway=fault_gateway,
-        object_store=initial_execution.object_store,
-        source_object_reader=initial_execution.source_object_reader,
-        runtime_environment=initial_execution.runtime_environment,
-        max_cost_per_call=initial_execution.max_cost_per_call,
-        shared_budget_caps=initial_execution.shared_budget_caps,
-        chapter_total_budget_cap=initial_execution.chapter_total_budget_cap,
-    )
+    fault_execution = replace(initial_execution, gateway=fault_gateway)
     initial_application = build_chapter_authority_application(
         settings,
         execution=fault_execution,
@@ -1140,10 +1145,12 @@ def main() -> int:
         "--provider", choices=("codex-cli", "openai"), default="codex-cli"
     )
     parser.add_argument("--preflight-only", action="store_true")
+    parser.add_argument("--prose-review-run-id", default="")
+    parser.add_argument("--book-run-id", default="")
     parser.add_argument("--source-operation-id", default="")
     parser.add_argument("--source-project-id", default="")
     parser.add_argument("--source-capability", choices=("mkaos.knowledge.extract", "mkaos.rule.extract", "mkaos.template.extract"), default="mkaos.knowledge.extract")
-    parser.add_argument("--execute", action="store_true", help="Execute the explicitly authorized Source qualification stage; otherwise it remains NOT_RUN")
+    parser.add_argument("--execute", action="store_true", help="Execute the explicitly authorized Source stage or native Book review qualification; otherwise it remains NOT_RUN")
     parser.add_argument(
         "--codex-executable",
         default="/Applications/ChatGPT.app/Contents/Resources/codex",
@@ -1169,6 +1176,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.source_operation_id and not args.source_project_id:
         parser.error("Source qualification requires --source-project-id")
+    if args.prose_review_run_id and (not args.book_run_id or not args.source_project_id or args.source_operation_id):
+        parser.error("Book prose qualification requires its Book/project and excludes a Source stage")
     if not args.preflight_only and not all(
         (args.database_url, args.runtime_root, args.minio_endpoint)
     ):
@@ -1180,7 +1189,7 @@ def main() -> int:
         parser.error("qualification evidence must stay outside the repository")
     output.parent.mkdir(parents=True, exist_ok=True)
     try:
-        result = _current_preflight(args) if args.preflight_only else _run(args)
+        result = _current_preflight(args) if args.preflight_only and not args.prose_review_run_id else _run(args)
     except BaseException as exc:
         safe_message = redact_secret_text(exc)
         failure = {

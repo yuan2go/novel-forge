@@ -1,0 +1,6 @@
+{
+  "phase": "before-b2c844da",
+  "readonly": true,
+  "error_code": "PLANNING_ROUTING_LINEAGE_INVALID",
+  "message": "PLANNING_ROUTING_LINEAGE_INVALID: Runtime successor lacks its exact native continuation"
+}

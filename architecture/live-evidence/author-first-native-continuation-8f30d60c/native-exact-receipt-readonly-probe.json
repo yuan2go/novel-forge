@@ -1,0 +1,40 @@
+{
+  "at": "2026-10-18T11:51:43.535122+00:00",
+  "source_sha": "8f30d60c4830dd9c69403a9251f498844b797d7b",
+  "proof_scope": "READ_ONLY_REGISTERED_CONSUMER_RECEIPT_PROBE_NOT_AUTOMATIC_PREPARER_DISPATCH",
+  "source_operation_id": "6b4ed0be-8997-4847-9966-7346c9922f78",
+  "consumer_operation_id": "cb51253f-938b-4de5-b3f6-4ebd024ca67a",
+  "retained_external_effect_id": "47bcee3f-6e96-47a8-b2de-9b9c01873a4c",
+  "retained_request_hash": "sha256:1bc468385d34d1ad96e1cfec57b47351efb8157f3c7440acc1bfdf803bdd2744",
+  "evidence": {
+    "execution_id": "planning-execution:47bcee3f-6e96-47a8-b2de-9b9c01873a4c:acf745c3-f6c1-4edd-a3c6-dec3132f49bd",
+    "operation_id": "6b4ed0be-8997-4847-9966-7346c9922f78",
+    "attempt_id": "acf745c3-f6c1-4edd-a3c6-dec3132f49bd",
+    "fencing_token": 1,
+    "capability": "planning.story_chapter.generate",
+    "backend_id": "codex-cli",
+    "route_snapshot_id": "production_execution/routes/c4ae86e29df800db6e32",
+    "input_manifest_ref": "production_execution/inputs/c4ae86e29df800db6e32",
+    "output_manifest_ref": "authority-asset-version:b2bfa4e4-0dd1-457f-9536-50be4ffed7b4",
+    "validation_manifest_ref": "authority-asset-version:b848a0d2-1f5a-4190-b5f7-c04e149a9041",
+    "usage_receipt_ref": "authority-asset-version:a2c43e5e-2798-407d-ba7f-ae5928f4ed19",
+    "cost_receipt_ref": "authority-asset-version:a868a9ef-071c-479c-b1d3-a19434cd1159",
+    "fixture_protocol_only": false,
+    "real_model_call": true,
+    "production_verified": false,
+    "provider_id": "codex-cli",
+    "model_id": "gpt-6.1-sol",
+    "external_receipt_ref": "47bcee3f-6e96-47a8-b2de-9b9c01873a4c",
+    "receipt_reuse": {
+      "contract_version": "planning-completed-preparation-reuse.v1",
+      "continuation_id": "planning-runtime-continuation:6b4ed0be-8997-4847-9966-7346c9922f78",
+      "consumer_operation_id": "cb51253f-938b-4de5-b3f6-4ebd024ca67a",
+      "task_hash": "sha256:8050faf03c582bd39015c68b00faa4be25b17d4a54efb4d3222f424ae637fd5f",
+      "result_hash": "sha256:a021a13751bc40c1e24b0d1aa17d5d27834421a53ec8985961bc309e3f057193",
+      "provider_invoked_this_attempt": false
+    }
+  },
+  "provider_invoked_by_probe": false,
+  "source_history_unchanged": true,
+  "automatic_pipeline_reuse": "NOT_ESTABLISHED_BY_THIS_PROBE"
+}

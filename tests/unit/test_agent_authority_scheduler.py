@@ -134,3 +134,53 @@ def test_prepared_execution_rejects_a_pep_or_external_effect_bypass() -> None:
 
     with pytest.raises(ValueError, match="ExternalEffect"):
         _prepared(_DirectPort())
+
+
+@pytest.mark.parametrize("terminal", ["FAILED_RETRYABLE", "FAILED_FINAL", "CANCELLED"])
+def test_query_terminal_stops_agent_before_prepare_or_failure_rewrite(
+    monkeypatch, terminal
+):
+    from novel_forge.modules.agent_runtime import scheduler as module
+
+    class ForbiddenPreparer:
+        def prepare(self, **kwargs):
+            raise AssertionError(
+                "A Kernel-settled Attempt cannot prepare another execution"
+            )
+
+    scheduler = module.AgentAuthorityScheduler(
+        "unused", execution_preparer=ForbiddenPreparer(), worker_id="agent-recovery-test"
+    )
+    operation = {
+        **_operation(),
+        "status": "WAITING_EXTERNAL_RESULT",
+        "trace_id": "trace:query",
+        "correlation_id": "correlation:query",
+    }
+    monkeypatch.setattr(scheduler, "_operation", lambda *_: operation)
+    monkeypatch.setattr(
+        scheduler,
+        "_attempt",
+        lambda *_: ("attempt-1", "CHECKPOINTED", "lease_takeover"),
+    )
+    monkeypatch.setattr(
+        scheduler, "_collaboration_session_for_attempt", lambda **_: "session-1"
+    )
+    monkeypatch.setattr(scheduler, "_runtime_binding", lambda *_: None)
+    monkeypatch.setattr(
+        module, "acquire_attempt_lease", lambda *_, **__: {"fencing_token": 2}
+    )
+    monkeypatch.setattr(
+        scheduler,
+        "_reconcile_required_effects",
+        lambda *_, **__: operation.update(status=terminal),
+    )
+
+    def forbid_rewrite(*_):
+        raise AssertionError("The original terminal result must not be overwritten")
+
+    monkeypatch.setattr(scheduler, "_handle_failure", forbid_rewrite)
+    result = scheduler.tick(project_id="project-1", agent_run_id="operation-agent-1")
+    assert result.operation_status == terminal
+    assert result.attempt_id == "attempt-1"
+    assert result.candidate_version_id == ""

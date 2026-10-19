@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="70.960" timestamp="2026-10-19T14:19:01.188785+08:00" hostname="chenjiangfengdeMac-mini.local"><testcase classname="tests.integration.test_synthesis_formation_postgres" name="test_native_formation_generates_foundation_from_author_brief[current-production]" time="34.638"><failure message="novel_forge.modules.command_kernel.errors.KernelError: EFFECT_EXTERNAL_STATE_UNKNOWN: untyped adapter exception was conservatively recorded as UNKNOWN">src/novel_forge/modules/command_kernel/external_effect_runtime.py:875: in dispatch_external_effect
+    provider_result = adapter.execute(
+src/novel_forge/modules/chapter_authority/execution_gateway.py:5599: in execute
+    return self._invoke(
+src/novel_forge/modules/chapter_authority/execution_gateway.py:5881: in _invoke
+    evidence = self._evidence(
+src/novel_forge/modules/chapter_authority/execution_gateway.py:6082: in _evidence
+    evidence["result"] = normalize_model_output(
+src/novel_forge/modules/chapter_authority/model_effects.py:2340: in normalize_model_output
+    return _normalize_model_output(stage, raw, output_schema_ref=output_schema_ref)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/model_effects.py:2169: in _normalize_model_output
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: MODEL_RESPONSE_INVALID: Canon semantic extraction field world_state_changes must be an array of objects
+
+The above exception was the direct cause of the following exception:
+tests/integration/test_synthesis_formation_postgres.py:1961: in test_native_formation_generates_foundation_from_author_brief
+    stop = drive(
+scripts/run_world_production_smoke.py:291: in drive
+    result = scheduler.tick(
+src/novel_forge/modules/chapter_authority/scheduler.py:333: in tick
+    recovery_mode = self._execute_node(request, node, operation)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/scheduler.py:1867: in _execute_node
+    output = execute_chapter_handler(
+src/novel_forge/modules/chapter_authority/runtime.py:269: in execute_chapter_handler
+    return execute_authority_handler(
+src/novel_forge/modules/authority_handler_runtime/runtime.py:51: in execute_authority_handler
+    output = registration.handler.execute(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/runtime.py:179: in execute
+    output = self.registry.require(self.node).execute(chapter_request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/handlers.py:2179: in execute
+    generated = _invoke_with_known_receipt(self.provider,
+src/novel_forge/modules/chapter_authority/handlers.py:3438: in _invoke_with_known_receipt
+    return retained if retained is not None else provider.invoke(request, stage=stage, payload=payload)
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/chapter_authority/model_effects.py:1107: in invoke
+    dispatched = dispatch_external_effect(
+src/novel_forge/logging/execution.py:120: in observed
+    result = function(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/command_kernel/external_effect_runtime.py:969: in dispatch_external_effect
+    raise KernelError(
+E   novel_forge.modules.command_kernel.errors.KernelError: EFFECT_EXTERNAL_STATE_UNKNOWN: untyped adapter exception was conservatively recorded as UNKNOWN</failure></testcase><testcase classname="tests.integration.test_runtime_policies_postgres.RuntimePolicyPostgresTests" name="test_router_policy_is_operator_owned_and_applied_by_canonical_selector" time="0.757"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'model_profile'">tests/integration/test_runtime_policies_postgres.py:195: in test_router_policy_is_operator_owned_and_applied_by_canonical_selector
+    _, decision = router.select(
+src/novel_forge/modules/production_execution/routing_runtime.py:1169: in select
+    return self._selected_route(base_route, snapshot), snapshot
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/production_execution/routing_runtime.py:1272: in _selected_route
+    route = self._materialize_selected_route(base, snapshot)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/novel_forge/modules/production_execution/routing_runtime.py:1381: in _materialize_selected_route
+    base.model_profile,
+    ^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'types.SimpleNamespace' object has no attribute 'model_profile'</failure></testcase><testcase classname="tests.integration.test_knowledge_closure_helper_source_postgres" name="test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[professional-PROFESSIONAL_KNOWLEDGE-3]" time="1.202"><failure message="ValueError: Freeze requires an explicit input_dir; no historical sample is selected by default">tests/integration/test_knowledge_closure_helper_source_postgres.py:61: in test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade
+    frozen_inputs = prepare(folder, target_book_id="intended-book:" + corpus.project)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/prepare_knowledge_closure.py:29: in prepare
+    return prepare_freeze(destination, approved_versions, target_book_id=target_book_id,
+scripts/creation_freeze.py:177: in prepare_freeze
+    raise ValueError("Freeze requires an explicit input_dir; no historical sample is selected by default")
+E   ValueError: Freeze requires an explicit input_dir; no historical sample is selected by default</failure></testcase><testcase classname="tests.integration.test_knowledge_closure_helper_source_postgres" name="test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade[fiction-WEB_NOVEL-6]" time="0.189"><failure message="ValueError: Freeze requires an explicit input_dir; no historical sample is selected by default">tests/integration/test_knowledge_closure_helper_source_postgres.py:61: in test_default_helper_import_curated_analysis_reaches_fixture_review_without_production_upgrade
+    frozen_inputs = prepare(folder, target_book_id="intended-book:" + corpus.project)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+scripts/prepare_knowledge_closure.py:29: in prepare
+    return prepare_freeze(destination, approved_versions, target_book_id=target_book_id,
+scripts/creation_freeze.py:177: in prepare_freeze
+    raise ValueError("Freeze requires an explicit input_dir; no historical sample is selected by default")
+E   ValueError: Freeze requires an explicit input_dir; no historical sample is selected by default</failure></testcase><testcase classname="tests.integration.test_source_import_runtime_postgres.SourceImportRuntimePostgresTests" name="test_document_routing_exact_reuse_and_contract_invalidation" time="31.452"><failure message="AssertionError: '1.1.0' != '1.0.0'&#10;- 1.1.0&#10;+ 1.0.0">tests/integration/test_source_import_runtime_postgres.py:1994: in test_document_routing_exact_reuse_and_contract_invalidation
+    self.assertEqual(professional_methodologies[0]["skill_version"], "1.0.0")
+E   AssertionError: '1.1.0' != '1.0.0'
+E   - 1.1.0
+E   + 1.0.0</failure></testcase></testsuite></testsuites>

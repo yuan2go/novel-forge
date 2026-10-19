@@ -192,3 +192,141 @@ def test_historical_generation_pause_resumes_owned_runnable_successor(monkeypatc
     book['paused_reason']='AUTHOR_PAUSE'
     assert not resume_generation_pause(authority,book_run_id='b',principal='principal')
     authority.resume.assert_not_called()
+
+
+def test_operator_pause_blocks_the_next_recovery_hook(drive):
+    arguments, candidates, _ = drive
+    authority = arguments['composition'].authority
+    authority.require.return_value = {'state': 'PAUSED', 'paused_reason': 'AUTHOR_PAUSE', 'project_id': 'p'}
+    candidates.recover_quality_frontier.side_effect = AssertionError('A paused Book cannot start another recovery action')
+    assert drive_book(**arguments) == 'PAUSED'
+    candidates.recover_quality_frontier.assert_not_called()
+
+
+@pytest.mark.parametrize(('state', 'reason', 'expected'), [
+    ('PAUSED', 'AUTHOR_PAUSE', 'PAUSED'),
+    ('ABORTED', '', 'CANCELLED'),
+    ('CANCELLED', '', 'CANCELLED'),
+    ('COMPLETED', '', 'COMPLETED'),
+])
+def test_exhausted_recovery_preserves_intervening_author_or_terminal_checkpoint(drive, monkeypatch, state, reason, expected):
+    from novel_forge.modules.command_kernel import generation_isolation
+    arguments, _, _ = drive
+    authority = arguments['composition'].authority
+    authority.pause = Mock()
+    book = authority.require.return_value
+
+    def exhaustion(*_, **__):
+        book.update(state=state, paused_reason=reason)
+        raise KernelError('GENERATION_RECOVERY_EXHAUSTED', 'Original generation cannot continue')
+
+    monkeypatch.setattr(generation_isolation, 'recover_chapter_generations', exhaustion)
+    assert drive_book(**arguments) == expected
+    assert book['paused_reason'] == reason
+    authority.pause.assert_not_called()
+
+
+def test_exhausted_recovery_pause_binds_observed_book_version(drive, monkeypatch):
+    from novel_forge.modules.command_kernel import generation_isolation
+    arguments, _, _ = drive
+    authority = arguments['composition'].authority
+    authority.require.return_value['version'] = 7
+    authority.pause = Mock(side_effect=KernelError('BOOK_MUTATION_CONFLICT', 'Author changed Book after exhaustion'))
+    monkeypatch.setattr(generation_isolation, 'recover_chapter_generations', Mock(
+        side_effect=KernelError('GENERATION_RECOVERY_EXHAUSTED', 'Original generation cannot continue')))
+    with pytest.raises(KernelError, match='Author changed Book'):
+        drive_book(**arguments)
+    assert authority.pause.call_args.kwargs['expected_version'] == 7
+
+
+def test_pause_rejects_stale_version_before_mutating_saga_or_book():
+    from novel_forge.modules.book_authority.production import PostgresBookAuthority
+    authority = object.__new__(PostgresBookAuthority)
+    authority.require = Mock(return_value={'version': 8, 'state': 'PAUSED',
+        'paused_reason': 'AUTHOR_PAUSE', 'project_id': 'p'})
+    authority._book_graph_context = Mock()
+    with pytest.raises(KernelError, match='Book checkpoint changed') as error:
+        authority.pause('b', reason='GENERATION_RECOVERY_EXHAUSTED', principal=Mock(), expected_version=7)
+    assert error.value.code == 'BOOK_MUTATION_CONFLICT'
+    authority._book_graph_context.assert_not_called()
+
+
+def test_operator_pause_during_recovery_blocks_the_following_action(drive):
+    from novel_forge.modules.chapter_authority import canon_contract_recovery
+    arguments, candidates, _ = drive
+    book = arguments['composition'].authority.require.return_value
+
+    def pause(*_, **__):
+        book.update(state='PAUSED', paused_reason='AUTHOR_PAUSE')
+        return True
+
+    canon_contract_recovery.recover_canon_contract.side_effect = pause
+    canon_contract_recovery.recover_completed_canon_window.side_effect = AssertionError('A paused Book cannot start the next recovery')
+    assert drive_book(**arguments) == 'PAUSED'
+    canon_contract_recovery.recover_completed_canon_window.assert_not_called()
+    candidates.recover_quality_frontier.assert_not_called()
+
+
+def test_pause_after_unknown_isolation_prevents_successor_dispatch(drive, monkeypatch):
+    from novel_forge.modules.book_authority import creation_runtime
+    from novel_forge.modules.book_authority.manuscript import AUTHOR_WORKFLOW
+    from novel_forge.modules.command_kernel import generation_isolation
+    from novel_forge.workers import book_authority
+
+    arguments, _, _ = drive
+    composition = arguments['composition']
+    book = composition.authority.require.return_value
+    book.update(state='CHAPTER_RUNNING', author_workflow=AUTHOR_WORKFLOW,
+        current_chapter=0, target_chapter_count=100)
+    composition.query.progress = Mock(return_value=SimpleNamespace(
+        active_operation_id='original-root', active_operation_status='WAITING_CHILDREN'))
+    jobs = SimpleNamespace(claim=Mock(return_value=object()))
+    monkeypatch.setattr(creation_runtime, 'RuntimeJobAuthority', lambda _: jobs)
+    monkeypatch.setattr(book_authority, 'schedule_book_coordination_jobs', Mock())
+    monkeypatch.setattr(book_authority, 'execute_book_coordination_claim', Mock(return_value={
+        'action': 'WAIT_CHAPTER', 'operation_id': 'original-root'}))
+    scheduler = SimpleNamespace(tick=Mock())
+    arguments['chapter'] = SimpleNamespace(scheduler=Mock(return_value=scheduler))
+    generation_isolation.recover_chapter_generations.side_effect = [False, True]
+
+    def interrupted(**_):
+        assert scheduler.tick.call_count == 1, 'Paused Book dispatched another Chapter stage'
+        book.update(state='PAUSED', paused_reason='AUTHOR_PAUSE')
+        raise KernelError('MODEL_EFFECT_OUTCOME_UNKNOWN', 'Original result remains unknown')
+
+    scheduler.tick.side_effect = interrupted
+    assert drive_book(**arguments) == 'PAUSED'
+    assert generation_isolation.recover_chapter_generations.call_count == 2
+    scheduler.tick.assert_called_once()
+    composition.authority.cancel.assert_not_called()
+
+
+@pytest.mark.parametrize('boundary', ['recover', 'cancel', 'paused', 'deadline', 'unresolved', 'unbound', 'foreign', 'unchanged'])
+def test_shared_book_driver_recovers_only_owned_unstarted_planning_deployment(monkeypatch, boundary):
+    from novel_forge.modules.book_authority import creation_runtime as runtime
+    book = dict(book_run_id='book-run', project_id='project', workspace_id='workspace', book_id='book', state='READY')
+    authority = SimpleNamespace(database_url='db', require=Mock(return_value=book), cancel=Mock())
+    binding = None if boundary == 'unbound' else {'formation_run_id':'formation'}
+    formation = dict(project_id='foreign' if boundary == 'foreign' else 'project', workspace_id='workspace', book_id='book')
+    policy = {'auto_authorization': {'authorized_by_principal_id':'author'}}
+    composition = SimpleNamespace(authority=authority, principal=SimpleNamespace(principal_id='author'),
+        query=SimpleNamespace(creation_executor_binding=Mock(return_value=binding), unresolved_chapter_effects=Mock(return_value=boundary=='unresolved')),
+        formation=SimpleNamespace(require=Mock(return_value=formation),frozen_input=Mock(return_value=SimpleNamespace(generation_policy=policy))))
+    error = KernelError('PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT', 'retain original pending successor')
+    monkeypatch.setattr(runtime, '_drive_book', Mock(side_effect=error))
+    recovery = Mock(return_value=boundary != 'unchanged')
+    monkeypatch.setattr(runtime, '_recover_pending_planning_deployment', recovery)
+    if boundary == 'paused':
+        book['state'] = 'PAUSED'
+    arguments = dict(composition=composition, chapter=object(), book_run_id='book-run', worker=Mock(), maximum_ticks=1,
+        deadline=0 if boundary=='deadline' else float('inf'), continuation_live=lambda:boundary!='cancel')
+    if boundary in {'unbound','foreign','unchanged'}:
+        with pytest.raises(KernelError):
+            runtime.drive_book(**arguments)
+    else:
+        assert runtime.drive_book(**arguments) == {'recover':'YIELDED_CHECKPOINT','cancel':'CANCELLED','paused':'PAUSED',
+            'deadline':'YIELDED_CHECKPOINT','unresolved':'WAIT_EXTERNAL_RECONCILIATION'}[boundary]
+    if boundary in {'recover','unchanged'}:
+        recovery.assert_called_once()
+    else:
+        recovery.assert_not_called()

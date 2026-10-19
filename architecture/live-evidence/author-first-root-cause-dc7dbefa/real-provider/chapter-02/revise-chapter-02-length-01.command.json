@@ -1,0 +1,23 @@
+{
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "argv": [
+    "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+    "-m",
+    "novel_forge.cli.authority",
+    "authority-manuscript",
+    "revise",
+    "--book-run-id",
+    "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "--chapter",
+    "2",
+    "--expected-version",
+    "14",
+    "--idempotency-key",
+    "wp-nf-author-first-20261017:chapter-02:length-repair-01",
+    "--reason",
+    "首稿按HAN_CHARACTERS_V1为3988，低于冻结4000—5000汉字。保留原稿，经原生chapter-length-repair.v1完成全章修订，目标4400—4700汉字、冻结上下限不变。承接首章已封旧入口、绳索磨损和许照川受纠正后的谨慎；保留清堵、承托旧石不能抽走、接缝湿痕待处理的既定进展。优先补足误判承托后具体的动作选择、陆守拙和许照川的反应以及留旧石带来的下一步约束，不重复撤人、反复工具清点或工法说明凑字。不提前完成补修，不增加未登场人物或未经学习的修为。仅作工作稿修订，不作作者正式选稿或接纳。",
+    "--foreground",
+    "--work-window-seconds",
+    "300"
+  ]
+}

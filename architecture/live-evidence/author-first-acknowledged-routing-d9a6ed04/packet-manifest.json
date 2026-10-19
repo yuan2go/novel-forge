@@ -1,0 +1,47 @@
+{
+  "schema_version": "checked-evidence-manifest.v1",
+  "files": [
+    {
+      "path": "ack-routing-d9a6ed04-exact-docs.json",
+      "sha256": "sha256:4019c55ef875552ec099b7a4f28e7b4e14ef748a7dd3feedcf702f679fb7220f"
+    },
+    {
+      "path": "focused-exact-junit.xml.gz",
+      "sha256": "sha256:d3f88a4fe27a1529fc2f9865632b38b63e96fcd33fb47b2e167864ee941c8bbf"
+    },
+    {
+      "path": "index.json",
+      "sha256": "sha256:68453e96d45ce9d4d961dffdc8f2347d46e15631914368da5057343c6396c107"
+    },
+    {
+      "path": "native-pack-revalidation.json",
+      "sha256": "sha256:75359b060083f0e0cc737ef73ddb5e5da20ed0e0997a5071f34fc37cc838e055"
+    },
+    {
+      "path": "native-upgrade-history-check.json",
+      "sha256": "sha256:67258579a805184c3d72f2e4c32d21be4ca451ac864a94a2bd6bafbb849f485e"
+    },
+    {
+      "path": "native-v12-control-and-replay.json",
+      "sha256": "sha256:98eeccbc15cfd4e3d2513321ab0b002bc0dfa156ac119dffb54689bbecb8963f"
+    },
+    {
+      "path": "native-v12-resume-checkpoint.json",
+      "sha256": "sha256:e6ea8c2f93eece39b0382f080ab96d27a1debb9ae33372dfff389cda49623450"
+    },
+    {
+      "path": "native-v12-successor-routing-lineage.json",
+      "sha256": "sha256:8cbf2cb1d3883488a7cc714d01fb27a359db58a50265c9529bb81e387207c766"
+    },
+    {
+      "path": "native20-v11-routing-lineage-before-b2c844da.json",
+      "sha256": "sha256:a8066f264d222ef05643d25d7a4ea7f4ae65de231a2814e0c3ef1fab82bfab0a"
+    },
+    {
+      "path": "native20-v11-routing-lineage-development-v12-v2.json",
+      "sha256": "sha256:8acbc8d7707718f9b81a40526e9099b7c0dabf5391a7d38559ba90b1888ab94e"
+    }
+  ],
+  "historical_failures": "PRESERVED",
+  "raw_prose_and_provider_payloads": "PRIVATE_OUTSIDE_GIT"
+}

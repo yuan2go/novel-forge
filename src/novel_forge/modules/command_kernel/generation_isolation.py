@@ -317,7 +317,7 @@ def recover_book_generations(application, *, project_id, book_id, principal, sou
             raise PermissionError("Only a scoped trusted operator can recover another native generation owner")
     recover_saved_local_results(application.execution_binder.resolver.execution_preparer.execution_transport,
         database_url=application.database_url, project_id=project_id, book_id=book_id, principal=principal,
-        source_actor_id=source_actor_id)
+        source_actor_id=source_actor_id, operation_definition_name="story_planning.generate")
     from novel_forge.modules.story_planning_runtime.gateway_result_recovery import recover_completed_planning_outputs
     recover_completed_planning_outputs(application, project_id=project_id, book_id=book_id, principal=principal)
     from .execution_window import continue_saved_result_finalization
@@ -341,6 +341,24 @@ def recover_book_generations(application, *, project_id, book_id, principal, sou
               AND NOT EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation WHERE source_operation_id=generation.operation_id)""",
             [project_id,book_id,source_actor_id])
         capacities=uow.cursor.fetchall()
+        uow.cursor.execute("""SELECT operation.operation_id,operation.version FROM authority_operation operation
+            JOIN authority_story_planning_generation generation USING(operation_id)
+            JOIN LATERAL (SELECT result FROM authority_attempt WHERE operation_id=operation.operation_id
+                ORDER BY attempt_number DESC LIMIT 1) attempt ON TRUE
+            WHERE generation.project_id=%s AND generation.book_id=%s AND operation.actor_id=%s
+              AND operation.definition_version='1.21.0' AND operation.status IN ('FAILED_RETRYABLE','FAILED_FINAL')
+              AND generation.candidate_asset_version_id IS NULL
+              AND attempt.result->>'error_code'='TASK_CONTEXT_COMPRESSION_NO_PROGRESS'
+              AND EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation WHERE successor_operation_id=operation.operation_id)
+              AND NOT EXISTS(SELECT 1 FROM authority_story_planning_runtime_continuation WHERE source_operation_id=operation.operation_id)
+              AND EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=operation.operation_id)
+              AND NOT EXISTS(SELECT 1 FROM authority_external_effect effect
+                LEFT JOIN authority_budget_reservation budget USING(external_effect_id)
+                WHERE effect.operation_id=operation.operation_id AND NOT COALESCE(effect.effect_type='model.invoke'
+                  AND effect.request_payload->>'stage' IN ('context_compress','context_fidelity')
+                  AND effect.status='SUCCEEDED' AND budget.status='SETTLED',false))""",
+            [project_id,book_id,source_actor_id])
+        capacities.extend(uow.cursor.fetchall())
         rows = unresolved_cli_outcomes(uow.cursor, project_id, book_id=book_id)
         uow.cursor.execute("""SELECT effect.external_effect_id,effect.operation_id,effect.status
             FROM authority_external_effect effect JOIN authority_story_planning_generation generation USING(operation_id)
@@ -362,7 +380,7 @@ def recover_book_generations(application, *, project_id, book_id, principal, sou
     for operation_id,version in capacities:
         application.register_runtime_continuation(operation_id,project_id=project_id,principal=principal,
             expected_source_version=version,decision_evidence={"authorization_ref":"NATIVE_CONTINUOUS_CREATION_TEMPLATE",
-                "reason":"Allocate bounded native task capacity after a proven unsent failure while retaining original inputs and authorization"},
+                "reason":"Recover native pre-send capacity with original frozen inputs, verified preparation and current authorization"},
             trace_id="trace:generation-capacity:"+operation_id,correlation_id=book_id)
     candidates = {effect["external_effect_id"]: (effect, operation) for effect, operation in pending}
     for item in rows:
@@ -500,8 +518,8 @@ def append_isolation(uow, effect, command):
             )
         cursor.execute("SELECT to_jsonb(root) FROM authority_operation root WHERE operation_id=%s", [operation["root_operation_id"]])
         chapter_root = cursor.fetchone()[0]
-        from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSION
-        if chapter_root["definition_version"] == ROOT_VERSION:
+        from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSIONS
+        if chapter_root["definition_version"] in ROOT_VERSIONS:
             cursor.execute("""SELECT book.book_id,book.workspace_id FROM authority_book_production book
                 JOIN authority_operation root ON root.command_payload #>> '{preparation_report,working_revision,book_run_id}'=book.book_run_id
                 JOIN authority_saga_step step ON step.operation_id=%s AND step.saga_id=%s
@@ -871,7 +889,8 @@ def recover_chapter_generations(authority, *, book_run_id, principal, working_re
     revalidated = recover_completed_chapter_results(authority, book_run_id=book_run_id,
         principal=principal, root_operation_id=root_id)
     recovered = recover_saved_local_results(authority.chapter_port.application._model_port.adapter,
-        database_url=authority.database_url, project_id=book["project_id"], book_id=book["book_id"], principal=principal)
+        database_url=authority.database_url, project_id=book["project_id"], book_id=book["book_id"], principal=principal,
+        root_operation_id=root_id)
     with AuthorityUnitOfWork(authority.database_url) as uow:
         uow.cursor.execute(
             """SELECT to_jsonb(o) FROM authority_operation o

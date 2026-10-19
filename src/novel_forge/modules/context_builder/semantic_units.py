@@ -8,6 +8,7 @@ import json
 import re
 
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.context_contracts import FROZEN_COMPRESSION_REQUEST_MAX_UNITS
 from novel_forge.modules.narrative_state.reality import narrative_hash
 
 
@@ -152,7 +153,9 @@ def source_units(candidate, task):
     def paragraphs(text, path, attribution):
         start = 0
         index = 0
-        for match in re.finditer(r"(?:\r?\n)[ \t]*(?:\r?\n)", text):
+        separator = (r"\r?\n(?:[ \t]*\r?\n)*" if enabled(task)
+            and task.get("capacity_policy") == "complete-request-capacity.v1" else r"(?:\r?\n)[ \t]*(?:\r?\n)")
+        for match in re.finditer(separator, text):
             if start < match.start():
                 append(text[start:match.start()], path, kind="SOURCE_PARAGRAPH", index=index,
                     span=[start, match.start()], attribution=attribution, value=attribution)
@@ -577,13 +580,37 @@ def final_windows(units, keep, *, external_refs=()):
     centers = {index for index, unit in enumerate(units) if unit["unit_id"] in keep and
         (unit.get("semantic_risk") or any(0 <= neighbor < len(units) and units[neighbor]["unit_id"] not in keep for neighbor in (index - 1, index + 1)))}
     for center in sorted(centers):
-        indexes_in_window = set(range(max(0, center - 2), min(len(units), center + 3)))
-        indexes_in_window.update(indexes[value] for value in close_dependencies(units, {units[center]["unit_id"]}, external_refs=external_refs) if value in indexes)
-        if windows and indexes_in_window & windows[-1] and len(indexes_in_window | windows[-1]) <= 32:
-            windows[-1].update(indexes_in_window)
-        else:
-            windows.append(indexes_in_window)
-    return [[units[index] for index in sorted(window)] for window in windows]
+        neighborhood = set(range(max(0, center - 2), min(len(units), center + 3)))
+        neighborhood.update(indexes[value] for value in close_dependencies(units, {units[center]["unit_id"]}, external_refs=external_refs) if value in indexes)
+        windows.append([units[index] for index in sorted(neighborhood)])
+    return windows
+
+
+def pack_final_windows(windows, *, payload, fits):
+    def merged(groups):
+        unique = {unit["unit_id"]: unit for group in groups for unit in group}
+        return sorted(unique.values(), key=lambda unit: unit["order"])
+    def admissible(group):
+        return len(group) <= FROZEN_COMPRESSION_REQUEST_MAX_UNITS and fits(payload(group))
+    if not windows:
+        return []
+    whole = merged(windows)
+    if admissible(whole):
+        return [whole]
+    batches, current = [], []
+    for window in windows:
+        combined = merged([current, window])
+        if admissible(combined):
+            current = combined
+            continue
+        if current:
+            batches.append(current)
+        if not admissible(window):
+            raise KernelError("TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE", "A complete semantic risk neighborhood and dependency closure cannot fit the checker request")
+        current = window
+    if current:
+        batches.append(current)
+    return batches
 
 
 def split_oversized_unit(unit, fits):
@@ -620,40 +647,35 @@ def split_oversized_unit(unit, fits):
 
 def verify_final_selection(candidate, units, keep, *, payload, fits, model_call, external_refs=()):
     all_ids = {unit["unit_id"] for unit in units}
+    catalog_hash = narrative_hash(source_audit(units, all_ids))
     evidence, assessments = [], []
     chosen = close_dependencies(units, keep, external_refs=external_refs)
     while chosen != all_ids:
         content_hash = narrative_hash(reconstruct(candidate, units, chosen))
         additions = set()
-        for window in final_windows(units, chosen, external_refs=external_refs):
-            pending = [window]
-            while pending:
-                group = pending.pop(0)
-                task = {**payload(group), "selected_unit_ids": [unit["unit_id"] for unit in group if unit["unit_id"] in chosen],
-                    "composition_check": {"phase": "FINAL_COMPOSED_EXTRACT", "result_content_hash": content_hash,
-                        "catalog_hash": narrative_hash(source_audit(units, all_ids)), "meaning": "Judge this final selection against located original neighbors and attribution. Unselected units remain retrievable; identify required missing meaning by unit ID, without inventing facts."}}
-                if not fits(task):
-                    if len(group) == 1:
-                        raise KernelError("TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE", "Final semantic check cannot fit its complete request")
-                    middle = len(group) // 2
-                    pending[0:0] = [group[:middle], group[middle:]]
-                    continue
-                verdict = dict(model_call("context_fidelity", task))
-                allowed = {unit["unit_id"] for unit in group}
-                missing = set(verdict.get("missing_unit_ids") or ())
-                distorted = set(verdict.get("distorted_unit_ids") or ())
-                unsupported = (missing | distorted) - allowed or verdict.get("supported") is not True or (verdict.get("coverage_complete") is not True and not missing)
-                additions.update(allowed if unsupported or distorted else missing)
-                evidence.append(dict(verdict.get("_execution_evidence") or {}))
-                assessments.append({"task": task, "fidelity": {key: value for key, value in verdict.items() if key != "_execution_evidence"}, "fidelity_evidence": dict(verdict.get("_execution_evidence") or {})})
-                if unsupported and allowed <= chosen:
-                    additions.update(all_ids)
+        def check_task(group):
+            return {**payload(group), "selected_unit_ids": [unit["unit_id"] for unit in group if unit["unit_id"] in chosen],
+                "composition_check": {"phase": "FINAL_COMPOSED_EXTRACT", "result_content_hash": content_hash,
+                    "catalog_hash": catalog_hash, "meaning": "Judge this final selection against located original neighbors and attribution. Unselected units remain retrievable; identify required missing meaning by unit ID, without inventing facts."}}
+        windows = final_windows(units, chosen, external_refs=external_refs)
+        for group in pack_final_windows(windows, payload=check_task, fits=fits):
+            task = check_task(group)
+            verdict = dict(model_call("context_fidelity", task))
+            allowed = {unit["unit_id"] for unit in group}
+            missing = set(verdict.get("missing_unit_ids") or ())
+            distorted = set(verdict.get("distorted_unit_ids") or ())
+            unsupported = (missing | distorted) - allowed or verdict.get("supported") is not True or (verdict.get("coverage_complete") is not True and not missing)
+            additions.update(allowed if unsupported or distorted else missing)
+            evidence.append(dict(verdict.get("_execution_evidence") or {}))
+            assessments.append({"task": task, "fidelity": {key: value for key, value in verdict.items() if key != "_execution_evidence"}, "fidelity_evidence": dict(verdict.get("_execution_evidence") or {})})
+            if unsupported and allowed <= chosen:
+                additions.update(all_ids)
         closed = close_dependencies(units, chosen | additions, external_refs=external_refs)
         if closed == chosen:
             return chosen, {"contract_version": SEMANTIC_CONTRACT, "result_content_hash": content_hash,
-                "catalog_hash": narrative_hash(source_audit(units, all_ids)), "selected_unit_ids": [unit["unit_id"] for unit in units if unit["unit_id"] in chosen],
+                "catalog_hash": catalog_hash, "selected_unit_ids": [unit["unit_id"] for unit in units if unit["unit_id"] in chosen],
                 "deterministic_required_fields_and_dependencies": "VERIFIED", "semantic_scope": "TARGETED_SOURCE_NEIGHBOR_WINDOWS_ONLY", "assessments": assessments}, evidence
         chosen = closed
     return chosen, {"contract_version": SEMANTIC_CONTRACT, "result_content_hash": narrative_hash(reconstruct(candidate, units, chosen)),
-        "catalog_hash": narrative_hash(source_audit(units, all_ids)), "deterministic_required_fields_and_dependencies": "VERIFIED",
+        "catalog_hash": catalog_hash, "deterministic_required_fields_and_dependencies": "VERIFIED",
         "semantic_scope": "EXACT_COMPLETE_ORIGINAL_RESTORED", "assessments": assessments}, evidence

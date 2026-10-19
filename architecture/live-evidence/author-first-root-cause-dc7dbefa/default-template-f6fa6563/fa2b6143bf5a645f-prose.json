@@ -1,0 +1,12 @@
+{
+  "test": "tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export[single-interruption]",
+  "prose": [
+    {
+      "asset_type": "draft_chapter",
+      "asset_version_id": "authority-output:7b072e3d-f56e-4beb-b184-b4c29befeeb9:chapter.draft:v1",
+      "content_hash": "sha256:dfc7b06b938090b102179df20741b035266a11053fc1ad5b3f6818bc51c63761",
+      "text": "Chapter 1 forces the protagonist into a witnessed choice. The choice is public, and the irreversible cost is witnessed. 她将唯一的通行证放在证人面前，守卫收起钥匙，归路随之关闭。",
+      "text_sha256": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf"
+    }
+  ]
+}

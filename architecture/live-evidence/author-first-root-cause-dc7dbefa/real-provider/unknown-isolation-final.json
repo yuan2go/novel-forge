@@ -1,0 +1,258 @@
+{
+  "status": "PASS",
+  "evidence_class": "READ_ONLY_NATIVE_UNKNOWN_RIGHTS_ACCOUNTING_AND_CAUSAL_SUCCESSOR",
+  "source_snapshot": "native-checkpoint-20261017T203244Z.json.gz",
+  "source_file_sha256": "sha256:02161b6593dbe619122312c4dc45c92590bb0f4fe42ec3829d06a67ea45308ff",
+  "unknown_effects_checked_without_reduced_denominator": 9,
+  "original_unknowns_not_settled_or_relabelled": true,
+  "no_cancelled_source_attempt_has_commit_authority": true,
+  "ledger_zero_interpretation": "Existing pending placeholder, not measured zero usage or zero spend",
+  "rows": [
+    {
+      "operation_id": "34c853f6-2624-4398-994c-8ba8533505ca",
+      "external_effect_id": "e26e6d39-09b3-4d8b-9067-2d6766880427",
+      "stage": "world.design.generate",
+      "effect_status": "UNKNOWN",
+      "isolation_id": "3d33b775-3049-48e3-939a-35f42bebdab8",
+      "old_business_commit_right": "REVOKED",
+      "attempt_ids": [
+        "7371b677-292e-4e65-9e09-f396bf4941e3"
+      ],
+      "attempt_status": "CANCELLED",
+      "reservation_id": "bb5427bd-9f71-490a-b1b6-db4382982de8",
+      "reservation_status": "HELD_UNKNOWN",
+      "settled_amount": null,
+      "settled_cost_status": "PENDING",
+      "raw_actual_tokens": 0,
+      "actual_token_usage": "UNKNOWN; pending zero is not a measured zero",
+      "linked_successor": {
+        "family": "NATIVE_PLANNING_RUNTIME_CONTINUATION",
+        "record_id": "planning-runtime-continuation:34c853f6-2624-4398-994c-8ba8533505ca",
+        "successor_operation_id": "1de07818-1dad-42c5-ae84-ec97edde2071"
+      }
+    },
+    {
+      "operation_id": "1de07818-1dad-42c5-ae84-ec97edde2071",
+      "external_effect_id": "70d2de03-6e46-46f6-9234-957286afd414",
+      "stage": "world.design.generate",
+      "effect_status": "UNKNOWN",
+      "isolation_id": "c77dc5b6-dbc1-4bd6-b60c-1e3d818899b3",
+      "old_business_commit_right": "REVOKED",
+      "attempt_ids": [
+        "2f5619cf-8299-48ce-8ab3-d66dd47838b0"
+      ],
+      "attempt_status": "CANCELLED",
+      "reservation_id": "28e2c919-ad31-461b-b876-1f5e53ac21be",
+      "reservation_status": "HELD_UNKNOWN",
+      "settled_amount": null,
+      "settled_cost_status": "PENDING",
+      "raw_actual_tokens": 0,
+      "actual_token_usage": "UNKNOWN; pending zero is not a measured zero",
+      "linked_successor": {
+        "family": "NATIVE_PLANNING_RUNTIME_CONTINUATION",
+        "record_id": "planning-runtime-continuation:1de07818-1dad-42c5-ae84-ec97edde2071",
+        "successor_operation_id": "ba8417f0-e016-447b-9b8d-5972c14e1f05"
+      }
+    },
+    {
+      "operation_id": "ba8417f0-e016-447b-9b8d-5972c14e1f05",
+      "external_effect_id": "21aba381-1cea-44f9-b545-6bad444a667b",
+      "stage": "world.design.generate",
+      "effect_status": "UNKNOWN",
+      "isolation_id": "933c5f98-f9d7-4952-9ac8-4396fbb5b528",
+      "old_business_commit_right": "REVOKED",
+      "attempt_ids": [
+        "361fe407-98c9-4032-b4ee-47062172acd6"
+      ],
+      "attempt_status": "CANCELLED",
+      "reservation_id": "61a9a48c-478b-44a5-80bd-087656167600",
+      "reservation_status": "HELD_UNKNOWN",
+      "settled_amount": null,
+      "settled_cost_status": "PENDING",
+      "raw_actual_tokens": 0,
+      "actual_token_usage": "UNKNOWN; pending zero is not a measured zero",
+      "linked_successor": {
+        "family": "NATIVE_PLANNING_RUNTIME_CONTINUATION",
+        "record_id": "planning-runtime-continuation:ba8417f0-e016-447b-9b8d-5972c14e1f05",
+        "successor_operation_id": "4d80436d-31c2-4e98-8606-82448882c71a"
+      }
+    },
+    {
+      "operation_id": "4d80436d-31c2-4e98-8606-82448882c71a",
+      "external_effect_id": "94094465-9a6b-4393-9f23-dacb79b58e8f",
+      "stage": "world.design.generate",
+      "effect_status": "UNKNOWN",
+      "isolation_id": "af102faf-255f-4498-be01-b9e99538a17d",
+      "old_business_commit_right": "REVOKED",
+      "attempt_ids": [
+        "1072fe16-7c5b-4716-ac49-e6df91643fb3"
+      ],
+      "attempt_status": "CANCELLED",
+      "reservation_id": "6e09dc97-0331-4f20-b3a3-1ffa9815aa93",
+      "reservation_status": "HELD_UNKNOWN",
+      "settled_amount": null,
+      "settled_cost_status": "PENDING",
+      "raw_actual_tokens": 0,
+      "actual_token_usage": "UNKNOWN; pending zero is not a measured zero",
+      "linked_successor": {
+        "family": "NATIVE_PLANNING_RUNTIME_CONTINUATION",
+        "record_id": "planning-runtime-continuation:4d80436d-31c2-4e98-8606-82448882c71a",
+        "successor_operation_id": "ce998818-4ea5-49ab-bf7e-356c6b0089cf"
+      }
+    },
+    {
+      "operation_id": "3a90542e-985a-4fbf-96f6-6170bb6970fb",
+      "external_effect_id": "8ffea312-09bf-4711-8504-6021878b06a8",
+      "stage": "draft",
+      "effect_status": "UNKNOWN",
+      "isolation_id": "f334730c-5faf-46b5-b596-6b0e033f9d12",
+      "old_business_commit_right": "REVOKED",
+      "attempt_ids": [
+        "da3c19fc-9198-438d-ba68-325de66e12f4"
+      ],
+      "attempt_status": "CANCELLED",
+      "reservation_id": "6c9829b5-3d91-4236-b8ae-a6f0bba78fe4",
+      "reservation_status": "HELD_UNKNOWN",
+      "settled_amount": null,
+      "settled_cost_status": "PENDING",
+      "raw_actual_tokens": 0,
+      "actual_token_usage": "UNKNOWN; pending zero is not a measured zero",
+      "linked_successor": {
+        "family": "NATIVE_SAGA_STEP_SUCCESSOR",
+        "record_id": "a0c5e59f-ff63-474e-884d-ec536463a4d8",
+        "immediate_successor_operation_id": "d80359d5-5bd4-4f03-82b8-2c16628d1168",
+        "final_successor_operation_id": "d80359d5-5bd4-4f03-82b8-2c16628d1168",
+        "successor_chain": [
+          {
+            "operation_id": "d80359d5-5bd4-4f03-82b8-2c16628d1168",
+            "status": "SUCCEEDED"
+          }
+        ]
+      }
+    },
+    {
+      "operation_id": "05ec6a47-fb21-4056-86ea-9362d68aebd6",
+      "external_effect_id": "e934b86e-bf8d-4ff9-8a66-e4797d08c870",
+      "stage": "draft",
+      "effect_status": "UNKNOWN",
+      "isolation_id": "c679fc04-70b4-4821-8337-9f4159fbb325",
+      "old_business_commit_right": "REVOKED",
+      "attempt_ids": [
+        "7f5f5f85-cfc8-48ac-bfa4-dafc35a5050c"
+      ],
+      "attempt_status": "CANCELLED",
+      "reservation_id": "84543878-9b5a-452c-a487-465c8a8630f9",
+      "reservation_status": "HELD_UNKNOWN",
+      "settled_amount": null,
+      "settled_cost_status": "PENDING",
+      "raw_actual_tokens": 0,
+      "actual_token_usage": "UNKNOWN; pending zero is not a measured zero",
+      "linked_successor": {
+        "family": "NATIVE_SAGA_STEP_SUCCESSOR",
+        "record_id": "091da6c2-c319-436d-947a-4345018ed451",
+        "immediate_successor_operation_id": "75403b34-66d4-4f84-9079-daf1caac5a15",
+        "final_successor_operation_id": "75403b34-66d4-4f84-9079-daf1caac5a15",
+        "successor_chain": [
+          {
+            "operation_id": "75403b34-66d4-4f84-9079-daf1caac5a15",
+            "status": "SUCCEEDED"
+          }
+        ]
+      }
+    },
+    {
+      "operation_id": "29399f28-10b2-4c58-82b7-e7098daa7081",
+      "external_effect_id": "cdc78559-f346-4820-8509-4daf1d2c3bda",
+      "stage": "draft",
+      "effect_status": "UNKNOWN",
+      "isolation_id": "f13b4a89-3cae-4a48-a36a-eb829a2cc0aa",
+      "old_business_commit_right": "REVOKED",
+      "attempt_ids": [
+        "742a6dea-866e-4e80-9282-6b9172338bc1"
+      ],
+      "attempt_status": "CANCELLED",
+      "reservation_id": "1bc3986b-4f5f-45cd-a2e7-0ec5bc8f04a4",
+      "reservation_status": "HELD_UNKNOWN",
+      "settled_amount": null,
+      "settled_cost_status": "PENDING",
+      "raw_actual_tokens": 0,
+      "actual_token_usage": "UNKNOWN; pending zero is not a measured zero",
+      "linked_successor": {
+        "family": "NATIVE_SAGA_STEP_SUCCESSOR",
+        "record_id": "6a6e4960-9550-4d56-99e2-476375b6e15d",
+        "immediate_successor_operation_id": "2c9bae61-b96d-4a62-befa-9445ce3b424c",
+        "final_successor_operation_id": "2c9bae61-b96d-4a62-befa-9445ce3b424c",
+        "successor_chain": [
+          {
+            "operation_id": "2c9bae61-b96d-4a62-befa-9445ce3b424c",
+            "status": "SUCCEEDED"
+          }
+        ]
+      }
+    },
+    {
+      "operation_id": "6e6a32f7-cd51-4cdc-bbc5-ca51aa04c9cf",
+      "external_effect_id": "2ffdf6bf-c2fd-4fcc-bff6-15fc5743d378",
+      "stage": "draft",
+      "effect_status": "UNKNOWN",
+      "isolation_id": "534f7a6e-dfbd-4ec4-9ec7-fd5696f1aef0",
+      "old_business_commit_right": "REVOKED",
+      "attempt_ids": [
+        "f870e851-0539-4cc9-98e7-a82109853059"
+      ],
+      "attempt_status": "CANCELLED",
+      "reservation_id": "28975ead-73e4-4ba4-93f1-d868c9c10bae",
+      "reservation_status": "HELD_UNKNOWN",
+      "settled_amount": null,
+      "settled_cost_status": "PENDING",
+      "raw_actual_tokens": 0,
+      "actual_token_usage": "UNKNOWN; pending zero is not a measured zero",
+      "linked_successor": {
+        "family": "NATIVE_SAGA_STEP_SUCCESSOR",
+        "record_id": "cf420596-5660-4cb0-9b65-2e0cabf1bf09",
+        "immediate_successor_operation_id": "cf59d8b5-8b5e-4e3f-b884-66b7e238d2a9",
+        "final_successor_operation_id": "2f10604b-da70-49cd-86d6-c187cb32cfad",
+        "successor_chain": [
+          {
+            "operation_id": "cf59d8b5-8b5e-4e3f-b884-66b7e238d2a9",
+            "status": "FAILED_FINAL"
+          },
+          {
+            "operation_id": "2f10604b-da70-49cd-86d6-c187cb32cfad",
+            "status": "SUCCEEDED"
+          }
+        ]
+      }
+    },
+    {
+      "operation_id": "cf59d8b5-8b5e-4e3f-b884-66b7e238d2a9",
+      "external_effect_id": "26db3cdf-0c95-475f-bd70-8bf70ab630ee",
+      "stage": "draft",
+      "effect_status": "UNKNOWN",
+      "isolation_id": "4af523fd-28fe-48c9-88e3-e36a44718177",
+      "old_business_commit_right": "REVOKED",
+      "attempt_ids": [
+        "2e5c062f-8ab4-40a5-9c21-673f48f0e1ce"
+      ],
+      "attempt_status": "CANCELLED",
+      "reservation_id": "afc60ed9-c555-487f-8c21-5709cd636acb",
+      "reservation_status": "HELD_UNKNOWN",
+      "settled_amount": null,
+      "settled_cost_status": "PENDING",
+      "raw_actual_tokens": 0,
+      "actual_token_usage": "UNKNOWN; pending zero is not a measured zero",
+      "linked_successor": {
+        "family": "NATIVE_SAGA_STEP_SUCCESSOR",
+        "record_id": "37fe0067-425a-476b-9d84-cc174864f987",
+        "immediate_successor_operation_id": "2f10604b-da70-49cd-86d6-c187cb32cfad",
+        "final_successor_operation_id": "2f10604b-da70-49cd-86d6-c187cb32cfad",
+        "successor_chain": [
+          {
+            "operation_id": "2f10604b-da70-49cd-86d6-c187cb32cfad",
+            "status": "SUCCEEDED"
+          }
+        ]
+      }
+    }
+  ]
+}

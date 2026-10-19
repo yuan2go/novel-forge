@@ -367,7 +367,8 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
         from novel_forge.modules.chapter_authority.realization_composition import serialize_realization
         output = default_chapter_fixture_response(stage, inputs)
         if stage == "draft":
-            text = "Snow falls quietly on the winter street. The observer watches the lamps and the windows without making a decision. Nobody learns a new fact. The street remains as it was before the observation."
+            text = ("雪花静静落在冬日的长街上。旁观者看着街灯和窗户，没有作出决定。无人知晓新的事实，街道仍是原先的模样。"
+                    "灯罩上的薄霜映着窗内的暖色，檐下的阴影沿砖缝铺开。远处屋脊只有朦胧的轮廓，近处栏杆的纹理仍清晰可辨。")
             for scene in output["scene_artifacts"]:
                 scene["text"] = text
             output["text"] = serialize_realization(output["scene_artifacts"]) if output["scene_artifacts"] else text
@@ -381,7 +382,8 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
                 if isinstance(value, list) and key != "realization_evidence":
                     output[key] = []
             output.update(extraction_status="EXTRACTED" if output["realization_evidence"] else "NO_CHANGE", no_change_reason="" if output["realization_evidence"] else "No business changes or observations.")
-        return output
+        from tests.integration.current_chapter_wire_support import current_chapter_wire_result
+        return current_chapter_wire_result(stage, inputs, output, json_envelope=False)
 
     def _verify_zero_chapter_acceptance(self, fixture, value, contract_digest):
         from novel_forge.storage.narrative_realization_repositories import NarrativeRealizationRepository
@@ -759,7 +761,11 @@ class ChapterGroupAuthorityPostgresTests(unittest.TestCase):
             "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(Path(root.name) / "objects"),
             "NOVEL_FORGE_AUTHORITY_WORKER_ID": "group-chapter-worker",
         }
-        execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=chapter_fixture_factory)
+        from functools import partial
+        from tests.integration.current_chapter_wire_support import current_chapter_fixture_response
+
+        execution = build_production_execution_composition(settings, env=env,
+            chapter_fixture_factory=chapter_fixture_factory or partial(current_chapter_fixture_response, json_envelope=False))
         chapter = build_chapter_authority_application(
             settings, execution=execution, env=env
         )

@@ -1,0 +1,21 @@
+{
+  "evidence_class": "READ_ONLY_REAL_BOOK_FROZEN_RESOURCE_CONTRACT",
+  "status": "PASS",
+  "read_at": "2026-10-18 03:39:43.290702+08:00",
+  "constraint_class": "CURRENT_RUNTIME_FACT",
+  "opening_run_id": "book-opening:a597e783b7641ae87af16fac1e0676a0884b4852de558a75fa1de7fd52205418",
+  "book_id": "book:wp-nf-author-first-20261017",
+  "budget_scope_id": "budget-scope:9b8247d295afb6ebeb660970e578f5a094ba52ae731ba4c34a697f71bfbf2447",
+  "policy_snapshot": {
+    "execution_mode": "PROVIDER_ALLOWED",
+    "accounting_basis": "ACCOUNT_ENTITLEMENT",
+    "authorization_ref": "user-authorization:WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01",
+    "cost_observability": "UNKNOWN",
+    "per_call_token_limit": 258400,
+    "resource_control_version": "billing-channel-resources.v1"
+  },
+  "policy_hash": "sha256:f5a41d72a4283de7d1b2339b4e09f9ff88ab9cc68dbe6dd18c16aca89384cf8d",
+  "cumulative_money_token_call_limits": "ABSENT",
+  "per_call_value": "Retained original single-request capacity contract; not a cumulative budget and not evidence of an HTTP output-token ceiling.",
+  "observed_current_Draft_failures": "NETWORK_STREAM_DECODE_ERROR; no token-budget refusal observed"
+}

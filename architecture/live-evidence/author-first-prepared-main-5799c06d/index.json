@@ -1,0 +1,41 @@
+{
+  "schema_version": "novel-forge.live-evidence.v1",
+  "at": "2026-10-18T18:52:26.066548+00:00",
+  "source_sha": "5799c06df20d15b578d264ddfb01e400bb573ba2",
+  "main_baseline": "9f41f0c75108f708a9a77e6c8da89826cf00987e",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "effective_chapter_count": 18,
+  "total_body_han": 77424,
+  "accepted_through_chapter": 0,
+  "classification": {
+    "corpus_bound": "ACTUAL_RUNTIME_DEFECT_LOCAL_CONTAINER_LIMIT_NOT_PROVIDER_CAPACITY",
+    "recovery": "ACTUAL_MISSING_FAILED_PRE_SUBMIT_MAIN_HANDOFF",
+    "route": "REVIEW_FOUND_FROZEN_BINDING_OMISSION_FIXED_BEFORE_NATIVE",
+    "query_lineage_after_v10": "REVIEW_FOUND_FORWARD_COMPOSITION_GAP_FIXED_WITH_ADDITIVE_231"
+  },
+  "exact_focused_checks": {
+    "tests": 279,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0
+  },
+  "source_authorization_replay": "PASS_READ_ONLY_SAME_FROZEN_INPUT",
+  "native_upgrade": "PASS_SAME_ORIGINAL_DATABASE_BUSINESS_HISTORY_UNCHANGED",
+  "native_v10_registration": "SUCCEEDED",
+  "main_planning19": "REAL_PROVIDER_DISPATCHED_RESULT_PENDING",
+  "writer19": "NOT_RUN",
+  "new_preparation_effects_in_v10_successor": 0,
+  "retained_preparation_count": 148,
+  "original_failed_main_and_attempt": "PRESERVED",
+  "old_unknown_status_and_usage": "PRESERVED",
+  "full_matrix": {
+    "a60d3a97": "RUNNING_POSTGRESQL_AFTER_BACKEND_AND_HISTORICAL_COMPATIBILITY_PASS",
+    "final5799c06d": "QUEUED_AFTER_PRIOR_CLEANUP_NOT_YET_RUN"
+  },
+  "production_100": "INCOMPLETE",
+  "literary_qualification": "NOT_PROVEN",
+  "model_review": "USER_AUTHORIZED_USD10_WAITING_NEW_17_20_WINDOW",
+  "human_evidence": "NOT_CLAIMED",
+  "raw_prose_provider_output_credentials_database_backups": "PRIVATE_OUTSIDE_GIT",
+  "original_failed_development_checks": "RETAINED_ALONGSIDE_FINAL_EXACT_PASS"
+}

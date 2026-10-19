@@ -305,11 +305,23 @@ def test_mixed_campaign_counts_production_and_subscription_without_reset_or_free
     changed["authorization"]["authorization_ref"] += ":new-run"
     fixture.configure(changed)
     for identity, entitlement, auth in ((chapter_identity(2), False, ""),
-                                        (chapter_identity(1, stage="revision"), True, "fixture-codex-entitlement"),
-                                        (chapter_identity(1, stage="rereview"), True, "another-account")):
+                                        (chapter_identity(1, stage="revision"), True, "fixture-codex-entitlement")):
         effect = fixture.native_effect(identity)
-        with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
-            reserve_provider_budget(DATABASE_URL, campaign_reservation(fixture, effect, entitlement=entitlement, authorization=auth))
+        reserved = reserve_provider_budget(DATABASE_URL, campaign_reservation(fixture, effect, entitlement=entitlement,
+            authorization=auth, tokens=2001 if entitlement else 200))
+        assert reserved["status"] == "RESERVED"
+    current = get_creative_budget(DATABASE_URL, fixture.projects["A"])["budget_usage"]
+    assert current["project_total"]["calls_used_or_reserved"] == 4
+    assert current["project_total"]["conservative_tokens"] == 2401
+    assert current["phases"]["PRODUCTION"]["conservative_tokens"] == 400
+    assert current["phases"]["REPAIR"]["conservative_tokens"] == 2001
+    assert Decimal(current["phases"]["PRODUCTION"]["priced_usd"]) == Decimal("1")
+    assert current["entitlements"][0]["calls"] == 2
+    with pytest.raises(KernelError, match="CREATIVE_BUDGET_USD_EXHAUSTED"):
+        reserve_provider_budget(DATABASE_URL, campaign_reservation(fixture, fixture.native_effect(chapter_identity(3)), amount="0.01"))
+    with pytest.raises(KernelError, match="CREATIVE_BUDGET_AUTHORIZATION_MISMATCH"):
+        reserve_provider_budget(DATABASE_URL, campaign_reservation(fixture, fixture.native_effect(chapter_identity(1, stage="rereview")),
+            entitlement=True, authorization="another-account"))
     redefined = deepcopy(changed)
     redefined["policy_version"] = "reset-campaign"
     redefined["comparison_budget"]["experiment_id"] += ":renamed"
@@ -408,6 +420,7 @@ def test_campaign_money_amendment_preserves_usage_frozen_settlement_and_unknown(
     effects = [fixture.native_effect(chapter_identity(1, stage=stage)) for stage in ("draft", "review")]
     requests = [campaign_reservation(fixture, effect, entitlement=index == 1) for index, effect in enumerate(effects)]
     reservations = [reserve_provider_budget(DATABASE_URL, request) for request in requests]
+    original_proof = fixture.proof(reservations[0])
     resolve_provider_budget_failure(DATABASE_URL, project_id=project,
         reservation_id=reservations[1]["reservation_id"], external_state_unknown=True)
     before = get_creative_budget(DATABASE_URL, project)["budget_usage"]
@@ -425,8 +438,13 @@ def test_campaign_money_amendment_preserves_usage_frozen_settlement_and_unknown(
         uow.cursor.execute("SELECT status FROM authority_budget_reservation WHERE reservation_id=%s", [reservations[1]["reservation_id"]])
         assert uow.cursor.fetchone()[0] == "HELD_UNKNOWN"
     third = fixture.native_effect(chapter_identity(2))
-    with pytest.raises(KernelError, match="CREATIVE_BUDGET_EXHAUSTED"):
-        reserve_provider_budget(DATABASE_URL, campaign_reservation(fixture, third))
+    assert reserve_provider_budget(DATABASE_URL, campaign_reservation(fixture, third))["status"] == "RESERVED"
+    assert fixture.proof(reservations[0]) == original_proof
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute("SELECT status FROM authority_budget_reservation WHERE reservation_id=%s", [reservations[1]["reservation_id"]])
+        assert uow.cursor.fetchone()[0] == "HELD_UNKNOWN"
+    with pytest.raises(KernelError, match="CREATIVE_BUDGET_USD_EXHAUSTED"):
+        reserve_provider_budget(DATABASE_URL, campaign_reservation(fixture, fixture.native_effect(chapter_identity(3)), amount="1.01"))
     with pytest.raises(KernelError, match="CREATIVE_BUDGET_PLAN_IMMUTABLE"):
         fixture.configure({**prior, "policy_version": "rollback-without-authority"})
 

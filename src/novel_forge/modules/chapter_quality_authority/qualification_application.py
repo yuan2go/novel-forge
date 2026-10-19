@@ -467,6 +467,27 @@ class PostgresQualityQualificationAuthority:
             raise ValueError("Quality subject scope is outside the frozen campaign")
         if command.canonical_asset_version_id == command.baseline_asset_version_id:
             raise ValueError("canonical and baseline candidates must differ")
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            frozen_manifest = uow.repositories.asset_documents.require(
+                project_id=campaign["project_id"],
+                asset_version_id=campaign["manifest_asset_version_id"],
+            )
+            manifest = QualityCampaignManifest.from_mapping(frozen_manifest.content)
+            if frozen_manifest.content_hash != campaign["manifest_hash"] or manifest.digest != campaign["manifest_hash"]:
+                raise KernelError("QUALITY_QUALIFICATION_MANIFEST_HASH_DRIFT", "Subject protocol requires the exact frozen campaign manifest")
+            uow.cursor.execute("""SELECT command_payload->'payload'->>'baseline_protocol'
+                FROM authority_operation WHERE project_id=%s AND actor_id=%s
+                  AND definition_name='quality.qualification.subject.bind'
+                  AND idempotency_scope='project:quality-qualification' AND idempotency_key=%s""",
+                [campaign["project_id"], principal.principal_id, f"{command.campaign_id}:{command.subject_id}:bind"])
+            original_request = uow.cursor.fetchone()
+        baseline_protocol = "FIRST_DRAFT_VS_ACCEPTED_REVISION"
+        if manifest.to_dict()["baseline_protocol"].get("kind") == "FIRST_DRAFT_VS_NATIVE_WORKING_REVISION":
+            baseline_protocol = "FIRST_DRAFT_VS_NATIVE_WORKING_REVISION"
+        if original_request:
+            if original_request[0] not in {"FIRST_DRAFT_VS_ACCEPTED_REVISION", "FIRST_DRAFT_VS_NATIVE_WORKING_REVISION"}:
+                raise KernelError("QUALITY_QUALIFICATION_SUBJECT_CONFLICT", "Registered subject protocol is unsupported")
+            baseline_protocol = original_request[0]
         required_assets = [
             (command.canonical_asset_version_id, command.canonical_content_hash),
             (command.baseline_asset_version_id, command.baseline_content_hash),
@@ -495,7 +516,7 @@ class PostgresQualityQualificationAuthority:
                 "arc_plan_version_ids": list(command.arc_plan_version_ids),
                 "canonical_asset_version_id": command.canonical_asset_version_id,
                 "baseline_asset_version_id": command.baseline_asset_version_id,
-                "baseline_protocol": "FIRST_DRAFT_VS_ACCEPTED_REVISION",
+                "baseline_protocol": baseline_protocol,
             },
             input_assets=inputs,
             principal=principal,

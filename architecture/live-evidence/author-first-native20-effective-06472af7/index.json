@@ -1,0 +1,56 @@
+{
+  "schema_version": "novel-forge.native-working-recovery-checkpoint.v1",
+  "at": "2026-10-19T01:54:32.155522+00:00",
+  "source_sha": "06472af72535eef994328e9ffe0dadea2066d8b9",
+  "earlier_runtime_sources": {
+    "draft_and_revision": "d9a6ed04f638c07f19c9d97418919a376fff0fcc",
+    "rereview": "8b4ed0a1d1c4c23fdd0287fbef8cc4bb3f02c92a",
+    "optional_model_review": "0c074536f35ee8e5bc33175d5c9793dbbbb54b5f"
+  },
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "book_checkpoint": {
+    "state": "READY",
+    "current_chapter": 20,
+    "accepted_through_chapter": 0,
+    "version": 145
+  },
+  "goal": {
+    "full_book_chapters": 600,
+    "first_delivery_chapters": 100,
+    "body_han": [
+      4000,
+      5000
+    ]
+  },
+  "effective_chapters": 20,
+  "effective_body_han": 85832,
+  "first20_han": 3943,
+  "effective20_body_han": 4199,
+  "effective20_asset_version_id": "authority-output:76df75db-9b43-4660-998a-59870d3e2266:chapter.best_candidate:v1",
+  "author_selection": "NOT_GRANTED",
+  "formal_acceptance": "NOT_GRANTED",
+  "accepted_through_chapter": 0,
+  "next_group": {
+    "operation_id": "d76de9db-8d6e-4f0b-b519-227d8ff790d8",
+    "logical_key": "chapter-group:containing:21",
+    "status": "PREPARING",
+    "selected_working_source_count": 20,
+    "main_dispatch": "NOT_YET_AT_CHECKPOINT"
+  },
+  "evidence_ceiling": "EXECUTABLE",
+  "hundred_chapter_delivery": "NOT_COMPLETED",
+  "literary_qualification": "NOT_PROVEN",
+  "overall_production_qualification": "NOT_PROVEN",
+  "reading_observations": {
+    "source": "EXACT_NATIVE_FIRST_AND_REVISED_CHAPTER20",
+    "action_consequence": "Second labor morning completes120 of fee credit; cash240 remains the prior payment, not a new charge",
+    "character_reaction": "Workmates draw supplies from the cleared placement; tired hands and shoulders lead to food and rest",
+    "future_boundary": "Third lesson remains on its scheduled future day; notebook uncertainty stays unresolved",
+    "limitations": [
+      "Repeated material handling and notebook details",
+      "Repeated120-credit/240-cash explanation",
+      "Weak relationship and external-pressure progression"
+    ],
+    "not_a_premium_or_longform_quality_claim": true
+  }
+}

@@ -204,6 +204,7 @@ class PostgresBookProductionSupervisor:
             if replan["affected_scope"] == "CHAPTER_GROUP":
                 active_group = self._active_group_run(book)
                 if active_group is not None:
+                    self.replan.activate_plan_change(str(replan["replan_id"]))
                     self.chapter_groups.supersede_for_approved_replan(
                         str(active_group["group_run_id"]),
                         replan_id=str(replan["replan_id"]),
@@ -527,6 +528,24 @@ class PostgresBookProductionSupervisor:
                 "BOOK_SUPERVISOR_CHAPTER_PLAN_NOT_EXECUTABLE",
                 "ChapterPlan must be Frozen before Chapter dispatch",
             )
+        command = self.prepare_chapter_command(book=book, group=group, chapter_plan=chapter_plan,
+            realization=realization, chapter_number=next_chapter)
+        dispatch = self.authority.submit_chapter if author_first(book) else lambda command, **options: self.chapter_groups.dispatch(str(group_run["group_run_id"]), command, **options)
+        dispatched_group = dispatch(command, principal=self.principal)
+        dispatched = self.authority.require_chapter_request(
+            str(dispatched_group.get("active_chapter_request_id") or dispatched_group["chapter_request_id"])
+        )
+        return self._result(
+            book_run_id,
+            before,
+            SupervisorAction.DISPATCH_CHAPTER,
+            str(dispatched.get("chapter_root_operation_id") or ""),
+            str(dispatched["chapter_request_id"]),
+        )
+
+    def prepare_chapter_command(self, *, book, group, chapter_plan, realization, chapter_number, working_regeneration_proposal_id=""):
+        next_chapter = chapter_number
+        book_run_id = str(book["book_run_id"])
         execution_plan = self._require_chapter_execution_plan(book, chapter_plan)
         chapter_admission = self.query.require_chapter_production_admission(
             book_run_id=str(book["book_run_id"]),
@@ -534,6 +553,7 @@ class PostgresBookProductionSupervisor:
             chapter_group_plan_version_id=str(group["asset_version_id"]),
             chapter_plan_version_id=str(chapter_plan["asset_version_id"]),
             chapter_number=next_chapter,
+            **({"working_regeneration_proposal_id": working_regeneration_proposal_id} if working_regeneration_proposal_id else {}),
             accepted_through_chapter=int(book["accepted_through_chapter"]),
             active_story_state_version_id=str(
                 book.get("active_story_state_version_id") or ""
@@ -628,41 +648,27 @@ class PostgresBookProductionSupervisor:
             preparation_report["author_workflow"] = book["author_workflow"]
             context_version_refs["accepted_through_chapter"] = int(book["accepted_through_chapter"])
         preparation_report["chapter_production_admission"] = chapter_admission
-        dispatch = self.authority.submit_chapter if author_first(book) else lambda command, **options: self.chapter_groups.dispatch(str(group_run["group_run_id"]), command, **options)
-        dispatched_group = dispatch(
-            SubmitBookChapterCommand(
-                book_run_id=book_run_id,
-                chapter_number=next_chapter,
-                title=prepared.title,
-                premise=prepared.premise,
-                chapter_plan_asset_version_id=str(chapter_plan["asset_version_id"]),
-                chapter_plan_content_hash=str(chapter_plan["content_hash"]),
-                context_candidates=prepared.context_candidates,
-                execution_chapter_plan_asset_version_id=str(
-                    execution_plan["asset_version_id"]
-                ),
-                execution_chapter_plan_content_hash=str(execution_plan["content_hash"]),
-                parent_group_version_id=str(group["asset_version_id"]),
-                narrative_realization_id=str(realization["realization_id"]),
-                narrative_realization_slice_id=str(realization["slice_id"]),
-                narrative_realization_contract_digest=str(
-                    realization["contract_digest"]
-                ),
-                context_version_refs=context_version_refs,
-                context_token_budget=prepared.context_token_budget,
-                preparation_report=preparation_report,
+        return SubmitBookChapterCommand(
+            book_run_id=book_run_id,
+            chapter_number=next_chapter,
+            title=prepared.title,
+            premise=prepared.premise,
+            chapter_plan_asset_version_id=str(chapter_plan["asset_version_id"]),
+            chapter_plan_content_hash=str(chapter_plan["content_hash"]),
+            context_candidates=prepared.context_candidates,
+            execution_chapter_plan_asset_version_id=str(
+                execution_plan["asset_version_id"]
             ),
-            principal=self.principal,
-        )
-        dispatched = self.authority.require_chapter_request(
-            str(dispatched_group.get("active_chapter_request_id") or dispatched_group["chapter_request_id"])
-        )
-        return self._result(
-            book_run_id,
-            before,
-            SupervisorAction.DISPATCH_CHAPTER,
-            str(dispatched.get("chapter_root_operation_id") or ""),
-            str(dispatched["chapter_request_id"]),
+            execution_chapter_plan_content_hash=str(execution_plan["content_hash"]),
+            parent_group_version_id=str(group["asset_version_id"]),
+            narrative_realization_id=str(realization["realization_id"]),
+            narrative_realization_slice_id=str(realization["slice_id"]),
+            narrative_realization_contract_digest=str(
+                realization["contract_digest"]
+            ),
+            context_version_refs=context_version_refs,
+            context_token_budget=prepared.context_token_budget,
+            preparation_report=preparation_report,
         )
 
     @staticmethod

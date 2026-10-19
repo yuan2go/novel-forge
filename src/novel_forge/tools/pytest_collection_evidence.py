@@ -13,6 +13,7 @@ import pytest
 SCHEMA_VERSION = "novel-forge.pytest-collection.v1"
 OPTION = "--novel-forge-collection-report"
 COLLECTION_ERRORS: list[dict[str, str]] = []
+FAILURE_REPORT_PATH: Path | None = None
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -27,7 +28,10 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 def pytest_configure(config: pytest.Config) -> None:
+    global FAILURE_REPORT_PATH
     COLLECTION_ERRORS.clear()
+    output = str(config.getoption(OPTION) or "").strip()
+    FAILURE_REPORT_PATH = Path(output).resolve().with_suffix(".failures.jsonl") if output else None
 
 
 def pytest_collectreport(report: pytest.CollectReport) -> None:
@@ -39,6 +43,29 @@ def pytest_collectreport(report: pytest.CollectReport) -> None:
             "outcome": str(report.outcome),
         }
     )
+
+
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    if FAILURE_REPORT_PATH is None or not report.failed:
+        return
+    from .backend_qualification_contract import sanitize_evidence
+
+    path = FAILURE_REPORT_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
+    event = {
+        "schema_version": "novel-forge.pytest-failure-event.v1",
+        "node_id": str(report.nodeid),
+        "phase": str(report.when),
+        "failure": sanitize_evidence(report.longreprtext),
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "process_id": os.getpid(),
+    }
+    if getattr(report, "context", None) is not None:
+        event["subtest_context"] = sanitize_evidence(str(report.context))
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event, ensure_ascii=False, sort_keys=True) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
 
 
 def _relative_source(item: pytest.Item, root: Path) -> str:

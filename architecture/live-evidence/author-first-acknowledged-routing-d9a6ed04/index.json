@@ -1,0 +1,47 @@
+{
+  "schema_version": "novel-forge.checked-native-recovery-evidence.v1",
+  "source_sha": "d9a6ed04f638c07f19c9d97418919a376fff0fcc",
+  "previous_runtime_sha": "b2c844daf1a695fe431157d977553b77098920bc",
+  "classification": "PRODUCTION_DEFECT_FROZEN_ACKNOWLEDGED_ROUTING_OMISSION",
+  "first_failure": {
+    "operation_id": "543d8a2a-c458-430b-88da-2144fdb23a21",
+    "error_code": "PLANNING_ROUTING_LINEAGE_INVALID",
+    "effects": 0,
+    "budgets": 0,
+    "provider_request_sent": false
+  },
+  "fix": {
+    "owner": "story_planning_runtime",
+    "supported_acknowledged_controls": [
+      "5.0.0",
+      "11.0.0",
+      "12.0.0"
+    ],
+    "new_control_version": "12.0.0",
+    "new_handoff_contract": "planning-first-isolated-preparation-handoff.v2",
+    "migration": "20261019_0233_acknowledged_preparation_routing",
+    "historical_v11_semantics_unchanged": true,
+    "scope": "EXACT_ZERO_SEND_FAILURE_WITH_STOPPED_CUSTODY_ANCESTRY"
+  },
+  "validation": {
+    "tested_source_sha": "d9a6ed04f638c07f19c9d97418919a376fff0fcc",
+    "cases": 551,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "documentation": "PASS",
+    "complete_final_matrix": "QUEUED_AFTER_A60_CLEANUP",
+    "native_consumption": "PENDING"
+  },
+  "book": {
+    "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "effective_chapters": 19,
+    "body_han": 81633,
+    "accepted_through_chapter": 0,
+    "target_window": 100,
+    "full_book_target": 600
+  },
+  "evidence_ceiling": "EXECUTABLE",
+  "literary_qualification": "NOT_PROVEN",
+  "production_qualification": "NOT_PROVEN"
+}

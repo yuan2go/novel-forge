@@ -1,0 +1,4540 @@
+{
+  "test": "ACTUAL_PROVIDER_NATIVE_AUTHOR_FIRST_SAME_BOOK",
+  "source_sha": "MIXED_EXACT_PER_PROCESS_METADATA",
+  "input": "actual-dispatch-final-e5.json.gz",
+  "status": "PASS",
+  "actual_prompt_and_process_stdin_matches": 92,
+  "successful_result_inputs": 83,
+  "unknown_result_inputs": 9,
+  "working_source_bindings": 116,
+  "rows": [
+    {
+      "stage": "creative.candidates.generate",
+      "operation_id": "8d12cffb-87c9-4e03-97c7-c967ad899e75",
+      "external_effect_id": "532b6304-8830-4a0f-8c20-2fa598dda18c",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:7701e33d96bca8af972950ae801f5d550c46716073d46002a49876e60c7326ed",
+      "process_stdin_sha256": "7701e33d96bca8af972950ae801f5d550c46716073d46002a49876e60c7326ed",
+      "rendered_bytes": 24112,
+      "working_sources": []
+    },
+    {
+      "stage": "creative.candidates.generate",
+      "operation_id": "e4da7daa-af27-4647-ae1e-c2844fac0125",
+      "external_effect_id": "a65d2d75-981a-48fe-a198-3c393842e2de",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:eee1b7f74af9de9f0148b21e2d2b0d7d73975839fd6f5832014aa24dabe4d900",
+      "process_stdin_sha256": "eee1b7f74af9de9f0148b21e2d2b0d7d73975839fd6f5832014aa24dabe4d900",
+      "rendered_bytes": 24126,
+      "working_sources": []
+    },
+    {
+      "stage": "theme.candidates.generate",
+      "operation_id": "0ca3b751-2790-48e9-9675-ee79da85c508",
+      "external_effect_id": "cc17f3c1-367f-4fee-be1c-c1ffd67b570b",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:4e06c0f954646a1eba48924f78a81371b00254a6093dafb99c2b9c2bc7fdb53a",
+      "process_stdin_sha256": "4e06c0f954646a1eba48924f78a81371b00254a6093dafb99c2b9c2bc7fdb53a",
+      "rendered_bytes": 39548,
+      "working_sources": []
+    },
+    {
+      "stage": "ending.intent.generate",
+      "operation_id": "453afae0-e4c4-4d41-b455-bcc6342ee1e4",
+      "external_effect_id": "d7af6ec4-1bfb-4a05-8968-02fb1982ade7",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:d65f05ced14648c0ecd350949ed84bdc43a419eee57cc92692121346fca03ddc",
+      "process_stdin_sha256": "d65f05ced14648c0ecd350949ed84bdc43a419eee57cc92692121346fca03ddc",
+      "rendered_bytes": 40972,
+      "working_sources": []
+    },
+    {
+      "stage": "reader.promise.generate",
+      "operation_id": "02fc178d-ca18-42e2-95fd-f823d05f50e8",
+      "external_effect_id": "eb4b6b35-fe58-48fe-88c2-1414db23264c",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:bf29b476e991d8ea0572faca92a1a5078cae9291c88421b55098dd3566b5a84b",
+      "process_stdin_sha256": "bf29b476e991d8ea0572faca92a1a5078cae9291c88421b55098dd3566b5a84b",
+      "rendered_bytes": 39614,
+      "working_sources": []
+    },
+    {
+      "stage": "world.design.generate",
+      "operation_id": "34c853f6-2624-4398-994c-8ba8533505ca",
+      "external_effect_id": "e26e6d39-09b3-4d8b-9067-2d6766880427",
+      "effect_status": "UNKNOWN",
+      "verified_remote_result": false,
+      "prompt_hash": "sha256:2b16ff41b6182c9bb073e71970d394e74581f134a2e90d64eacc15c590b310c2",
+      "process_stdin_sha256": "2b16ff41b6182c9bb073e71970d394e74581f134a2e90d64eacc15c590b310c2",
+      "rendered_bytes": 83154,
+      "working_sources": []
+    },
+    {
+      "stage": "world.design.generate",
+      "operation_id": "1de07818-1dad-42c5-ae84-ec97edde2071",
+      "external_effect_id": "70d2de03-6e46-46f6-9234-957286afd414",
+      "effect_status": "UNKNOWN",
+      "verified_remote_result": false,
+      "prompt_hash": "sha256:52c27e3386e960f249e80b58eb1bf67442c0d30cb49730f70663623cdd0bdfc0",
+      "process_stdin_sha256": "52c27e3386e960f249e80b58eb1bf67442c0d30cb49730f70663623cdd0bdfc0",
+      "rendered_bytes": 83154,
+      "working_sources": []
+    },
+    {
+      "stage": "world.design.generate",
+      "operation_id": "ba8417f0-e016-447b-9b8d-5972c14e1f05",
+      "external_effect_id": "21aba381-1cea-44f9-b545-6bad444a667b",
+      "effect_status": "UNKNOWN",
+      "verified_remote_result": false,
+      "prompt_hash": "sha256:b114d2f3e02b4ad645778dfd0289c114863c902194b47c3c751b891e514df395",
+      "process_stdin_sha256": "b114d2f3e02b4ad645778dfd0289c114863c902194b47c3c751b891e514df395",
+      "rendered_bytes": 83154,
+      "working_sources": []
+    },
+    {
+      "stage": "world.design.generate",
+      "operation_id": "4d80436d-31c2-4e98-8606-82448882c71a",
+      "external_effect_id": "94094465-9a6b-4393-9f23-dacb79b58e8f",
+      "effect_status": "UNKNOWN",
+      "verified_remote_result": false,
+      "prompt_hash": "sha256:2254d6691ee917e77e0f38c5f56954db989ff5dede2f789fcf3d96ae56f415ae",
+      "process_stdin_sha256": "2254d6691ee917e77e0f38c5f56954db989ff5dede2f789fcf3d96ae56f415ae",
+      "rendered_bytes": 83154,
+      "working_sources": []
+    },
+    {
+      "stage": "world.design.generate",
+      "operation_id": "ce998818-4ea5-49ab-bf7e-356c6b0089cf",
+      "external_effect_id": "bb2e73a5-b91e-4374-bbee-653bc04f71db",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:36832a28e51dfca8cdfb284c76fdb231765efa0ee8b74ffa6b27018800b925cc",
+      "process_stdin_sha256": "36832a28e51dfca8cdfb284c76fdb231765efa0ee8b74ffa6b27018800b925cc",
+      "rendered_bytes": 83154,
+      "working_sources": []
+    },
+    {
+      "stage": "character.cast.generate",
+      "operation_id": "712577bf-240d-4e75-ad75-ed0fcd8b24e1",
+      "external_effect_id": "8553943e-ef70-4c37-9e35-b83f75bb72d9",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:d1085095cc029b06d3d3b1aa8226c202bbe7c925a81dc48ffb581568172b9931",
+      "process_stdin_sha256": "d1085095cc029b06d3d3b1aa8226c202bbe7c925a81dc48ffb581568172b9931",
+      "rendered_bytes": 112555,
+      "working_sources": []
+    },
+    {
+      "stage": "book_plan.generate",
+      "operation_id": "d2e79239-bc4d-4229-a7c6-06706b0a41b4",
+      "external_effect_id": "80694c71-8029-49a0-9b0b-01f13296004c",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:d7a06d1da751503808db7cf623bc48318ab50aa3fba01afba61bf33e4bb22fed",
+      "process_stdin_sha256": "d7a06d1da751503808db7cf623bc48318ab50aa3fba01afba61bf33e4bb22fed",
+      "rendered_bytes": 126669,
+      "working_sources": []
+    },
+    {
+      "stage": "book_plan.generate",
+      "operation_id": "7d5c4202-f444-4459-9930-76c1432dff57",
+      "external_effect_id": "e37024d4-7e46-4d10-bb97-5c2b7dfd5904",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:61419c38891fac396c365e9e90e508fcf0cc3e40017144df7aa53f0466d7390d",
+      "process_stdin_sha256": "61419c38891fac396c365e9e90e508fcf0cc3e40017144df7aa53f0466d7390d",
+      "rendered_bytes": 126676,
+      "working_sources": []
+    },
+    {
+      "stage": "book_plan.generate",
+      "operation_id": "e2032500-c4cc-4d36-914b-0d814cfb210b",
+      "external_effect_id": "b0d8b966-9526-4ce6-8f5a-25cd46c26c6b",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:18db12d8add3e8477947deeb3a2406a4a011ecb224f92bfe697a081a259c7a9a",
+      "process_stdin_sha256": "18db12d8add3e8477947deeb3a2406a4a011ecb224f92bfe697a081a259c7a9a",
+      "rendered_bytes": 126680,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "d871d1f7-adb3-4134-902b-c6008c465fc2",
+      "external_effect_id": "fe3d647d-b090-4890-9747-1bf3b8d235d0",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:7207d107647e02b9ad97f00656d1094a955074b0ac62ce449df24a79912ca62f",
+      "process_stdin_sha256": "7207d107647e02b9ad97f00656d1094a955074b0ac62ce449df24a79912ca62f",
+      "rendered_bytes": 53468,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "5fd6e29c-2801-4ece-aaf5-07fdd5f26857",
+      "external_effect_id": "ce92b622-6f4d-4517-9f5a-3d7aacbf1109",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:74bba538debb23eae28516db8364c1ce72a57cd420087e15fa62930b96e05096",
+      "process_stdin_sha256": "74bba538debb23eae28516db8364c1ce72a57cd420087e15fa62930b96e05096",
+      "rendered_bytes": 53475,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "b2a69ffc-e906-4d0f-b699-64e6ddb29303",
+      "external_effect_id": "894d94cf-4a23-470f-836d-d1bcc9da3dda",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:32b6e881cac684798822b3d0c0a5b86813b30e96b0449af5fac67dac2438d12a",
+      "process_stdin_sha256": "32b6e881cac684798822b3d0c0a5b86813b30e96b0449af5fac67dac2438d12a",
+      "rendered_bytes": 53479,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "a0aab967-81a6-4106-b723-b60111625cc2",
+      "external_effect_id": "1dee783b-6aa3-4031-903e-e5c110ea1d9d",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:03895bcc9f96ea10966d02385818dadbbaba3783fa31bbeca55614a8f52d7695",
+      "process_stdin_sha256": "03895bcc9f96ea10966d02385818dadbbaba3783fa31bbeca55614a8f52d7695",
+      "rendered_bytes": 53474,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "c73dfdfe-f67e-48ed-80d6-ad413d987511",
+      "external_effect_id": "7dc68f67-5a82-4f89-aa4e-6e9320236e74",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:7b48a2544fb0913631f4ea0ec6d2f23b28fbf1a5ae12a851d306c9598fede142",
+      "process_stdin_sha256": "7b48a2544fb0913631f4ea0ec6d2f23b28fbf1a5ae12a851d306c9598fede142",
+      "rendered_bytes": 53481,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "fe3a0437-487c-4b45-898c-2981132de30f",
+      "external_effect_id": "e8b76de5-cba6-49ac-9ab9-9293d8493e06",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:d92c7b7dcd237bbdae8cd8024d12d973e79f56fa08074545aa2b9c242927e8fc",
+      "process_stdin_sha256": "d92c7b7dcd237bbdae8cd8024d12d973e79f56fa08074545aa2b9c242927e8fc",
+      "rendered_bytes": 53485,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "96509c1c-959c-4ba0-879c-997d03dff744",
+      "external_effect_id": "1727fc50-095e-4c1e-af83-aff6a239fc06",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:048c7dad6ff34e77f8dd547fac98f6138faa291d2f163083302e98fbdc033b09",
+      "process_stdin_sha256": "048c7dad6ff34e77f8dd547fac98f6138faa291d2f163083302e98fbdc033b09",
+      "rendered_bytes": 53477,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "4b338ffa-e5b1-4fb8-ab83-b10e03964fe5",
+      "external_effect_id": "7fa998c2-58e2-43fb-b5bb-2287af00ccbf",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:ff877e14dd805fdce556f412c698bb50afd22ed90fff5955ae90c42a76c3ee27",
+      "process_stdin_sha256": "ff877e14dd805fdce556f412c698bb50afd22ed90fff5955ae90c42a76c3ee27",
+      "rendered_bytes": 53484,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "1c1755a0-0e6d-4d3a-a66d-773148d69c96",
+      "external_effect_id": "8d77f4c4-ae8b-48f6-be18-22e83549e6d2",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:83fcdcbb4cbf35ebee1199cae4c87ec174b5a22dd89c33ed2009de044cb09ddd",
+      "process_stdin_sha256": "83fcdcbb4cbf35ebee1199cae4c87ec174b5a22dd89c33ed2009de044cb09ddd",
+      "rendered_bytes": 53488,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "a6bde72f-487e-4d3d-88f8-56712e27a3a4",
+      "external_effect_id": "61181fcd-4811-496a-b32f-d9795706bb41",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:b4c4a1da91609fc9b7da6656205a0ef8b0f14bc3b9fd0f0c3add2d2ed49b7d9e",
+      "process_stdin_sha256": "b4c4a1da91609fc9b7da6656205a0ef8b0f14bc3b9fd0f0c3add2d2ed49b7d9e",
+      "rendered_bytes": 53477,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "98ba40d0-2a9f-4300-a30d-5c4e6f7514af",
+      "external_effect_id": "a4ae7ae0-e3c4-4373-9add-81e8c09eec68",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:edf85893185af29a4ccf4ee8b153747d57f3a86f106ddcec178b9ca5cab5cf52",
+      "process_stdin_sha256": "edf85893185af29a4ccf4ee8b153747d57f3a86f106ddcec178b9ca5cab5cf52",
+      "rendered_bytes": 53484,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "a3ac5570-aa1f-4e2b-93c8-93a07845240a",
+      "external_effect_id": "82326d6d-ca6d-432f-9b53-69aa9a2dce8d",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:55c889c507768f44df76859120a6204a8a3e5b0a8eae9e4a78fe1037646f988f",
+      "process_stdin_sha256": "55c889c507768f44df76859120a6204a8a3e5b0a8eae9e4a78fe1037646f988f",
+      "rendered_bytes": 53488,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "6c6312fa-ff65-4e09-a7c7-4263ae788e68",
+      "external_effect_id": "baae7a73-5e1d-415d-bdb1-0ee1f6918b3c",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:d4a36f5836094f6b3fd9a61617cee34c217968f1377cffdd6e957b7288bca3b5",
+      "process_stdin_sha256": "d4a36f5836094f6b3fd9a61617cee34c217968f1377cffdd6e957b7288bca3b5",
+      "rendered_bytes": 53477,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "11d39ef9-ea7e-4165-8a01-3562cb3f1a4c",
+      "external_effect_id": "03c8f4c3-a3af-4c85-9dd6-1ae2d92adc7a",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:a29730b82bbaf60a241682b9cffcae6f5ae6b112113399d7c40d4007e7d3c186",
+      "process_stdin_sha256": "a29730b82bbaf60a241682b9cffcae6f5ae6b112113399d7c40d4007e7d3c186",
+      "rendered_bytes": 53484,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "86dda90c-d64d-472a-8390-00ac064e3147",
+      "external_effect_id": "42fee68a-3012-450c-8f65-ef35f1bf8487",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:77f271d3f3a07c75bf40c715d71e9dcef47e509cc17c788da7d00b21c82d389f",
+      "process_stdin_sha256": "77f271d3f3a07c75bf40c715d71e9dcef47e509cc17c788da7d00b21c82d389f",
+      "rendered_bytes": 53488,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "de0a945d-3ced-4d30-8c86-e8a527a37ee3",
+      "external_effect_id": "627d75ea-3536-48b1-97b7-3562770a363d",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:7db638336e2ea4cafea42cb7928ef761dffa3fcc320d847def9aabd4455c1569",
+      "process_stdin_sha256": "7db638336e2ea4cafea42cb7928ef761dffa3fcc320d847def9aabd4455c1569",
+      "rendered_bytes": 53477,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "0d0161b0-b5ed-4934-abaa-54fb6557960b",
+      "external_effect_id": "a95527e3-c95f-4237-840f-5ceabb186a95",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:3d66b01d0dff5d35da5a9e236ffe597e67108ee0b3f297c1d11f063474548853",
+      "process_stdin_sha256": "3d66b01d0dff5d35da5a9e236ffe597e67108ee0b3f297c1d11f063474548853",
+      "rendered_bytes": 53484,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "1cb582a0-0ce8-4ad2-9c34-4b08109b602b",
+      "external_effect_id": "330751ca-7cf5-4a27-9293-4d13eeb61403",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:b86304b92ce29da4e8e2b99ebc76160f7e8c1ad4aff1df29abcd13a588847ea6",
+      "process_stdin_sha256": "b86304b92ce29da4e8e2b99ebc76160f7e8c1ad4aff1df29abcd13a588847ea6",
+      "rendered_bytes": 53488,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "5d96a232-a033-4e02-a790-864c6aecb2e7",
+      "external_effect_id": "6d1ecd8e-e29a-454c-8092-c4e03b811517",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:9f92f760c64a5e348ff4471e1234f50166bc02389904f5ae281be6822642db50",
+      "process_stdin_sha256": "9f92f760c64a5e348ff4471e1234f50166bc02389904f5ae281be6822642db50",
+      "rendered_bytes": 53477,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "b68153f0-2606-43aa-bcdd-d0d828e416c6",
+      "external_effect_id": "67138372-43e4-4b4b-b5a0-1f887ca45083",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:24b39af0870476c903ea99c1ab5f56ad85ed0436d1a25023120f47165a181565",
+      "process_stdin_sha256": "24b39af0870476c903ea99c1ab5f56ad85ed0436d1a25023120f47165a181565",
+      "rendered_bytes": 53484,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "2b35e48c-78e4-419d-8901-a0303bd38fe3",
+      "external_effect_id": "6ab4d3ed-b792-4817-805c-b6a72cf97a46",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:631c642e7b93b8ac5a4c29380f32e90975b2f996107823ca8b65c3d6a356b5cf",
+      "process_stdin_sha256": "631c642e7b93b8ac5a4c29380f32e90975b2f996107823ca8b65c3d6a356b5cf",
+      "rendered_bytes": 53488,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "3ae8094e-3875-4067-89b4-b3b43c246f5b",
+      "external_effect_id": "7aba0f7d-e276-45ec-9c51-959212bacfc4",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:b35fccea30a5e13c605897b9f776d3a807405eb3d924dc9966c49338c66a6d57",
+      "process_stdin_sha256": "b35fccea30a5e13c605897b9f776d3a807405eb3d924dc9966c49338c66a6d57",
+      "rendered_bytes": 53477,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "d8904c81-8d04-4eaa-9380-337d81ea6ad5",
+      "external_effect_id": "89f9c726-83a1-469b-9ca1-aaf72cc1b436",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:250b666ee4ae18d18d029adda02ebb6a14ad7a31345a809ee73bd009b5ed3b50",
+      "process_stdin_sha256": "250b666ee4ae18d18d029adda02ebb6a14ad7a31345a809ee73bd009b5ed3b50",
+      "rendered_bytes": 53484,
+      "working_sources": []
+    },
+    {
+      "stage": "volume_plan.generate",
+      "operation_id": "c4952026-81bb-43cf-aedb-7194f4bd1597",
+      "external_effect_id": "e6ee4ac6-7368-4bf8-bb43-2a4bc3c39d5c",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:c5c896462ccbd5d200803f0361140152eb9a1241b30ca10f17805caa8ab37769",
+      "process_stdin_sha256": "c5c896462ccbd5d200803f0361140152eb9a1241b30ca10f17805caa8ab37769",
+      "rendered_bytes": 53488,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "001ed845-4927-4f50-88d0-e50df099db6e",
+      "external_effect_id": "612eacdf-8de4-4cdc-91be-a3db6f2d7727",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:8a63f0118727a7dc8da861bf068f45631329d66d441a0f7271b420a8f502edaa",
+      "process_stdin_sha256": "8a63f0118727a7dc8da861bf068f45631329d66d441a0f7271b420a8f502edaa",
+      "rendered_bytes": 149467,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "5aaee0ac-9b36-4d6f-bfb6-1acdca104218",
+      "external_effect_id": "672be239-8c2c-4f49-93fd-c079f4d19a47",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:3fa469159a1e1832d9ffea80c3ab976bea3bac9a066e09a5507f3f268165ca15",
+      "process_stdin_sha256": "3fa469159a1e1832d9ffea80c3ab976bea3bac9a066e09a5507f3f268165ca15",
+      "rendered_bytes": 149474,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "d1f75b81-b8e6-441d-a8a4-ce54e31fbcb5",
+      "external_effect_id": "9e4d7752-5b13-417c-9dc5-acea59dc0483",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:8a7231d8a69a2106814d5e4f4b3a3f85d318da161fa19cec625fc76a8bb89267",
+      "process_stdin_sha256": "8a7231d8a69a2106814d5e4f4b3a3f85d318da161fa19cec625fc76a8bb89267",
+      "rendered_bytes": 149478,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "4f861e59-39c8-4af4-bd44-e78d8c59217a",
+      "external_effect_id": "0e76df5f-6a56-4618-9fa9-64860f584738",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:7eb236acfa044016feb3ebed824160bbde33746d5f602a7adaf6a6e49d54488b",
+      "process_stdin_sha256": "7eb236acfa044016feb3ebed824160bbde33746d5f602a7adaf6a6e49d54488b",
+      "rendered_bytes": 149432,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "42f84b51-2a6b-4372-ab8d-1c65e125e712",
+      "external_effect_id": "751124ea-889f-4e0f-9355-439e1ee7754e",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:31cbec3244cf748f62a42fb33dc349567a10bd06ecd3e782efc0e74c859dda1e",
+      "process_stdin_sha256": "31cbec3244cf748f62a42fb33dc349567a10bd06ecd3e782efc0e74c859dda1e",
+      "rendered_bytes": 149439,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "e394b24a-9e70-411c-8ea4-3680b1b47388",
+      "external_effect_id": "6b2071ac-bc2e-4664-ad88-1b654416d948",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:2694d2693346798fe70e98383b59b64bbb59712d289d8e6dc8e2e74abbc742c5",
+      "process_stdin_sha256": "2694d2693346798fe70e98383b59b64bbb59712d289d8e6dc8e2e74abbc742c5",
+      "rendered_bytes": 149443,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "dc1fab3e-5b4f-40d8-9230-2c3844315f07",
+      "external_effect_id": "f6f6f063-93ae-4fe3-94bc-746c35805edd",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:e37812b1612e2c5acf512c1010688c873c65515e025485e397d391bbd14f2157",
+      "process_stdin_sha256": "e37812b1612e2c5acf512c1010688c873c65515e025485e397d391bbd14f2157",
+      "rendered_bytes": 149425,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "0bf3b44f-f72e-4538-9fd9-847a952e961c",
+      "external_effect_id": "e4f4cbd4-a12a-4307-86e2-d07dfdd2c5d7",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:e0d9f5dcd92e4bd0d1fefc0a7dfc3963b9c0d836644f986054e0e18c1b749d23",
+      "process_stdin_sha256": "e0d9f5dcd92e4bd0d1fefc0a7dfc3963b9c0d836644f986054e0e18c1b749d23",
+      "rendered_bytes": 149432,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "30a881d8-94e2-4c90-8407-7db8fbcf4f86",
+      "external_effect_id": "bb5d5eb8-5236-4639-9942-38b07c6c66a6",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:945aa9ccf9284e5ed0f5f685b46e18a2666aafcd726e5b1cfd714555dcaa3cd5",
+      "process_stdin_sha256": "945aa9ccf9284e5ed0f5f685b46e18a2666aafcd726e5b1cfd714555dcaa3cd5",
+      "rendered_bytes": 149436,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "477cf886-3b92-4386-98f5-b053fbf8ccb5",
+      "external_effect_id": "f5e550c6-e8f6-4cce-9952-c58510b9732c",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:76fb0c0184d05e85c66e838a44b4d2c71f7704098e156411256c3cca10ca20e3",
+      "process_stdin_sha256": "76fb0c0184d05e85c66e838a44b4d2c71f7704098e156411256c3cca10ca20e3",
+      "rendered_bytes": 149418,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "9dadcf46-6448-4301-8e29-1c7e8b6dff47",
+      "external_effect_id": "ba3e5cca-18ee-41db-9800-c54b5ccc0d47",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:f05d8a3a41bea0c8f8dc80e6dc5e65a9e64f67fa5ddf557ace9352384763db81",
+      "process_stdin_sha256": "f05d8a3a41bea0c8f8dc80e6dc5e65a9e64f67fa5ddf557ace9352384763db81",
+      "rendered_bytes": 149425,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "4c6e2f98-c501-421b-a9ba-b34c3f0eaf09",
+      "external_effect_id": "88b19edf-ee18-4f57-a31f-cf76dd4fd3e2",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:3c7e67e112292f47af2d20f5208dd1eb1bb7c030640dd27d2f33adc945bda4df",
+      "process_stdin_sha256": "3c7e67e112292f47af2d20f5208dd1eb1bb7c030640dd27d2f33adc945bda4df",
+      "rendered_bytes": 149429,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "bbc9897f-ad67-4f27-8564-24b7f8a4dad4",
+      "external_effect_id": "28da653e-b245-4620-a42e-a73c6cf7c7b2",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:e1760302f44376556e7019a819dc515331f189757d826a1365a5eec76f800a1f",
+      "process_stdin_sha256": "e1760302f44376556e7019a819dc515331f189757d826a1365a5eec76f800a1f",
+      "rendered_bytes": 149404,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "09e2aa8a-40d0-4f7e-b2dd-c0714cf97d50",
+      "external_effect_id": "62987c2d-a59b-4914-b51e-0a62fa583b69",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:5741a1ba423e6f6fd257c1b2320b51c264a559e662c1fbbe5f310cdb908945e9",
+      "process_stdin_sha256": "5741a1ba423e6f6fd257c1b2320b51c264a559e662c1fbbe5f310cdb908945e9",
+      "rendered_bytes": 149411,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "3370274b-81c2-42c8-b1fc-70c36138d582",
+      "external_effect_id": "704c479e-0c7e-4f1b-b673-9d5c4ff7df4d",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:d5a3e2be01d75602a135836f8a7a86322e2ca2e7b94df5e660e7dc1a95a40f24",
+      "process_stdin_sha256": "d5a3e2be01d75602a135836f8a7a86322e2ca2e7b94df5e660e7dc1a95a40f24",
+      "rendered_bytes": 149415,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "0e14d6fa-4abf-453e-aea5-ade4badb80db",
+      "external_effect_id": "3ee8f6ac-2dd5-4e4e-a75c-612d9d508a5f",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:f471a64bb245507b0affeaeb12d38b22fe136af38428eb4333525f4c0c396460",
+      "process_stdin_sha256": "f471a64bb245507b0affeaeb12d38b22fe136af38428eb4333525f4c0c396460",
+      "rendered_bytes": 149425,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "8033b02c-d202-4184-8b74-6ad9275ecc66",
+      "external_effect_id": "1352603c-70e2-4163-a7ec-e86b2e4f8235",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:c0e66c9e8b50969b8ca0fa30287992e3abd50cd1a68c1ceec823cc1bb7a544bd",
+      "process_stdin_sha256": "c0e66c9e8b50969b8ca0fa30287992e3abd50cd1a68c1ceec823cc1bb7a544bd",
+      "rendered_bytes": 149432,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "5c3cdb6e-a22d-4e5c-8d93-e52d7eb581ed",
+      "external_effect_id": "d9f08075-d351-4aaa-9e73-33c009849f2d",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:59269491f02d26d923abb69819f8a4a07df22d049424294b0c61b2290c29e78c",
+      "process_stdin_sha256": "59269491f02d26d923abb69819f8a4a07df22d049424294b0c61b2290c29e78c",
+      "rendered_bytes": 149436,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "be43f529-960c-40d5-8a23-f6ae0270cf19",
+      "external_effect_id": "0a122a7c-7f7d-48a8-a376-b6de9b95f7b9",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:974d20e1c0af0f8c52268c9d02b186253f44688c6e10466fb2554b2255c1a263",
+      "process_stdin_sha256": "974d20e1c0af0f8c52268c9d02b186253f44688c6e10466fb2554b2255c1a263",
+      "rendered_bytes": 149432,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "1a91628a-89c6-455c-bfa6-bb99b7de2ac9",
+      "external_effect_id": "fa45e411-06cb-4312-8467-a45466cce7ea",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:b2b0969d563669b2653142001a7c0d65a16b52d2f310c0d379a30e6c7e731dcc",
+      "process_stdin_sha256": "b2b0969d563669b2653142001a7c0d65a16b52d2f310c0d379a30e6c7e731dcc",
+      "rendered_bytes": 149439,
+      "working_sources": []
+    },
+    {
+      "stage": "arc_plan.generate",
+      "operation_id": "46bad519-4620-49e5-aef0-1ddcc61be720",
+      "external_effect_id": "1b0f616f-f68e-49d7-b1a6-bd8dd33916f6",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:e9dce6b9265276051707b7515f7053f4f6b4a2e3f275956868df49c3dec3e5f1",
+      "process_stdin_sha256": "e9dce6b9265276051707b7515f7053f4f6b4a2e3f275956868df49c3dec3e5f1",
+      "rendered_bytes": 149443,
+      "working_sources": []
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "0608f5ac-584c-4a2d-ab0e-151fbd15f29c",
+      "external_effect_id": "a920d655-be23-470e-902c-ea2ab127040e",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:a46e14041d41cd6544676062ef9233b7e277141da5b8145bd60608e32235ca43",
+      "process_stdin_sha256": "a46e14041d41cd6544676062ef9233b7e277141da5b8145bd60608e32235ca43",
+      "rendered_bytes": 104308,
+      "working_sources": []
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "3fe6edba-f8c7-4c41-b5bb-1859e4b0a994",
+      "external_effect_id": "234ca926-8baf-4624-9452-b1fa9323cee1",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:bd9152b41b9fee1f268c478f655acb34b12ebca9bdd9e682fab7520c7cdf859b",
+      "process_stdin_sha256": "bd9152b41b9fee1f268c478f655acb34b12ebca9bdd9e682fab7520c7cdf859b",
+      "rendered_bytes": 104315,
+      "working_sources": []
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "397515d6-ed23-43d4-8d43-02cc7f0c53a7",
+      "external_effect_id": "c697518c-41de-4a2f-86fe-a900cc9894c3",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:097c2c04861411e7b47d7d70315e173c1a8eebfa3f74315750694cb9e87829f6",
+      "process_stdin_sha256": "097c2c04861411e7b47d7d70315e173c1a8eebfa3f74315750694cb9e87829f6",
+      "rendered_bytes": 104319,
+      "working_sources": []
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "operation_id": "6c4b851f-fcd1-4c86-82bb-48b41fe5ec1d",
+      "external_effect_id": "b63d28cf-fc2c-4fa9-b792-3116813af392",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:4c6b156ad891c243ff1d9232e41acaf90d2aa549e85a20faf3bbdd10c1abf0e8",
+      "process_stdin_sha256": "4c6b156ad891c243ff1d9232e41acaf90d2aa549e85a20faf3bbdd10c1abf0e8",
+      "rendered_bytes": 120755,
+      "working_sources": []
+    },
+    {
+      "stage": "draft",
+      "operation_id": "d91a49f0-c575-4b37-bc18-8cba8b270895",
+      "external_effect_id": "27c7df83-ee2b-40fb-84a9-ce734e333c64",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:50c5c5004d1ca48a0170d36349defb6771b6a66b56347f4749ad32e3d9b294be",
+      "process_stdin_sha256": "50c5c5004d1ca48a0170d36349defb6771b6a66b56347f4749ad32e3d9b294be",
+      "rendered_bytes": 125026,
+      "working_sources": []
+    },
+    {
+      "stage": "review",
+      "operation_id": "ac7d0177-2ef1-4830-abc7-1b0b782da980",
+      "external_effect_id": "542f9d3d-49db-458c-991b-02cfd244a37e",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:c76d3894e02760aebc603e26824d0a91e580bb1f477d672e15e2f8b82680d1b6",
+      "process_stdin_sha256": "c76d3894e02760aebc603e26824d0a91e580bb1f477d672e15e2f8b82680d1b6",
+      "rendered_bytes": 105755,
+      "working_sources": []
+    },
+    {
+      "stage": "revision",
+      "operation_id": "61da13cf-3a3c-4c46-aef1-a2072e2b1d26",
+      "external_effect_id": "969d9e85-1d3c-4353-861c-78bedcc9922e",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:837ea2df729a38839b2d007c0d1c930a990280bdfda01139f2ad1ecf5f70cbbe",
+      "process_stdin_sha256": "837ea2df729a38839b2d007c0d1c930a990280bdfda01139f2ad1ecf5f70cbbe",
+      "rendered_bytes": 82513,
+      "working_sources": []
+    },
+    {
+      "stage": "rereview",
+      "operation_id": "ce84dc11-ca67-489d-9f39-86e2ce6914fb",
+      "external_effect_id": "52e454cd-409f-49cb-abc3-e35df8ad7e67",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:02959039bc61efd033a795a2f106287b57a83b8c820e0303cdd59d0fddb3fbc0",
+      "process_stdin_sha256": "02959039bc61efd033a795a2f106287b57a83b8c820e0303cdd59d0fddb3fbc0",
+      "rendered_bytes": 123294,
+      "working_sources": []
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "operation_id": "82a7261d-5c37-4dda-a42b-60e461e74895",
+      "external_effect_id": "ddea2ca6-f7be-41f6-b0e0-76cb090384ee",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:00231b42354945ecea8ccd147388149ce30e2946a344f9a28c5b2c3f16a18ac5",
+      "process_stdin_sha256": "00231b42354945ecea8ccd147388149ce30e2946a344f9a28c5b2c3f16a18ac5",
+      "rendered_bytes": 138839,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "05ec6a47-fb21-4056-86ea-9362d68aebd6",
+      "external_effect_id": "e934b86e-bf8d-4ff9-8a66-e4797d08c870",
+      "effect_status": "UNKNOWN",
+      "verified_remote_result": false,
+      "prompt_hash": "sha256:821ac85716146a3fd4b56c54aa9489062dddbddc0dc46100989def49cdaeec19",
+      "process_stdin_sha256": "821ac85716146a3fd4b56c54aa9489062dddbddc0dc46100989def49cdaeec19",
+      "rendered_bytes": 140458,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "75403b34-66d4-4f84-9079-daf1caac5a15",
+      "external_effect_id": "7b6eb6e6-6b07-4390-8f9a-bb63309996a6",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:821ac85716146a3fd4b56c54aa9489062dddbddc0dc46100989def49cdaeec19",
+      "process_stdin_sha256": "821ac85716146a3fd4b56c54aa9489062dddbddc0dc46100989def49cdaeec19",
+      "rendered_bytes": 140458,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "review",
+      "operation_id": "6d82b77e-12d9-4210-a080-2b2b7e11572d",
+      "external_effect_id": "ffe32694-db13-4fa5-85f5-151cdf52c975",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:3ce8e06b9f0511086f717ca76f4ca339f3a8a84788787a7a6e631c6e182b31fd",
+      "process_stdin_sha256": "3ce8e06b9f0511086f717ca76f4ca339f3a8a84788787a7a6e631c6e182b31fd",
+      "rendered_bytes": 124272,
+      "working_sources": []
+    },
+    {
+      "stage": "revision",
+      "operation_id": "53cd0c70-62fe-4512-8945-99541371d411",
+      "external_effect_id": "1b2781ce-30ab-4769-834b-3cd23e42b8af",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:177d1f8a81791478ac43802176a7bf5dc5f1beecee3a8212a3f0aad2bb368aff",
+      "process_stdin_sha256": "177d1f8a81791478ac43802176a7bf5dc5f1beecee3a8212a3f0aad2bb368aff",
+      "rendered_bytes": 99225,
+      "working_sources": []
+    },
+    {
+      "stage": "rereview",
+      "operation_id": "066e38e9-cb5f-4efb-9032-3df8d42da677",
+      "external_effect_id": "b4ce7ff8-f450-4b8c-a8f5-e0b653d8cddc",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:9d547b8c54b157aed9a6aa5f52e64676604d6f4ef675eeae15837ae3bac2d702",
+      "process_stdin_sha256": "9d547b8c54b157aed9a6aa5f52e64676604d6f4ef675eeae15837ae3bac2d702",
+      "rendered_bytes": 137789,
+      "working_sources": []
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "operation_id": "ce062806-4d95-43f0-95b6-767e0fe1249f",
+      "external_effect_id": "20a360d0-825b-4b1a-b306-318db3ea6152",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:751df8254e2fea6ef1bb510ab5a0072b9276062aaccb77eae04e68c488458d64",
+      "process_stdin_sha256": "751df8254e2fea6ef1bb510ab5a0072b9276062aaccb77eae04e68c488458d64",
+      "rendered_bytes": 156799,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "29399f28-10b2-4c58-82b7-e7098daa7081",
+      "external_effect_id": "cdc78559-f346-4820-8509-4daf1d2c3bda",
+      "effect_status": "UNKNOWN",
+      "verified_remote_result": false,
+      "prompt_hash": "sha256:28451edc1091b773e5e640264c626443a1ece872c96f1a68b515696b4a00d51d",
+      "process_stdin_sha256": "28451edc1091b773e5e640264c626443a1ece872c96f1a68b515696b4a00d51d",
+      "rendered_bytes": 173827,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "2c9bae61-b96d-4a62-befa-9445ce3b424c",
+      "external_effect_id": "4d7d803e-2b15-4b33-b2bc-e38696ac031a",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:28451edc1091b773e5e640264c626443a1ece872c96f1a68b515696b4a00d51d",
+      "process_stdin_sha256": "28451edc1091b773e5e640264c626443a1ece872c96f1a68b515696b4a00d51d",
+      "rendered_bytes": 173827,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "operation_id": "396eaaab-6658-4017-ac47-2fc632afbfed",
+      "external_effect_id": "51bd6640-e7ae-43fe-80db-ada3af7135fc",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:03a5b133708f508aa48ae498cefd437c496dac98df686dbfbb5a7cb2b40fec79",
+      "process_stdin_sha256": "03a5b133708f508aa48ae498cefd437c496dac98df686dbfbb5a7cb2b40fec79",
+      "rendered_bytes": 171523,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "3a90542e-985a-4fbf-96f6-6170bb6970fb",
+      "external_effect_id": "8ffea312-09bf-4711-8504-6021878b06a8",
+      "effect_status": "UNKNOWN",
+      "verified_remote_result": false,
+      "prompt_hash": "sha256:0795f310ccd74e41acc2352cd9a137a5afdf247be2d3e7320d22e833a0aeec56",
+      "process_stdin_sha256": "0795f310ccd74e41acc2352cd9a137a5afdf247be2d3e7320d22e833a0aeec56",
+      "rendered_bytes": 188029,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "d80359d5-5bd4-4f03-82b8-2c16628d1168",
+      "external_effect_id": "a3531033-8e3d-4272-bd38-4659100007b1",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:0795f310ccd74e41acc2352cd9a137a5afdf247be2d3e7320d22e833a0aeec56",
+      "process_stdin_sha256": "0795f310ccd74e41acc2352cd9a137a5afdf247be2d3e7320d22e833a0aeec56",
+      "rendered_bytes": 188029,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "review",
+      "operation_id": "12e6bd24-5568-4c89-98ee-1a654f3f3e28",
+      "external_effect_id": "df468306-6cd7-4074-93ac-3761defaf6ed",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:2cd729408cdd0f3ef6750d08b8a75b0dc66932600562250974b9378c774f7264",
+      "process_stdin_sha256": "2cd729408cdd0f3ef6750d08b8a75b0dc66932600562250974b9378c774f7264",
+      "rendered_bytes": 168730,
+      "working_sources": []
+    },
+    {
+      "stage": "revision",
+      "operation_id": "125e8b24-e343-4990-b307-671f3e48825e",
+      "external_effect_id": "437e596c-9115-4597-b1f3-ac9b9c42e012",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:6c776156f4badd0b5285d6fd714c94bc5731138dba3e96407148973597a5413d",
+      "process_stdin_sha256": "6c776156f4badd0b5285d6fd714c94bc5731138dba3e96407148973597a5413d",
+      "rendered_bytes": 143140,
+      "working_sources": []
+    },
+    {
+      "stage": "rereview",
+      "operation_id": "b5215119-2bdf-445b-a162-11aca261569f",
+      "external_effect_id": "642ba4ed-b352-40c7-ad4d-c5c4195ca295",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:c7270709493abffb46da205a159fe44e85ba79a131a109fb098ec1121b34225b",
+      "process_stdin_sha256": "c7270709493abffb46da205a159fe44e85ba79a131a109fb098ec1121b34225b",
+      "rendered_bytes": 184757,
+      "working_sources": []
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "1c66af63-925d-424b-adf4-8559951dacaa",
+      "external_effect_id": "c3e25ae0-520d-4a69-b9fe-7cedcec79fd9",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:f1fb8bfc0f39b42755d4adb870ac109e970bddc33f71668716e40b9183026e58",
+      "process_stdin_sha256": "f1fb8bfc0f39b42755d4adb870ac109e970bddc33f71668716e40b9183026e58",
+      "rendered_bytes": 170142,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "0ba9c9a2-7cf8-4d27-a755-03ba0681c987",
+      "external_effect_id": "d3108c93-cc9c-45be-b891-e28254020904",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:b66b2fe6cb72ffc8f0a70133ab9784e295b444678c3d2443fbd3a57d993659b0",
+      "process_stdin_sha256": "b66b2fe6cb72ffc8f0a70133ab9784e295b444678c3d2443fbd3a57d993659b0",
+      "rendered_bytes": 170149,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "fbf55e93-90f0-47cb-ab7a-592cd68b73ab",
+      "external_effect_id": "d245661f-a2c5-42d8-8de5-15f0e54efed1",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:f3625d74b0bb931cdae57e59ba652b9ea5eab3f99eebab366eae0476f921773c",
+      "process_stdin_sha256": "f3625d74b0bb931cdae57e59ba652b9ea5eab3f99eebab366eae0476f921773c",
+      "rendered_bytes": 170153,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "operation_id": "14807c47-ed41-4408-9d94-d75d9404fd49",
+      "external_effect_id": "85e52e15-f61a-4b5d-a888-cdbc8086e276",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:ab5e0209a1ec8e22899a09ec1361306d07e3274a62cc14afcece8c59c5c24675",
+      "process_stdin_sha256": "ab5e0209a1ec8e22899a09ec1361306d07e3274a62cc14afcece8c59c5c24675",
+      "rendered_bytes": 188068,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "6e6a32f7-cd51-4cdc-bbc5-ca51aa04c9cf",
+      "external_effect_id": "2ffdf6bf-c2fd-4fcc-bff6-15fc5743d378",
+      "effect_status": "UNKNOWN",
+      "verified_remote_result": false,
+      "prompt_hash": "sha256:4074836b5f4fc4f0e859901eb300addbbc9d5a7d36f353a77dca2e028c560ea6",
+      "process_stdin_sha256": "4074836b5f4fc4f0e859901eb300addbbc9d5a7d36f353a77dca2e028c560ea6",
+      "rendered_bytes": 187945,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "cf59d8b5-8b5e-4e3f-b884-66b7e238d2a9",
+      "external_effect_id": "26db3cdf-0c95-475f-bd70-8bf70ab630ee",
+      "effect_status": "UNKNOWN",
+      "verified_remote_result": false,
+      "prompt_hash": "sha256:4074836b5f4fc4f0e859901eb300addbbc9d5a7d36f353a77dca2e028c560ea6",
+      "process_stdin_sha256": "4074836b5f4fc4f0e859901eb300addbbc9d5a7d36f353a77dca2e028c560ea6",
+      "rendered_bytes": 187945,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "2f10604b-da70-49cd-86d6-c187cb32cfad",
+      "external_effect_id": "5046f730-73e1-479c-a857-fc166a51bd2e",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:4074836b5f4fc4f0e859901eb300addbbc9d5a7d36f353a77dca2e028c560ea6",
+      "process_stdin_sha256": "4074836b5f4fc4f0e859901eb300addbbc9d5a7d36f353a77dca2e028c560ea6",
+      "rendered_bytes": 187945,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "chapter": 1,
+          "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1659,
+              "text_hash": "sha256:75557e0de78c8d80318bd618285ec8161516e8342bbb71d5517493e5e6296ff3",
+              "characters": 1659
+            },
+            {
+              "start": 1659,
+              "end": 3728,
+              "text_hash": "sha256:5b48c8ec0753941c425ea9be7193c97ef21e9f2e0cfff670984e9510f0ff1f3e",
+              "characters": 2069
+            },
+            {
+              "start": 3728,
+              "end": 5178,
+              "text_hash": "sha256:2defcc199846e4ca3cd1b7ddebc0c48f40ef4a05482305b28beceaf50543bd35",
+              "characters": 1450
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "chapter": 2,
+          "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1341,
+              "text_hash": "sha256:4b6b6de78c19a3a7b8ea9017e73aeac57549e21fedfde7e410f06caa5b681e05",
+              "characters": 1341
+            },
+            {
+              "start": 1341,
+              "end": 3420,
+              "text_hash": "sha256:5cde1fa950c0790cc0a92624e58e40064087a7b337b5450bd552f60d4c03628d",
+              "characters": 2079
+            },
+            {
+              "start": 3420,
+              "end": 5162,
+              "text_hash": "sha256:983b4adfc5bb6c604de3c209682cef96a9f7f3d088504339d0cf1683887a10d7",
+              "characters": 1742
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+          "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+          "chapter": 3,
+          "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1032,
+              "text_hash": "sha256:506e6bfdfe26e9e31752085bf70342e60b657abb708f41316ba578feded3c2c8",
+              "characters": 1032
+            },
+            {
+              "start": 1032,
+              "end": 2200,
+              "text_hash": "sha256:ccc55f571bee63ee2b50caeac28fe0f2c4dc90ef62911e8e4a871e937b0f62d7",
+              "characters": 1168
+            },
+            {
+              "start": 2200,
+              "end": 3897,
+              "text_hash": "sha256:41c17bac265420776c95dc1d8d232891cb3a9046236d325888cddb20af4ea9b8",
+              "characters": 1697
+            },
+            {
+              "start": 3897,
+              "end": 4835,
+              "text_hash": "sha256:c2212d425aaec6062db3519aaa695a29581f8908e0f87e64326b95b744574d47",
+              "characters": 938
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "chapter": 4,
+          "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+          "passages": [
+            {
+              "start": 0,
+              "end": 1018,
+              "text_hash": "sha256:5502fe8c9f8a5d7c045a83ed394e1cfd5e50ab61a983a986cc24dcfdf2213b88",
+              "characters": 1018
+            },
+            {
+              "start": 1018,
+              "end": 2940,
+              "text_hash": "sha256:b7624154eafc0d49ea50cf2489a8523846f843a06d51ef6e0d5bba0d51790905",
+              "characters": 1922
+            },
+            {
+              "start": 2940,
+              "end": 4067,
+              "text_hash": "sha256:5f0a372a50c74e1318d470f3b79c0e078dba56868b9d5f293d89812f4779922b",
+              "characters": 1127
+            },
+            {
+              "start": 4067,
+              "end": 4974,
+              "text_hash": "sha256:490e6ba1b8b007126cdc6bd60a73dbbe74f12a00df78ef011498e1bf17b1ff40",
+              "characters": 907
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "review",
+      "operation_id": "d1807d3b-0be5-49c2-906a-b7cb8a7fe097",
+      "external_effect_id": "7f58acc5-5ce8-4f91-b9e2-21631015a609",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:cd6b062def91c083c9f5fd055142736b4c86ce8f3e2652ce5d39cc29cee316b7",
+      "process_stdin_sha256": "cd6b062def91c083c9f5fd055142736b4c86ce8f3e2652ce5d39cc29cee316b7",
+      "rendered_bytes": 167318,
+      "working_sources": []
+    },
+    {
+      "stage": "revision",
+      "operation_id": "6f3f3bef-0c12-449e-99a4-b33e87df7e51",
+      "external_effect_id": "43d8c8b2-bcd5-40ac-a6a5-a6afc2ede280",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:8114a0775fb7127b1fcda1a7b835f5c91db53d637b41793a53670a17d6dd64ca",
+      "process_stdin_sha256": "8114a0775fb7127b1fcda1a7b835f5c91db53d637b41793a53670a17d6dd64ca",
+      "rendered_bytes": 142210,
+      "working_sources": []
+    },
+    {
+      "stage": "rereview",
+      "operation_id": "6e11b863-381f-4178-8793-aa62332a6b40",
+      "external_effect_id": "00b7bc09-90db-4d7e-bdcb-2f8fe399346e",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:7421c9af63f8107baa7825506092c6afbe33a4d56339806491c6624a8f420a5e",
+      "process_stdin_sha256": "7421c9af63f8107baa7825506092c6afbe33a4d56339806491c6624a8f420a5e",
+      "rendered_bytes": 185321,
+      "working_sources": []
+    }
+  ]
+}

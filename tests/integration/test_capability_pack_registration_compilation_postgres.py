@@ -15,7 +15,11 @@ def test_distinct_pack_versions_freeze_distinct_trusted_compilations() -> None:
     assert version_1.manifest_hash != version_2.manifest_hash
     assert version_1.compilation_hash != version_2.compilation_hash
     assert version_1.catalog_snapshot_hash != version_2.catalog_snapshot_hash
-    assert version_1.prompt_hash != version_2.prompt_hash
+    assert version_1.prompt_hash == version_2.prompt_hash
+    systems = [next(item for item in version.compiled["resolved_artifacts"]
+        if item["kind"] == "PROMPT_SYSTEM_INSTRUCTION") for version in (version_1, version_2)]
+    assert systems[0]["content_hash"] != systems[1]["content_hash"]
+    assert systems[0]["version"] != systems[1]["version"]
     assert version_1.skill_hash != version_2.skill_hash
     assert version_1.agent_definition_version == 0
     assert version_2.agent_definition_version == 0

@@ -1467,61 +1467,50 @@ def test_native_formation_generates_foundation_from_author_brief(
                             target_version='3.9.4' if length_scope_recovery else '3.9.3' if review_knowledge_recovery else '3.9.2', context=invalid_context, policy_evidence={},
                             expected_failure_code='REALIZATION_CAPABILITY_INVALID')
             if memo_timeout_recovery:
-                try:
-                    first=continue_creation(composition=composition,content=content,chapter=chapter,
+                from novel_forge.modules.command_kernel.errors import KernelError
+                with pytest.raises(KernelError, match="BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_BLOCKED"):
+                    continue_creation(composition=composition,content=content,chapter=chapter,
                         formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
                         maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
-                    assert first['stop_reason']=='WAIT_EXTERNAL_RECONCILIATION', first
-                    old_book=composition.authority.require(first['book_run_id'])
-                    old_request=composition.authority.require_chapter_request(old_book['active_chapter_request_id'])
-                    from novel_forge.modules.command_kernel.budget_runtime import unresolved_cli_outcomes
-                    from novel_forge.modules.production_execution.contracts import local_cli_remote_outcome_unknown
-                    def memo_unknown_facts():
-                        with AuthorityUnitOfWork(DATABASE_URL) as uow:
-                            uow.cursor.execute("""SELECT to_jsonb(e),to_jsonb(reservation),to_jsonb(dispatch)
-                                FROM authority_external_effect e
-                                JOIN authority_operation operation ON operation.operation_id=e.operation_id
-                                JOIN authority_budget_reservation reservation USING(external_effect_id)
-                                JOIN authority_external_effect_dispatch dispatch USING(external_effect_id)
-                                WHERE operation.root_operation_id=%s AND operation.definition_name='chapter.memo.generate'
-                                ORDER BY e.external_effect_id,dispatch.generation""",[old_request['chapter_root_operation_id']])
-                            receipts=tuple(uow.cursor.fetchall())
-                            uow.cursor.execute("""SELECT count(*) FROM authority_external_effect_dispatch dispatch
-                                JOIN authority_external_effect effect USING(external_effect_id) WHERE effect.project_id=%s""",[harness.project_id])
-                            dispatches=uow.cursor.fetchone()[0]
-                            uow.cursor.execute("SELECT count(*) FROM authority_book_chapter_acceptance WHERE project_id=%s",[harness.project_id])
-                            accepted=uow.cursor.fetchone()[0]
-                            uow.cursor.execute("SELECT count(*) FROM authority_book_chapter_request WHERE predecessor_request_id=%s",[old_request['chapter_request_id']])
-                            successors=uow.cursor.fetchone()[0]
-                            unknown=unresolved_cli_outcomes(uow.cursor,harness.project_id,root_operation_id=old_request['chapter_root_operation_id'])
-                        return receipts,dispatches,accepted,successors,unknown
-                    before=memo_unknown_facts()
-                    assert len(before[0])==1 and len(before[4])==1 and before[2:4]==(0,0)
-                    effect,budget,dispatch=before[0][0]
-                    production_receipt=dispatch['evidence']['production_execution']
-                    result=production_receipt['execution_result']
-                    assert result['outcome']=='TIMED_OUT' and result['started_at'] is not None
-                    assert not result.get('usage_receipt_ref') and result.get('process_receipt_ref')
-                    assert local_cli_remote_outcome_unknown(transport=production_receipt['execution_handle']['transport'],
-                        outcome=result['outcome'],started_at=result['started_at'],usage_receipt_ref=result.get('usage_receipt_ref'))
-                    assert before[4][0]['external_effect_id']==effect['external_effect_id'] and before[4][0]['usage']=='UNKNOWN'
-                    assert delayed==1
-                    if memo_timeout_prefix_recovery:
-                        with AuthorityUnitOfWork(DATABASE_URL) as uow:
-                            uow.cursor.execute("SELECT definition_snapshot->'retry_policy'->>'max_attempts' FROM authority_operation WHERE operation_id=%s",[effect['operation_id']])
-                            assert uow.cursor.fetchone()==('2',)
-                    calls_before=(len(transport.calls),len(transport.chapter.calls))
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("""SELECT e.external_effect_id,e.operation_id,e.status,r.status,d.evidence,
+                        isolation.proof,s.successor_operation_id FROM authority_external_effect e
+                        JOIN authority_budget_reservation r USING(external_effect_id)
+                        JOIN authority_external_effect_dispatch d USING(external_effect_id)
+                        JOIN authority_generation_isolation isolation USING(external_effect_id)
+                        JOIN authority_saga_step_successor s ON s.predecessor_operation_id=e.operation_id
+                        WHERE e.project_id=%s AND e.status='UNKNOWN'""", [harness.project_id])
+                    rows=uow.cursor.fetchall()
+                    assert len(rows)==1 and rows[0][2:4]==('UNKNOWN','HELD_UNKNOWN')
+                    effect_id, source_id, _, _, evidence, isolation, successor=rows[0]
+                    result=evidence['production_execution']['execution_result']
+                    assert result['outcome']=='TIMED_OUT' and result['started_at'] and result['process_receipt_ref']
+                    assert not result.get('usage_receipt_ref')
+                    assert isolation['business_commit_right']=='REVOKED' and isolation['remote_outcome']=='UNKNOWN'
+                    uow.cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s", [effect_id])
+                    assert uow.cursor.fetchone()==(1,)
+                    uow.cursor.execute("SELECT count(*) FROM authority_book_chapter_acceptance WHERE project_id=%s", [harness.project_id])
+                    assert uow.cursor.fetchone()==(0,)
+                    uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s", [successor])
+                    assert uow.cursor.fetchone()==('SUCCEEDED',)
+                    uow.cursor.execute("SELECT count(*) FROM authority_operation_output_asset output JOIN authority_operation o USING(operation_id) WHERE o.project_id=%s AND output.output_key='chapter.draft'", [harness.project_id])
+                    assert uow.cursor.fetchone()==(1,)
+                before=(len(transport.calls),len(transport.chapter.calls),delayed)
+                try:
                     resumed=continue_creation(composition=composition,content=content,chapter=chapter,
                         formation_run_id=admitted.formation_run_id,formation_worker=formation_worker,book_worker=worker,
                         maximum_ticks=80,deadline=time.monotonic()+240,creation_policy=policy)
-                    assert resumed['stop_reason']=='WAIT_EXTERNAL_RECONCILIATION' and resumed['book_run_id']==old_book['book_run_id']
-                    assert memo_unknown_facts()==before
-                    assert calls_before==(len(transport.calls),len(transport.chapter.calls)) and delayed==1
-                    current_book=composition.authority.require(old_book['book_run_id'])
-                    assert current_book['active_chapter_request_id']==old_request['chapter_request_id'] and current_book['accepted_through_chapter']==0
-                    return
-                finally:
-                    execution.close()
+                except KernelError as error:
+                    assert error.code == "BOOK_CHAPTER_ACCEPTANCE_EVIDENCE_BLOCKED"
+                else:
+                    assert resumed['stop_reason'] != 'COMPLETED'
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT count(*) FROM authority_book_chapter_acceptance WHERE project_id=%s", [harness.project_id])
+                    assert uow.cursor.fetchone()==(0,)
+                    uow.cursor.execute("SELECT status FROM authority_external_effect WHERE external_effect_id=%s", [effect_id])
+                    assert uow.cursor.fetchone()==('UNKNOWN',)
+                assert before==(len(transport.calls),len(transport.chapter.calls),delayed)
+                return
             if stage_repair_recovery:
                 def stage_wait_facts():
                     with AuthorityUnitOfWork(DATABASE_URL) as uow:
@@ -1969,15 +1958,48 @@ def test_native_formation_generates_foundation_from_author_brief(
                 permissions=principal.permissions - {"book.authority.approve_replan"},
             )
             ticks = []
-            stop = drive(
-                composition=composition,
-                chapter=chapter,
-                book_run_id=book_run.book_run_id,
-                worker=worker,
-                events=ticks.append,
-                maximum_ticks=80,
-                deadline=time.monotonic() + 240,
-            )
+            from contextlib import nullcontext
+            from novel_forge.modules.command_kernel.errors import KernelError
+
+            retained_sources = {
+                role: asset_query.require(project_id=harness.project_id, asset_version_id=versions[role])
+                for role in ("book_design", "creative_foundation", "character_cast", "style_policy")
+            } if runtime_recovery else {}
+            boundary = pytest.raises(KernelError, match="^STYLE_PROJECTION_MIGRATION_REQUIRED:") if runtime_recovery else nullcontext()
+            with boundary:
+                stop = drive(
+                    composition=composition,
+                    chapter=chapter,
+                    book_run_id=book_run.book_run_id,
+                    worker=worker,
+                    events=ticks.append,
+                    maximum_ticks=80,
+                    deadline=time.monotonic() + 240,
+                )
+            if runtime_recovery:
+                style = retained_sources["style_policy"]
+                assert style.content["contract_version"] == "foundation-style-projection.v2"
+                assert not any(fact.get("key") == "work_applicability" for fact in style.content["structured_facts"])
+                assert {item["asset_version_id"]: item["content_hash"] for item in style.content["source_bindings"]} == {
+                    item.asset_version_id: item.content_hash for role, item in retained_sources.items() if role != "style_policy"
+                }
+                for source in retained_sources.values():
+                    assert asset_query.require(project_id=harness.project_id, asset_version_id=source.asset_version_id) == source
+                assert not any(call["stage"] in {"draft", "revision"} for call in transport.chapter.calls)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s", [book_run.book_run_id])
+                    assert uow.cursor.fetchone() == (0,)
+                    uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s AND request_payload->>'stage' IN ('draft','revision')", [harness.project_id])
+                    assert uow.cursor.fetchone() == (0,)
+                assert not asset_query.list_versions(project_id=harness.project_id, asset_type="draft_chapter")
+                _assert_runtime_continuation_once(formation, harness, transport, principal)
+                (tmp_path / "legacy-runtime-current-chapter-boundary.json").write_text(json.dumps({
+                    "planning_continuation": "REPLAYED_WITHOUT_PROVIDER", "chapter_admission": "STYLE_PROJECTION_MIGRATION_REQUIRED",
+                    "accepted_through_chapter": 0, "writer_dispatches": 0,
+                    "retained_sources": {role: {"asset_version_id": item.asset_version_id, "content_hash": item.content_hash} for role, item in retained_sources.items()},
+                    "proof_ceiling": "SCRIPTED_HISTORICAL_COMPATIBILITY_ONLY",
+                }, indent=2))
+                return
             assert stop == ("COMPLETED" if creative_validation else "ACCEPTED_TARGET_REACHED"), (stop, ticks[-3:])
         from tests.integration.creative_grounding_support import (
             verify_creative_workspace,

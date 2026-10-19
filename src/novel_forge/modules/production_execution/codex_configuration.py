@@ -56,7 +56,7 @@ def codex_input_only_overrides(policy: str = "") -> tuple[str, ...]:
     return (*CODEX_INPUT_ONLY_OVERRIDES, "instructions=" + json.dumps(CODEX_GENERATION_INSTRUCTIONS))
 
 
-def owned_codex_tool_evidence(stdout: str, *, codex_home: str, working_directory: str) -> dict:
+def owned_codex_tool_evidence(stdout: str, *, codex_home: str, working_directory: str, expected_instructions_hash: str = "") -> dict:
     events = [json.loads(line) for line in stdout.splitlines() if line.strip()]
     if any(not isinstance(event, dict) for event in events):
         raise ValueError("owned tool trace stdout contains a non-object event")
@@ -79,6 +79,11 @@ def owned_codex_tool_evidence(stdout: str, *, codex_home: str, working_directory
         raise ValueError("owned tool trace metadata identity differs")
     if Path(str(metadata[0].get("cwd") or "")).resolve() != Path(working_directory).resolve():
         raise ValueError("owned tool trace working directory differs")
+    base = metadata[0].get("base_instructions") or {}
+    text = base.get("text", "") if isinstance(base, dict) else str(base)
+    instructions_hash = "sha256:" + hashlib.sha256(text.encode()).hexdigest()
+    if expected_instructions_hash and instructions_hash != expected_instructions_hash:
+        raise ValueError("owned tool trace base instructions differ from the frozen generation policy")
     if not any(row.get("type") == "response_item" and row.get("payload", {}).get("type") == "message"
         and row["payload"].get("role") == "assistant" and row["payload"].get("phase") in {"final", "final_answer"} for row in rows):
         raise ValueError("owned tool trace has no complete final message")
@@ -90,6 +95,7 @@ def owned_codex_tool_evidence(stdout: str, *, codex_home: str, working_directory
             calls.append({"tool_ref": "codex." + kind, "name": str(item.get("name") or ""),
                 "call_id": str(item.get("call_id") or "")})
     return {"version": "codex-owned-tool-trace.v1", "thread_id": thread,
+        "base_instructions_sha256": instructions_hash,
         "path": str(paths[0]), "sha256": "sha256:" + hashlib.sha256(raw).hexdigest(),
         "invoked": sorted({call["tool_ref"] for call in calls}), "calls": calls}
 
@@ -157,6 +163,11 @@ def codex_output_schema(schema: dict, *, schema_ref: str = "") -> dict:
             schema["properties"]["working_memory_json"] = {"anyOf": [memory, {"type": "null"}]}
             schema["required"] = [*schema.get("required", []), "working_memory_json"]
     return _codex_output_schema(schema, all_nullable=True)
+
+
+def codex_protocol_schema_text(schema: dict, *, schema_ref: str = "", compact: bool = True) -> str:
+    return json.dumps(codex_output_schema(schema, schema_ref=schema_ref), ensure_ascii=False,
+        sort_keys=True, **({"separators": (",", ":")} if compact else {"indent": 2})) + "\n"
 
 
 def strict_codex_json_loads(text: str):

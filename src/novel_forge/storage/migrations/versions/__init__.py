@@ -225,6 +225,19 @@ from . import (
     v20261015_0220_chapter_prior_audit_convergence,
     v20261016_0221_working_scope_fk_indexes,
     v20261016_0222_planning_host_frozen_definition,
+    v20261018_0223_working_plan_input_continuation,
+    v20261018_0224_working_regeneration_isolation,
+    v20261018_0225_impacted_working_plan_continuation,
+    v20261018_0226_semantic_preparation_continuation,
+    v20261018_0227_completed_preparation_handoff,
+    v20261018_0228_terminal_preparation_handoff,
+    v20261019_0229_routing_observation_preparation_recovery,
+    v20261019_0230_unsent_preparation_lineage,
+    v20261019_0231_prepared_main_handoff,
+    v20261019_0232_first_isolated_preparation_custody,
+    v20261019_0233_acknowledged_preparation_routing,
+    v20261019_0234_settled_preparation_capacity,
+    v20261019_0235_source_isolation_convergence,
 )
 
 VERSION_MODULES = [
@@ -451,6 +464,19 @@ VERSION_MODULES = [
     v20261015_0220_chapter_prior_audit_convergence,
     v20261016_0221_working_scope_fk_indexes,
     v20261016_0222_planning_host_frozen_definition,
+    v20261018_0223_working_plan_input_continuation,
+    v20261018_0224_working_regeneration_isolation,
+    v20261018_0225_impacted_working_plan_continuation,
+    v20261018_0226_semantic_preparation_continuation,
+    v20261018_0227_completed_preparation_handoff,
+    v20261018_0228_terminal_preparation_handoff,
+    v20261019_0229_routing_observation_preparation_recovery,
+    v20261019_0230_unsent_preparation_lineage,
+    v20261019_0231_prepared_main_handoff,
+    v20261019_0232_first_isolated_preparation_custody,
+    v20261019_0233_acknowledged_preparation_routing,
+    v20261019_0234_settled_preparation_capacity,
+    v20261019_0235_source_isolation_convergence,
 ]
 
 __all__ = ["VERSION_MODULES"]

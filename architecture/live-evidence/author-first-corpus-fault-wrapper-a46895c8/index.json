@@ -1,0 +1,22 @@
+{
+  "schema_version": "checked-native-fault-fixture-repair.v1",
+  "source_sha": "a46895c84163f1d0be55bc7346a99e8551e13dfd",
+  "evidence_ceiling": "EXECUTABLE",
+  "change": "Fault wrapper compatibility only",
+  "checks": {
+    "postgres_exact_source": 1,
+    "docs": "PASS",
+    "ruff": "PASS"
+  },
+  "source_equivalence": "focused-command.json",
+  "opening_production_fix": "../author-first-opening-window-b57342b4/",
+  "world_sampling_fix": "../author-first-world-sampling-80caedd0/",
+  "full_matrix": "QUEUED_NOT_RUN_YET",
+  "prior_full_source": "33e567473541ffe7778df52af462a76ac377599b",
+  "prior_full": "RUNNING_WITH_PRESERVED_FAILURES",
+  "prior_wait_only_b57342b4_queue_superseded_before_matrix_start": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/queue-full-p0-b57342b4.superseded.json",
+  "hundred_chapter_delivery": "NOT_COMPLETED",
+  "overall_production_qualification": "NOT_PROVEN",
+  "literary_qualification": "NOT_PROVEN",
+  "raw_prose_or_provider_payloads_committed": false
+}

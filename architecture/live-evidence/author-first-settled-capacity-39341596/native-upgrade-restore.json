@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "source_sha": "393415967a4ad42abaef11d62a93f0468d5fe4c2",
+  "production_database": "nf_author_first_native",
+  "cluster": "7697608597895058057",
+  "from_head": "20261019_0233_acknowledged_preparation_routing",
+  "to_head": "20261019_0234_settled_preparation_capacity",
+  "backup_sha256": "b5e62a4405c8e682ea631cdda6cd1473d33f0d683cd133ed0610b8e2f45465e2",
+  "backup_bytes": 919742453,
+  "restored_public_table_count": 338,
+  "restored_all_public_fingerprints_equal": true,
+  "owned_restore_database_removed": true,
+  "business_tables_unchanged_after_upgrade": true,
+  "business_fingerprint_sha256": "655f82f41add248149e8e0d9b03665ce64bd309003a806843c4c43b5c7a96e9d",
+  "raw_evidence_private": true
+}

@@ -53,6 +53,8 @@ def recover_retained_quality(authority, *, book_run_id, principal):
         if not row or row[0]["status"] not in {"FAILED_FINAL", "SUCCEEDED"}:
             return False
         root = row[0]
+        if root["definition_version"] not in {"3.9.0", "3.10.0"}:
+            return False
         _require_frontier(c, book=book, request=old, root=root, principal=principal)
         if root["status"] == 'SUCCEEDED':
             c.execute("""SELECT EXISTS(SELECT 1 FROM authority_operation o JOIN authority_attempt a USING(operation_id)

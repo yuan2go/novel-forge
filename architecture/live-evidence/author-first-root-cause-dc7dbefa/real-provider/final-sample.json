@@ -1,0 +1,1213 @@
+{
+  "status": "PASS_SCOPED_REAL_NATIVE_SAMPLE",
+  "evidence_state": "EXECUTABLE",
+  "production_proven": false,
+  "source_runtime": "MIXED_EXACT_PER_PROCESS_METADATA",
+  "manuscript_source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "book": {
+    "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "book_id": "book:wp-nf-author-first-20261017",
+    "project_id": "project:wp-nf-author-first-20261017",
+    "workspace_id": "workspace:wp-nf-author-first-20261017",
+    "version": 39,
+    "state": "PAUSED",
+    "current_chapter": 5,
+    "accepted_through_chapter": 0,
+    "target_chapter_count": 100,
+    "input_snapshot_id": "sha256:55701ad07a4258f33bd832bb08a92ef138c85c4be93772f4788a4df9605f3876",
+    "root_operation_id": "e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "saga_id": "f4b56a01-f173-4366-a406-b53c60f68d33"
+  },
+  "book_design": {
+    "asset_version_id": "34da6069-be79-4f5d-a7d4-64657f410deb",
+    "content_hash": "sha256:13393151800b5497bdb2c07047c5a40a1a22ea09de1b5d429994c4f560d0fd20",
+    "schema_version": "book-design.v7",
+    "full_book_target": 600
+  },
+  "delivered_sample_chapters": 5,
+  "initial_delivery_window": 100,
+  "chapters_not_delivered_in_initial_window": 95,
+  "full_book_target": 600,
+  "unit": "HAN_CHARACTERS_V1",
+  "first_draft_han": [
+    3802,
+    3988,
+    4102,
+    3799,
+    3620
+  ],
+  "effective_native_text_han": [
+    4424,
+    4467,
+    4102,
+    4304,
+    4406
+  ],
+  "effective_prose_body_han": [
+    4424,
+    4467,
+    4102,
+    4304,
+    4401
+  ],
+  "effective_native_text_han_total": 21703,
+  "effective_prose_body_han_total": 21698,
+  "all_originals_saved": true,
+  "all_effective_versions_saved_read_and_exactly_exported": true,
+  "technical_working_selections": [
+    1,
+    2,
+    4,
+    5
+  ],
+  "author_selection": "NOT_GRANTED",
+  "formal_acceptance": "NOT_GRANTED",
+  "quality_status": "NOT_VERIFIED",
+  "natural_groups": [
+    [
+      1,
+      4
+    ],
+    [
+      5,
+      8
+    ]
+  ],
+  "actual_cross_group_input": "cross-group-preparation-actual-input.json",
+  "actual_dispatch": {
+    "test": "ACTUAL_PROVIDER_NATIVE_AUTHOR_FIRST_SAME_BOOK",
+    "source_sha": "MIXED_EXACT_PER_PROCESS_METADATA",
+    "input": "actual-dispatch-final-e5.json.gz",
+    "status": "PASS",
+    "actual_prompt_and_process_stdin_matches": 92,
+    "successful_result_inputs": 83,
+    "unknown_result_inputs": 9,
+    "working_source_bindings": 116
+  },
+  "local_memo": "actual-dispatch-final-e5-local-memo.json",
+  "book_owner_source_resolution": "actual-book-source-resolution.json",
+  "history_preservation": "history-preservation-final-e5.json",
+  "unknown_isolation": "unknown-isolation-final.json",
+  "packs": [
+    {
+      "activation": {
+        "reason": "activate exact-SHA bounded Quality qualification Pack",
+        "book_id": "book:wp-nf-author-first-20261017",
+        "pack_id": "story_planning_pack.creative.ce6c639932c945aedd3608cb",
+        "scope_key": "sha256:d2d36872c944ab49f156829713f8c18e1f8d364a341fb4781f2f64fa9799b5b2",
+        "project_id": "project:wp-nf-author-first-20261017",
+        "updated_at": "2026-10-18T02:02:08.077858+08:00",
+        "environment": "validation",
+        "activated_at": "2026-10-18T02:02:08.077858+08:00",
+        "activated_by": "writing-craft-native-operator",
+        "workspace_id": "workspace:wp-nf-author-first-20261017",
+        "activation_key": "sha256:b6c5293f047f88c1c7160ad19ed2a7fa0c4938379700bcfffadee560a0b271fd",
+        "target_scope_type": "BOOK",
+        "activation_version": 5,
+        "active_deployment_id": "deployment:quality:story_planning_pack.creative.ce6c639932c945aedd3608cb:33154dda5ea79bb081de",
+        "workflow_definition_ref": "story_planning_generators@1.12.0",
+        "activated_by_operation_id": "147c0de8-9a64-476e-9bbe-071253ceaabf"
+      },
+      "deployment": {
+        "book_id": "book:wp-nf-author-first-20261017",
+        "pack_id": "story_planning_pack.creative.ce6c639932c945aedd3608cb",
+        "scope_key": "sha256:d2d36872c944ab49f156829713f8c18e1f8d364a341fb4781f2f64fa9799b5b2",
+        "created_at": "2026-10-18T02:02:08.007195+08:00",
+        "project_id": "project:wp-nf-author-first-20261017",
+        "updated_at": "2026-10-18T02:02:08.077858+08:00",
+        "environment": "validation",
+        "pack_version": "2.19.0",
+        "workspace_id": "workspace:wp-nf-author-first-20261017",
+        "deployment_id": "deployment:quality:story_planning_pack.creative.ce6c639932c945aedd3608cb:33154dda5ea79bb081de",
+        "binding_set_id": "a5b2ba25-ff11-46b9-94ff-00d136761750",
+        "compilation_id": "compilation:quality:story_planning_pack.creative.ce6c639932c945aedd3608cb:33154dda5ea79bb081de",
+        "deployment_status": "ACTIVE",
+        "target_scope_type": "BOOK",
+        "rollout_policy_ref": "rollout:stable-sha256:v1",
+        "created_by_operation_id": "c0aacc8f-0fca-47bd-9bca-19d3baa18820",
+        "workflow_definition_ref": "story_planning_generators@1.12.0"
+      },
+      "compilation": {
+        "pack_id": "story_planning_pack.creative.ce6c639932c945aedd3608cb",
+        "created_at": "2026-10-18T02:02:07.949566+08:00",
+        "compiled_by": "writing-craft-native-operator",
+        "release_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+        "pack_version": "2.19.0",
+        "manifest_hash": "sha256:005471e22f3e6a2999130b21f3b532ce622ba0599f29aefae4f760a32543661c",
+        "compilation_id": "compilation:quality:story_planning_pack.creative.ce6c639932c945aedd3608cb:33154dda5ea79bb081de",
+        "release_channel": "VALIDATION",
+        "runtime_profile": "validation",
+        "compilation_hash": "sha256:29e67f045473c0ae52c5d1894a2f5f2cd079601ea969428844bc79ed29f3b35b",
+        "compiler_version": "novel-forge-capability-pack-compiler.v2",
+        "compilation_status": "TRUSTED",
+        "novel_forge_version": "6.0.0",
+        "catalog_snapshot_hash": "sha256:53d490b5bdbf1be824ce63d43b0b872f7eba8830bc1a80b89ee746b03c075cd1",
+        "compiled_by_operation_id": "e1540f25-0b63-46b5-abfa-1946c494783a",
+        "compiled_asset_version_id": "fe33e2b4-7d9c-457e-a6ed-528aa71caddc"
+      }
+    },
+    {
+      "activation": {
+        "reason": "activate exact-SHA bounded Quality qualification Pack",
+        "book_id": "book:wp-nf-author-first-20261017",
+        "pack_id": "chapter_generation_pack.creative.ce6c639932c945aedd3608cb",
+        "scope_key": "sha256:d2d36872c944ab49f156829713f8c18e1f8d364a341fb4781f2f64fa9799b5b2",
+        "project_id": "project:wp-nf-author-first-20261017",
+        "updated_at": "2026-10-18T02:02:08.43689+08:00",
+        "environment": "validation",
+        "activated_at": "2026-10-18T02:02:08.43689+08:00",
+        "activated_by": "writing-craft-native-operator",
+        "workspace_id": "workspace:wp-nf-author-first-20261017",
+        "activation_key": "sha256:3d7eb47fc828ccb01b0a4359b6342f5eca36aa40702bc7bd18be862a7acec288",
+        "target_scope_type": "BOOK",
+        "activation_version": 5,
+        "active_deployment_id": "deployment:quality:chapter_generation_pack.creative.ce6c639932c945aedd3608cb:79c142284cc605eb1843",
+        "workflow_definition_ref": "chapter_authority_slice@3.10.0",
+        "activated_by_operation_id": "3881d1ed-f797-4f99-9b76-21fcaf053cf2"
+      },
+      "deployment": {
+        "book_id": "book:wp-nf-author-first-20261017",
+        "pack_id": "chapter_generation_pack.creative.ce6c639932c945aedd3608cb",
+        "scope_key": "sha256:d2d36872c944ab49f156829713f8c18e1f8d364a341fb4781f2f64fa9799b5b2",
+        "created_at": "2026-10-18T02:02:08.378685+08:00",
+        "project_id": "project:wp-nf-author-first-20261017",
+        "updated_at": "2026-10-18T02:02:08.43689+08:00",
+        "environment": "validation",
+        "pack_version": "3.2.0",
+        "workspace_id": "workspace:wp-nf-author-first-20261017",
+        "deployment_id": "deployment:quality:chapter_generation_pack.creative.ce6c639932c945aedd3608cb:79c142284cc605eb1843",
+        "binding_set_id": "5a74637c-4592-4ad4-8aee-6b51c2d09ce0",
+        "compilation_id": "compilation:quality:chapter_generation_pack.creative.ce6c639932c945aedd3608cb:79c142284cc605eb1843",
+        "deployment_status": "ACTIVE",
+        "target_scope_type": "BOOK",
+        "rollout_policy_ref": "rollout:stable-sha256:v1",
+        "created_by_operation_id": "dbe63d48-32a3-47db-8641-8c13e174af88",
+        "workflow_definition_ref": "chapter_authority_slice@3.10.0"
+      },
+      "compilation": {
+        "pack_id": "chapter_generation_pack.creative.ce6c639932c945aedd3608cb",
+        "created_at": "2026-10-18T02:02:08.295553+08:00",
+        "compiled_by": "writing-craft-native-operator",
+        "release_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+        "pack_version": "3.2.0",
+        "manifest_hash": "sha256:6c2259aa20c146ba84666f6c825216a2ceb5e01b293afdf96d392a9798f17349",
+        "compilation_id": "compilation:quality:chapter_generation_pack.creative.ce6c639932c945aedd3608cb:79c142284cc605eb1843",
+        "release_channel": "VALIDATION",
+        "runtime_profile": "validation",
+        "compilation_hash": "sha256:cc47330850e463ec3425b68c2614737ec4c0db949e4e7bb28596b14eb8400ce0",
+        "compiler_version": "novel-forge-capability-pack-compiler.v2",
+        "compilation_status": "TRUSTED",
+        "novel_forge_version": "6.0.0",
+        "catalog_snapshot_hash": "sha256:59b90fa0cbdcdca9c1bb685f7e2b6e95e6d8df7ecc800aa015e94352d569e1f6",
+        "compiled_by_operation_id": "c2b21e4c-134e-4263-850f-d203df196ac8",
+        "compiled_asset_version_id": "cee050ba-7413-46cd-8f86-b7c368e886bb"
+      }
+    }
+  ],
+  "units": [
+    {
+      "chapter": 1,
+      "title": "先撤人",
+      "first": {
+        "chapter": 1,
+        "asset_version_id": "authority-output:d91a49f0-c575-4b37-bc18-8cba8b270895:chapter.draft:v1",
+        "content_hash": "sha256:716166223b169d0408b5159fe553a1f125af0d6804e9f9ddc7c9d30e0a058dc8",
+        "text_hash": "sha256:e947f440ecc3594b2bf502bba1a500e28bdd1a73db31d619c439fc589f79ffe9",
+        "title": "先撤人",
+        "manuscript_status": "SAVED",
+        "quality_status": "NOT_VERIFIED",
+        "working_selection": {
+          "status": "NOT_SELECTED"
+        },
+        "requirements_status": "LENGTH_TARGET_UNMET",
+        "voice_observations": [
+          {
+            "layer": "NARRATOR",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:NARRATOR",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "GENRE",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:GENRE",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:xu_zhaochuan",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:lu_shouzhuo",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:he_chunqin",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:tang_sui",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:song_jiming",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:wei_hanzhang",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          }
+        ],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 3802,
+          "target": {
+            "maximum": 5000,
+            "minimum": 4000
+          }
+        },
+        "dependency_changes": [],
+        "author_selection": "GENERATED_CURRENT",
+        "review_status": "NOT_RUN"
+      },
+      "effective": {
+        "chapter": 1,
+        "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+        "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+        "text_hash": "sha256:41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+        "title": "先撤人",
+        "manuscript_status": "SAVED",
+        "quality_status": "NOT_VERIFIED",
+        "working_selection": {
+          "status": "SELECTED",
+          "asset_version_id": "4728894f-b757-4f8a-8a21-379d9d828508",
+          "content_hash": "sha256:fa5e3e2822c08c3d911e7361ca26e66490f00eeab1464cd4a09795512a662e1a",
+          "selected_asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "selected_content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "authority": "AUTHORIZED_WORK_VERSION_USAGE",
+          "author_selection": "NOT_GRANTED",
+          "formal_acceptance": "NOT_GRANTED"
+        },
+        "requirements_status": "PARTIALLY_CHECKED",
+        "voice_observations": [],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 4424,
+          "target": {
+            "maximum": 5000,
+            "minimum": 4000
+          }
+        },
+        "dependency_changes": [],
+        "author_selection": "NOT_GRANTED",
+        "review_status": "COMPLETED",
+        "review_asset_version_id": "authority-output:ce84dc11-ca67-489d-9f39-86e2ce6914fb:chapter.rereview:v1",
+        "unresolved_issue_codes": []
+      },
+      "native_text_han": 4424,
+      "prose_body_han": 4424,
+      "leading_title_in_native_text": false,
+      "original_and_effective_text_preserved": true,
+      "first_writer_operation": "d91a49f0-c575-4b37-bc18-8cba8b270895",
+      "actual_first_writer_input_hash": "sha256:50c5c5004d1ca48a0170d36349defb6771b6a66b56347f4749ad32e3d9b294be",
+      "actual_first_writer_length_contracts": [
+        {
+          "contract_version": "chapter-generation-length.v1",
+          "maximum": 5000,
+          "minimum": 4000,
+          "planning_target_han_characters": 4500,
+          "platform_profile_asset_version_id": "authority-output:5b3fdd57-567a-4cd3-8cb4-6cbcbf26e1c3:chapter.platform_profile:v1",
+          "platform_profile_content_hash": "sha256:ce5e5b457c01a3f905f2796bad0629e86c301524448b5f9cc51ccf1efd80dd41",
+          "platform_rules_hash": "sha256:6645c5df83cfe0a1d2238126709930f06f5b20760206ff25f1028feedc695b11",
+          "unit": "HAN_CHARACTERS_V1"
+        }
+      ],
+      "native_revision_used": true
+    },
+    {
+      "chapter": 2,
+      "title": "留下的旧石",
+      "first": {
+        "chapter": 2,
+        "asset_version_id": "authority-output:75403b34-66d4-4f84-9079-daf1caac5a15:chapter.draft:v1",
+        "content_hash": "sha256:21007be62015a2020f229bd0df06171e58c47037d8f9a02029f77aab59ccd6b8",
+        "text_hash": "sha256:817500dfcdb1d40e656356d4c7f6377232b3221b1aacc63d1cf3f51bab707450",
+        "title": "留下的旧石",
+        "manuscript_status": "SAVED",
+        "quality_status": "NOT_VERIFIED",
+        "working_selection": {
+          "status": "NOT_SELECTED"
+        },
+        "requirements_status": "LENGTH_TARGET_UNMET",
+        "voice_observations": [
+          {
+            "layer": "NARRATOR",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:NARRATOR",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "GENRE",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:GENRE",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:xu_zhaochuan",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:lu_shouzhuo",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:he_chunqin",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:tang_sui",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:song_jiming",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:wei_hanzhang",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          }
+        ],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 3988,
+          "target": {
+            "maximum": 5000,
+            "minimum": 4000
+          }
+        },
+        "dependency_changes": [],
+        "author_selection": "GENERATED_CURRENT",
+        "review_status": "NOT_RUN"
+      },
+      "effective": {
+        "chapter": 2,
+        "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+        "content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+        "text_hash": "sha256:3336b414b1267c902b18c0b36ddee1ccba887ca3211dcf8fc3fccd45ab290714",
+        "title": "留下的旧石",
+        "manuscript_status": "SAVED",
+        "quality_status": "NOT_VERIFIED",
+        "working_selection": {
+          "status": "SELECTED",
+          "asset_version_id": "520300c4-d2d4-44bc-a1e9-f0abb5d84200",
+          "content_hash": "sha256:547c2ff64f14aa790e8eaf90c04794069f532c73840612968416a4384994cce1",
+          "selected_asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1",
+          "selected_content_hash": "sha256:e1a75442903b70f7d9a34b76cc85886ab0d3ceb3681cef31f6ff74290584327c",
+          "authority": "AUTHORIZED_WORK_VERSION_USAGE",
+          "author_selection": "NOT_GRANTED",
+          "formal_acceptance": "NOT_GRANTED"
+        },
+        "requirements_status": "PARTIALLY_CHECKED",
+        "voice_observations": [],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 4467,
+          "target": {
+            "maximum": 5000,
+            "minimum": 4000
+          }
+        },
+        "dependency_changes": [],
+        "author_selection": "NOT_GRANTED",
+        "review_status": "COMPLETED",
+        "review_asset_version_id": "authority-output:066e38e9-cb5f-4efb-9032-3df8d42da677:chapter.rereview:v1",
+        "unresolved_issue_codes": []
+      },
+      "native_text_han": 4467,
+      "prose_body_han": 4467,
+      "leading_title_in_native_text": false,
+      "original_and_effective_text_preserved": true,
+      "first_writer_operation": "75403b34-66d4-4f84-9079-daf1caac5a15",
+      "actual_first_writer_input_hash": "sha256:821ac85716146a3fd4b56c54aa9489062dddbddc0dc46100989def49cdaeec19",
+      "actual_first_writer_length_contracts": [
+        {
+          "contract_version": "chapter-generation-length.v1",
+          "maximum": 5000,
+          "minimum": 4000,
+          "planning_target_han_characters": 4500,
+          "platform_profile_asset_version_id": "authority-output:5b3fdd57-567a-4cd3-8cb4-6cbcbf26e1c3:chapter.platform_profile:v1",
+          "platform_profile_content_hash": "sha256:ce5e5b457c01a3f905f2796bad0629e86c301524448b5f9cc51ccf1efd80dd41",
+          "platform_rules_hash": "sha256:6645c5df83cfe0a1d2238126709930f06f5b20760206ff25f1028feedc695b11",
+          "unit": "HAN_CHARACTERS_V1"
+        }
+      ],
+      "native_revision_used": true
+    },
+    {
+      "chapter": 3,
+      "title": "先浇这一畦",
+      "first": {
+        "chapter": 3,
+        "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+        "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+        "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+        "title": "先浇这一畦",
+        "manuscript_status": "SAVED",
+        "quality_status": "NOT_VERIFIED",
+        "working_selection": {
+          "status": "NOT_SELECTED"
+        },
+        "requirements_status": "PARTIALLY_CHECKED",
+        "voice_observations": [
+          {
+            "layer": "NARRATOR",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:NARRATOR",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "GENRE",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:GENRE",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:xu_zhaochuan",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:lu_shouzhuo",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:he_chunqin",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:tang_sui",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:song_jiming",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:wei_hanzhang",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          }
+        ],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 4102,
+          "target": {
+            "maximum": 5000,
+            "minimum": 4000
+          }
+        },
+        "dependency_changes": [],
+        "author_selection": "GENERATED_CURRENT",
+        "review_status": "NOT_RUN"
+      },
+      "effective": {
+        "chapter": 3,
+        "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1",
+        "content_hash": "sha256:3059ffdd606e9639894797bda4852a54148261e8745e4279968d699f11cb9b7e",
+        "text_hash": "sha256:a4e76b98eeade73e106993059af2e741b0d9b14d276fdb6b77228de7126487ab",
+        "title": "先浇这一畦",
+        "manuscript_status": "SAVED",
+        "quality_status": "NOT_VERIFIED",
+        "working_selection": {
+          "status": "NOT_SELECTED"
+        },
+        "requirements_status": "PARTIALLY_CHECKED",
+        "voice_observations": [
+          {
+            "layer": "NARRATOR",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:NARRATOR",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "GENRE",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:GENRE",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:xu_zhaochuan",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:lu_shouzhuo",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:he_chunqin",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:tang_sui",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:song_jiming",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:wei_hanzhang",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          }
+        ],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 4102,
+          "target": {
+            "maximum": 5000,
+            "minimum": 4000
+          }
+        },
+        "dependency_changes": [],
+        "author_selection": "GENERATED_CURRENT",
+        "review_status": "NOT_RUN"
+      },
+      "native_text_han": 4102,
+      "prose_body_han": 4102,
+      "leading_title_in_native_text": false,
+      "original_and_effective_text_preserved": true,
+      "first_writer_operation": "2c9bae61-b96d-4a62-befa-9445ce3b424c",
+      "actual_first_writer_input_hash": "sha256:28451edc1091b773e5e640264c626443a1ece872c96f1a68b515696b4a00d51d",
+      "actual_first_writer_length_contracts": [
+        {
+          "contract_version": "chapter-generation-length.v1",
+          "maximum": 5000,
+          "minimum": 4000,
+          "planning_target_han_characters": 4500,
+          "platform_profile_asset_version_id": "authority-output:5b3fdd57-567a-4cd3-8cb4-6cbcbf26e1c3:chapter.platform_profile:v1",
+          "platform_profile_content_hash": "sha256:ce5e5b457c01a3f905f2796bad0629e86c301524448b5f9cc51ccf1efd80dd41",
+          "platform_rules_hash": "sha256:6645c5df83cfe0a1d2238126709930f06f5b20760206ff25f1028feedc695b11",
+          "unit": "HAN_CHARACTERS_V1"
+        }
+      ],
+      "native_revision_used": false
+    },
+    {
+      "chapter": 4,
+      "title": "稳处落锤",
+      "first": {
+        "chapter": 4,
+        "asset_version_id": "authority-output:d80359d5-5bd4-4f03-82b8-2c16628d1168:chapter.draft:v1",
+        "content_hash": "sha256:97f03fdd8aa759f1d9279e83cb16d5504aa41caed51e92f64f0d9a7a45bb6fcf",
+        "text_hash": "sha256:1460dde6c5edce80cbb500aff8c0a6203d5c1d4aed79298a4b0aaa58524c9790",
+        "title": "稳处落锤",
+        "manuscript_status": "SAVED",
+        "quality_status": "NOT_VERIFIED",
+        "working_selection": {
+          "status": "NOT_SELECTED"
+        },
+        "requirements_status": "LENGTH_TARGET_UNMET",
+        "voice_observations": [
+          {
+            "layer": "NARRATOR",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:NARRATOR",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "GENRE",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:GENRE",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:xu_zhaochuan",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:lu_shouzhuo",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:he_chunqin",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:tang_sui",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:song_jiming",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:wei_hanzhang",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          }
+        ],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 3799,
+          "target": {
+            "maximum": 5000,
+            "minimum": 4000
+          }
+        },
+        "dependency_changes": [],
+        "author_selection": "GENERATED_CURRENT",
+        "review_status": "NOT_RUN"
+      },
+      "effective": {
+        "chapter": 4,
+        "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+        "content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+        "text_hash": "sha256:0431ddafe79e894c58f816f8396011ed78693b7d533bdeae21374960cb68b823",
+        "title": "稳处落锤",
+        "manuscript_status": "SAVED",
+        "quality_status": "NOT_VERIFIED",
+        "working_selection": {
+          "status": "SELECTED",
+          "asset_version_id": "aabea0a3-788a-4743-b9ae-ef5243947b16",
+          "content_hash": "sha256:91dd8be8f7db193a6a969125d9fc63c23b6e499e0b42b67ecb91af5a19fa6371",
+          "selected_asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1",
+          "selected_content_hash": "sha256:55cb1043bfd6bb0656db551c0f8e83ffd1209761bcf83b69c7aad61a0450958d",
+          "authority": "AUTHORIZED_WORK_VERSION_USAGE",
+          "author_selection": "NOT_GRANTED",
+          "formal_acceptance": "NOT_GRANTED"
+        },
+        "requirements_status": "PARTIALLY_CHECKED",
+        "voice_observations": [],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 4304,
+          "target": {
+            "maximum": 5000,
+            "minimum": 4000
+          }
+        },
+        "dependency_changes": [],
+        "author_selection": "NOT_GRANTED",
+        "review_status": "COMPLETED",
+        "review_asset_version_id": "authority-output:b5215119-2bdf-445b-a162-11aca261569f:chapter.rereview:v1",
+        "unresolved_issue_codes": []
+      },
+      "native_text_han": 4304,
+      "prose_body_han": 4304,
+      "leading_title_in_native_text": false,
+      "original_and_effective_text_preserved": true,
+      "first_writer_operation": "d80359d5-5bd4-4f03-82b8-2c16628d1168",
+      "actual_first_writer_input_hash": "sha256:0795f310ccd74e41acc2352cd9a137a5afdf247be2d3e7320d22e833a0aeec56",
+      "actual_first_writer_length_contracts": [
+        {
+          "contract_version": "chapter-generation-length.v1",
+          "maximum": 5000,
+          "minimum": 4000,
+          "planning_target_han_characters": 4500,
+          "platform_profile_asset_version_id": "authority-output:5b3fdd57-567a-4cd3-8cb4-6cbcbf26e1c3:chapter.platform_profile:v1",
+          "platform_profile_content_hash": "sha256:ce5e5b457c01a3f905f2796bad0629e86c301524448b5f9cc51ccf1efd80dd41",
+          "platform_rules_hash": "sha256:6645c5df83cfe0a1d2238126709930f06f5b20760206ff25f1028feedc695b11",
+          "unit": "HAN_CHARACTERS_V1"
+        }
+      ],
+      "native_revision_used": true
+    },
+    {
+      "chapter": 5,
+      "title": "补成这一段",
+      "first": {
+        "chapter": 5,
+        "asset_version_id": "authority-output:2f10604b-da70-49cd-86d6-c187cb32cfad:chapter.draft:v1",
+        "content_hash": "sha256:c0b37848741bdbefb4ea95cab5f496ce9a8baef27868d6713ad13361f7e4f2b9",
+        "text_hash": "sha256:d0a7f4bb7ccbc4066e32a19efa540cdf47b72645fc1884b12cb249ae9609cc0c",
+        "title": "补成这一段",
+        "manuscript_status": "SAVED",
+        "quality_status": "NOT_VERIFIED",
+        "working_selection": {
+          "status": "NOT_SELECTED"
+        },
+        "requirements_status": "LENGTH_TARGET_UNMET",
+        "voice_observations": [
+          {
+            "layer": "NARRATOR",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:NARRATOR",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "GENRE",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:GENRE",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:xu_zhaochuan",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "CONTRACT_MATCH",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:lu_shouzhuo",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:he_chunqin",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:tang_sui",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:song_jiming",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          },
+          {
+            "layer": "CHARACTER",
+            "status": "NOT_APPLICABLE_TO_SELECTED_SLOTS",
+            "voice_id": "34da6069-be79-4f5d-a7d4-64657f410deb:character:wei_hanzhang",
+            "proof_ceiling": "DECLARED_TEXTUAL_CONSTRAINTS_ONLY",
+            "asset_version_id": "authority-output:a984500e-f3e7-4463-8114-c6fd96cd582b:chapter.style_policy:v1",
+            "missing_required_markers": [],
+            "forbidden_markers_present": []
+          }
+        ],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 3620,
+          "target": {
+            "maximum": 5000,
+            "minimum": 4000
+          }
+        },
+        "dependency_changes": [],
+        "author_selection": "GENERATED_CURRENT",
+        "review_status": "NOT_RUN"
+      },
+      "effective": {
+        "chapter": 5,
+        "asset_version_id": "authority-output:fa8caa0f-61ca-40ab-b15c-4648b70d2027:chapter.best_candidate:v1",
+        "content_hash": "sha256:030592389d73c251024d6c2b85f92c8475395d6fc7b5a14d2ab8987b0b3f48ff",
+        "text_hash": "sha256:cf98d11a430f709f9a43127182a23567858e8fac6d63a1f0ca8ca974908fc1b4",
+        "title": "补成这一段",
+        "manuscript_status": "SAVED",
+        "quality_status": "NOT_VERIFIED",
+        "working_selection": {
+          "status": "SELECTED",
+          "asset_version_id": "d6c29bd4-c7cc-4dfa-a2e1-d3b7ae12a4f2",
+          "content_hash": "sha256:24dceb9abb1ea3c92dd1e7262bfa3c7756ee90641a89128e12fb0636723d8271",
+          "selected_asset_version_id": "authority-output:fa8caa0f-61ca-40ab-b15c-4648b70d2027:chapter.best_candidate:v1",
+          "selected_content_hash": "sha256:030592389d73c251024d6c2b85f92c8475395d6fc7b5a14d2ab8987b0b3f48ff",
+          "authority": "AUTHORIZED_WORK_VERSION_USAGE",
+          "author_selection": "NOT_GRANTED",
+          "formal_acceptance": "NOT_GRANTED"
+        },
+        "requirements_status": "PARTIALLY_CHECKED",
+        "voice_observations": [],
+        "length": {
+          "unit": "HAN_CHARACTERS_V1",
+          "actual": 4406,
+          "target": {
+            "maximum": 5000,
+            "minimum": 4000
+          }
+        },
+        "dependency_changes": [],
+        "author_selection": "NOT_GRANTED",
+        "review_status": "COMPLETED",
+        "review_asset_version_id": "authority-output:6e11b863-381f-4178-8793-aa62332a6b40:chapter.rereview:v1",
+        "unresolved_issue_codes": []
+      },
+      "native_text_han": 4406,
+      "prose_body_han": 4401,
+      "leading_title_in_native_text": true,
+      "original_and_effective_text_preserved": true,
+      "first_writer_operation": "2f10604b-da70-49cd-86d6-c187cb32cfad",
+      "actual_first_writer_input_hash": "sha256:4074836b5f4fc4f0e859901eb300addbbc9d5a7d36f353a77dca2e028c560ea6",
+      "actual_first_writer_length_contracts": [
+        {
+          "contract_version": "chapter-generation-length.v1",
+          "maximum": 5000,
+          "minimum": 4000,
+          "planning_target_han_characters": 4500,
+          "platform_profile_asset_version_id": "authority-output:5b3fdd57-567a-4cd3-8cb4-6cbcbf26e1c3:chapter.platform_profile:v1",
+          "platform_profile_content_hash": "sha256:ce5e5b457c01a3f905f2796bad0629e86c301524448b5f9cc51ccf1efd80dd41",
+          "platform_rules_hash": "sha256:6645c5df83cfe0a1d2238126709930f06f5b20760206ff25f1028feedc695b11",
+          "unit": "HAN_CHARACTERS_V1"
+        }
+      ],
+      "native_revision_used": true
+    }
+  ],
+  "exports": [
+    {
+      "path": "final-exports/chapter-01-effective.json",
+      "sha256": "sha256:91178b7f8856a608f9adfacce9a3a19ad141d16522219581178e0a57fbcea5eb",
+      "bytes": 33169
+    },
+    {
+      "path": "final-exports/chapter-01-effective.md",
+      "sha256": "sha256:9b97cea4556a1cb24f6712fb1e63108b04d304e1bceb924eeca4346b68c03bbc",
+      "bytes": 15744
+    },
+    {
+      "path": "final-exports/chapter-01-first-draft.json",
+      "sha256": "sha256:e94994447b86579ca2e48e4f5dc59cd2e538e1d25a62b64e022a912075baac58",
+      "bytes": 31765
+    },
+    {
+      "path": "final-exports/chapter-01-first-draft.md",
+      "sha256": "sha256:e907b0c8f4f33501a3a8c5488a8d1a2968c32c43fa2bd847a7ba66708c8937a6",
+      "bytes": 13438
+    },
+    {
+      "path": "final-exports/chapter-02-effective.json",
+      "sha256": "sha256:9f131d05758ce6ed55964adf508aad19837118c312c1b6e7c964d3948806a06e",
+      "bytes": 33094
+    },
+    {
+      "path": "final-exports/chapter-02-effective.md",
+      "sha256": "sha256:2ce63a2b1f46c97762ad837c36cbb065a540b455b3d1ce15c5608aa3cc593010",
+      "bytes": 15710
+    },
+    {
+      "path": "final-exports/chapter-02-first-draft.json",
+      "sha256": "sha256:6a685a6a79b85cc7cb00854e94f43d746e56fbc5439f9f345ec14eb658216466",
+      "bytes": 32580
+    },
+    {
+      "path": "final-exports/chapter-02-first-draft.md",
+      "sha256": "sha256:98a57b5cfc7315908ff105ca029a430ac848690256f7513b866ea7cd76a3d597",
+      "bytes": 13853
+    },
+    {
+      "path": "final-exports/chapter-03-effective.json",
+      "sha256": "sha256:76dab9b6a7b2cf042759ba91557ad669f1c322cefafc0b6380f9d8eb8c6439b9",
+      "bytes": 33932
+    },
+    {
+      "path": "final-exports/chapter-03-effective.md",
+      "sha256": "sha256:251e91ecffc60424597592fef2e7d8f47439b70c99c0cb4da794c2e26cbd491f",
+      "bytes": 14520
+    },
+    {
+      "path": "final-exports/chapter-04-effective.json",
+      "sha256": "sha256:88deb7508c3a26de37db4c9be7d84fc601a682253588c9f245484d3109c3f96e",
+      "bytes": 31966
+    },
+    {
+      "path": "final-exports/chapter-04-effective.md",
+      "sha256": "sha256:9e75eb423f2b882d4f3c7e2a7f00e729a57bf4e2ac3e88be71f6a6fa303e1adc",
+      "bytes": 15149
+    },
+    {
+      "path": "final-exports/chapter-04-first-draft.json",
+      "sha256": "sha256:2afdb0bcf7eb27e6910253385599d61a60e52c599372c6d922ba349093228f7a",
+      "bytes": 31332
+    },
+    {
+      "path": "final-exports/chapter-04-first-draft.md",
+      "sha256": "sha256:03aa1d5b2ec4c4eecb17462fb1540e711c3c3de4d25be8f33e98560720bcfd9d",
+      "bytes": 13229
+    },
+    {
+      "path": "final-exports/chapter-05-effective.json",
+      "sha256": "sha256:03d1dd8efa6eb5a09fe09aff04d30656e30265a29471e5c3e17fe62aed9150b5",
+      "bytes": 32738
+    },
+    {
+      "path": "final-exports/chapter-05-effective.md",
+      "sha256": "sha256:499ef139bfc32971a763e4711d91cb84aea46f3d1b3678675f4c02f6514b684f",
+      "bytes": 15537
+    },
+    {
+      "path": "final-exports/chapter-05-first-draft.json",
+      "sha256": "sha256:8de081f6ee75cbaf186ba1b42c94b2a9deea4a6ae5accbcc5fc464f7751ae3cc",
+      "bytes": 30228
+    },
+    {
+      "path": "final-exports/chapter-05-first-draft.md",
+      "sha256": "sha256:67434c7908599ea8bbd82ff1ba109ac75cb8ea53f5e67966dfdfa2f817c5db3a",
+      "bytes": 12683
+    },
+    {
+      "path": "final-exports/native-working-chapters-01-05.json",
+      "sha256": "sha256:b485d33920d7eebeeadbde8d602f2e25645ceb1f4b0b7fdf5bff1ace1fca590f",
+      "bytes": 162068
+    },
+    {
+      "path": "final-exports/native-working-chapters-01-05.md",
+      "sha256": "sha256:ac6363a989178c8bd4400fead576fe15bb9753de0c7cba24ce415cd29f3ae51e",
+      "bytes": 76660
+    }
+  ],
+  "readback_observations": [
+    {
+      "chapter": 1,
+      "evidence": "先撤人、取回工具、封住旧路；绳索骤紧后许照川改变发力并检查膝伤，行动产生约束。"
+    },
+    {
+      "chapter": 2,
+      "evidence": "清理后保留仍承力的旧石，并发现湿缝；承接前章损绳和封路，没有重演撤人。"
+    },
+    {
+      "chapter": 3,
+      "evidence": "宋既明分配缺水下的劳力和水，许照川送水后带回撑木新绳；进展由清理转到资源调配。"
+    },
+    {
+      "chapter": 4,
+      "evidence": "使用前章带回材料搭成局部作业撑台；手疼改变握法和交接，暂留不平边换取稳固落座，只开小口而未通水。"
+    },
+    {
+      "chapter": 5,
+      "evidence": "承接已成撑台，更换松散填料、补石收缝；发现表面填实而内有空隙后返工，完成首段转看下游，水仍未开。"
+    }
+  ],
+  "remaining_prose_issues": [
+    "Four of five first Drafts under target; native revisions are effective samples, not first-pass stability.",
+    "Chapter5 native text repeats its 5-Han title; preserved exactly, prose body is 4401 Han.",
+    "Tools, work procedure, cleanup and rest remain dense/repetitive; cultivation conflict and sustained reader pull are not qualified."
+  ],
+  "formal_P0": "NOT_RUN",
+  "full_254_matrix": "NOT_RUN",
+  "production_qualification": "NOT_RUN",
+  "long_form_literary_qualification": "NOT_RUN",
+  "transport_root_cause": "Observed CLI network response-body stream decoding failures; network component and 900s duration cause unresolved; token-limit cause NOT_OBSERVED.",
+  "resume": {
+    "status": "NOT_RUN_NEXT_STEP",
+    "checkpoint_book_version": 39,
+    "next_chapter": 6,
+    "cwd": "/Users/yuan/.codex/worktrees/author-first-continuation/novel-forge",
+    "environment_json": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01/runtime.input-only-e5f1da7d.private.json",
+    "argv": [
+      "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/python",
+      "-m",
+      "novel_forge.cli.authority",
+      "authority-manuscript",
+      "continue",
+      "--book-run-id",
+      "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+      "--stop-after-chapter",
+      "6",
+      "--foreground"
+    ],
+    "semantics": "Ordinary manuscript continue resumes same Book and pauses after chapter6; initial delivery window remains100. UNKNOWN reconciliation uses existing owning isolation, never blind resubmission."
+  },
+  "audit_corrections": {
+    "logs": [
+      "final-real-audits.log",
+      "final-real-audits-02.log",
+      "final-real-audits-03.log",
+      "final-real-audits-04.log"
+    ],
+    "timestamp": "All Book fields checked; created_at/updated_at compare timezone-aware identical instants, not serialization text.",
+    "pack_lifecycle": "Exactly two original compiled Pack versions became SUPERSEDED through native e5 compilation/activation; all other old asset fields and all1594 content identities unchanged.",
+    "old_capture": "Before snapshot did not include Pack compilation table; original version bytes bind old compilation content, final snapshot contains old and successor registration rows."
+  }
+}

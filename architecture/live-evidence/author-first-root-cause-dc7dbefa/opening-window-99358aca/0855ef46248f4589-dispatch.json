@@ -1,0 +1,3954 @@
+{
+  "test": "tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export[single-interruption]",
+  "source_sha": "99358aca42d5a39a2996ef1484357ecf41b37bfa",
+  "input": "0855ef46248f4589.json.gz",
+  "status": "PASS",
+  "actual_prompt_and_process_stdin_matches": 33,
+  "successful_result_inputs": 32,
+  "unknown_result_inputs": 1,
+  "working_source_bindings": 222,
+  "rows": [
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "c51cc9e7-574a-4a5b-9707-8ff9365ae4c4",
+      "external_effect_id": "a2e93e36-4b03-4388-958a-739143234f3b",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:88f2b957fd82b7f71ff5c5aa83a83fd4dffaee77420ed45fdd8c8b1f148671c3",
+      "process_stdin_sha256": "88f2b957fd82b7f71ff5c5aa83a83fd4dffaee77420ed45fdd8c8b1f148671c3",
+      "rendered_bytes": 68089,
+      "working_sources": []
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "cb2b8848-4629-4333-98b1-50e640701962",
+      "external_effect_id": "1ab7824f-41f1-4037-82b5-8e1b3893f677",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:191e4cd715980f0ff34246cc14f7c28fa5466c20c8085e1d16222379c86418e3",
+      "process_stdin_sha256": "191e4cd715980f0ff34246cc14f7c28fa5466c20c8085e1d16222379c86418e3",
+      "rendered_bytes": 68096,
+      "working_sources": []
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "e942d5d2-c507-47c9-8514-f4675310b848",
+      "external_effect_id": "5ba97bc8-f45d-4ae0-ae90-23e7def18f4b",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:9f6bb1d8347f4169f5323414c2614666d07c5f6e5e7bbbdf2e2b6cb435b57fe3",
+      "process_stdin_sha256": "9f6bb1d8347f4169f5323414c2614666d07c5f6e5e7bbbdf2e2b6cb435b57fe3",
+      "rendered_bytes": 68100,
+      "working_sources": []
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "operation_id": "1ee23478-d248-47f8-86f9-9907c127f0d2",
+      "external_effect_id": "77af7c79-06b6-4a84-b190-900975d45e4f",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:0f4d75b33022e5f81a10459fa662d6fe59a3ea1ce216ad27447f35d3519412c2",
+      "process_stdin_sha256": "0f4d75b33022e5f81a10459fa662d6fe59a3ea1ce216ad27447f35d3519412c2",
+      "rendered_bytes": 83002,
+      "working_sources": []
+    },
+    {
+      "stage": "memo",
+      "operation_id": "56149685-b5f2-4c5a-8a05-42ffe93d24ed",
+      "external_effect_id": "0e2014ef-2d39-4560-98f7-44d61b647672",
+      "effect_status": "UNKNOWN",
+      "verified_remote_result": false,
+      "prompt_hash": "sha256:a15fddd02f301116a351b9ea6843a586db780a1c2d5f123c7f1fe889d2edca97",
+      "process_stdin_sha256": "a15fddd02f301116a351b9ea6843a586db780a1c2d5f123c7f1fe889d2edca97",
+      "rendered_bytes": 28816,
+      "working_sources": []
+    },
+    {
+      "stage": "draft",
+      "operation_id": "0fc334d4-3e6f-481e-879a-0671263c99d5",
+      "external_effect_id": "a0587b69-ed75-4d6d-9d12-862caa4d956c",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:ad9b81d9deb54a892b16045176315f9a354b12826615fa1dc3b22c87bfa37558",
+      "process_stdin_sha256": "ad9b81d9deb54a892b16045176315f9a354b12826615fa1dc3b22c87bfa37558",
+      "rendered_bytes": 62438,
+      "working_sources": []
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "operation_id": "6637a452-9c54-42ca-b207-158920dc3a73",
+      "external_effect_id": "302c0b88-49b4-42b8-b4ce-8164bb7452e0",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:7d653a092b7193a80000512536a955f9881bd5c03cb3df38668860e7019c7b27",
+      "process_stdin_sha256": "7d653a092b7193a80000512536a955f9881bd5c03cb3df38668860e7019c7b27",
+      "rendered_bytes": 84992,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "memo",
+      "operation_id": "83d6748b-0883-4bcb-bdb1-116c982aaa5c",
+      "external_effect_id": "364c59a2-2fa7-4083-bc95-124095cc1ea6",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:d3bf640744d0951e918ee18f96ff9df73e0c7c8f3a413328865c8dee870ca6c4",
+      "process_stdin_sha256": "d3bf640744d0951e918ee18f96ff9df73e0c7c8f3a413328865c8dee870ca6c4",
+      "rendered_bytes": 30218,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "5d020676-c969-4c87-b9fb-8f4952f1f810",
+      "external_effect_id": "5c4fa87c-c0fb-49e3-a234-adcda19ec7a2",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:e0319b9d9db36c16404bf322bef609150096e32103faa48fccc6e947509551e2",
+      "process_stdin_sha256": "e0319b9d9db36c16404bf322bef609150096e32103faa48fccc6e947509551e2",
+      "rendered_bytes": 55678,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "operation_id": "038d1264-6726-4ec9-9431-c97501a6da0a",
+      "external_effect_id": "a3ccc33f-5c04-472a-85bd-ed33f62da374",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:6cbb04d79223386842e6de7cd8e57270df449359e0806a7f26b3f8c13387d7e9",
+      "process_stdin_sha256": "6cbb04d79223386842e6de7cd8e57270df449359e0806a7f26b3f8c13387d7e9",
+      "rendered_bytes": 86214,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "memo",
+      "operation_id": "daa823f8-ec22-4331-ad09-991c59a3dc73",
+      "external_effect_id": "849a38df-5e57-4151-bfcf-0ab7509eee4f",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:5b2eb2730b20138f8ca37811725c67373650481c5c991fcc6bbdd4f4de42b52d",
+      "process_stdin_sha256": "5b2eb2730b20138f8ca37811725c67373650481c5c991fcc6bbdd4f4de42b52d",
+      "rendered_bytes": 31487,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "0cdf6d39-7cee-4eae-b441-8fc04ceff95c",
+      "external_effect_id": "f0a80e91-cc3b-4e45-b4e1-73e814175fa1",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:485ebddbca0df8fa1ff8326029530cd398fe23494fc275f94237f752a46b8531",
+      "process_stdin_sha256": "485ebddbca0df8fa1ff8326029530cd398fe23494fc275f94237f752a46b8531",
+      "rendered_bytes": 56893,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "4a20dc69-1395-42bb-b179-1ddc82a268bd",
+      "external_effect_id": "765fecec-3a84-4445-ab32-26c01a4058ca",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:5784baa65d9c217dfd64345b9e83c06dda5fe4d1d82a89fc21340c62ae6af1ce",
+      "process_stdin_sha256": "5784baa65d9c217dfd64345b9e83c06dda5fe4d1d82a89fc21340c62ae6af1ce",
+      "rendered_bytes": 72658,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "eae27858-6509-4857-bb76-5094daa96ddf",
+      "external_effect_id": "01e69cb1-7560-4129-9651-ee6581e9211f",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:74ab820cd77b757f6f3c604c59f6ae52994e20dd437c74ab620a026998ff6b70",
+      "process_stdin_sha256": "74ab820cd77b757f6f3c604c59f6ae52994e20dd437c74ab620a026998ff6b70",
+      "rendered_bytes": 72665,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "e03e0e49-3d09-42a8-ac6b-d1e97174b066",
+      "external_effect_id": "81c48094-962b-4a6f-a90b-594a01bfdbc0",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:52eb2aefaa2caa6ceac1e812ba7e5d04dd3a1918bfeb442e6c824c733e758882",
+      "process_stdin_sha256": "52eb2aefaa2caa6ceac1e812ba7e5d04dd3a1918bfeb442e6c824c733e758882",
+      "rendered_bytes": 72669,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "operation_id": "965d16d9-b94a-42a3-a5a9-2707016ece28",
+      "external_effect_id": "21b330ad-eeb1-4e45-b1d0-85f718a96c44",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:9666290df0630e549b0c80fb0b4c813daf10cef5e639af84b2cd17ad1a287667",
+      "process_stdin_sha256": "9666290df0630e549b0c80fb0b4c813daf10cef5e639af84b2cd17ad1a287667",
+      "rendered_bytes": 87573,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "memo",
+      "operation_id": "d26320cd-5150-4056-bdfe-d029d716efde",
+      "external_effect_id": "6fb9d04b-2079-433d-87da-693624c953af",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:1935735f5cfc55dbe3f885543355814fac1c2d5a4ab083d86147ee289d8d2b7d",
+      "process_stdin_sha256": "1935735f5cfc55dbe3f885543355814fac1c2d5a4ab083d86147ee289d8d2b7d",
+      "rendered_bytes": 32838,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "68adadcc-74e4-4e5a-86b0-54c0aa52e013",
+      "external_effect_id": "e10d971a-50e9-4f98-819f-839b8c8470f9",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:85f535548a72cd9e22ec123f7f67aed0e0f5f73604975826a7df3ed2bad05750",
+      "process_stdin_sha256": "85f535548a72cd9e22ec123f7f67aed0e0f5f73604975826a7df3ed2bad05750",
+      "rendered_bytes": 58244,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "operation_id": "a24bc9be-90e9-424d-807f-4048f938e6de",
+      "external_effect_id": "7eb8a909-de44-4990-8843-35454e93ea6f",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:09eb27c898ce869ce20056d6c36ab223819a8442f54dd3ea077ad7a94fb75bcb",
+      "process_stdin_sha256": "09eb27c898ce869ce20056d6c36ab223819a8442f54dd3ea077ad7a94fb75bcb",
+      "rendered_bytes": 89006,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "memo",
+      "operation_id": "e630ebba-61c7-4eda-9348-b6241f07137d",
+      "external_effect_id": "c1206dbe-0ca4-48d6-8582-1057a6f655f1",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:b4b57c5a41965510e68f14d32d490415c7fe7df3f47b14fe91e105c7b3c070f8",
+      "process_stdin_sha256": "b4b57c5a41965510e68f14d32d490415c7fe7df3f47b14fe91e105c7b3c070f8",
+      "rendered_bytes": 34252,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "3a6a8d62-4b73-41a9-861d-42a2e7632678",
+      "external_effect_id": "4212fdab-3f19-4c7c-8e1a-1148c8886c91",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:7761e12eeb8e930c2f4d2bb57a1fdd1974ed495d2e134612d2520b63d5d44da9",
+      "process_stdin_sha256": "7761e12eeb8e930c2f4d2bb57a1fdd1974ed495d2e134612d2520b63d5d44da9",
+      "rendered_bytes": 59675,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "operation_id": "ecc0fba3-db9f-4f37-8196-8f4d575806a9",
+      "external_effect_id": "537f5fbd-b04b-4567-ab54-49a67f939e8e",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:a944c7727bb59daf3c422ac43d32b5d0b0ca4d0fc7c1191ea4f5eccacbfced22",
+      "process_stdin_sha256": "a944c7727bb59daf3c422ac43d32b5d0b0ca4d0fc7c1191ea4f5eccacbfced22",
+      "rendered_bytes": 90228,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "memo",
+      "operation_id": "b764607c-53cb-4481-b0f5-eb747bf8b174",
+      "external_effect_id": "d04e7998-95e6-4405-9960-a6c1ffd362e7",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:85772858a5607b603bc66494d2e7c8284852a3ad2a15bbce3370d5fa31255a0b",
+      "process_stdin_sha256": "85772858a5607b603bc66494d2e7c8284852a3ad2a15bbce3370d5fa31255a0b",
+      "rendered_bytes": 35537,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "56703517-1e8e-498c-9433-34e09d94ae26",
+      "external_effect_id": "6a5852ad-2def-409d-a88a-86d6f3a50644",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:e7ea44d3e5ef7166e19673294d1487d9af2f433cc5129adc69a77cea8aeee746",
+      "process_stdin_sha256": "e7ea44d3e5ef7166e19673294d1487d9af2f433cc5129adc69a77cea8aeee746",
+      "rendered_bytes": 60923,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "301cf809-b2d6-49bf-bfdb-8834ff3a83b2",
+      "external_effect_id": "c538b7db-9dba-4d05-8b75-8f19e0775dde",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:0d2253af24388b410cf4843c77eaa8d9778d620b6d0ff780f8c8e6c12ed3d653",
+      "process_stdin_sha256": "0d2253af24388b410cf4843c77eaa8d9778d620b6d0ff780f8c8e6c12ed3d653",
+      "rendered_bytes": 76668,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "710cceef-9375-4114-88ec-0ec0b529ffd8",
+      "external_effect_id": "216d9e21-dd0e-4c17-ae15-005c961ac5a7",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:7ab21fed1250e265193abc4e4ce4d4ba093eb9a0df4a249ffa44c25755ecae64",
+      "process_stdin_sha256": "7ab21fed1250e265193abc4e4ce4d4ba093eb9a0df4a249ffa44c25755ecae64",
+      "rendered_bytes": 76675,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_group_plan.generate",
+      "operation_id": "bff8510e-ca37-4000-b748-9b0194b25bc0",
+      "external_effect_id": "04a35809-1796-4cbe-8d24-dd9dbc58daac",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:8c5b914733f81c99bedcd3e7d7977b646c38373030c3053e36416b0c5190ad09",
+      "process_stdin_sha256": "8c5b914733f81c99bedcd3e7d7977b646c38373030c3053e36416b0c5190ad09",
+      "rendered_bytes": 76679,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "operation_id": "9f94a358-5aa3-41e2-be98-f7080908a5f5",
+      "external_effect_id": "b654ab99-2106-4223-a831-38efd1d22b81",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:e2c0e179904bbac8d7a481957eec4b46c7a3b39a2fc05d657c6a8ef8d6d05f53",
+      "process_stdin_sha256": "e2c0e179904bbac8d7a481957eec4b46c7a3b39a2fc05d657c6a8ef8d6d05f53",
+      "rendered_bytes": 91587,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "memo",
+      "operation_id": "2235e008-ea92-464f-a7b5-19955fec0ddc",
+      "external_effect_id": "0e2f28a2-97e0-4c96-96e6-cec9c54fed1b",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:8fbafdae222c30df20044f4f9d6da1872fd19019dcc3caa123ad93bf692dd325",
+      "process_stdin_sha256": "8fbafdae222c30df20044f4f9d6da1872fd19019dcc3caa123ad93bf692dd325",
+      "rendered_bytes": 36880,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "2c3ad7c8-68ab-4b31-b275-bd22061b664b",
+      "external_effect_id": "91da2492-e115-45ae-bb65-0d9b39a0e45e",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:beae11077ef240448869abb139e942f32f68ae665bedf716c5f76137ee8f5457",
+      "process_stdin_sha256": "beae11077ef240448869abb139e942f32f68ae665bedf716c5f76137ee8f5457",
+      "rendered_bytes": 62253,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "chapter_plan.generate",
+      "operation_id": "3961cbc9-8052-4cdf-8fbb-db0de5db0445",
+      "external_effect_id": "1d116df5-2fef-434c-b6d7-1ac985d9b46f",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:1eaf135f020fe4193b25f62529aa678762c845fdc5857baa19118a1346d57050",
+      "process_stdin_sha256": "1eaf135f020fe4193b25f62529aa678762c845fdc5857baa19118a1346d57050",
+      "rendered_bytes": 92938,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c3ad7c8-68ab-4b31-b275-bd22061b664b:chapter.draft:v1",
+          "content_hash": "sha256:db6037ea2091d842c707470a646f7eca92b1a127271a9de481e0b481b0eb8336",
+          "chapter": 7,
+          "text_hash": "sha256:ad2f2bb85c500fd2915c67843a49b204040cebefbbb5bfd74dc33e5b3c0f1b8e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:ad2f2bb85c500fd2915c67843a49b204040cebefbbb5bfd74dc33e5b3c0f1b8e",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c3ad7c8-68ab-4b31-b275-bd22061b664b:chapter.draft:v1",
+          "content_hash": "sha256:db6037ea2091d842c707470a646f7eca92b1a127271a9de481e0b481b0eb8336",
+          "chapter": 7,
+          "text_hash": "sha256:ad2f2bb85c500fd2915c67843a49b204040cebefbbb5bfd74dc33e5b3c0f1b8e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:ad2f2bb85c500fd2915c67843a49b204040cebefbbb5bfd74dc33e5b3c0f1b8e",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "memo",
+      "operation_id": "ab66564d-0672-420e-a8c1-3d3607dff092",
+      "external_effect_id": "476f55d7-72bb-45d4-b7e6-09e2a5974479",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:0ef23d76f3f681934ad3ec745f20a6d7f34e9746138893e6ffc1315a6a635b50",
+      "process_stdin_sha256": "0ef23d76f3f681934ad3ec745f20a6d7f34e9746138893e6ffc1315a6a635b50",
+      "rendered_bytes": 38231,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c3ad7c8-68ab-4b31-b275-bd22061b664b:chapter.draft:v1",
+          "content_hash": "sha256:db6037ea2091d842c707470a646f7eca92b1a127271a9de481e0b481b0eb8336",
+          "chapter": 7,
+          "text_hash": "sha256:ad2f2bb85c500fd2915c67843a49b204040cebefbbb5bfd74dc33e5b3c0f1b8e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:ad2f2bb85c500fd2915c67843a49b204040cebefbbb5bfd74dc33e5b3c0f1b8e",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    },
+    {
+      "stage": "draft",
+      "operation_id": "4201e05e-2444-40be-8e72-8312b333917f",
+      "external_effect_id": "474dac4a-4295-4b6f-9d26-7a436766bc15",
+      "effect_status": "SUCCEEDED",
+      "verified_remote_result": true,
+      "prompt_hash": "sha256:14cc3d81e5a854b17635131dc8a7a6158d9ad1b4bae786702ea1d887c3acc189",
+      "process_stdin_sha256": "14cc3d81e5a854b17635131dc8a7a6158d9ad1b4bae786702ea1d887c3acc189",
+      "rendered_bytes": 63602,
+      "working_sources": [
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c3ad7c8-68ab-4b31-b275-bd22061b664b:chapter.draft:v1",
+          "content_hash": "sha256:db6037ea2091d842c707470a646f7eca92b1a127271a9de481e0b481b0eb8336",
+          "chapter": 7,
+          "text_hash": "sha256:ad2f2bb85c500fd2915c67843a49b204040cebefbbb5bfd74dc33e5b3c0f1b8e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:ad2f2bb85c500fd2915c67843a49b204040cebefbbb5bfd74dc33e5b3c0f1b8e",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c3ad7c8-68ab-4b31-b275-bd22061b664b:chapter.draft:v1",
+          "content_hash": "sha256:db6037ea2091d842c707470a646f7eca92b1a127271a9de481e0b481b0eb8336",
+          "chapter": 7,
+          "text_hash": "sha256:ad2f2bb85c500fd2915c67843a49b204040cebefbbb5bfd74dc33e5b3c0f1b8e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:ad2f2bb85c500fd2915c67843a49b204040cebefbbb5bfd74dc33e5b3c0f1b8e",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0fc334d4-3e6f-481e-879a-0671263c99d5:chapter.draft:v1",
+          "content_hash": "sha256:92b5532f1693a31dae91c0585e06014735adc310a4f7e05c895827c1c696b487",
+          "chapter": 1,
+          "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:432173bf13c5fd2a9ffcf992c75397cca1c536dd69daa2f3f00f98ecab12b4bf",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:5d020676-c969-4c87-b9fb-8f4952f1f810:chapter.draft:v1",
+          "content_hash": "sha256:2f5d4a14641c485a2cf33c8e89632649a5930da649b6f76d00e6865cdde5a617",
+          "chapter": 2,
+          "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:111c9be9180bdce824678646a9002b26b67d93f6c604733358624b51e591ae10",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:0cdf6d39-7cee-4eae-b441-8fc04ceff95c:chapter.draft:v1",
+          "content_hash": "sha256:63fa6cd7c9b81267865a630db211573df7352c7be0f8c8d3d2e81c4f05447991",
+          "chapter": 3,
+          "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:b418a37ce5dce5d9f1101db76af70e429ca1092f876619d00cebd5f598313d9a",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:68adadcc-74e4-4e5a-86b0-54c0aa52e013:chapter.draft:v1",
+          "content_hash": "sha256:e9842c0831708d7aa45e3218abe70689a5dba1e0813ccc7e396ed935d329b226",
+          "chapter": 4,
+          "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:0705fcf10e3e06cee0410f7d78edfe50409b6efc853002fd7c126bcc5b7b91b5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:3a6a8d62-4b73-41a9-861d-42a2e7632678:chapter.draft:v1",
+          "content_hash": "sha256:e098aaf142fc20002dc9ce9551043b013141d56ba41879b21248a36bfc8032ca",
+          "chapter": 5,
+          "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:5a6d461993f549c9c7a43a8a912a1094bca184097b9185ba3358bc1aa505f094",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:56703517-1e8e-498c-9433-34e09d94ae26:chapter.draft:v1",
+          "content_hash": "sha256:6d56c454fce68c08270ee054313d7ddbdc1d8de63d84466c14ba257d4d041475",
+          "chapter": 6,
+          "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:2f0ca8c23afc6738f457e637e88f827428a8e845de894edccfab8583e17556f5",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        },
+        {
+          "asset_version_id": "authority-output:2c3ad7c8-68ab-4b31-b275-bd22061b664b:chapter.draft:v1",
+          "content_hash": "sha256:db6037ea2091d842c707470a646f7eca92b1a127271a9de481e0b481b0eb8336",
+          "chapter": 7,
+          "text_hash": "sha256:ad2f2bb85c500fd2915c67843a49b204040cebefbbb5bfd74dc33e5b3c0f1b8e",
+          "passages": [
+            {
+              "start": 0,
+              "end": 149,
+              "text_hash": "sha256:ad2f2bb85c500fd2915c67843a49b204040cebefbbb5bfd74dc33e5b3c0f1b8e",
+              "characters": 149
+            }
+          ],
+          "status": "UNREVIEWED_WORKING_PROSE",
+          "character_knowledge": "NOT_VERIFIED"
+        }
+      ]
+    }
+  ]
+}

@@ -561,6 +561,24 @@ def test_completed_unselected_candidate_resumes_owner_admission_without_generati
     assert app._advance_candidate.call_args.kwargs["candidate_content_hash"] == "frozen-hash"
 
 
+def test_acknowledged_preparation_replay_follows_registered_successor_before_old_runtime_admission(monkeypatch):
+    from unittest.mock import MagicMock
+    from novel_forge.modules.story_planning_runtime import application as module
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as recovery
+    from tests.unit.test_story_planning_runtime import _command
+    command = _command('chapter_group_plan.generate')
+    uow = MagicMock()
+    uow.__enter__.return_value = uow
+    uow.cursor.fetchone.return_value = ('stopped-preparation', module._command_payload(command), 'RECONCILIATION_REQUIRED', 'GENERATING', None)
+    monkeypatch.setattr(module, 'AuthorityUnitOfWork', lambda *_args:uow)
+    follow = MagicMock(return_value='same-task-native-successor')
+    monkeypatch.setattr(recovery, 'follow', follow)
+    app = object.__new__(module.StoryPlanningGenerationApplication)
+    app.database_url = 'unused'
+    assert app._terminal_generation_replay(command, principal='original-author') == 'same-task-native-successor'
+    assert follow.call_args.args[1:] == ('stopped-preparation', command)
+
+
 def test_terminal_replay_probes_cancellation_before_read_or_recovery(monkeypatch):
     from unittest.mock import Mock
     from novel_forge.modules.story_planning_runtime import application as module
@@ -740,3 +758,75 @@ def test_rendered_group_capacity_recovery_has_an_exact_unsent_signature(monkeypa
         with pytest.raises(KernelError):
             require_source(SimpleNamespace(cursor=Cursor()), source_operation_id="source", project_id="project")
         assert not captured
+
+
+@pytest.mark.parametrize("failure", [False, True])
+@pytest.mark.parametrize("inherited", [False, True])
+def test_semantic_preparation_successor_retains_selection_target_and_complete_request_window(monkeypatch, failure, inherited):
+    from contextlib import nullcontext
+    from novel_forge.modules.story_planning_runtime import runtime_continuation as runtime
+    allocations = []
+    def reproject(content, *, command, task_tokens, projection_contract=None, capacity_policy_upgrade=None):
+        assert projection_contract == ("planning-exact-value-reference.v1" if inherited else "same-capacity-semantic-preparation.v1") and capacity_policy_upgrade is None
+        allocations.append(task_tokens)
+        if failure:
+            raise KernelError("PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED", "Still does not fit")
+        return {**content, "token_budget": task_tokens}
+    pack = SimpleNamespace(require_attempt_snapshot=lambda **kwargs: "snapshot",
+        materialize_attempt_artifacts=lambda snapshot: SimpleNamespace(context_policy=SimpleNamespace(content={"planning_task_token_budget": 512_000})))
+    preparer = SimpleNamespace(pack_runtime=pack, _reproject_frozen_context=reproject,
+        query=SimpleNamespace(require=lambda **kwargs: SimpleNamespace(content_hash="context-hash", content={"input_versions": [], "context_manifest": {"provider_context_view": {"frozen": "original"}}})),
+        planning_route=SimpleNamespace(model_context_limit=475_000, model_output_limit=32_000, token_safety_margin=1_536, token_framing_overhead=256))
+    app = SimpleNamespace(database_url="unused", execution_binder=SimpleNamespace(resolver=SimpleNamespace(execution_preparer=preparer)))
+    source = {"attempt_id": "attempt", "snapshot_id": "snapshot", "snapshot_hash": "hash", "source_operation_id": "source", "command": {}, "inputs": [],
+        "failure": {"error_code": "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN"},
+        "context_revalidation": {"contract_version": "same-capacity-semantic-preparation.v1", "context_asset_version_id": "context",
+            "context_content_hash": "context-hash", "single_request_limit": 475_000}}
+    if inherited:
+        original_proof = deepcopy(source["context_revalidation"])
+        source["snapshot"] = {"context_policy_ref": "context-policy:chapter-generation-pack:v4"}
+        source["capacity_inheritance"] = {"generation_isolation": {"external_effect_id": "isolated-original"}, "allocation": {
+            "allocated_task_tokens": 512000, "prior_task_tokens": 512000, "single_request_ceiling": 475000,
+            "context_revalidation": original_proof}}
+        source["context_revalidation"]["contract_version"] = "planning-exact-value-reference.v1"
+    monkeypatch.setattr(runtime, "AuthorityUnitOfWork", lambda database: nullcontext(SimpleNamespace()))
+    monkeypatch.setattr(runtime, "_capacity_authorization", lambda *args, **kwargs: {})
+    if failure:
+        with pytest.raises(KernelError, match="PLANNING_CAPACITY_ALLOCATION_EXHAUSTED"):
+            runtime._capacity_target(app, source, SimpleNamespace(project_id="project"), SimpleNamespace(), {})
+    else:
+        target, _ = runtime._capacity_target(app, source, SimpleNamespace(project_id="project"), SimpleNamespace(), {})
+        allocation = target["planning_capacity"]
+        assert allocation["prior_task_tokens"] == allocation["allocated_task_tokens"] == 512_000
+        assert allocation["single_request_ceiling"] == 475_000
+        assert allocation["source_failure"] == source["failure"] and allocation["external_intents_at_source"] == 0
+        if inherited:
+            assert allocation["semantic_preparation"] == original_proof
+            assert target["generation_isolation"] == {"external_effect_id": "isolated-original"}
+    assert allocations == [512_000]
+
+
+@pytest.mark.parametrize("change", ["", "policy", "window", "selection", "target", "proof"])
+def test_isolated_semantic_preparation_retains_selection_target_separately_from_physical_window(change):
+    from novel_forge.modules.story_planning_runtime.runtime_continuation import _retained_capacity_limit
+    allocation = {"allocated_task_tokens": 512000, "prior_task_tokens": 512000, "single_request_ceiling": 475000,
+        "context_revalidation": {"contract_version": "same-capacity-semantic-preparation.v1", "single_request_limit": 475000}}
+    route = SimpleNamespace(model_context_limit=475000, model_output_limit=32000, token_safety_margin=1536, token_framing_overhead=256)
+    policy = "context-policy:chapter-generation-pack:v4"
+    if change == "policy":
+        policy = "context-policy:chapter-generation-pack:v3"
+    elif change == "window":
+        route.model_context_limit = 500000
+    elif change == "selection":
+        allocation["allocated_task_tokens"] = 512001
+    elif change == "target":
+        allocation["prior_task_tokens"] = 475000
+    elif change == "proof":
+        allocation["context_revalidation"]["single_request_limit"] = 500000
+    if change:
+        with pytest.raises(KernelError, match="CAPACITY_DRIFT"):
+            _retained_capacity_limit(allocation, route, policy)
+    else:
+        assert _retained_capacity_limit(allocation, route, policy) == 512000
+        historical = {**allocation, "context_revalidation": {"contract_version": "historical"}}
+        assert _retained_capacity_limit(historical, route, policy) == 441208

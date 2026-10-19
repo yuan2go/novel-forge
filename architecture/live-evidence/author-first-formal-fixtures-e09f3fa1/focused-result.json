@@ -1,0 +1,25 @@
+{
+  "source_sha": "e09f3fa160a13b54927fc2858d0eb65eb5729aac",
+  "at": "2026-10-19T06:32:18.727545+00:00",
+  "returncodes": {
+    "postgres": 0,
+    "unit": 0,
+    "docs": 0,
+    "ruff": 0
+  },
+  "counts": {
+    "unit": {
+      "tests": 146,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "postgres": {
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "status": "PASS"
+}

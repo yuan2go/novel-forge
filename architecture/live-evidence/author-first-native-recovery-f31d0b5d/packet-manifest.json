@@ -1,0 +1,70 @@
+{
+  "schema_version": "checked-evidence-manifest.v1",
+  "files": [
+    {
+      "path": "native-upgrade-227-to-228-custody.json",
+      "sha256": "sha256:839168ed9090b556a3041de58a8b3a3b60e8b6f0b48aee12972911a37acb3908"
+    },
+    {
+      "path": "terminal-preparation-handoff-registration.json",
+      "sha256": "sha256:72939b5a431f2350ae7b25bd5de1fc21eb333a79445a6fa896e2bb5b9f50a325"
+    },
+    {
+      "path": "model-review-authorization.json",
+      "sha256": "sha256:7eb6d8a3e67da84aab7ebd29043f41fdc499ceb680fbcc990f2f6e2a6aa5b233"
+    },
+    {
+      "path": "optional-prose-review-pack-revalidation.json",
+      "sha256": "sha256:e3e35c82594c3a095908d90642c7fe1e5b288e4a6015a7ded511ec2b8f0e5b55"
+    },
+    {
+      "path": "native-prose-d0-response-loss-recovery.json",
+      "sha256": "sha256:22d5f9f3da7d891a6ff385070589a1a1a67c9165c58555fbc4e058ba2e12d31a"
+    },
+    {
+      "path": "context-wire-boundary-working.xml.gz",
+      "sha256": "sha256:504a6df3f8ad2c3df8f29d8cfe21077dfbee84b291a62ea830ed467a2e93dd46",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; final same-SHA formal matrix pending"
+    },
+    {
+      "path": "terminal-custody-all-unit-working.xml.gz",
+      "sha256": "sha256:0d682cb0a11e9bcdbc602a4d0e464bbdbc3cd174954e82ce2f5c636afcc74e71",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; final same-SHA formal matrix pending"
+    },
+    {
+      "path": "terminal-consumer-paths-working.xml.gz",
+      "sha256": "sha256:a3646b14eb58af7f3e33a22b8d3e6811a546b16da205661c0bd2621e9393a5cf",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; final same-SHA formal matrix pending"
+    },
+    {
+      "path": "owner-policy-protocol-working-v4.xml.gz",
+      "sha256": "sha256:5806d4d6cb356d6dc1ce32cd36200a228f18b7eed2c2e777d4f926c46f5e9413",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; final same-SHA formal matrix pending"
+    },
+    {
+      "path": "owner-policy-fixture-unit-working-v2.xml.gz",
+      "sha256": "sha256:145e7b252e85333d1a927d9f349bbea4d9926ee30e1a66be436a57256ee4f261",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; final same-SHA formal matrix pending"
+    },
+    {
+      "path": "owner-policy-stable-schema-working.xml.gz",
+      "sha256": "sha256:a155506ae37d59a6a8034a6a95a8a3d819436e5463543b2aaf563ead159200b3",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; final same-SHA formal matrix pending"
+    },
+    {
+      "path": "edition-explicit-owner-working-v9.xml.gz",
+      "sha256": "sha256:34d15d67ef7b8987aadaa1f1be8c6873e68dc455e6f8aa5873e83e2d26eb4038",
+      "source_binding": "DEVELOPMENT_WORKING_TREE; final same-SHA formal matrix pending"
+    },
+    {
+      "path": "documentation-reality-development.json",
+      "sha256": "sha256:ce00a8ca986ddcd3b6ca8a110c7797b3244437d62e3c518f127891c2527b9e61"
+    },
+    {
+      "path": "index.json",
+      "sha256": "sha256:bb0e9809d64b42e6c3fb277b0c04fa1f703d9543ba4533ec9d1893efa6eeaff7"
+    }
+  ],
+  "raw_prose_and_provider_payloads": "RETAINED_PRIVATELY_OUTSIDE_GIT",
+  "historical_failures": "PRESERVED"
+}

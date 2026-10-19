@@ -170,3 +170,32 @@ def test_source_qualification_entitlement_preview_requires_authorization_without
     assert result["required_route_contract"]["monetary_cost"] == "UNKNOWN"
     assert result["required_route_contract"]["finite_project_call_and_token_limits_required"] is True
     assert result["provider_request_sent"] is False
+
+
+@pytest.mark.parametrize("change", ["", "unknown", "authorization", "legacy", "mixed_caps", "usage"])
+def test_current_membership_qualification_preserves_settlement_without_cumulative_caps(change):
+    from novel_forge.modules.provider_qualification.accounting import require_entitlement_budget
+    cost = entitlement_cost()
+    evidence = {"cost_authorization_ref": cost["authorization_ref"], "resource_control_version": "billing-channel-resources.v1",
+        "call_caps": {}, "token_caps": {}}
+    row = ["reservation", "SETTLED", "ACCOUNT_ENTITLEMENT", "UNKNOWN", None, None, None, "UNKNOWN", "UNKNOWN", 100, 180, evidence]
+    usage = {"total_tokens": 180}
+    if change == "unknown":
+        row[1] = "HELD_UNKNOWN"
+    elif change == "authorization":
+        evidence["cost_authorization_ref"] = "foreign"
+    elif change == "legacy":
+        evidence.pop("resource_control_version")
+    elif change == "mixed_caps":
+        evidence["call_caps"] = {"project_total": 1}
+    elif change == "usage":
+        usage["total_tokens"] = None
+    if change:
+        with pytest.raises(ValueError):
+            require_entitlement_budget(None, project_id="project", effect_id="effect", cost=cost, usage=usage, reservation_rows=[tuple(row)])
+    else:
+        result = require_entitlement_budget(None, project_id="project", effect_id="effect", cost=cost, usage=usage, reservation_rows=[tuple(row)])
+        assert result["call_caps"] == result["token_caps"] == {}
+        assert result["resource_control_version"] == "billing-channel-resources.v1"
+        assert result["estimated_tokens"] == 100 and result["actual_tokens"] == 180
+        assert result["monetary_cost"] == "UNKNOWN"

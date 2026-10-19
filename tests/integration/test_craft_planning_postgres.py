@@ -81,7 +81,7 @@ def test_pg_frozen_selection_production_planning_handler_derives_exact_scene_str
         handler.execute(request)
 
 
-@pytest.mark.parametrize("continue_after_acceptance,typed_usage", [(False, False), (True, False), (True, True), (True, "explicit"), (False, "reselection")])
+@pytest.mark.parametrize("continue_after_acceptance,typed_usage", [(False, False), (True, False), (True, True), (True, "explicit"), (False, "reselection"), (False, "reselection_abstention")])
 def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen_strategy(request, monkeypatch, continue_after_acceptance, typed_usage, budget_stop="", budget_calibration=None, budget_probe_result=None, original_budget_cap=False):
     from copy import deepcopy
 
@@ -91,13 +91,15 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
     from tests.integration import test_core_functional_loops_postgres as core
 
     state = {}
-    explicit = typed_usage in {"explicit", "reselection"}
-    reselect = typed_usage == "reselection"
+    explicit = typed_usage in {"explicit", "reselection", "reselection_abstention"}
+    abstain = typed_usage == "reselection_abstention"
+    reselect = typed_usage in {"reselection", "reselection_abstention"}
     craft_policy = {"schema_version": "narrative-craft-budget.v4" if explicit else "narrative-craft-budget.v3", "mechanism_usage_types": {"choice-exposes-value": "staged", **({"spatial-anchor": "staged"} if reselect else {})}, **({"max_craft_candidates": 1} if reselect else {})} if typed_usage else None
     original_seed = core._seed_inputs
 
     def seed_with_approved_craft(project_id, book_id, **kwargs):
-        kwargs["world_production_policy"] = {**(kwargs.get("world_production_policy") or {}), "context_token_budget": 16000}
+        kwargs["world_production_policy"] = {**(kwargs.get("world_production_policy") or {}),
+            "version": "world-production-policy.v5", "context_token_budget": 16000}
         if typed_usage:
             kwargs["craft_budget_policy"] = craft_policy
         generic = original_seed(project_id, book_id, **kwargs)
@@ -133,7 +135,8 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
                         side.update(status="CLEAR", reason="Scripted negative side-effect control.")
                 for check in result.get("craft_preservation_checks", []):
                     check.update(status="PRESERVED", reason="Scripted exact unchanged realization control.")
-            return result
+            from tests.integration.current_chapter_wire_support import current_chapter_wire_result
+            return current_chapter_wire_result(stage, inputs, result, json_envelope=False)
 
         def planning(self, stage, inputs):
             result = super().planning(stage, inputs)
@@ -200,8 +203,31 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
         candidate_version = generation["candidate_asset_version_id"]
         assets = AuthorityAssetQuery(DATABASE_URL)
         candidate = assets.require(project_id=snapshot.project_id, asset_version_id=candidate_version)
+        if abstain:
+            assert candidate.content.get("craft_strategy") is None
+            assert candidate.content["candidate_payload"].get("craft_strategy") is None
+            assert len(transport.chapter_inputs) == 2
+            first, final = [item["narrative_intelligence"] for item in transport.chapter_inputs]
+            assert len(first["selected"]) == 1 and not final["selected"]
+            assert final["craft_policy"]["reselection_policy"]["optional_abstention"] is True
+            assert any(item.get("reason") == "CRAFT_NO_CONTEXT_MATCH" for item in final["rejected"])
+            history = final["need"]["craft_context"]["reselection"]["history"]
+            assert len(history) == 1 and history[0]["failure_class"] == "BUSINESS_REJECT"
+            assert history[0]["selection_digest"] == first["selection_digest"]
+            rejected = assets.require(project_id=snapshot.project_id, asset_version_id=history[0]["source_asset_version_id"])
+            assert rejected.content["raw_result"]["knowledge_translations"][0]["decision"] == "REJECT"
+            assert rejected.content["execution_evidence"]["external_receipt_ref"]
+            plan = composition.query.require_chapter_execution_plan(candidate_version)
+            assert plan["content"].get("craft_strategy") is None
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT count(*) FROM authority_story_planning_generation WHERE project_id=%s AND generator_operation_name='chapter_plan.generate'", [snapshot.project_id])
+                assert uow.cursor.fetchone()[0] == 2
+            state["native_proof"] = {"candidate_asset_version_id": candidate_version, "optional_abstention": True,
+                "reselection_history": history, "proof_ceiling": "SCRIPTED_PROVIDER_PRODUCTION_WIRING_ONLY"}
+            return state["native_proof"]
         strategy = candidate.content["craft_strategy"]
         assert strategy == candidate.content["candidate_payload"]["craft_strategy"]
+        assert candidate.content["book_id"] == snapshot.book_id
         assert len(strategy["uses"]) == 1
         assert strategy["uses"][0]["mechanism_id"] in ({"choice-exposes-value", "spatial-anchor"} if reselect else {"choice-exposes-value"})
         execution_plan = composition.query.require_chapter_execution_plan(candidate_version)
@@ -213,6 +239,8 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
         if reselect:
             first_selection = transport.chapter_inputs[0]["narrative_intelligence"]
             assert first_selection["selected"][0]["knowledge_card_asset_version_id"] != delivered["selected"][0]["knowledge_card_asset_version_id"]
+            assert first_selection["selected"][0]["craft_assessment"]["matching_assessment"]["need_score"] > 0
+            assert delivered["selected"][0]["craft_assessment"]["matching_assessment"]["need_score"] > 0
             lineage = delivered["need"]["craft_context"]["reselection"]
             assert lineage["history"][0]["failure_class"] == "BUSINESS_REJECT"
             assert lineage["history"][0]["selection_digest"] == first_selection["selection_digest"]
@@ -318,6 +346,7 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
                 coordinator, scope, model, review_id = _automatic_review(
                     {"project_id": snapshot.project_id, "workspace_id": snapshot.workspace_id, "principal": composition.principal, "book": SimpleNamespace(book_run_id=admitted.book_run_id)},
                     relation_window_limit=2, relation_retrieval_version="accepted-state-relations.v2",
+                    window_codepoints=4 * max(len(item["text"]) for item in manuscripts),
                 )
                 for _ in range(20):
                     progress = coordinator.automatic_tick(**scope, run_id=review_id)
@@ -348,7 +377,8 @@ def test_pg_native_opening_planning_provider_receives_craft_and_activates_frozen
     monkeypatch.setattr(core, "_seed_inputs", seed_with_approved_craft)
     monkeypatch.setattr(native, "NativeRealityTransportFixture", CraftPlanningTransport)
     monkeypatch.setattr(native, "execute_native_reality_vertical", drive_native_planning)
-    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy)
+    core.test_open_book_runs_foundation_search_and_snapshot_vertical_in_postgres(request=request, autonomous_world=False, craft_budget_policy=craft_policy,
+        craft_writing_problem="人物价值观只存在于宣言，需要通过已经规划的真实取舍呈现价值和代价。" + ("交战位置与通路难以想象，需要通过已知位置与可达路线保持场景清晰。" if reselect and not abstain else ""))
     assert state["native_proof"]["budget_exhaustion" if budget_stop else "candidate_asset_version_id"]
     if budget_probe_result is not None:
         budget_probe_result.update(state["native_proof"])

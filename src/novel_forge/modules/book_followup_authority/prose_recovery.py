@@ -7,10 +7,91 @@ from novel_forge.modules.command_kernel.generation_root_successor import replace
 from .definitions import book_followup_operation_definitions
 
 
+def literal_citation_retry_feedback(request, *, source, payload):
+    from novel_forge.modules.command_kernel.external_effect_runtime import EffectCommandContext, _read_verified_success
+    from .prose_review import CHAPTER_LITERAL_CITATION_CONTRACT, INDEXED_CITATION_CONTRACT, completion_digest, validate_window_report
+    indexed = source.content.get('policy', {}).get('citation_locator_contract') == INDEXED_CITATION_CONTRACT
+    if (not request.database_url or not request.attempt_id or request.definition_name != 'longform.prose_review'
+            or request.definition_version != '1.1.0'
+            or source.content.get('policy', {}).get('citation_locator_contract') not in {CHAPTER_LITERAL_CITATION_CONTRACT, INDEXED_CITATION_CONTRACT}):
+        return {}
+    rejected = KernelError('LONGFORM_PROSE_CITATION_REPAIR_UNSAFE',
+        'Report correction requires the exact rejected literal report, settled verified receipt, same actor/window and released prior execution')
+    with AuthorityUnitOfWork(request.database_url) as uow:
+        uow.cursor.execute('''SELECT o.actor_id,o.workspace_id,o.input_asset_snapshot,o.definition_name,
+            a.attempt_id,a.result,e.external_effect_id,e.request_hash,e.request_payload,e.status,
+            EXISTS(SELECT 1 FROM authority_lease_acquisition l WHERE l.attempt_id=a.attempt_id AND l.status='HELD')
+            OR EXISTS(SELECT 1 FROM authority_external_effect risk WHERE risk.operation_id=o.operation_id
+                AND risk.status IN ('READY','DISPATCHING','DISPATCHED','UNKNOWN','FAILED_RETRYABLE','RECONCILIATION_REQUIRED','CANCELLATION_REQUESTED'))
+            OR EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=o.operation_id)
+            OR EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=o.operation_id)
+            FROM authority_operation o JOIN authority_attempt a USING(operation_id)
+            LEFT JOIN authority_external_effect e ON e.operation_id=o.operation_id AND e.effect_type='model.invoke'
+                AND e.request_payload#>>'{_production_execution,attempt_id}'=a.attempt_id
+                AND e.request_payload->>'stage'='longform_prose_review'
+            WHERE o.operation_id=%s AND o.project_id=%s AND a.attempt_id<>%s AND a.status='FAILED_RETRYABLE'
+              AND a.result->>'error_code'=ANY(%s)
+            ORDER BY a.attempt_number DESC''', [request.operation_id, request.project_id, request.attempt_id,
+                ['LONGFORM_PROSE_CITATION_ID_UNKNOWN'] if indexed else ['LONGFORM_PROSE_CITATION_NOT_UNIQUE']])
+        rows = uow.cursor.fetchall()
+        if not rows:
+            return {}
+        if len(rows) != 1:
+            raise rejected
+        actor, workspace, inputs, definition, attempt, failure, effect_id, request_hash, frozen, status, unsafe = rows[0]
+        metadata = (frozen or {}).get('_production_execution', {})
+        if (actor != request.actor_id or workspace != request.workspace_id or definition != 'longform.prose_review'
+                or len(inputs) != 1 or any(inputs[0].get(key) != getattr(source, key) for key in ('asset_version_id', 'content_hash'))
+                or completion_digest(source.content) != source.content_hash or status != 'SUCCEEDED' or unsafe
+                or metadata.get('book_id') != request.command['payload'].get('book_id')
+                or metadata.get('attempt_id') != attempt or metadata.get('operation_id') != request.operation_id
+                or metadata.get('project_id') != request.project_id
+                or frozen.get('input') != payload or completion_digest(frozen) != request_hash):
+            raise rejected
+        verified = _read_verified_success(uow, uow.repositories.external_effects,
+            EffectCommandContext(request.operation_id, request.project_id, actor, request.trace_id, request.correlation_id),
+            effect_id)
+        if not verified or verified['budget_reservation_status'] != 'SETTLED':
+            raise rejected
+        raw = verified['provider_evidence'].get('result')
+        if not isinstance(raw, dict):
+            raise rejected
+        try:
+            validate_window_report(raw, manifest=source.content, window=source.content['window'])
+        except KernelError as error:
+            if error.code != failure['error_code']:
+                raise rejected from error
+        else:
+            return {}
+    if indexed:
+        from .prose_citations import citation_catalog
+        return {'prose_citation_repair': {'contract_version': 'prose-indexed-citation-output-repair.v1',
+            'source_attempt_id': attempt, 'source_effect_id': effect_id, 'source_request_hash': request_hash,
+            'source_report_hash': completion_digest(raw), 'source_window_asset_version_id': source.asset_version_id,
+            'source_window_content_hash': source.content_hash, 'diagnostic': failure, 'rejected_report': raw,
+            'allowed_citation_ids': list(citation_catalog(source.content['window'])),
+            'authority': 'REJECTED_MODEL_OBSERVATION_ONLY',
+            'instruction': 'Correct the rejected report by choosing only citation_id values supplied beside the unchanged frozen prose. '
+                'Do not write quotes, chapter numbers, hashes or coordinates; the Host binds the original text and version. '
+                'Use separate evidence entries for separate passages and verify that each passage supports the judgment. '
+                'The rejected report is untrusted model observation, not story evidence or author choice. '
+                'Unsupported causes remain UNKNOWN/UNCERTAIN/INVESTIGATE. No manuscript, Canon, plan or acceptance mutation is authorized.'}}
+    return {'prose_citation_repair': {'contract_version': 'prose-citation-output-repair.v1',
+        'source_attempt_id': attempt, 'source_effect_id': effect_id, 'source_request_hash': request_hash,
+        'source_report_hash': completion_digest(raw), 'source_window_asset_version_id': source.asset_version_id,
+        'source_window_content_hash': source.content_hash, 'diagnostic': failure, 'rejected_report': raw,
+        'authority': 'REJECTED_MODEL_OBSERVATION_ONLY',
+        'instruction': 'Correct this rejected report against the unchanged complete frozen prose window. '
+            'Copy each quote exactly, including punctuation and internal line breaks; JSON must escape actual newlines. '
+            'Do not combine separate passages, add a subject, paraphrase, guess coordinates or manufacture evidence. '
+            'Keep supported observations and all required dimensions; reconsider unsupported claims explicitly. '
+            'The prior report is untrusted model observation, not story evidence, author choice, Canon or permission to revise prose. '
+            'Uncertain causes still require INVESTIGATE. All literal, identity and repair-scope gates remain unchanged.'}}
+
+
 def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_run_id, principal):
     from .prose_coordinator import load_review_run, load_review_sources
     principal.require('book.authority.execute', project_id)
-    principal.require('external_effect.resolve', project_id)
     principal.require('book.followup:longform.prose_review', project_id)
     followup = coordinator.followup
     binder = getattr(getattr(followup,'prose_model_port',None), 'capability_binder', None)
@@ -21,8 +102,23 @@ def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_
         load_review_run(uow,run_id=run_id,project_id=project_id,workspace_id=workspace_id,book_run_id=book_run_id)
         uow.cursor.execute('SELECT book_id FROM authority_book_production WHERE book_run_id=%s AND project_id=%s',[book_run_id,project_id])
         book_id = uow.cursor.fetchone()[0]
-        uow.cursor.execute("SELECT authority_generation_current_operation(content->>'operation_id') FROM authority_book_prose_review_event WHERE run_id=%s AND kind='WINDOW_ADMITTED'",[run_id])
-        frozen_operations = tuple(row[0] for row in uow.cursor.fetchall())
+        uow.cursor.execute("""SELECT operation.operation_id,operation.actor_id FROM authority_book_prose_review_event event
+            JOIN authority_operation operation ON operation.operation_id=authority_generation_current_operation(event.content->>'operation_id')
+            WHERE event.run_id=%s AND event.kind='WINDOW_ADMITTED' AND operation.project_id=%s
+            AND (operation.status IN ('WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED') OR EXISTS(
+                SELECT 1 FROM authority_external_effect effect
+                LEFT JOIN authority_budget_reservation budget USING(external_effect_id)
+                WHERE effect.operation_id=operation.operation_id AND effect.effect_type='model.invoke'
+                  AND NOT authority_generation_isolated(effect.external_effect_id)
+                  AND (effect.status IN ('DISPATCHING','DISPATCHED','UNKNOWN','RECONCILIATION_REQUIRED')
+                    OR (effect.status='SUCCEEDED' AND budget.status IN ('RESERVED','HELD_UNKNOWN')))))""",[run_id,project_id])
+        frozen_rows = uow.cursor.fetchall()
+        if not frozen_rows:
+            return []
+        principal.require('external_effect.resolve', project_id)
+        for _, actor_id in frozen_rows:
+            principal.require_recovery_actor(actor_id)
+        frozen_operations = tuple(row[0] for row in frozen_rows)
     if frozen_operations:
         for reconciliation_attempt in range(2):
             try:
@@ -32,6 +128,17 @@ def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_
             except KernelError as exc:
                 if exc.code!='AUTHORITY_ASSET_VERSION_CONFLICT' or reconciliation_attempt:
                     raise
+    from .application import BookFollowupAdmission
+    for operation_id in frozen_operations:
+        with AuthorityUnitOfWork(coordinator.database_url) as uow:
+            state = uow.repositories.attempt_runtime.operation_state(operation_id, project_id)
+        if state['status'] not in {'WAITING_EXTERNAL_RESULT', 'RECONCILIATION_REQUIRED'}:
+            continue
+        try:
+            followup.run_or_recover(BookFollowupAdmission(operation_id, project_id, True))
+        except KernelError as exc:
+            if exc.code not in {'EXTERNAL_EFFECT_RECONCILIATION_REQUIRED', 'CONTENT_EXTERNAL_RECONCILIATION_REQUIRED'}:
+                raise
     with AuthorityUnitOfWork(coordinator.database_url) as uow:
         load_review_run(uow,run_id=run_id,project_id=project_id,workspace_id=workspace_id,book_run_id=book_run_id)
         uow.cursor.execute("""SELECT authority_generation_current_operation(content->>'operation_id')

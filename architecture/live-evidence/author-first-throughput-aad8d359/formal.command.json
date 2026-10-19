@@ -1,0 +1,22 @@
+{
+  "pid": 13947,
+  "argv": [
+    "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+    "scripts/run_p0_backend_qualification.py",
+    "--profile",
+    "local",
+    "--output",
+    "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/p0-source-aad8d359.json"
+  ],
+  "cwd": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/working-history-source-aad8d359",
+  "source_sha": "aad8d3597daa66e0daf1a5f488691de9ffb03ee4",
+  "at": "2026-10-19T09:11:45.933383+00:00",
+  "mode": "FULL_CANONICAL_MATRIX_NO_SKIPS",
+  "provider_credentials_and_routes_removed": true,
+  "private_migration_backup_directory": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/backups/p0-aad8d359",
+  "postgresql_client_major": 16,
+  "temp_directory": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/tmp/p0-aad8d359",
+  "pythonpath": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/working-history-source-aad8d359/src",
+  "ruff_version": "0.15.20",
+  "previous_full_failures_retained": true
+}

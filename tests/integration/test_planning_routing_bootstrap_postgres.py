@@ -21,6 +21,7 @@ from novel_forge.modules.story_design_authority import (
     StoryDesignTransitionCommand,
     scripted_qualification,
 )
+from novel_forge.modules.story_design_authority.qualification import qualification_profile_options
 from novel_forge.modules.story_planning_runtime import (
     GENERATOR_INPUT_ROLES,
     PlanningGenerationStatus,
@@ -178,7 +179,7 @@ def test_bootstrap_candidate_is_frozen_reviewable_and_permanently_ineligible():
             idempotency_key="evaluate:bootstrap",
             trace_id=command.trace_id,
             correlation_id=command.correlation_id,
-            evaluation=scripted_qualification(command.generator_operation_name),
+            evaluation=scripted_qualification(command.generator_operation_name, **qualification_profile_options(document.content)),
         ),
         principal=evaluator,
         transition_principal=principal,

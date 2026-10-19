@@ -52,7 +52,7 @@ def optional_policy(cursor, *, project_id, book_id, operation_id=None):
     )
     if (
         not value
-        or value["version"] not in {"creative-execution-template.v3","creative-execution-template.v4","creative-execution-template.v5","creative-execution-template.v6", "creative-execution-template.v7", "creative-execution-template.v8", "creative-execution-template.v9", "creative-execution-template.v10", "creative-execution-template.v11"}
+        or value.get("world_future_preparation") is None
         or value["world_future_preparation"] == "REQUIRED"
     ):
         return None
@@ -160,7 +160,7 @@ def validate_optional_action(cursor, *, action, source):
     )
     if (
         not template
-        or template["version"] not in {"creative-execution-template.v3","creative-execution-template.v4","creative-execution-template.v5","creative-execution-template.v6", "creative-execution-template.v7", "creative-execution-template.v8", "creative-execution-template.v9", "creative-execution-template.v10", "creative-execution-template.v11"}
+        or template.get("world_future_preparation") is None
         or template["mode"] != "CREATIVE_VALIDATION"
         or template["world_future_preparation"] == "REQUIRED"
         or marker["contract_version"] != "world-optional-preparation.v1"

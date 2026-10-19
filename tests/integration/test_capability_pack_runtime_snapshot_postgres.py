@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import psycopg
+import json
 import pytest
 from psycopg.types.json import Jsonb
 
 from novel_forge.modules.capability_pack_authority.query import (
     CapabilityPackAuthorityQuery,
 )
-from novel_forge.modules.command_kernel.errors import KernelError
 from novel_forge.modules.capability_pack_authority.runtime import (
     CapabilityPackRuntimeResolver,
 )
@@ -35,7 +35,7 @@ from tests.integration.capability_pack_postgres_support import (
 
 
 @pytest.mark.parametrize("fact_count", [32, 33])
-def test_provider_context_fact_limit_blocks_before_durable_dispatch(fact_count):
+def test_provider_context_fact_limit_blocks_before_durable_dispatch(fact_count, monkeypatch):
     harness = CapabilityPackPostgresHarness("context-fact-boundary")
     version = harness.register_compile_approve("1.0.0", generation=1)
     harness.activate(harness.deploy(version))
@@ -72,43 +72,33 @@ def test_provider_context_fact_limit_blocks_before_durable_dispatch(fact_count):
         "narrative_function": "causal_preparation",
         **content,
     }
-    if fact_count == 32:
-        runtime = harness.run_draft_attempt(extra_context_candidates=(candidate,))
-        assert runtime["external_effect_id"] and runtime["receipt_id"]
-    else:
-        with pytest.raises(KernelError, match="CONTEXT_PROJECTION_TOO_BROAD"):
-            harness.run_draft_attempt(extra_context_candidates=(candidate,))
-        with AuthorityUnitOfWork(DATABASE_URL) as uow:
-            uow.cursor.execute(
-                """SELECT count(*) FROM authority_external_effect effect
-                   JOIN authority_operation operation ON operation.operation_id=effect.operation_id
-                   WHERE operation.project_id=%s AND operation.definition_name='chapter.draft.generate'""",
-                [harness.project_id],
-            )
-            assert uow.cursor.fetchone() == (0,)
-            uow.cursor.execute(
-                """SELECT operation.status, attempt.status, attempt.result->>'error_code',
-                          operation.operation_id
-                   FROM authority_operation operation
-                   JOIN authority_attempt attempt ON attempt.operation_id=operation.operation_id
-                   WHERE operation.project_id=%s AND operation.definition_name='chapter.draft.generate'""",
-                [harness.project_id],
-            )
-            rows = uow.cursor.fetchall()
-            assert len(rows) == 1
-            assert rows[0][:3] == (
-                "FAILED_FINAL", "FAILED_FINAL", "CHAPTER_PROVIDER_CONTEXT_PROJECTION_TOO_BROAD"
-            )
-            operation_id = str(rows[0][3])
-        with pytest.raises(KernelError, match="OPERATION_STATUS_CONFLICT"):
-            create_attempt(
-                DATABASE_URL,
-                operation_id=operation_id,
-                project_id=harness.project_id,
-                max_attempts=2,
-                trace_id=identifier("restarted-context-worker"),
-                correlation_id=identifier("context-recovery"),
-            )
+    from novel_forge.modules.chapter_authority import execution_gateway
+    original = execution_gateway._materialize_production_codex_prompt
+    prepared = []
+
+    def observe(**arguments):
+        prompt, evidence = original(**arguments)
+        if arguments["stage"] == "draft":
+            prepared.append(prompt)
+        return prompt, evidence
+
+    monkeypatch.setattr(execution_gateway, "_materialize_production_codex_prompt", observe)
+    runtime = harness.run_draft_attempt(extra_context_candidates=(candidate,))
+    assert runtime["external_effect_id"] and runtime["receipt_id"]
+    assert prepared
+    binding = next(item for item in runtime["effect_request_payload"]["_production_execution"]["input_artifacts"]
+        if item["artifact_type"] == "context_bundle")
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        context = uow.repositories.asset_documents.require(project_id=harness.project_id,
+            asset_version_id=binding["asset_version_id"])
+    assert context.content_hash == binding["content_hash"]
+    source = next(item for item in context.content["context_manifest"]["selected_inputs"]
+        if item["asset_version_id"] == version_id)
+    assert source["content_digest"] == digest
+    for prompt in prepared:
+        facts = {json.dumps(f"required-condition-{index}") for index in range(fact_count)}
+        import re
+        assert set(re.findall(r'"required-condition-\d+"', prompt)) == facts
 
 
 def test_attempt_snapshot_is_frozen_once_and_shared_by_gateway_and_pep_effect() -> (

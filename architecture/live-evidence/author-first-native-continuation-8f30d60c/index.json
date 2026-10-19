@@ -1,0 +1,63 @@
+{
+  "schema_version": "author-first-native-continuation-checkpoint.v1",
+  "at": "2026-10-18T11:57:24.385431+00:00",
+  "source_sha": "8f30d60c4830dd9c69403a9251f498844b797d7b",
+  "test_only_followup_sha": "98d28f2be6e72848ed4b670a2c16760d9c29907e",
+  "base_main_sha": "9f41f0c75108f708a9a77e6c8da89826cf00987e",
+  "project_id": "project:wp-nf-author-first-20261017",
+  "book_id": "book:wp-nf-author-first-20261017",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "database": {
+    "name": "nf_author_first_native",
+    "port": 56437,
+    "cluster_system_identifier": "7697608597895058057",
+    "schema_head": "20261018_0227_completed_preparation_handoff"
+  },
+  "actual_template": "creative-execution-template.v12",
+  "packs": {
+    "planning": "2.19.0",
+    "chapter": "3.2.0",
+    "semantic_manifest_and_catalog_hashes": "UNCHANGED_ON_REVALIDATION"
+  },
+  "real_provider": {
+    "provider": "codex-cli",
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "medium",
+    "cost": "UNKNOWN_ACCOUNT_ENTITLEMENT",
+    "single_request_context_capacity": 475000,
+    "ordinary_cumulative_call_token_caps": "ABSENT"
+  },
+  "delivery": {
+    "actual_effective_chapters": 18,
+    "body_han": 77424,
+    "each_effective_body_han": [
+      4000,
+      5000
+    ],
+    "saved": true,
+    "technical_working_selection": "SELECTED",
+    "author_selection": "NOT_GRANTED",
+    "accepted_through_chapter": 0,
+    "target_round": 100,
+    "book_total": 600
+  },
+  "continuation": {
+    "operation_id": "cb51253f-938b-4de5-b3f6-4ebd024ca67a",
+    "status": "IN_PROGRESS_PREPARATION",
+    "old_preparation_receipts_retained": 89,
+    "automatic_old_task_reuse": "NOT_PROVEN",
+    "chapter19_body": "NOT_YET_PRODUCED"
+  },
+  "qualifications": {
+    "formal_8f30d60c": "FAIL_2_STALE_MIGRATION_HEAD_ASSERTIONS_NO_SKIPS",
+    "formal_98d28f2b": "RUNNING",
+    "production": "BLOCKED_MEMBERSHIP_RETRIEVAL_BINDING_AND_ACCOUNTING_CONTRACT",
+    "literary": "NOT_PROVEN_WAITING_TWO_INDEPENDENT_HUMAN_REVIEWERS",
+    "full100_delivery": "NOT_COMPLETE"
+  },
+  "observed_prose": {
+    "chapter18": "Stone-seat and paired-wedge work has visible physical consequences; wages remain separate from unearned class credit. Labor, meal and bookkeeping beats repeat earlier material.",
+    "authority": "UNCALIBRATED_OBSERVATION_ONLY"
+  },
+  "proof_ceiling": "EXECUTABLE_NATIVE_REAL_PROVIDER_WORKING_DELIVERY; NOT_QUALIFIED_OR_PRODUCTION_PROVEN"
+}

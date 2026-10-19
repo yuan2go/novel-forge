@@ -1,0 +1,179 @@
+{
+  "source_sha": "da7acab23ab65dac4c82de02dd0bbb2e089617b4",
+  "base_runtime_source_sha": "367194f1d2ffe4d7acf2654f88a4800a03dd9d31",
+  "status": "SCOPED_PASS",
+  "formal_P0": "NOT_RUN",
+  "production_qualification": "NOT_RUN",
+  "real_prose_in_this_check": false,
+  "checks": {
+    "units": {
+      "tests": 144,
+      "failures": 0,
+      "skips": 0
+    },
+    "capacity_and_owner_postgresql": {
+      "tests": 13,
+      "failures": 0,
+      "skips": 0,
+      "database": "nf_author_capacity_test"
+    },
+    "native_scripted": {
+      "cases": 1,
+      "saved_chapters": 8,
+      "accepted_through_chapter": 0,
+      "database": "nf_author_recovery_test",
+      "han_per_original_draft": 26,
+      "han_first_edited_candidate": 30,
+      "prompt_and_process_stdin_hash_matches": 32,
+      "working_source_occurrences": 222,
+      "working_passage_verification": "All 222 source occurrences retain exact source text hash, Unicode excerpt range/text/hash and actual prompt inclusion; UNREVIEWED_WORKING_PROSE and NOT_VERIFIED character knowledge remain explicit"
+    },
+    "frozen_protocol_source_and_publication_units": {
+      "tests": 170,
+      "failures": 0,
+      "skips": 0,
+      "source_sha": "da7acab23ab65dac4c82de02dd0bbb2e089617b4"
+    },
+    "historical_memo_and_joint_quality_postgresql": {
+      "tests": 2,
+      "failures": 0,
+      "skips": 0,
+      "source_sha": "da7acab23ab65dac4c82de02dd0bbb2e089617b4",
+      "classification": "HISTORICAL_COMPATIBILITY_AND_QUALITY_AUTHORITY_BOUNDARY",
+      "real_prose_delivery": false
+    }
+  },
+  "findings": {
+    "claimed_creation_scope_refusal": "FIXED_NATIVE_RUNTIME_JOB_FAILURE",
+    "claimed_opening_scope_refusal": "FIXED_OWNING_AUTHORITY_ATOMIC_FAILURE",
+    "inner_phase_error": "EXISTING_RECOVERY_OWNER_RETAINED_NO_DOUBLE_TERMINALIZATION",
+    "historical_zero_work_fences": "RESTORED_NEGATIVE_COVERAGE_SEPARATE_FROM_NATIVE_CAPACITY",
+    "historical_budget": "EXPLICIT_COMPATIBILITY_ONLY_NO_CURRENT_LIMIT_REINTRODUCED"
+  },
+  "reviews": {
+    "spec": "NO_NEW_SUBSTANTIVE_FINDING_AFTER_CORRECTION",
+    "standards": "NO_NEW_SUBSTANTIVE_FINDING_AFTER_CORRECTION"
+  },
+  "preserved_development_failure": {
+    "review-worker-red.log": "UNRECORDED_SETUP_REFUSAL",
+    "review-book-scope-red.log": "BOOK_PHASE_SETUP_NOT_RECORDED",
+    "review-opening-owner-red-04.log": "GENERIC_FAILURE_MASKED_ORIGINAL_ERROR_WITH_COORDINATOR_REQUIRED"
+  },
+  "tooling_precondition_failures_retained_externally": [
+    "review-opening-owner-red.log: missing IndustrialSettings.root in new fixture",
+    "review-opening-owner-red-02.log: wrong test environment variable; connection refused before test",
+    "review-opening-owner-red-03.log: wrong disposable role; connection refused before test"
+  ],
+  "files": [
+    {
+      "path": "c0652db436737a9f-dispatch-id-hash-only.json",
+      "bytes": 64241,
+      "sha256": "sha256:45000fb915699b3ae348348bdc42a8c33175fa40db6a46f2d3a460f418dd7a67"
+    },
+    {
+      "path": "c0652db436737a9f-dispatch.json",
+      "bytes": 168581,
+      "sha256": "sha256:f387a3edadd8579f4f3bd9ece517a247a433077d7edbdb694ab5a3ee3b969735"
+    },
+    {
+      "path": "c0652db436737a9f-prose.json",
+      "bytes": 4705,
+      "sha256": "sha256:6a781abcc7d31a770e835a6839a430cbe48463f48bfc986c67f1ff460857ee6c"
+    },
+    {
+      "path": "c0652db436737a9f.json.gz",
+      "bytes": 19705882,
+      "sha256": "sha256:d342496b76f0ee83cd7ce28d13a8ef3a20fee784c464efdae560b3197177e24a"
+    },
+    {
+      "path": "review-book-scope-red.log",
+      "bytes": 12553,
+      "sha256": "sha256:2aee953700883a8829847ee8ce004984f902eddfe1b186aaa7f8db71060398eb"
+    },
+    {
+      "path": "review-final-capacity.command.json",
+      "bytes": 410,
+      "sha256": "sha256:0cf6c41c4200b09cb85c99d46ff50a7e666cd1a12c2b0129386dfbfe796be59b"
+    },
+    {
+      "path": "review-final-capacity.log",
+      "bytes": 100,
+      "sha256": "sha256:7d5525dc5d8ba60057ad922cfa9a5631617872cbc44243050e11838b9c9a5a24"
+    },
+    {
+      "path": "review-final-capacity.xml",
+      "bytes": 2588,
+      "sha256": "sha256:fd9b3b8112336971df0b9ba122e50e468700d5bffbfb178494838dd406607a84"
+    },
+    {
+      "path": "review-final-contracts.log",
+      "bytes": 260,
+      "sha256": "sha256:9abca6943ff8dc012d15cafd8ae9b846a05263795fb008294b42913b7211e55e"
+    },
+    {
+      "path": "review-final-contracts.xml",
+      "bytes": 29927,
+      "sha256": "sha256:e5ce79b1cdbe5f5325a9916ce03d4240a111da3803079dd0af8bda447d8a612c"
+    },
+    {
+      "path": "review-final-historical-quality.log",
+      "bytes": 109,
+      "sha256": "sha256:9f24dbf8cf71ae9f0d06ee6570b9fef5403e662ff1f69cb7620c5760de348d6c"
+    },
+    {
+      "path": "review-final-historical-quality.xml",
+      "bytes": 624,
+      "sha256": "sha256:b428c5e24f10f17e21774ab105dab77b2a172d1bf96bf875e0deaf33967e0994"
+    },
+    {
+      "path": "review-final-native.log",
+      "bytes": 1626,
+      "sha256": "sha256:bf747343345817ba3a21406e810e29bdba62a79f8783096f0afd5be300638220"
+    },
+    {
+      "path": "review-final-native.xml",
+      "bytes": 604,
+      "sha256": "sha256:2d4c0e674d4b0a661f4fe45818945a0b05a6d1918fc84e0f4cabd6e4faa693a5"
+    },
+    {
+      "path": "review-final-structure.log",
+      "bytes": 127701,
+      "sha256": "sha256:d04d5ede43c6c9a25acd3c33e7123461f0e26d87e60d459ff8cf8689b1fbb6a6"
+    },
+    {
+      "path": "review-final-units.log",
+      "bytes": 180,
+      "sha256": "sha256:b13a6a229be6cc953892858a9afa2b69510b0cbf7aecefbf4516f2d7276777f7"
+    },
+    {
+      "path": "review-final-units.xml",
+      "bytes": 24354,
+      "sha256": "sha256:f11f0a33a90b12aa48dbcfee96aad403d71be91a039d3e3b65d8c1d6b1fe4ee4"
+    },
+    {
+      "path": "review-opening-owner-red-04.log",
+      "bytes": 1924,
+      "sha256": "sha256:4c7fc555bb274f3ea2ca6e7519782835e1f48db703bcf6f9b800dca2b9296579"
+    },
+    {
+      "path": "review-worker-red.log",
+      "bytes": 9098,
+      "sha256": "sha256:c4979be60f5d8e159de84335b0fff45b4305ff1ea3d7cd258c834c00b1f56f99"
+    },
+    {
+      "path": "verify_dispatch.py",
+      "bytes": 3843,
+      "sha256": "sha256:cc5bc07cc8cc4169f46a57d0887ee84304b7eff2653e19dc5de506224f2ec12d"
+    }
+  ],
+  "correction_to_previous_packet": {
+    "path": "../author-first-continuation-recovery-496f3740/failure-comparison.json#assertion_changes",
+    "incorrect_claim": "No valid negative guards were removed",
+    "audit_result": "Native preparation invalidated use of zero-work succession assertions in the native case, but did not obsolete the independent historical zero-work budget/update/delete/assess guards. Those still-valid checks had been lost and are restored as explicitly historical tests.",
+    "restored_tests": [
+      "test_historical_zero_work_capacity_preserves_budget_and_predecessor_fences[False]",
+      "test_historical_zero_work_capacity_preserves_budget_and_predecessor_fences[True]"
+    ],
+    "current_native_capacity_case": "UNCHANGED_FULL_REQUEST_PREPARATION"
+  }
+}

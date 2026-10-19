@@ -42,13 +42,14 @@ def run_actor_receipt_recovery(
             )
             result["characters"].append(companion)
             result["characters"][0]["secret"] = "PRIVATE_MARA_SECRET_MARKER"
+            result["characters"][0]["aliases"] = [*result["characters"][0].get("aliases", []), "protagonist"]
         if story.get("foundation_transform"):
             result = story["foundation_transform"](role, result)
         return result
 
     def seed_actor_inputs(project_id, book_id, **kwargs):
         kwargs["world_production_policy"] = {
-            "version": "world-production-policy.v2",
+            "version": "world-production-policy.v5",
             "max_provider_stages": 4,
             "max_candidates": 2,
             "max_paths_per_candidate": 1,
@@ -132,6 +133,12 @@ def run_actor_receipt_recovery(
                     result["scene_artifacts"][-1]["text"] += " " + " ".join((statement, *attitudes.values()))
                     result["text"] = "\n\n".join(item["text"] for item in result["scene_artifacts"])
                 if stage == "canon_extraction":
+                    if 'action_mode' in inputs.get('world_transition_contract', {}).get('required', []):
+                        for row in result.get('world_state_changes', []):
+                            if row.get('world_transition'):
+                                transition = json.loads(row['world_transition']['payload_json'])
+                                transition['action_mode'] = 'INFORMATION_DEPENDENT'
+                                row['world_transition']['payload_json'] = json.dumps(transition)
                     text = inputs["revision"]["text"]
                     start = text.index(statement)
                     evidence = {"summary": statement, "evidence_start": start,
@@ -152,7 +159,8 @@ def run_actor_receipt_recovery(
                     from tests.integration.narrative_reality_vertical_support import scripted_claim_evidence
                     result = scripted_claim_evidence(stage, inputs, result)
                 self.calls[-1]["output"] = result
-            return result
+            from tests.integration.current_chapter_wire_support import current_chapter_wire_result
+            return current_chapter_wire_result(stage, inputs, result, json_envelope=False)
 
         def planning(self, stage, inputs):
             if stage.startswith("world_candidates.actor_"):
@@ -258,6 +266,8 @@ def run_actor_receipt_recovery(
                             "value": "KNOWN",
                         }
                     ]
+                    if inputs["world_preparation"].get("epistemic_contract") == "world-agency.v2":
+                        transition["action_mode"] = "INFORMATION_DEPENDENT"
                     transition["cause_refs"].extend(proposals[0]["basis_refs"][1:])
                     result["candidates"][0]["transition"]["payload_json"] = json.dumps(
                         transition

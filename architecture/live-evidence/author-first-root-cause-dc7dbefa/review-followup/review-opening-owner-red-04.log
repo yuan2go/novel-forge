@@ -1,0 +1,28 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+______ test_creation_scope_refusal_uses_opening_authority_before_dispatch ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10a6c2e40>
+
+    def test_creation_scope_refusal_uses_opening_authority_before_dispatch(monkeypatch):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from novel_forge.infrastructure.settings import IndustrialSettings
+        from novel_forge.workers import book_authority as worker
+        fixture = build_workflow_fixture(target_chapter_count=6)
+        admitted = fixture.admit()
+        claim = fixture.claim(fixture.principal.principal_id)
+        monkeypatch.setenv("NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY", "")
+        query = SimpleNamespace(creation_executor_binding=lambda **_: {"codex_input_only_policy": "codex-input-only.v2"})
+        legacy = SimpleNamespace(query=query, principal=fixture.principal, opening=fixture.opening)
+        dispatch = Mock(side_effect=AssertionError("configuration refusal cannot dispatch"))
+        monkeypatch.setattr(worker, "build_production_execution_composition", dispatch)
+>       with pytest.raises(KernelError, match="CREATION_RUNTIME_POLICY_DRIFT"):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'CREATION_RUNTIME_POLICY_DRIFT'
+E         Actual message: 'RUNTIME_JOB_AUTHORITY_COORDINATOR_REQUIRED: Authority-owned RuntimeJob terminalization requires its business coordinator'
+
+tests/integration/test_opening_capacity_continuation_postgres.py:127: AssertionError
+=========================== short test summary info ============================
+FAILED tests/integration/test_opening_capacity_continuation_postgres.py::test_creation_scope_refusal_uses_opening_authority_before_dispatch
+1 failed in 9.87s

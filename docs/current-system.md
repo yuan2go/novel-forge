@@ -24,7 +24,7 @@ identity changes without a corresponding projection update.
 New Creation requests select `config/execution_templates/author_first.json` (v12).
 The default creation-input policy freezes `native-narrative-execution.v4`: Chapter Pack
 3.2.0 with prose Skill v5 and Template v15, event-first Planning Pack 2.19.0, and
-working-prose projection v7, Craft budget v5 and selected-working delivery v2.
+working-prose projection v8, Craft budget v5 and selected-working delivery v2.
 The original Formation policy remains the replay source;
 configurations without this selection retain their original Pack and prose projection.
 Creation v1/v2 installation uses the preserved Chapter 3.0.2 base manifest and Context
@@ -85,6 +85,12 @@ unaccepted working cursor advances; the original permission failure, Chapter his
 tool policy and Canon remain unchanged. This is working-use qualification and cannot
 be reported as a compliant native Writer result or author acceptance. Other Tool use,
 resources, uncertainty, live work or concurrent replacement remain ineligible.
+Retained typed Draft, Revision and Best reading derives Project/Book identity from its
+exact successful native output and persisted Book ownership. Native Draft content need
+not duplicate those identity fields; any explicit conflicting Project/Workspace/Book,
+wrong chapter, missing native source or changed content hash still rejects reading.
+The read projection preserves the original asset/version/hash and grants no selection
+or acceptance. Current selected-version export continues to reject an older version list.
 `creation-request.v2` can omit the title: the selected Creative Foundation supplies
 the title under `generated-book-title.v1`, and active Book Design owns its display
 projection. The initial Book record retains its technical pending title. V1 author
@@ -113,6 +119,17 @@ manuscript revision command or Editor API. This freezes exact selected prose and
 governed Context/Plan, then uses Review, Revision, ReReview and BestCandidate without
 Foundation or Canon mutation. Working selection rechecks earlier versions as well as
 the target. Frozen length correction uses actual Han counts, separate from model scores.
+For a measured length correction, an exact empty Review/ReReview diagnosis history
+on a source without earlier review provenance makes `RESOLVED_ISSUES` inapplicable;
+Host evidence records that separately without
+changing the model's uncertainty. Review versions/hashes, prose hashes, Context and
+earlier-prose window must match. Missing or nonempty history and other preservation
+uncertainty continue to reject that interpretation. Source revisions, retained Best
+candidates and other earlier review references do not prove an empty ancestry through
+a fresh empty Review. They still require affirmative preservation evidence. Completed native results can be
+recompared through the same pure Best handler. Automatic length delivery binds that
+revalidation Root in the existing Book selection mutation and checks it again under
+the Book lock, appending evidence while retaining the original successful results.
 Profiles that freeze length bounds without a unit use the existing manuscript
 `HAN_CHARACTERS_V1` measurement. The original profile version, digest and bounds remain
 bound to the repair; a conflicting explicit unit requires configuration correction.
@@ -123,6 +140,21 @@ Stopped isolated pure generation may register its native successor from a Saga's
 Working prose keeps its persisted Asset type and hash when used in the Draft input role;
 the host role projection does not relabel a Revision or author edit as a stored Draft.
 The frozen revision purpose reaches the Review, Revision and ReReview task views.
+ReReview dispositions belong only to its frozen initial Review diagnosis ledger;
+references to older rejected candidates in an author's purpose do not add diagnoses
+to that ledger. New working ReReview execution snapshots bind the exact initial Review
+hash and diagnosis codes in their output Schema and task projection. A required
+`resolution_checks_by_code` object supplies one disposition per frozen diagnosis;
+an empty ledger requires an empty object. The host projects those exact keys to the
+existing domain list, retaining literal evidence and all preservation validation.
+JSON object order carries no diagnosis meaning. Host projection orders disposition
+codes canonically across persistence; an already projected list may differ only in order.
+Missing/duplicate codes, changed evidence and any other disposition change still reject.
+Historical execution snapshots retain their original Schema, task and Effect input.
+A successful model receipt with an explicit `REVIEW_RESOLUTION_CHECKS_REQUIRED`
+validation failure cannot satisfy a fresh current working ReReview Attempt. It stays
+immutable while the remaining native retry allowance creates a new execution snapshot;
+verified completed results and saved Review/Revision stages remain reusable.
 Review distinguishes supporting passages in the exact current candidate from frozen
 earlier prose. Both require literal, unambiguous locations; a current passage is never
 represented as accepted or earlier evidence. After an implementation correction,
@@ -134,6 +166,20 @@ for a completed-only generation revalidation, and it never masks a new in-flight
 Planning and prose transport keep contiguous selected passages as one exact text plus
 Unicode boundaries; the host reconstructs their original locations and hashes. This
 reduces repeated protocol metadata within real model capacity without omitting prose.
+New Review/ReReview requests freeze `prose-review-exact-transport.v1` and use the same
+lossless structured envelope. ReReview may encode its revised body as exact edits to
+the complete original string, retaining ordered Unicode ranges and every intervening
+character. Host reconstruction must equal both complete Provider inputs; it does not
+prove semantic preservation or diagnosis resolution. Complete frozen source windows
+remain unchanged. Historical requests without this version keep their original
+representation, including ordinary data containing a later protocol's reserved key.
+At a working-selection checkpoint, registered first-isolation custody can identify its
+exact acknowledged, never-sent preparation intent after the Book advances. Recognition
+reuses the owning cancellation/continuation and pause validators, binds the same BookRun,
+source and child identities, and requires the exact released reservation. Historical
+failure and cancellation remain immutable. A sent main request, new external receipt,
+UNKNOWN, active Attempt/lease or missing proof still blocks. Workflow-policy adoption
+retains its separate settled-effect requirement.
 Requested aesthetic repair of that exact selected source may use its diagnosed structural
 scope; unsolicited advice and stale requests do not authorize whole-chapter changes.
 Located edits of unmapped prose derive the body from the exact source, retain `NOT_MAPPED`
@@ -214,13 +260,24 @@ realized beats as premises, compresses incidental daily transitions, and asks ex
 scene goals, conflicts, beats and exit states to carry immediate friction, costly action
 and an irreversible ending that demands a next action. Missing source coverage or exceeded
 history/allocation closes input admission; literary interpretation remains a review concern.
-New Creation profiles select `working-prose-projection.v7`; frozen v5 profiles retain
+New Creation profiles select `working-prose-projection.v8`; frozen v5 profiles retain
 their historical character allocation. Book freezes every predecessor's
 exact effective source, source hash and selection lineage in `working-source-history.v1`,
 separately from the bounded prose passages sent to Planning, Memo and Writer. The configured
 128-chapter passage window does not reject chapter 130 or discard earlier source identities.
 Located observations and their causal passages can retrieve earlier material within the
 real character and complete-request capacity bounds. Omitted prose remains unknown.
+Frozen v6/v7 retains all eligible historical paragraphs when its configured history
+window permits them. New v8 selects complete recent chapters, exact older paragraphs
+matching explicit queries within that window, and the located original evidence for
+selected observations and their causal closure even outside that window. Memory keeps
+latest observations separately by subject, state key, perspective and knowledge owner;
+promises remain visible without inferring resolution, while other older observations
+require query relevance or causal support. An empty query does not select unrelated old
+prose. Missing, invalid or empty memory remains explicit coverage evidence, never a
+complete-history claim. Original prose remains available through exact-version manuscript
+read/export and prospective query selection. Neither lexical matching nor observation
+selection proves semantic completeness or long-form quality.
 The complete omission-ID and source-coverage ledger stays in the frozen Host packet.
 New requests record `working-history-provider-transport.v2`; frozen v1 admission replays
 its original projection.
@@ -286,6 +343,26 @@ Its v3 windows bind current selected unreviewed prose; accepted-state relation e
 not available on that source contract. An optional outage retains the manuscript and does
 not mutate Book completion. Review currentness is invalidated by changed author sources.
 Strict acceptance, Edition validation and external publication retain their own conditions.
+Frozen `repair_routing` contracts select Planning repair evidence and stage allowances
+consistently in normal dispatch, preflight continuation and result recovery. Routing v1
+retains cumulative interpretation; v2 uses separate stage ordinals while preserving the
+monotonic lineage counter and its four-repair bound. A newly selected template cannot
+grant stage allowances to an older frozen source contract. Preflight reads its recorded
+route decision; when input-order preparation failed before routing, it uses the exact
+native parent result's Effect decision. Missing or ambiguous source evidence fails closed.
+Governed-repair replay carries the saved receipt and its original policy admission;
+legacy cumulative receipts retain that interpretation. New successors still require
+current authorization and cannot change the source's frozen repair protocol.
+
+A complete-request capacity failure retains its Attempt snapshot, frozen inputs and
+preparation outputs. Such preparation is work: it excludes the zero-work Opening budget
+successor and uses the original Opening recovery protocol. Sent calls, unresolved commit
+rights and active Attempts remain outside that unsent path. Retained-graph scanning only
+handles its declared 3.9/3.10 roots; older roots keep their owning receipt/isolation and
+acceptance boundaries. Publication revalidation requires a registered exact native step
+successor. An ordinary blocked publish gate remains blocked and does not acquire recovery
+permissions from its current definition version.
+
 
 Existing production may select a traceable author workflow policy asset at a settled idle
 Book checkpoint. The native routing owner selects the successor template, inheriting any
@@ -492,7 +569,10 @@ Formation-owned intent forwarded to the active native phase; it prevents later s
 Completed accepted production cannot be cancelled retroactively. Phase workers resolve the
 same project Pack scope and original admitted author identity when taking over continuous creation;
 the worker identity owns only its execution lease. Coordination coalesces live ticks, backs off
-failures and retains a dead-letter stop for repeated actual execution failures. Healthy
+failures and retains a dead-letter stop for repeated actual execution failures.
+Opening work that exhausts its local coordination window while `ADMITTED` or `RUNNING`
+yields `YIELDED_CHECKPOINT` with the original checkpoint for the next CLI or worker window;
+it does not become an owner-recovery stop or receive a new Attempt allowance. Healthy
 lease/dependency waits and unknown-outcome reconciliation use backoff and remain queryable;
 unchanged wait observations cannot become a no-progress failure. A native
 dependency change or explicit owner recovery can wake the same work. A deterministic Planning
@@ -513,6 +593,8 @@ The scoped worker can follow that registration but cannot register it on its own
 successor failure cannot borrow an older capacity cause. Coordination excludes only its exact
 own RuntimeJob lease from the wake check; cancellation, other live jobs and uncertain effects
 retain their guards.
+New complete-request Codex admissions freeze compact protocol Schema JSON. The backend writes those exact frozen bytes, also supports the historical indented encoding, and rejects any changed Schema value. Requests without that envelope retain the historical encoding. This changes whitespace allocation, not the output contract or model capacity. A same-capacity v13 Planning continuation can retain fully settled preparation after an unsent full-original `TASK_CONTEXT_COMPRESSION_NO_PROGRESS` failure within first-isolation ancestry. It verifies the original projection, route meter/window, Book frontier and every receipt; registration atomically releases the old retryable Operation into terminal history. Actual capacity refusal, live leases, cancellation, unsettled preparation and main-call dispatch remain blocking. Runtime proof and full qualification remain separate.
+
 The final rendered-request admission remains authoritative. Located ReReview resolution with preserved unrelated prose may support working selection even when the model score changes by less than a historical threshold. Scores and correction-generation counts remain diagnostics; they do not veto a supported current repair or prove literary quality. Remaining issues and propagation guards still apply. Context compilation counts the same lossless structured representation used by current Provider transport for working manuscripts; per-passage hashes and repeated values remain reconstructible source evidence rather than inflated duplicate input. It still preserves author requirements and exact current prose, uses governed compression for necessary older history, and enforces final rendered request capacity with output reserved. A pre-send Planning capacity successor may retain completed World preparation: every Effect must match the selected action’s verified pure-generation receipt, the main Planning call must remain unsent, and active leases or cancellation still block succession. The v3 continuation binds the current failed source and original receipt owner, revalidates current World sources and reuses those outputs across successive recoveries without repeating calls or requiring usage settlement. Temporary model availability recorded alongside capacity is diagnostic, not a permanent failure ban. Ordinary continue follows this registered successor after a corrected runtime deployment; old Attempts and Pack snapshots remain immutable. Capacity successors bind their failed Operation as the primary causal source while retaining the exact candidate-repair source in the immutable command. Migration 0158 also recognizes an already admitted repair-origin cause only when the registered capacity command, native repair generation, terminal zero-intent failure and project/Book agree; it preserves that admitted command. Planning repair routing retains failed model history. A native receipt binds the failed candidate or raw result, diagnosis hash, bounded repair number, exact lineage and changed Provider input. Only diagnosed content failures and successful receipts for their rejected raw results from that lineage cease to exclude the same authorized model or consume transport retry attempts for the new repair; identical active requests, unisolated UNKNOWN, service failures, capacity limits and retry waits retain their owning recovery rules. Isolated pure-generation history remains recorded; it does not consume a new generation entitlement or impose a lifetime fault ceiling. The send path revalidates the receipt against Planning facts. World result repair binds the Chapter Planning owner and exact failed World stage, retains its source and knowledge selection, and does not expose the rejected proposal as Chapter facts. Raw Chapter Plan repair retains the selected World action without repeating that stage. A blocked World causal plan is repaired only after reproducing its exact semantic gate and verifying the original Director receipt. Pure-generation usage retains its original state without a reuse veto; repair cannot add accepted support or relax the semantic gate. Historical retry checkpoints replay the original receipt before appending the terminal result classification. Migration 0159 permits the same bounded diagnosed successor from a terminal DEAD_LETTER only with known retained result evidence and no unresolved external effect; it preserves terminal history and rejects cancellation or UNKNOWN. Historical cancelled runtime
 continuations retain their separate release/account evidence requirements. A latest source version,
 Opening receipt/state, Chapter Operation state or accepted cursor change wakes coordination;
@@ -797,8 +879,10 @@ keeps its original nonqualifying protocol. The feedback projection revalidates t
 receipt, target, model log and labels, and separates generator/profile protocols before
 reviewer admission. A reference result still cannot create a domain qualification or
 activate its candidate. Scripted labels cannot supply real calibration evidence.
-This does not prove judge calibration or bootstrap every task family. Ordinary production
-routing blocks when sufficient quality evidence is absent.
+This does not prove judge calibration or bootstrap every task family. Strict qualified
+routing retains its quality-evidence gate. Author-supervised and author-first requests
+retain their separately frozen policies and `NOT_PROVEN` literary ceiling; missing judge
+calibration does not become a prerequisite for ordinary saved Draft delivery.
 
 The normal Book supervisor supplies `world_preparation_request` for ChapterPlan generation,
 and `PlanningWorldPreparation.prepare` executes `world_candidates.generate` followed by
@@ -809,6 +893,15 @@ forbidden. Native Router, admission, ExternalEffect, settlement and recovery ret
 owners. Results are ineligible World samples; they cannot materialize a World action or
 activate a ChapterPlan. Reference sampling uses independent native adjudications outside
 Provider input and records score disagreement separately from World rule validation.
+Sampling must reconstruct a recorded `world-plan-references.v1` contract from the original
+Planning command's Arc versions and original source's accepted obligations. A source
+without that recorded projection retains its historical task and Schema; the current
+Book or template cannot add reference authority to it. Exact frozen Context comparison
+and governed-source hash checks remain required. Producer reconstruction must apply the
+original materialized Pack's Prompt/Skill Schema projection for generation and derived
+Director tasks; a raw factory Schema cannot replace the recorded compiled Schema.
+Sample result decoding also uses the frozen task's agency contract, so historical and
+current transition payloads cannot be accepted under each other's protocol.
 World reference sampling at definition version `1.1.0` also accepts an exact native
 `world_provider_sample` generation output. Native Content annotation version `2.3.0`
 permits independent labels for that ineligible target. Planning derives the Director task
@@ -941,10 +1034,21 @@ DeepSeek and/or Codex CLI; a configured `openai` adapter is not thereby a Router
 Membership Codex invocations force ChatGPT login and ignore user configuration/rules.
 Initial and explicitly authorized recovered submission share the same command builder.
 New commands retain local session evidence; historical ephemeral requests are unchanged.
-The opt-in `codex-input-only.v2` route policy binds structured generation instructions
+The `codex-input-only.v2` route policy binds structured generation instructions
 at the model control layer and checks its own complete durable transcript for tool calls
 that stdout may omit. It uses the existing Tool authorization boundary and preserves
 legacy route hashes when absent. Local configuration is not remote execution evidence.
+New default Creation inputs freeze this policy. CLI continuation, manuscript work and
+workers restore it from the original Formation; absence in historical inputs retains
+the original route behavior. A refused worker-scope restoration closes an already claimed
+RuntimeJob through its owning failure path. Opening uses the Opening Authority to
+converge its execution and job atomically; an inner execution failure remains owned
+by that phase's recovery coordinator. New invocations bind the intended instruction hash and
+compare it with the invocation's own persisted base instructions, rather than treating
+a configuration argument as proof that the model received those instructions.
+Default author-first Creation does not require Reader deployment preparation before
+Formation, Planning or manuscript recovery. Reader dispatch still requires its own
+exact active deployment and source checks when that optional work is requested.
 Reconciliation reads original process/receipt evidence
 and may recover a complete validated turn without another model request. Verified original
 remote receipts can append a Kernel reconciliation while preserving terminal history.
@@ -1365,6 +1469,10 @@ PostgreSQL numeric values cannot recover precision absent from the stored source
 
 Context v4 binds `source-unit-dependency-and-final-composition.v2`. Its immutable source
 catalog retains original Unicode ranges, field paths, order and source attribution.
+Complete-request preparation recognizes single and blank-line paragraph separators in
+native prose, preserving original LF/CRLF coordinates. Older material-target unitization
+retains its blank-line rule. New catalogs bind their full task hash; a reused local unit
+ID never licenses a result from a different catalog, while frozen projections replay intact.
 Preserved quotes are located before splitting, across paragraph or declared narrative
 field boundaries; original CRLF coordinates remain distinct from normalized matching.
 Missing quotes stop explicitly; repeated matches are all protected and reported.
@@ -1379,6 +1487,9 @@ Working projection v7 retains v6's capacity-derived prose allocation and closes 
 working observation causes over their original located records. Their quotes protect the
 intersecting history units, and their subject, perspective and knowledge owner travel with
 those units. An observation's own copied quote cannot satisfy a missing original passage.
+Recursive quote and observation scans match their exact scalar contract versions;
+structured `version` metadata in other source objects remains ordinary nested data.
+It cannot interrupt the scan or turn an observation's copy into original-source evidence.
 Frozen v6 keeps its original memory selection; neither version turns observations into Canon.
 Comprehension neighbors stay in original order and cannot be compressor selections.
 Oversized text splits at complete sentence boundaries outside protected quote spans.
@@ -1406,6 +1517,178 @@ cumulative token/call or local generation time veto. Paid spend authorization,
 physical interface limits, cancellation and execution identity still apply.
 New Chapter Pack `3.2.0` and current intent-boundary Planning profiles freeze
 `context-policy:chapter-generation-pack:v4` and `complete-request-capacity.v1`.
+Context v4 may prepare its authorized historical source ranges against a recognized
+conservative byte bound before final complete-request admission. This does not prove
+actual token overflow or increase route capacity; unknown actual usage remains unknown.
+For complete-request preparation, the current source receives the measured deficit while
+unprocessed originals retain their full allocation. A fidelity-restored source remains
+exact and the next eligible source can supply the deficit. Subsequent targets use the
+remaining measured excess, with the same mandatory units, dependency closure and final
+combined-request checks. Host trimming measures the existing risk-ordered optional
+proposal rather than dropping half its units; required material remains protected and
+independent fidelity checks still restore missing meaning. Historical nonsemantic
+allocation retains its frozen behavior.
+If mandatory material raises the effective target above the requested target and the
+verified complete request still exceeds capacity, lowering that same target cannot
+change its preparation inputs. The existing no-progress failure retains the full proof
+and Effects instead of repeating identical preparation; a request that fits still succeeds.
+Its unsent Planning recovery retains the exact Context and input hashes, frozen Pack,
+Book frontier and route while appending a same-capacity continuation. Cancellation,
+active execution rights and any original Effect prevent the zero-send recovery.
+A stopped Planning generation with completed preparation Effects is a different
+recovery boundary. Its acknowledged cancellation must revoke the original Attempt's
+submission rights, retain every settled preparation receipt and prove that the main
+call was not sent. The v5 deployment handoff has native upgrade and registration
+evidence; automatic receipt reuse and end-to-end handoff qualification remain pending.
+Terminal host chunk-contract failures have a separate v6 continuation and appended
+228 guard (`CODE_EXISTS`). Registration requires exact original preparation custody,
+settled verified receipts, no main send, and released submission rights. A reconstructed
+original Provider view must match its retained complete hash; new consumer identity
+cannot relabel historical source identities. Native successor execution and automatic
+receipt reuse remain unqualified until observed on that exact release.
+Explicit v7 continuation registration and pending-deployment revalidation preserve
+completed preparation after authorized UNKNOWN isolation. They retain the terminal v6
+custodian's exact Context, World action and Provider input, and bind each unchanged
+successful task to its actual original Operation and verified settled receipt. Main
+sends, changed inputs, stale Book boundaries, cancellation or active submission rights
+reject this handoff. UNKNOWN siblings retain revoked rights and unknown usage. Existing
+continuations gain no implicit preparation authority: a new immutable v7 control receipt
+is required before an unstarted successor can use this contract. Native consumption
+and end-to-end qualification remain pending until proved on the corrected release.
+First Planning isolation and stopped generic-v1 successors use versioned
+first-isolation preparation custody. Frozen v11 controls retain handoff v1; new v12
+controls use handoff v2. The contract retains the original
+Context, World input, Pack and complete task hashes; only verified settled siblings
+are reusable. Every ancestor must be isolated with revoked rights, acknowledged as
+cancelled, or stopped at a verified zero-send query/lineage failure. A generic child
+with another Context retains its own receipts. An exact never-sent pause intent may
+release its reserved budget through Kernel in the registration UoW; UNKNOWN usage
+and original failures remain untouched. Native model/account authorization is checked
+before registration and again in its transaction. A first-source Codex membership
+recovery binds its verified settled preparation authentication and frozen main-stage
+capacity route. The current executable, account, entitlement and configuration must
+reconstruct that original authentication hash, with unchanged Pack semantics and physical
+capacity. Existing registered descendants and scripted sources retain their route checks. Repair numbers remain unchanged;
+isolation counts are observations. Migrations 0232/0233 append these controls without
+reinterpreting v1/v7/v11 history. The runtime-continuation owner validates acknowledged
+v5/v11/v12 routing ancestry against the exact author, cancellation ACK, stopped
+Attempts, absent leases and immutable control receipt. v12 additionally admits the
+exact historical routing-link failure only with zero Effects and budgets; it does
+not treat a generic failed Operation as unsent. Native same-Book v12 consumption
+has reached actual Planning dispatch with the original Context hash and verified
+settled siblings (`EXECUTABLE`). Chapter delivery and end-to-end qualification remain
+separate pending results. Original failed children and their controls remain intact;
+this routing correction does not increase request capacity.
+Isolation ancestry distinguishes verified zero-send v8/v9 carrier Operations from
+actual isolation owners (`CODE_EXISTS`). Each carrier must retain its exact successful
+outgoing control receipt and recomputed failure/Context/local-output custody proof,
+zero Effects and budgets, and no remaining submission rights. Its original failed
+Attempt remains intact. Actual isolation owners still require revoked commit/activation
+rights and cancelled Attempts. A generic FAILED status grants no reuse authority;
+native recovery after a later UNKNOWN remains unqualified until exercised.
+Provider preparation retains the original realization catalogue. Candidate materialization
+uses a checked consumer projection that preserves every source version and hash while
+binding host realization references to the new Operation. Normal and retained-result
+consumption use the same projection; historical Context and raw results remain intact.
+World actor judgments must also select their decoder from the frozen source's agency
+contract at plan binding and reference sampling. The historical v1 decoder cannot
+validate a v2 action by discarding its action classification.
+Planning dispatch must resolve the owning Book run from its frozen working, World,
+edition or native search binding. Multiple runs of one Book do not make a cancelled
+sibling the owner. Conflicting, missing or foreign explicit run bindings fail closed;
+an unbound historical request cannot choose an arbitrary live sibling.
+The shared Book driver routes Planning deployment drift from ordinary manuscript
+continuation through the original Creation authorization and existing pending-deployment
+command. It yields after a registered correction; cancellation, pause, foreign ownership,
+unresolved current effects and already started successors retain their existing stops.
+Pending selection shares the Provider dispatch ownership projection: working, World,
+edition and native search bindings must identify this exact BookRun. Cancelled or stale
+sibling runs cannot be selected for its recovery. Opening before a BookRun exists retains
+its original pre-Book scope and authorization checks.
+Planning routing counts content generations separately from verified zero-delta runtime
+continuations. The existing eight-content-Operation bound remains; every continuation
+still retains its full ancestry, native control receipt, frozen command, task scope and
+unchanged repair number, and cycles refuse. This separation does not increase semantic
+or stage repair allowances and is `CODE_EXISTS`. Registration v9 and migration230 retain
+exact unsent query-timeout or lineage-depth failures carrying prior explicit preparation custody, with
+zero Effects or budgets, no submission rights, and the original same-hash saved Context.
+Any locally saved capability materialization must bind the original Attempt snapshot,
+Pack identity, preparation stage and immutable hashes; it grants no Provider-send or
+new result authority. Other outputs refuse.
+The registration transaction appends the source terminal transition; its failed Attempt
+and prior history remain unchanged. Native migration and registration have bounded
+evidence in `architecture/live-evidence/author-first-owned-recovery-5f5abbcb/`;
+automatic successor receipt consumption and end-to-end qualification remain pending.
+Registration v10 and migration231 add the exact failed-main pre-submit handoff. The
+single failed Dispatch must retain the Corpus traversal-bound diagnostic, explicit
+`request_sent=false`, a released reservation and no Provider recovery record or receipt.
+Every other Effect must be verified, settled preparation under the original custody.
+The same transaction terminates the retryable source Operation and registers its
+successor; its Attempt, failed Effect and Dispatch remain unchanged. The successor
+consumes the complete frozen capacity projection after checking identical inputs,
+then builds its own current admission and rechecks complete request capacity. This is
+`EXECUTABLE` for the bounded native successor described below; whole-chain qualification
+remains incomplete. Native v10 consumed the identical prepared main input without another preparation
+call, and Planning, Memo, Draft and length revision completed. A further working-version
+selection defect treated the preserved failed pre-submit Effect as unresolved even
+after its owner terminated. Working selection now checks the Planning owner's exact
+historical retirement receipt and its existing pure-observer owner filter. It leaves
+the original failed Effect, Attempt, Dispatch and unknown usage intact. Missing or
+changed proof, live submission rights and current writing UNKNOWN still refuse. Policy
+adoption retains its global checks. Focused PostgreSQL checks exercise these boundaries. Bounded native saved-revision
+selection, unchanged historical records and ordinary pause/resume evidence is retained
+in `architecture/live-evidence/author-first-working-selection-9e289b4b/`. Whole-chain
+production and literary qualifications remain incomplete.
+Routing observation lookup currently scans large asset JSON before matching its stage
+and model cohort; native statement-timeout failures have exposed this scaling gap.
+Migration 229 adds matching indexes for the model cohort, prior routing chain and
+Effect-bound generated artifact lookups without changing observation eligibility or the
+200-row boundary. Registration v8 retains an explicit v7/v8 preparation handoff after an
+exact terminal routing-query timeout with zero Effects and budgets. A Context already
+saved before the query must retain the original content hash and validated bytes. The
+current Book frontier, input snapshot, original actor and released submission rights
+remain required; the successful prior control receipt binds every retained preparation
+item. Native migration and exact-query preservation have bounded execution evidence
+in `architecture/live-evidence/author-first-owned-recovery-5f5abbcb/`. Successor receipt
+consumption and end-to-end qualification remain pending.
+The existing 200-row boundary, sample eligibility, retry attribution and quality authority
+must remain unchanged.
+Current author-first routing policy updates need a versioned compare-and-set command
+schema when they supply an expected policy hash. A handler precondition cannot protect
+an update if its closed command schema rejects that field before admission.
+A paused worker may have planned a never-dispatched tail before checking Book pause.
+Versioned recovery of that tail is pending implementation: Kernel must cancel only
+the exact zero-dispatch intent and release its reservation after the worker relinquishes
+submission rights. Settled preparation remains original evidence; unknown or active
+calls cannot use this boundary. The zero-send
+continuation does not authorize it. Handoff retains the original preparation
+custodian only when the complete captured input view has the same registered hash;
+the successor still owns its new Context, Attempt and main request. Only an exact
+task, stage, source request hash and verified settled result may reuse a receipt.
+Changed paragraph units or targets create a new task; old unit identities keep their
+original meaning. Final semantic checks combine the ordered union of all original risk
+neighbors and dependency units. Complete request capacity determines batching, while
+each original risk neighborhood and dependency closure must remain visible together;
+necessary overlap is retained and an oversized closure is rejected. The supported frozen
+task-context-compression v1–v3 protocols limit each request to 256 source units, matching
+their output identity arrays (`HISTORICAL_COMPATIBILITY`). Both initial and final
+batching must honor that wire contract as well as complete request capacity. This is
+not a limit on total source units or the number of batches; coverage is preserved.
+Each checker task keeps
+its exact identity, and missing or uncertain meaning retains the existing restoration
+rules. Final Planning dispatch, including preparation calls, checks the
+owning Book pause and Book/Creation cancellation before entering the Provider.
+Independent Book prose-review recovery can consume a retained completed result.
+Planning saved-result scans select its generation definition; Chapter scans select the
+exact active Chapter or working-revision Root. Optional prose review selects its admitted
+Operations. These owner scopes apply to pending execution sessions and unsettled
+successful receipts, retaining the original Book, actor and Effect identity checks.
+An unavailable unrelated review backend does not gate ordinary continuation. An unresolved
+invocation within the selected writing scope still requires its original reconciliation.
+The shared Content scheduler delegates UNKNOWN review queries to its owning adapter
+under the original Attempt and a current recovery Fence. A query retains unresolved
+Operation state until the result is established. Kernel-settled terminal Attempts are
+not checkpointed or failed a second time. Queries never authorize another send.
 The capacity meaning is unchanged; Context v4 versions the semantic method. Context v3
 retains the earlier method, and its frozen manifests and catalog remain available.
 Explicit Planning `narrative_intent_boundary=False` retains Pack `2.13.0` and
@@ -1430,7 +1713,17 @@ The Context owner retains relevance, deduplication and source eligibility while
 deferring capacity eviction to the fully rendered request. Book's
 `working-prose-projection.v6` and v7 retain the selected historical passages without the
 legacy 24,000-character allocation; source identity and lossless history references
-remain separate from delivered expression. Older frozen policies retain their limits.
+remain separate from delivered expression. V8 selects relevance and located dependency
+evidence before capacity preparation, with no replacement character or fact-count quota.
+Older frozen policies retain their exact selection semantics and limits.
+An authenticated local author/operator may select future working inputs through
+`authority-manuscript select-working-policy` at a settled READY/PAUSED checkpoint.
+Book Authority records a versioned `book_working_prose_policy` asset, exact profile and
+frontier, and advances its version atomically without changing pause or acceptance.
+Original profiles and requests remain immutable; replay binds author, complete policy,
+reason and checkpoint. Later selections retain the exact preceding policy version/hash;
+reconstructing an earlier chapter resolves the policy at its original frontier.
+Unsettled effects retain their reconciliation protections.
 
 Chapter's binder and Planning's preparer coordinate capacity within their existing
 Owners before planning the main Effect. Eligible older historical expression is
@@ -1453,6 +1746,13 @@ route-specific admission. Original frozen plan predecessor records are retrieved
 the ChapterPlan realization identity and exact parent-version hash, labelled as planned
 rather than occurred or accepted. Completely unchanged sources have exact-original
 proofs; bounded semantic checks target changed extracts and their located dependencies.
+A semantic chunk may omit redundant model fidelity/recheck only when it contains
+the complete source catalog and reconstruction equals the entire original Provider
+payload, including structured facts and exact newlines. The host equality proof
+claims no Provider evidence; a prior negative assessment stays negative. Partial
+extracts, source identity, dependency closure, complete capacity and unsettled
+execution guards retain their checks. This path is `CODE_EXISTS`; corrected native
+consumption remains pending.
 Working passages batch within their original Chapter source, retaining per-passage
 coordinates. Identical wrappers of the same source version share one extract; another
 Chapter or changed source hash cannot borrow that identity.
@@ -1518,6 +1818,9 @@ ceiling, new task contracts reserve its full confirmed model output capacity,
 including reasoning once. An explicitly frozen CLI headroom policy can instead reserve
 the entire remaining confirmed window when the output maximum is unknown; unknown
 context capacity or insufficient frozen reservation blocks.
+That headroom policy does not apply an independent output-token ceiling from a
+fixed-output route field, including when complete-request admission supplies its
+system window. Fixed-output historical contracts retain their original meaning.
 Successful frozen requests recover under their original contract without new I/O.
 These are engineering contracts;
 fixture execution does not establish real Provider capacity or literary improvement.
@@ -1774,13 +2077,39 @@ aesthetic preferences and uncertainty cannot become cross-chapter blockers. A ha
 constraint claim must identify an explicitly approved frozen constraint; this extension
 does not promote inferred details into hard constraints.
 
-Frozen longform prose-review v1/v2 retains numeric code-point citations. New native
-root-cause review starts freeze `literal-prose-citation.v1`; Pack 1.5.0 delivers v3
-quote-only citations and the Host locates each unique literal in its supplied source
-version. Ambiguous, absent or mismatched source quotations remain invalid. Formal
+Frozen longform prose-review v1/v2 retains numeric code-point citations. Explicit
+`literal-prose-citation.v1` requests retain v3 quote-only citations, and the Host locates
+each unique literal in its supplied source version. New native root-cause review starts
+without an explicit citation contract freeze `indexed-prose-citation.v1` / report v5.
+The Host numbers exact nonblank passages in the frozen window; the Provider sees each
+number beside its unchanged text and returns only `citation_id`. The Host derives the
+original quote, chapter, version, hash and Unicode location without asking the model to
+transcribe or concatenate evidence. Empty lines and original line endings remain in the
+Provider view; all supplied prose reconstructs exactly, without a second full copy.
+Repeated text has distinct location-bound IDs. Unknown IDs and changed persisted bindings
+are rejected. This prevents model-authored quotation text from becoming review evidence;
+it does not prove that a selected passage supports the model's literary judgment.
+Explicit and previously frozen v3/v4 requests keep their contracts, inputs and receipts.
+Ambiguous, absent or mismatched source quotations remain invalid. Formal
 review and new literal reference sampling consume the same frozen diagnosis/citation
 flags. Legacy sample Intents retain their original payload, which omitted diagnosis
 flags even on v2 windows, so saved sample requests remain replayable.
+Chapter-literal v4 binds the chapter number to its frozen version and text hash on the
+Host. Contract and manifest/window identity are checked before quotation location;
+registered window spans must retain the manifest's exact source identities. Missing
+quotes, multiple literal occurrences and unavailable source identities retain distinct
+diagnostic reasons under the compatible citation error code. Diagnostics carry citation
+ordinals and hashes without reproducing prose. Unicode codepoint offsets preserve
+punctuation and line breaks; normalization or fuzzy matching cannot validate a quotation.
+For a known rejected chapter-literal report, the existing second Attempt receives the
+verified settled report and original rejection as diagnosed correction input bound to
+the unchanged window and actor. This prevents reuse of the same invalid result without
+changing citation gates, retry allowance, the original receipt or manuscript authority.
+An indexed report with an unknown passage ID can use only its existing remaining Attempt.
+Its correction input retains the verified settled rejected result, exact source identity
+and allowed passage IDs. Unknown Effects, held leases, cancellation and exhausted Attempts
+retain their existing refusal/reconciliation paths. No invalid historical quote is
+converted automatically into a valid indexed report.
 
 The existing Book start UoW can append `WINDOW_REVALIDATED` when a complete, verified
 v2 receipt failed only citation coordinates and all quotations resolve uniquely on
@@ -1888,6 +2217,13 @@ ExternalEffect path. Recaps are navigation, never evidence of full prose reading
 cover structural repetition, character/relationship movement, setup/progression/payoff,
 voice/expression, arc pacing and motivated/costly turns. Located model claims remain
 observations; matching text coordinates do not prove their semantic correctness.
+The historical 8,192-token API review output target is `CONFIGURABLE_POLICY`,
+not an invariant or a cumulative allowance. DeepSeek thinking and final JSON share
+the sent output ceiling. New working-prose review windows may freeze positive `provider_output_tokens` in
+their policy. The native model port uses that exact allocation before complete-request
+admission and paid Book authorization; the final selected model must support it.
+Omitted allocation keeps the historical stage target, and an existing intent retains
+its frozen output ceiling. This resource policy grants no manuscript mutation authority.
 
 An explicit manual `reading_mode=BODY_FIRST` freezes exact prose without creative
 baselines or design-status fields in its source windows. Its Provider view records
@@ -1896,6 +2232,21 @@ expectations. It cannot assess withheld design commitments or establish market e
 Design-aware review remains the default; examining design afterwards creates a separate
 versioned review, never enriches the completed body-first request. Neither mode adds a
 manuscript delivery gate.
+Body-first and design-aware reading share the frozen citation contract. Literal review
+requires a unique supplied quote with the exact source version and text hash from the
+same span. Wrong or guessed identities remain rejected; host location does not repair
+a model-selected source identity.
+Explicit `chapter-literal-prose-citation.v1` windows use Provider report v4:
+model citations contain only the chapter number and unique supplied quote. The Host
+binds that chapter’s single frozen source version/hash and exact Unicode position,
+retaining the raw Provider result separately. Provider views omit machine source identities
+for this contract; the immutable input asset and materialization retain custody. Missing
+or ambiguous chapter bindings, foreign/nonunique quotes and changed persisted identities
+are rejected. Historical v1–v3 identity-bearing reports retain their strict validation and
+are never repaired by this new contract. No default citation policy or manuscript gate changes.
+The coordinator requires external-effect resolution authority only when its model port
+provides native external recovery. A port without that capability has nothing to reconcile;
+native recovery still requires the scoped resolution permission before reading or mutating it.
 
 Stopped read-only prose review uses the Kernel isolation journal and existing native
 root/Saga admission. A linked root successor preserves its frozen window and source
@@ -2181,6 +2532,20 @@ realization even for imported candidates. Older binding definitions support froz
 receipt replay, not new production admission. Mission, scene, obligation, Arc schedule,
 state-transition and realization changes participate in semantic diff and future-only
 invalidation. Accepted and executed history remains outside replan mutation scope.
+For approved ChapterGroup replan, Book coordination first activates the owning Plan
+Change, then retires the idle old group against that exact active future-impact record,
+and only then regenerates and resumes the Book snapshot. Replay reuses the existing
+activation and retirement Operations. Approval alone cannot retire a group; active
+children, cancellation, unresolved effects and held execution rights still reject it.
+The directly replaced unexecuted binding, including FROZEN future intent, receives
+its own exact PlanChange impact; this does not add a dependency self-edge. Descendant
+REVALIDATE and executed-history rules remain unchanged. A legacy ACTIVE activation
+missing only this record can append it under the same idle Book and cancellation
+guards. Story Design, Planning binding and final activation each recheck those guards
+inside their mutation UoW. Formation cancellation and Book/Group root locks serialize
+the checks with their existing owners; a cancellation between phases preserves the
+completed checkpoint and blocks the next phase. Final input binding checks the Book
+and Creation cancellation again before READY can commit.
 
 ## Creative requirements and compatibility boundary
 
@@ -2415,6 +2780,19 @@ Editorial, Reader Evidence, Longitudinal Stability and Production Evidence remai
 separate dimensions. Scripted evidence can support contracts, not narrative quality;
 AI evaluation is not human evidence, and a combined reader/longitudinal record cannot be
 duplicated into two independent proofs.
+
+New membership Quality Qualification campaigns bind the existing closed
+`billing-channel-resources.v1` policy under `budget_policy.resource_policy`, alongside
+`chapter_limit` as exact evidence coverage. They declare no cumulative token or fee
+allowance and cannot mix monetary or finite cumulative fields into that policy. This
+metadata grants no dispatch or literary acceptance. Historical finite campaign manifests
+retain their original admission, budget and digest.
+Current working comparison subjects must retain the frozen manifest’s
+`FIRST_DRAFT_VS_NATIVE_WORKING_REVISION` protocol and grant no author or Book acceptance.
+Subject binding verifies that exact manifest hash. Existing registered subject requests
+retain their original protocol, including the historical accepted-revision label on an
+already-bound working comparison; Kernel replay still verifies the complete original
+payload and input bindings. That retained label grants no acceptance authority.
 
 Reader Calibration also owns anonymous comparisons of independent continuous manuscripts.
 The existing Quality Qualification router exports exact saved native Drafts, explicitly
@@ -3063,6 +3441,13 @@ Raw SourceDocument/Transform/Chunk/SourceWork remain prohibited generation input
 when their Corpus rights permit abstract knowledge use. Only governed knowledge can cross
 that boundary. Fixture-derived Cards retain their fixture ceiling and cannot pass a
 production Planning gate merely because a Pack can be inspected.
+Provider consumption inspects the complete finite input graph, including nested identity
+lists and retained recovery evidence. Iterative traversal rejects cycles and visits shared
+containers once without imposing a depth or container-count limit on valid input. Every
+discovered source identity still reaches the existing Corpus rights and raw-content gate;
+this traversal does not increase complete Provider request capacity or source authorization.
+A retryable Dispatch is not a zero-Effect preparation failure; its failure, request
+identity and completed preparation survive the explicit v10 registered successor.
 
 Import results distinguish preview, verified acquisition, parsed content, scheduled
 analysis and knowledge approval. Pause stops new stages; the current stage may finish.

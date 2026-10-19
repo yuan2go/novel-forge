@@ -1,0 +1,54 @@
+{
+  "at": "2026-10-19T04:50:01.189947+00:00",
+  "source_sha": "b57342b4e15241e722bcbc5ac67a68cd4063d11f",
+  "source_root": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/opening-window-source/novel-forge",
+  "commands": {
+    "unit": [
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+      "-m",
+      "pytest",
+      "tests/unit/test_creation_coordination.py",
+      "tests/unit/test_creation_recovery_control.py",
+      "tests/unit/test_book_opening_runtime_job_policy.py",
+      "-q",
+      "--tb=short",
+      "--junitxml=/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/opening-window-final-unit-b57342b4.xml"
+    ],
+    "postgres": [
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+      "-m",
+      "pytest",
+      "tests/integration/test_creation_cli_postgres.py::test_native_start_freezes_current_work_and_reuses_original_formation",
+      "-q",
+      "--tb=short",
+      "--junitxml=/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/opening-window-final-postgres-b57342b4.xml",
+      "-p",
+      "novel_forge.tools.pytest_collection_evidence",
+      "--novel-forge-collection-report=/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/opening-window-final-postgres-b57342b4.collection.json",
+      "-p",
+      "formal_creation_cli_probe"
+    ],
+    "docs": [
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+      "-m",
+      "novel_forge.tools.documentation_reality",
+      "--repo-root",
+      ".",
+      "--expected-sha",
+      "b57342b4e15241e722bcbc5ac67a68cd4063d11f",
+      "--output",
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/opening-window-final-docs-b57342b4.json"
+    ],
+    "ruff": [
+      "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/ruff",
+      "check",
+      "src/novel_forge/modules/book_authority/creation_runtime.py"
+    ]
+  },
+  "unit_count": 82,
+  "postgres_count": 4,
+  "database": "nf_author_first_custody_final_test",
+  "production_database_not_used": true,
+  "read_only_failure_probe": true,
+  "fresh_pycache": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/tmp/pycache-opening-window-final-b57342b4"
+}

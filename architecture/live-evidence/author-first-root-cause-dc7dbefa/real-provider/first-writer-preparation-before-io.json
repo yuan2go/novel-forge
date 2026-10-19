@@ -1,0 +1,104 @@
+{
+  "status": "PASS",
+  "evidence_class": "REAL_NATIVE_PREPARATION_BEFORE_EXTERNAL_PROCESS",
+  "source_sha": "e5f1da7d1649610370500d960cad4e06083c69d9",
+  "identity": [
+    "nf_author_first_native",
+    "7697608597895058057",
+    "2026-10-18 02:19:38.301601+08:00"
+  ],
+  "operation_id": "d91a49f0-c575-4b37-bc18-8cba8b270895",
+  "external_effect_id": "27c7df83-ee2b-40fb-84a9-ce734e333c64",
+  "effect_status_at_capture": "SUCCEEDED",
+  "effect_created_at": "2026-10-18 02:16:40.444698+08:00",
+  "attempt": [
+    "9d89a46a-2682-478c-a328-e8a99c89b6f8",
+    "SUCCEEDED"
+  ],
+  "snapshot": [
+    "sha256:aba5b546946cb510dbda8b24a91a08351edb42eba1b8fdbdcc7633e6411ffe81",
+    "sha256:d10b10a633fa6540876c5eacbc87009e0c9b37185dd00afeea4dcea8c0f2660d",
+    "2026-10-18 02:16:39.083738+08:00"
+  ],
+  "execution_contract_assets": [
+    [
+      "input_manifest",
+      "d08a2d5e-f99b-486f-8c8b-68227eb5e3ea",
+      "sha256:5110a13b840ae43bc40b69e4bef8c696ec18e8c9aadfedb404d82c15679637ec",
+      "2026-10-18 02:16:40.580386+08:00"
+    ],
+    [
+      "provider_request_admission_manifest",
+      "09d919e3-a22f-4f38-9c85-55fe859f3878",
+      "sha256:379289cf0840c4ee74598236ccd5c745706298aa204af2ed6cdceee13423cd5f",
+      "2026-10-18 02:16:40.424370+08:00"
+    ],
+    [
+      "route_snapshot",
+      "dc202ff1-4670-4266-b85c-969b89dc9f16",
+      "sha256:a891dd49cd38cd99ed4b214e20224078e3eb3ca6fb41f1bb284810a0c39e61e5",
+      "2026-10-18 02:16:40.582922+08:00"
+    ],
+    [
+      "routing_decision",
+      "e55e71a6-cb1d-4e39-9089-da89ca04f27a",
+      "sha256:eee619e695085b8bb2acf6eae301e0a822350cc6ec1b56f92c443cefe7aede21",
+      "2026-10-18 02:16:40.418312+08:00"
+    ]
+  ],
+  "input_content_hash": "sha256:0cf9a1a2b482e3b654d5e440ea59af8fdfbd356d555464554bb106e3d71556a8",
+  "process_input_sha256": "50c5c5004d1ca48a0170d36349defb6771b6a66b56347f4749ad32e3d9b294be",
+  "process_status_at_capture": "SUCCEEDED",
+  "main_call": "ALREADY_SENT_NOT_AN_UNSENT_CAPACITY_FAILURE",
+  "result_and_usage": "NO_SETTLEMENT_CLAIM_FROM_THIS_TIMING_AUDIT",
+  "initial_audit_correction": "Demanding every execution contract timestamp precede Effect intent was too strong. Snapshot/routing/admission precede intent; execution InputManifest and RouteSnapshot follow durable intent and precede process start. No production omission observed.",
+  "code_path": "PostgresProductionExecutionPayloadResolver.bind persists contracts through _ensure_contract/materialize_output before gateway/backend invocation; fault tests cover the separate preparer-before-Effect failure path.",
+  "process_receipt": {
+    "attempt_id": "9d89a46a-2682-478c-a328-e8a99c89b6f8",
+    "authority_bound": true,
+    "command_sha256": "0dbde33c0deccd3f3a89ecc9d0e9315ea7279589704b5afeb994bae72f85d923",
+    "completed_at": "2026-10-17T18:19:03.382525Z",
+    "elapsed_ms": 142515,
+    "environment_keys": [
+      "CODEX_HOME",
+      "HOME",
+      "LANG",
+      "LC_ALL",
+      "PATH",
+      "TMPDIR"
+    ],
+    "execution_directory": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01/executions/chapter-execution-27c7df83-ee2b-40fb-84a9-ce734e-024fd7fa76442e85",
+    "execution_id": "chapter-execution:27c7df83-ee2b-40fb-84a9-ce734e333c64",
+    "failure_reason": null,
+    "fencing_token": 1,
+    "input_sha256": "50c5c5004d1ca48a0170d36349defb6771b6a66b56347f4749ad32e3d9b294be",
+    "last_supervisor_heartbeat_at": "2026-10-17T18:18:59.766972Z",
+    "local_termination_only": false,
+    "operation_id": "d91a49f0-c575-4b37-bc18-8cba8b270895",
+    "process_group": {
+      "pgid": 5005,
+      "pid": 5005,
+      "process_start_token": "Sun Oct 18 02:16:40 2026"
+    },
+    "process_started_at": "2026-10-17T18:16:40.865311Z",
+    "provider_request_id": null,
+    "receipt_id": "process-receipt:76a47533494d2931168939de",
+    "receipt_path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01/executions/chapter-execution-27c7df83-ee2b-40fb-84a9-ce734e-024fd7fa76442e85/process-receipt.json",
+    "receipt_version": "process-receipt.v1",
+    "recovery_reason": null,
+    "request_digest": "76a47533494d2931168939de845cde4fc0d97cfab28f35dc4a3e1d159fbe9e84",
+    "result_filename": "last-message.json",
+    "result_format": "json",
+    "result_integrity": "VALID",
+    "result_path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01/executions/chapter-execution-27c7df83-ee2b-40fb-84a9-ce734e-024fd7fa76442e85/last-message.json",
+    "returncode": 0,
+    "status": "SUCCEEDED",
+    "stderr_path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01/executions/chapter-execution-27c7df83-ee2b-40fb-84a9-ce734e-024fd7fa76442e85/stderr.log",
+    "stdout_path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01/executions/chapter-execution-27c7df83-ee2b-40fb-84a9-ce734e-024fd7fa76442e85/stdout.log",
+    "supervisor_pid": 99369,
+    "supervisor_process_start_token": "5dccc53b5948b797ec311b4346119a4465b6e05ae3c0ebbad6920c733a29e7a7",
+    "termination_reason": null,
+    "termination_signal": null,
+    "transport": "LOCAL_CLI_REMOTE_INFERENCE"
+  }
+}

@@ -84,3 +84,29 @@ def test_named_diagnosis_union_covers_every_changed_codepoint_without_bridging_g
     else:
         with pytest.raises(KernelError, match="connected named frozen scope"):
             apply_targeted_edits(draft={"text": text}, review=review, result=result, range_policy="NAMED_DIAGNOSIS_UNION_V1")
+
+
+@pytest.mark.parametrize("change", ["actor", "hash", "cause", "version", "failure"])
+def test_publication_successor_never_borrows_another_source(change):
+    from novel_forge.modules.chapter_authority.publication_recovery import _source_allowed, CONTRACT
+    from types import SimpleNamespace
+
+    source = {"operation_id": "old", "definition_name": "chapter.export.render", "definition_version": "3.9.0",
+        "status": "FAILED_FINAL", "project_id": "p", "workspace_id": "w", "actor_id": "author",
+        "root_operation_id": "root", "command_payload": {}, "input_asset_snapshot": [{"asset_version_id": "gate", "content_hash": "exact"}]}
+    current = {**source, "operation_id": "new", "definition_version": "3.10.0", "causation_operation_id": "old"}
+    policy = {"contract_version": CONTRACT, "frozen_inputs": source["input_asset_snapshot"]}
+    gate = SimpleNamespace(content={"failed_checks": ["latest_rereview_passed"]})
+    _source_allowed(source, current, policy, gate)
+    if change == "actor":
+        current["actor_id"] = "other"
+    if change == "hash":
+        current["input_asset_snapshot"] = [{"asset_version_id": "gate", "content_hash": "changed"}]
+    if change == "cause":
+        current["causation_operation_id"] = "other"
+    if change == "version":
+        current["definition_version"] = "3.10.1"
+    if change == "failure":
+        gate.content["failed_checks"] = ["canon_consistent"]
+    with pytest.raises(KernelError, match="PUBLICATION_RECOVERY_SOURCE_INVALID"):
+        _source_allowed(source, current, policy, gate)

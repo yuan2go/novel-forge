@@ -1,0 +1,189 @@
+tmp_path = PosixPath('/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01/execution-checks/pytest-review-default-memo-native/test_native_author_first_cross0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10bbefef0>
+runtime_clock = <function runtime_clock.<locals>.advance at 0x10bb67d80>
+completed_sibling = False, recoverable_result = False, enhanced_working = False
+
+    @pytest.mark.parametrize("completed_sibling,recoverable_result,enhanced_working", [(False, False, False), (True, False, False), (False, True, False), (False, False, True), (False, False, "memory"), (False, False, "progression")], ids=["single-interruption", "completed-sibling-interruption", "saved-complete-result", "enhanced-working-interruption", "working-memory-interruption", "working-progression-interruption"])
+    def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch, runtime_clock, completed_sibling, recoverable_result, enhanced_working):
+        harness = CapabilityPackPostgresHarness("author-first")
+        project = harness.project_id + "-native"
+        root = Path(__file__).resolve().parents[2]
+        transport = SynthesisTransport()
+        if enhanced_working in {"memory", "progression"}:
+            parent_transport = transport.chapter
+            class MemoryTransport:
+                def __getattr__(self, name):
+                    return getattr(parent_transport, name)
+                def __setattr__(self, name, value):
+                    setattr(parent_transport, name, value)
+                def __call__(self, stage, inputs):
+                    output = parent_transport(stage, inputs)
+                    if stage == "draft":
+                        number = inputs["plan"]["chapter"]
+                        quote = output["scene_artifacts"][0]["text"][:200]
+                        output["working_memory_json"] = (json.dumps([{"kind": "EVENT", "subject": "archivist",
+                            "state_key": "controlled-opening", "claim": "The selected opening is available for later source lookup.",
+                            "perspective": "OBSERVED", "knowledge_owner": "", "quote": quote, "causes": []}])
+                            if number == 1 else {"invalid": "optional metadata"} if number == 2 else "[]")
+                    return output
+            transport.chapter = MemoryTransport()
+        env = controlled_member_environment(tmp_path, {
+            "NOVEL_FORGE_APPLICATION_BUILD_ID": harness.application_build_id,
+            "NOVEL_FORGE_COMMIT_SHA": harness.release_sha,
+            "NOVEL_FORGE_MODEL_PROVIDER": "codex-cli", "NOVEL_FORGE_MODEL": "gpt-test",
+            "NOVEL_FORGE_PLANNING_PROVIDER": "codex-cli", "NOVEL_FORGE_PLANNING_MODEL": "gpt-test",
+            "NOVEL_FORGE_STORAGE_AUTHORITY": "postgresql", "NOVEL_FORGE_DATABASE_URL": DATABASE_URL,
+            "NOVEL_FORGE_OPERATOR_PRINCIPAL_ID": "native-creation-operator",
+        }, monkeypatch, transport)
+        env["NOVEL_FORGE_ENVIRONMENT"] = "production"
+        if not completed_sibling and not recoverable_result and not enhanced_working:
+            catalog = json.loads(env["NOVEL_FORGE_CODEX_ROUTER_MODELS"])
+            catalog["contract_version"] = "codex-router-models.v2"
+            for model in catalog["models"]:
+                model["output_limit"] = None
+            env["NOVEL_FORGE_CODEX_ROUTER_MODELS"] = json.dumps(catalog)
+            env["NOVEL_FORGE_CODEX_OUTPUT_RESERVATION_POLICY"] = "codex-cli-context-headroom.v1"
+            env.pop("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT", None)
+            monkeypatch.delenv("NOVEL_FORGE_PROVIDER_MODEL_OUTPUT_LIMIT", raising=False)
+            from novel_forge.modules.book_authority import reader_pack
+            def unavailable_optional_reader(*_args, **_kwargs):
+                raise RuntimeError("optional Reader deployment is unavailable")
+            monkeypatch.setattr(reader_pack, "ensure_creation_reader_pack", unavailable_optional_reader)
+        executable = Path(env["NOVEL_FORGE_CODEX_EXECUTABLE"])
+        executable.write_text(executable.read_text().replace(
+            ' target.write_bytes(',
+            ''' if target.with_name("interrupt-stream").exists():
+      print(json.dumps({"type":"thread.started","thread_id":"controlled-interrupted-generation"}))
+      print(json.dumps({"type":"turn.failed","error":{"message":"stream disconnected before completion"}}))
+      sys.exit(1)
+     target.write_bytes('''))
+        env["NOVEL_FORGE_CODEX_EXECUTABLE_SHA256"] = "sha256:" + hashlib.sha256(executable.read_bytes()).hexdigest()
+        from novel_forge.modules.chapter_authority.execution_gateway import PostgresProductionExecutionPayloadResolver
+        from novel_forge.modules.production_execution.process_supervisor import PersistentExecutionDirectory
+        resolve = PostgresProductionExecutionPayloadResolver.resolve
+        stream_failures = []
+        current_project = []
+        compression_calls = []
+        def interrupt_first_memo(resolver, request, admission):
+            payload = resolve(resolver, request, admission)
+            current_project[:] = [request.project_id]
+            if request.stage in {"context_compress", "context_fidelity"}:
+                compression_calls.append((request.operation_id, request.stage))
+            failure_stage = "context_fidelity" if completed_sibling else "memo"
+            if not recoverable_result and request.stage == failure_stage and not stream_failures:
+                layout = PersistentExecutionDirectory(env["NOVEL_FORGE_CODEX_EXECUTION_ROOT"]).prepare(request.execution_id)
+                layout.result_path("interrupt-stream").write_text("controlled fault")
+                stream_failures.append(request.operation_id)
+            return payload
+        monkeypatch.setattr(PostgresProductionExecutionPayloadResolver, "resolve", interrupt_first_memo)
+        from novel_forge.modules.command_kernel import generation_isolation
+        monkeypatch.setattr(generation_isolation, "sleep", lambda _: runtime_clock(current_project[0]))
+        if completed_sibling:
+            prepare_context_model_stages(transport, monkeypatch)
+        if recoverable_result:
+            from dataclasses import replace
+            from novel_forge.modules.chapter_authority.execution_gateway import ProductionExecutionGatewayExternalEffectAdapter
+            execute = ProductionExecutionGatewayExternalEffectAdapter.execute
+            def lose_completed_response(adapter, **options):
+                result = execute(adapter, **options)
+                payload = options["request_payload"]
+                if payload.get("stage") == "memo" and not stream_failures:
+                    assert result.outcome == "success"
+                    stream_failures.append(payload["operation_id"])
+                    return replace(result, outcome="unknown")
+                return result
+            monkeypatch.setattr(ProductionExecutionGatewayExternalEffectAdapter, "execute", lose_completed_response)
+        if not completed_sibling and not recoverable_result:
+            from novel_forge.modules.command_kernel import generation_isolation, step_successor_v2
+            from concurrent.futures import ThreadPoolExecutor
+            native_recovery = generation_isolation.recover_chapter_generations
+            admission_checked = []
+            def verify_atomic_recovery(authority, **options):
+                if admission_checked:
+                    return native_recovery(authority, **options)
+                book = authority.require(options["book_run_id"])
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("""SELECT to_jsonb(o) FROM authority_operation o
+                        JOIN authority_external_effect e USING(operation_id)
+                        WHERE o.project_id=%s AND o.definition_name='chapter.memo.generate' AND e.status='UNKNOWN'""", [book["project_id"]])
+                    original = uow.cursor.fetchone()
+                if original is None:
+                    return native_recovery(authority, **options)
+                def interrupt_admission(*args, **kwargs):
+                    raise RuntimeError("controlled successor admission interruption")
+                with monkeypatch.context() as fault:
+                    fault.setattr(step_successor_v2, "replace_failed_step", interrupt_admission)
+                    with pytest.raises(RuntimeError, match="controlled successor admission interruption"):
+                        native_recovery(authority, **options)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == original
+                    uow.cursor.execute("SELECT count(*) FROM authority_generation_isolation WHERE operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                    uow.cursor.execute("SELECT count(*) FROM authority_saga_step_successor WHERE predecessor_operation_id=%s", [original[0]["operation_id"]])
+                    assert uow.cursor.fetchone() == (0,)
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    outcomes = list(pool.map(lambda _: native_recovery(authority, **options), range(2)))
+                assert sum(outcomes) == 1
+                admission_checked.append(True)
+                return True
+            monkeypatch.setattr(generation_isolation, "recover_chapter_generations", verify_atomic_recovery)
+        env["NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"] = "native-creation-operator"
+        env["NOVEL_FORGE_NARRATIVE_EVALUATOR_PRINCIPAL_ID"] = "native-planning-evaluator"
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+        monkeypatch.setenv("NOVEL_FORGE_DEEPSEEK_BUDGET_TEMPLATE_FILE", str(tmp_path / "not-authorized.json"))
+        transport.database_url = DATABASE_URL
+        inputs = {"version": "creation-request.v1", "title": f"Author work {harness.project_id} sibling={completed_sibling} recoverable={recoverable_result} enhanced={enhanced_working}", "target_chapters": 8,
+            "execution_window": {"version": "creation-execution-window.v1", "stop_after_chapter": 6},
+            "chapter_length": {"minimum": 800, "maximum": 4000}, "language_contract": {"required_language": "zh-CN"},
+            "brief": {"creative_brief_contract_version": "creative-brief-v2", "idea": "An archivist investigates a flood.",
+                "genre": "social mystery", "audience": "adult readers", "constraints": ["Six chapters across a ChapterGroup boundary"],
+                "source_boundaries": ["Original work"]}}
+        source = tmp_path / "request.json"
+        source.write_text(json.dumps(inputs))
+        parser = _authority_parser()
+        args = parser.parse_args(["authority-creation", "start", "--input-file", str(source),
+            "--repository-root", str(root), "--maximum-ticks", "100",
+            "--foreground"])
+        if completed_sibling or recoverable_result or enhanced_working:
+            template = json.loads((root / args.execution_template_file).read_text())
+            template["optional_enhancements"] = sorted(set(template["optional_enhancements"]) | {"memo"})
+            args.execution_template_file = tmp_path / "memo-enhanced-template.json"
+            args.execution_template_file.write_text(json.dumps(template))
+        if enhanced_working:
+            creation_policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
+            creation_policy["profiles"]["production_profile"]["content"]["working_prose_policy"] = {
+                "version": "working-prose-projection.v4" if enhanced_working == "progression" else "working-prose-projection.v3" if enhanced_working == "memory" else "working-prose-projection.v2", "history_chapters": 8,
+                "recent_complete_chapters": 2, "max_characters": 32000,
+                "queries": ["flood"], "guidance_mode": "COMBINED"}
+            if enhanced_working not in {"memory", "progression"}:
+                for key in ("working_schedule_policy", "working_craft_history_policy", "future_planning_feedback_policy"):
+                    creation_policy["profiles"]["production_profile"]["content"].pop(key, None)
+            args.creation_policy_file = tmp_path / "working-creation-policy.json"
+            args.creation_policy_file.write_text(json.dumps(creation_policy))
+        settings = IndustrialSettings(root=tmp_path, database_url=DATABASE_URL, environment="production")
+        from novel_forge.api import authority_dependencies
+        build_book = authority_dependencies.build_book_production_composition
+        interruptions = []
+        def fail_delivery_once(checkpoint):
+            if checkpoint == "after_manuscript_delivery" and not interruptions:
+                interruptions.append(checkpoint)
+                raise RuntimeError("controlled interruption after saved prose")
+        def with_interrupt(*values, **options):
+            composition = build_book(*values, **options)
+            composition.authority.failure_injector = fail_delivery_once
+            return composition
+        monkeypatch.setattr(authority_dependencies, "build_book_production_composition", with_interrupt)
+        with pytest.raises(RuntimeError, match="controlled interruption"):
+            started = run_creation_command(settings, args)
+            raise AssertionError({key: started.get(key) for key in ("stop_reason", "reason_code", "reason")})
+        if not completed_sibling and not recoverable_result:
+>           assert admission_checked == [True]
+E           assert [] == [True]
+E             
+E             Right contains one more item: True
+E             Use -v to get more diff
+
+tests/integration/test_author_first_manuscript_postgres.py:255: AssertionError

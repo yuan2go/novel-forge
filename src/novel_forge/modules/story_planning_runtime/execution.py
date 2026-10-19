@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
 from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
 
 from novel_forge.logging.execution import execution_step
@@ -228,17 +230,13 @@ def _planning_repair_routing_lineage(
     expected_logical_key = ""
     expected_repair_number: int | None = None
     expected_repair_delta = 1
+    content_operations = 0
     with runtime.connection() as connection, connection.cursor() as cursor:
         while True:
             if current_id in seen:
                 raise KernelError(
                     "PLANNING_ROUTING_LINEAGE_CYCLE",
                     "Planning repair routing lineage contains a cycle",
-                )
-            if len(lineage) >= PLANNING_ROUTING_LINEAGE_MAX_OPERATIONS:
-                raise KernelError(
-                    "PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED",
-                    "Planning repair routing lineage exceeds its bounded depth",
                 )
             seen.add(current_id)
             cursor.execute(
@@ -282,7 +280,12 @@ def _planning_repair_routing_lineage(
             capacity_predecessor = ""
             if payload.get("runtime_continuation_id"):
                 cursor.execute(
-                    "SELECT r.source_operation_id,r.successor_command,r.source_command,source.command_payload->'payload' FROM authority_story_planning_runtime_continuation r JOIN authority_operation source ON source.operation_id=r.source_operation_id AND source.status IN ('CANCELLED','FAILED_FINAL','DEAD_LETTER') JOIN authority_operation registration ON registration.operation_id=r.registered_by_operation_id AND registration.status='SUCCEEDED' WHERE r.continuation_id=%s AND r.successor_operation_id=%s AND r.project_id=%s AND r.book_id=%s",
+                    """SELECT r.source_operation_id,r.successor_command,r.source_command,source.command_payload->'payload'
+                    FROM authority_story_planning_runtime_continuation r
+                    JOIN authority_operation source ON source.operation_id=r.source_operation_id
+                    JOIN authority_operation registration ON registration.operation_id=r.registered_by_operation_id AND registration.status='SUCCEEDED'
+                    WHERE source.status IN ('CANCELLED','FAILED_FINAL','DEAD_LETTER')
+                      AND r.continuation_id=%s AND r.successor_operation_id=%s AND r.project_id=%s AND r.book_id=%s""",
                     [
                         payload["runtime_continuation_id"],
                         current_id,
@@ -291,6 +294,10 @@ def _planning_repair_routing_lineage(
                     ],
                 )
                 binding = cursor.fetchone()
+                if binding is None:
+                    from .runtime_continuation import acknowledged_routing_link
+                    binding = acknowledged_routing_link(cursor, continuation_id=payload['runtime_continuation_id'],
+                        successor_operation_id=current_id, project_id=project_id, book_id=book_id)
                 if binding is None or binding[1] != payload or binding[2] != binding[3]:
                     raise KernelError(
                         "PLANNING_ROUTING_LINEAGE_INVALID",
@@ -320,6 +327,13 @@ def _planning_repair_routing_lineage(
                     "PLANNING_ROUTING_LINEAGE_INVALID",
                     "Planning repair routing lineage crosses its frozen task scope",
                 )
+            if not capacity_predecessor:
+                content_operations += 1
+                if content_operations > PLANNING_ROUTING_LINEAGE_MAX_OPERATIONS:
+                    raise KernelError(
+                        "PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED",
+                        "Planning repair routing lineage exceeds its bounded depth",
+                    )
             if not lineage:
                 expected_logical_key = logical_key
             lineage.append(current_id)
@@ -341,6 +355,7 @@ def planning_repair_route_receipt(
     task_type: str,
     input_hash: str,
     lineage: tuple[str, ...],
+    frozen_repair: Mapping[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     from novel_forge.modules.story_design_authority import GENERATOR_CATALOG
     from .application import _command_from_payload
@@ -372,7 +387,8 @@ def planning_repair_route_receipt(
             definition.maximum_structural_regenerations,
         )
         from .stage_repairs import routing_repair_bound
-        stage_bound = routing_repair_bound(uow.cursor, command=command, lineage=lineage, stage=task_type, maximum=maximum)
+        stage_bound = routing_repair_bound(uow.cursor, command=command, lineage=lineage, stage=task_type, maximum=maximum,
+            frozen_repair=frozen_repair)
         ordinal = stage_bound["stage_repair_number"] if stage_bound else command.repair_number
         maximum = stage_bound["maximum_repairs"] if stage_bound else maximum
         if (
@@ -2495,6 +2511,18 @@ def _canonical_narrative_provider_properties(
     }
 
 
+def compile_planning_output_schema(schema, schema_ref, *, prompt_template_ref, prompt_template_version,
+                                   skill_ref, skill_version, progression=False):
+    if (prompt_template_ref, prompt_template_version) != ("prompt-template:story-planning-pack", "v3"):
+        return schema, schema_ref
+    from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
+
+    output = bind_narrative_intent_schema(schema,
+        event_first_planning=(skill_ref, skill_version) == ("long-outline", "long-outline-v5"),
+        progression=progression)
+    return output, schema_ref + ":narrative-intent-v1" + (":narrative-progression-v1" if progression else "")
+
+
 def stage_schema_evidence_identity(stage, schema, schema_ref, *, world_stage=False):
     if stage in {"context_compress", "context_fidelity"}:
         root = Path(__file__).resolve().parents[1]
@@ -3792,6 +3820,14 @@ class _PlanningPepPort:
     external_effect_backed = True
     production_execution_gateway_backed = True
 
+    def _require_live_book(self):
+        from novel_forge.modules.book_authority.production_policy import require_planning_provider_dispatch
+        from novel_forge.modules.command_kernel.deadline_runtime import probe_operation_execution
+        from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+        probe_operation_execution(self.database_url, operation_id=self.context.operation_id, project_id=self.context.project_id)
+        with AuthorityUnitOfWork(self.database_url) as uow:
+            require_planning_provider_dispatch(uow.cursor, project_id=self.context.project_id, operation_id=self.context.operation_id)
+
     @execution_step("story_planning_runtime._PlanningPepPort.execute")
     def execute(self, command: DomainExecutionCommand) -> DomainExecutionCandidate:
         if command.capability != self.binding.request.capability:
@@ -3810,6 +3846,7 @@ class _PlanningPepPort:
                 lease_seconds=self.lease_seconds,
                 adapter=self.adapter,
                 budget_reservation_id=self.reservation_id,
+                pre_send_assertion=self._require_live_book,
             )
         except Exception as exc:
             if getattr(exc, "code", "") != "RUNTIME_DISPATCH_PAUSED":
@@ -4292,8 +4329,10 @@ class PostgresPlanningExecutionPreparer:
             definition=definition,
             attempt_snapshot=attempt_snapshot,
         )
-        action = None
-        if command.world_preparation_request:
+        from .preparation_recovery import terminal_custody, retained_world_action
+        custody = terminal_custody(self.database_url, command, operation_id)
+        action = retained_world_action(self, command=command, operation_id=operation_id, proof=custody) if custody and command.world_preparation_request else None
+        if command.world_preparation_request and custody is None:
             artifacts = self.pack_runtime.materialize_attempt_artifacts(attempt_snapshot)
             context_policy_content = artifacts.context_policy.content
             knowledge_context, _ = self._context_bundle(
@@ -4341,6 +4380,9 @@ class PostgresPlanningExecutionPreparer:
         capacity_source: tuple[Any, tuple] | None = None,
         capacity_probe: bool = False,
     ) -> PreparedPlanningExecution:
+        from .preparation_recovery import terminal_custody, consumer_realization_catalog
+        custody = terminal_custody(self.database_url, command, operation_id)
+        source_operation_id = custody['source_operation_id'] if custody else operation_id
         stage_name = (
             capacity_task[0] if capacity_task else
             provider_stage.name
@@ -4553,19 +4595,13 @@ class PostgresPlanningExecutionPreparer:
         if (context_document.content.get("world_protected_context_accounting_version") == "world-protected-context-accounting.v1"
                 and (pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version) != ("prompt-template:story-planning-pack", "v3")):
             raise KernelError("WORLD_EXACT_ACCOUNTING_TRANSPORT_DRIFT", "Frozen exact accounting requires the original structured Planning transport")
-        if not capacity_task and (pack_materialization.prompt_template.ref, pack_materialization.prompt_template.version) == ("prompt-template:story-planning-pack", "v3"):
-            from novel_forge.modules.chapter_authority.provider_views import bind_narrative_intent_schema
-
+        if not capacity_task:
             progression = provider_stage is None and command.generator_operation_name in {"book_plan.generate", "volume_plan.generate", "arc_plan.generate", "chapter_group_plan.generate", "chapter_plan.generate"} and (((context_document.content.get("arc_working_set") or {}).get("working_manuscript") or {}).get("projection_policy") or {}).get("version") == "working-prose-projection.v4"
-            output_schema = bind_narrative_intent_schema(
-                output_schema,
-                event_first_planning=(pack_materialization.skill.ref, pack_materialization.skill.version)
-                == ("long-outline", "long-outline-v5"),
-                progression=progression,
-            )
-            output_schema_ref += ":narrative-intent-v1"
-            if progression:
-                output_schema_ref += ":narrative-progression-v1"
+            output_schema, output_schema_ref = compile_planning_output_schema(output_schema, output_schema_ref,
+                prompt_template_ref=pack_materialization.prompt_template.ref,
+                prompt_template_version=pack_materialization.prompt_template.version,
+                skill_ref=pack_materialization.skill.ref, skill_version=pack_materialization.skill.version,
+                progression=progression)
         if capacity_task:
             from novel_forge.modules.chapter_authority.provider_output_contracts import chapter_provider_output_schema, chapter_provider_output_schema_ref
             output_schema = chapter_provider_output_schema(stage_name)
@@ -4677,7 +4713,7 @@ class PostgresPlanningExecutionPreparer:
         authoritative_envelope = build_planning_constraint_envelope(
             project_id=command.project_id,
             book_id=command.book_id,
-            generation_operation_id=operation_id,
+            generation_operation_id=source_operation_id,
             generator_operation_name=command.generator_operation_name,
             frozen_inputs=inputs,
             input_contents={
@@ -4728,7 +4764,7 @@ class PostgresPlanningExecutionPreparer:
                     **({"creative_requirements_contract": "work-requirements.v2" if command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"} else "work-requirements.v1"} if command.execution_contract_version in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"} else {}),
                     "project_id": command.project_id,
                     "book_id": command.book_id,
-                    "generation_operation_id": operation_id,
+                    "generation_operation_id": source_operation_id,
                     "logical_key": command.logical_key,
                     "planning_scope": command.planning_scope.value,
                     "parent_version_id": command.parent_version_id,
@@ -4858,7 +4894,16 @@ class PostgresPlanningExecutionPreparer:
         )
         complete_capacity = context_policy.get("capacity_policy") == "complete-request-capacity.v1"
         capacity_binding = dict((capacity_task[1].get("task") or {}).get("capacity_bindings") or {}).get(stage_name) if capacity_task else None
-        if complete_capacity and (existing_intent is None or capacity_probe):
+        from .preparation_recovery import retained_main_projection
+        retained_projection = retained_main_projection(self.database_url, command=command, operation_id=operation_id,
+            inputs=stable_request_payload['input'], stage=stage_name) if existing_intent is None and not capacity_task and provider_stage is None else None
+        if retained_projection is not None:
+            stable_request_payload['input']['_context_capacity_projection'] = retained_projection
+            from .preparation_recovery import retained_main_capacity_binding
+            capacity_binding = retained_main_capacity_binding(self.database_url, command=command,
+                operation_id=operation_id, projection=retained_projection, stage=stage_name,
+                route=planning_route, router=provider_router)
+        if complete_capacity and (existing_intent is None or capacity_probe) and retained_projection is None:
             from novel_forge.modules.chapter_authority.context_compression_provider import task_provider_output_reserve
             from novel_forge.modules.production_execution.token_meter import route_request_size, route_input_tokens, capacity_route_binding, capacity_route_contract
             from novel_forge.modules.context_builder.request_capacity import prepare_request_capacity, protected_expression_quotes
@@ -4874,12 +4919,16 @@ class PostgresPlanningExecutionPreparer:
             source_boundary = {"kind": "FROZEN_STAGE_INPUTS", "project_id": command.project_id, "book_id": command.book_id,
                 "pack_snapshot_hash": attempt_snapshot.snapshot_hash,
                 "sources": [{"asset_version_id": context_document.asset_version_id, "content_hash": context_document.content_hash}]}
+            if not capacity_task:
+                from .preparation_recovery import preparation_boundary
+                source_boundary = preparation_boundary(self.database_url, command=command, operation_id=operation_id,
+                    capture=capture, current=source_boundary)
             capacity_bindings = {}
             if not capacity_task:
                 from novel_forge.modules.chapter_authority.receipt_recovery import retained_capacity_bindings
                 from novel_forge.modules.narrative_state.reality import narrative_hash
                 capacity_bindings = retained_capacity_bindings(self.database_url, project_id=command.project_id,
-                    operation_id=operation_id, source_hash=narrative_hash(capture), source_boundary=source_boundary, stage=stage_name)
+                    operation_id=source_operation_id, source_hash=narrative_hash(capture), source_boundary=source_boundary, stage=stage_name)
                 capacity_binding = capacity_bindings.get(stage_name)
             if provider_router is not None:
                 prepared_route, preparation = provider_router.select(planning_route, task_type=stage_name,
@@ -4911,6 +4960,10 @@ class PostgresPlanningExecutionPreparer:
 
                 def model_call(substage, task):
                     from novel_forge.modules.production_execution.domain_execution import DomainModelOperation
+                    from .preparation_recovery import reuse_completed_task
+                    reused = reuse_completed_task(self.database_url, command=command, operation_id=operation_id, stage=substage, task=task)
+                    if reused is not None:
+                        return reused
                     prepared = self._prepare_stage(**arguments, capacity_task=(substage, task))
                     candidate = prepared.execution_port.execute(DomainExecutionCommand(capability=definition.capability,
                         operation=DomainModelOperation.GENERATE, candidate_kind=CandidateKind.GENERATION,
@@ -5520,7 +5573,7 @@ class PostgresPlanningExecutionPreparer:
                 binding=binding,
                 adapter=adapter,
                 recovered_completion=recovered_completion,
-                realization_selector_catalog=context_document.content.get("realization_reference_contract") if command.execution_contract_version == "1.21.0" and provider_stage is None else None,
+                realization_selector_catalog=consumer_realization_catalog(self.database_url, command=command, operation_id=operation_id, context=context_document.content) if command.execution_contract_version == "1.21.0" and provider_stage is None else None,
                 writer=self.writer,
                 post_provider_fault_injector=self.post_provider_fault_injector,
             ),
@@ -6028,7 +6081,7 @@ class PostgresPlanningExecutionPreparer:
                 runtime = require_binding(self.database_url, command.runtime_continuation_id)["target_runtime"]
                 upgrade = runtime.get("planning_capacity", {}).get("capacity_policy_upgrade")
                 proof = runtime.get("planning_capacity", {}).get("context_revalidation")
-                if proof and (upgrade or runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1", "chapter-prior-method-audits.v1"}
+                if proof and (upgrade or runtime.get("planning_reference_contract") or proof.get("contract_version") in {"typed-volume-context-projection.v1", "foundation-method-recall-projection.v1", "book-method-scope-projection.v1", "group-method-scope-projection.v1", "world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1", "chapter-prior-method-audits.v1", "same-capacity-semantic-preparation.v1", "same-capacity-isolated-preparation.v1"}
                     or (proof.get("contract_version") == "planning-exact-value-reference.v1" and proof.get("world_input_delivery", {}).get("contract_version") == "world-input-delivery-revalidation.v1")):
                     original = self.query.require(project_id=command.project_id, asset_version_id=proof["context_asset_version_id"])
                     if original.content_hash != proof["context_content_hash"]:
@@ -6041,7 +6094,9 @@ class PostgresPlanningExecutionPreparer:
                     self._validate_frozen_context_retry(context=original, command=command, selected_inputs=selected,
                         context_policy_ref=upgrade["source_context_policy_ref"] if upgrade else context_policy_ref)
                     self._append_narrative_intelligence_documents(command=command, selection=original.content["narrative_intelligence"], documents=documents, knowledge_access_policy=knowledge_access_policy)
-                    content = self._reproject_frozen_context(original.content, command=command, task_tokens=runtime["planning_capacity"]["allocated_task_tokens"], operation_id=operation_id, projection_contract=proof.get("contract_version"), capacity_policy_upgrade=upgrade)
+                    from .preparation_recovery import terminal_custody
+                    custody = terminal_custody(self.database_url, command, operation_id)
+                    content = deepcopy(original.content) if custody else self._reproject_frozen_context(original.content, command=command, task_tokens=runtime["planning_capacity"]["allocated_task_tokens"], operation_id=operation_id, projection_contract=proof.get("contract_version"), capacity_policy_upgrade=upgrade)
                     if upgrade:
                         from .runtime_continuation import capacity_upgrade_projection_hash
                         allocation = runtime["planning_capacity"]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from pathlib import Path
 
 import psycopg
 import pytest
@@ -58,7 +59,9 @@ def test_default_helper_import_curated_analysis_reaches_fixture_review_without_p
     )
     app, scheduler = _runtime(tmp_path, monkeypatch)
     folder = tmp_path / "helper-inputs"
-    frozen_inputs = prepare(folder, target_book_id="intended-book:" + corpus.project)
+    frozen_inputs = prepare(folder, target_book_id="intended-book:" + corpus.project,
+        input_dir=Path(__file__).resolve().parents[1] / "fixtures/creation/knowledge-closure",
+        synthetic_source_imports=True)
     manifest_path = folder / f"{sample}-import.json"
     assert (
         frozen_inputs["files"][manifest_path.name]

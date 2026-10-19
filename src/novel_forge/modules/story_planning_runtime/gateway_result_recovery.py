@@ -311,7 +311,8 @@ def recover(application, *, command, operation_id, principal, execution_probe=No
         candidate_result = raw
         if command.execution_contract_version == "1.21.0" and command.generator_operation_name not in FOUNDATION_GENERATORS:
             from .execution import bind_provider_realization_selectors
-            candidate_result = bind_provider_realization_selectors(raw, context.content.get("realization_reference_contract") or {})
+            from .preparation_recovery import consumer_realization_catalog
+            candidate_result = bind_provider_realization_selectors(raw, consumer_realization_catalog(application.database_url, command=command, operation_id=operation_id, context=context.content))
         from .result_recovery import validate_raw_result
 
         validate_raw_result(

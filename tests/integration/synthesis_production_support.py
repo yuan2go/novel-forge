@@ -216,68 +216,9 @@ class SynthesisChapterTransport(CreativeGroundingTransport):
                 for choice in result["creative_guidance"]["character_choices"]:
                     choice["character_id"] = references["participant_bindings"][choice["character_id"]]
                 self.calls[-1]["output"] = deepcopy(result)
-        table = inputs.get("source_span_table") or {}
-        current_canon = stage == "canon_extraction" and inputs.get("canon_context_projection") == "canon-source-context.v1"
-        current_quality = stage.startswith("quality_") and inputs.get("quality_span_contract") == "literal-source-spans.v1"
-        if not (current_canon or current_quality):
-            return result
-        if table.get("contract_version") != "literal-source-spans.v1":
-            raise ValueError("current Chapter fixture requires its exact frozen source span table")
-        value = deepcopy(result)
-        text = inputs["revision"]["text"]
+        from tests.integration.current_chapter_wire_support import current_chapter_wire_result
 
-        def span_id(location):
-            quote = location.get("quote")
-            if quote is None:
-                start, end = location.get("start"), location.get("end")
-                if not isinstance(start, int) or not isinstance(end, int) or not 0 <= start < end <= len(text):
-                    raise ValueError("current Chapter fixture requires literal evidence in its original candidate")
-                quote = text[start:end]
-            start, end = location.get("start"), location.get("end")
-            anchored = isinstance(start, int) and isinstance(end, int) and 0 <= start < end <= len(text)
-            if anchored and text[start:end] != quote:
-                raise ValueError("current Chapter fixture evidence changed at its original source location")
-            matches = [span for span in table["spans"]
-                       if isinstance(quote, str) and quote and quote in span["quote"]
-                       and span["quote"] == text[span["start"]:span["end"]]
-                       and (not anchored or span["start"] <= start < end <= span["end"])]
-            if not matches:
-                raise ValueError("current Chapter fixture cannot invent a span for absent evidence")
-            return min(matches, key=lambda span: (len(span["quote"]), span["start"]))["span_id"]
-
-        if current_canon:
-            from novel_forge.modules.canon_graph.domain import PROVIDER_SEMANTIC_CHANGE_FIELDS
-
-            for field in (*PROVIDER_SEMANTIC_CHANGE_FIELDS.values(), "arc_evidence", "realization_evidence"):
-                for claim in value.get(field, []):
-                    quote = claim.pop("evidence_quote", None)
-                    start, end = claim.pop("evidence_start", None), claim.pop("evidence_end", None)
-                    claim["evidence_span_id"] = (
-                        None if claim.get("observation_status") == "NOT_OBSERVED"
-                        else span_id({"quote": quote, "start": start, "end": end})
-                    )
-                    if "resolution_evidence" in claim:
-                        claim["resolution_evidence"] = [span_id({"quote": quote}) for quote in claim["resolution_evidence"]]
-                    for location in claim.get("accepted_prose_evidence", []):
-                        identity = span_id(location)
-                        location.pop("quote", None)
-                        location.pop("start", None)
-                        location.pop("end", None)
-                        location["span_id"] = identity
-            value = {"payload_json": json.dumps(value, ensure_ascii=False)}
-        else:
-            requirements = inputs["quality_context"]["creative_baseline"].get("method_requirements", {})
-            for row in value["dimensions"]:
-                status = requirements.get(row["dimension"], {}).get("status")
-                if status in {"NOT_APPLICABLE", "PROHIBITED"}:
-                    row.update(gate_status="NOT_APPLICABLE", score=None, evidence_locations=[])
-                    continue
-                if status == "UNDETERMINED":
-                    row.update(gate_status="INSUFFICIENT_EVIDENCE", score=None)
-                row["evidence_locations"] = [
-                    {"span_id": span_id(location), "claim": location.get("claim") or "Scripted wire evidence only; no literary qualification."}
-                    for location in row["evidence_locations"]
-                ]
+        value = current_chapter_wire_result(stage, inputs, result, json_envelope=False)
         self.calls[-1]["output"] = deepcopy(value)
         return value
 
@@ -297,40 +238,6 @@ class SynthesisChapterTransport(CreativeGroundingTransport):
                 return result
         result = super().planning(stage, inputs)
         task = inputs.get("world_preparation") or {}
-        if task.get("epistemic_contract") == "world-agency.v2":
-            from novel_forge.modules.worldbuilding.production_schema import agency_transition_paths
-
-            if stage == "world_candidates.generate":
-                from tests.integration.current_planning_wire_support import current_world_disclosure_result
-
-                result = current_world_disclosure_result(result, task)
-                for transition in agency_transition_paths(result).values():
-                    payload = json.loads(transition["payload_json"])
-                    if (payload["action"] == "act on the approved faction pressure"
-                        and payload["state_kind"] not in {"character_knowledge", "character_belief", "reader_knowledge", "disclosure_event"}):
-                        payload["action_mode"] = "ROUTINE"
-                        transition["payload_json"] = json.dumps(payload)
-            elif stage == "world_candidates.evaluate":
-                from tests.integration.current_planning_wire_support import current_world_fixture_classification
-
-                result["action_classifications"] = [
-                    {"field_path": path,
-                     "supported": current_world_fixture_classification(transition),
-                     "rationale": "Check the exact scripted action classification; the native causal gate separately verifies frozen sources, actor isolation and preparation order."}
-                    for path, transition in agency_transition_paths(task["generated_portfolio"]).items()
-                ]
-        if (inputs.get("planning_command") or {}).get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}:
-            for row in result.get("chapter_function_matrix", []):
-                row["required_state_delta"] = {"status": "CHANGED", **row["required_state_delta"]}
-            for event in result.get("narrative_event_chain", []):
-                event["feature_status"] = {name: {"status": "APPLICABLE", "rationale": "Selected causal strategy of this synthetic mystery fixture"} for name in ("decision", "resistance", "irreversible_change")}
-            if stage == "chapter_plan.generate":
-                if inputs["planning_command"].get("execution_contract_version") in {"1.19.0", "1.20.0", "1.21.0"}:
-                    result["chapter_contract_schema_version"] = "chapter-mission-scene.v4"
-                    result["serialization_function"] = "payoff_and_new_obligation"
-                else:
-                    result["chapter_contract_schema_version"] = "chapter-mission-scene.v3"
-                result["required_state_delta"] = {"status": "CHANGED", **result["required_state_delta"]}
         if inputs.get("controlled_execution_contract_version") == "1.18.0" and inputs.get("controlled_frozen_cast"):
             cast = inputs["controlled_frozen_cast"]["candidate_payload"]["characters"]
             if len(cast) != 1:

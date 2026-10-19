@@ -53,6 +53,7 @@ from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
 _PERMANENT_PRE_SEND_AUTHORIZATION_DENIALS = frozenset(
     {
+        "BOOK_GENERATION_EXECUTION_NOT_LIVE",
         "NARRATIVE_EVALUATION_REPLACEMENT_EXECUTION_GATE_CLOSED",
         "NARRATIVE_EVALUATION_BOOK_OPENING_EXECUTION_GATE_CLOSED",
     }
@@ -160,13 +161,17 @@ def read_failed_operation_success(
 
 
 def read_retained_generation_stage_success(database_url: str, context: EffectCommandContext, *, effect_id: str) -> dict[str, Any] | None:
-    _validate_effect_context(context)
     with AuthorityUnitOfWork(database_url) as uow:
-        uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s", [context.operation_id, context.project_id])
-        row = uow.cursor.fetchone()
-        if row is None or row[0] not in {"FAILED_FINAL", "FAILED_RETRYABLE", "DEAD_LETTER", "SUCCEEDED"}:
-            raise KernelError("EFFECT_RETAINED_RESULT_OWNER_INVALID", "Retained generation stages require their stopped original owner")
-        return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id, retained_generation_stage=True)
+        return read_retained_generation_stage_success_in_uow(uow, context, effect_id=effect_id)
+
+
+def read_retained_generation_stage_success_in_uow(uow, context: EffectCommandContext, *, effect_id: str):
+    _validate_effect_context(context)
+    uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s", [context.operation_id, context.project_id])
+    row = uow.cursor.fetchone()
+    if row is None or row[0] not in {"FAILED_FINAL", "FAILED_RETRYABLE", "DEAD_LETTER", "SUCCEEDED"}:
+        raise KernelError("EFFECT_RETAINED_RESULT_OWNER_INVALID", "Retained generation stages require their stopped original owner")
+    return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id, retained_generation_stage=True)
 
 
 def read_checkpointed_operation_success(database_url: str, context: EffectCommandContext, *, effect_id: str) -> dict[str, Any] | None:
@@ -189,6 +194,39 @@ def read_completed_operation_success(database_url: str, context: EffectCommandCo
         if row is None or row[0] != "SUCCEEDED":
             raise KernelError("EFFECT_RETAINED_RESULT_OWNER_INVALID", "Completed receipt read requires an immutable succeeded owner")
         return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id)
+
+
+def read_acknowledged_preparation_success_in_uow(uow, context: EffectCommandContext, *, effect_id: str):
+    _validate_effect_context(context)
+    uow.cursor.execute("SELECT status FROM authority_operation WHERE operation_id=%s AND project_id=%s FOR UPDATE", [context.operation_id, context.project_id])
+    operation = uow.cursor.fetchone()
+    uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status<>'CANCELLED')
+        OR EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+          WHERE attempt.operation_id=%s AND lease.status='HELD'),
+        EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s AND status='ACKNOWLEDGED' AND acknowledged_at IS NOT NULL),
+        (SELECT request_payload->>'stage' FROM authority_external_effect WHERE external_effect_id=%s AND operation_id=%s)""",
+        [context.operation_id, context.operation_id, context.operation_id, effect_id, context.operation_id])
+    held, acknowledged, stage = uow.cursor.fetchone()
+    if not operation or operation[0] != 'RECONCILIATION_REQUIRED' or held or not acknowledged or stage not in {'context_compress','context_fidelity'}:
+        raise KernelError('EFFECT_RETAINED_STAGE_INVALID', 'Completed preparation requires acknowledged cancellation and revoked original submission rights')
+    return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id, retained_generation_stage=True)
+
+
+def read_terminal_preparation_success_in_uow(uow, context: EffectCommandContext, *, effect_id: str):
+    _validate_effect_context(context)
+    uow.cursor.execute("""SELECT operation.status,
+        EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=operation.operation_id AND status<>'FAILED_FINAL'),
+        EXISTS(SELECT 1 FROM authority_lease_acquisition lease JOIN authority_attempt attempt USING(attempt_id)
+          WHERE attempt.operation_id=operation.operation_id AND lease.status='HELD'),
+        EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=operation.operation_id),
+        EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=operation.operation_id),
+        (SELECT request_payload->>'stage' FROM authority_external_effect WHERE external_effect_id=%s AND operation_id=operation.operation_id)
+        FROM authority_operation operation WHERE operation_id=%s AND project_id=%s FOR UPDATE""",
+        [effect_id, context.operation_id, context.project_id])
+    row = uow.cursor.fetchone()
+    if not row or row[0] != 'FAILED_FINAL' or any(row[1:5]) or row[5] not in {'context_compress','context_fidelity'}:
+        raise KernelError('EFFECT_RETAINED_STAGE_INVALID', 'Terminal preparation requires failed original Attempts, released submission rights and no cancellation')
+    return _read_verified_success(uow, uow.repositories.external_effects, context, effect_id, retained_generation_stage=True)
 
 
 def _receipt_matches_dispatch(provider_evidence: dict[str, Any], dispatch_evidence: Any) -> bool:
@@ -1454,12 +1492,7 @@ def reconcile_external_effect(
             if historical is not None:
                 if operation["status"] not in {"EXECUTING", "FAILED_RETRYABLE", "WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED", "FAILED_FINAL", "DEAD_LETTER"}:
                     raise KernelError("OPERATION_STATUS_CONFLICT", "Original CLI owner cannot reconcile in this state")
-            elif operation["status"] in {"WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}:
-                _cas_operation(uow, operation_id=context.operation_id, project_id=context.project_id,
-                    expected_status=operation["status"], expected_version=int(operation["version"]), target_status="EXECUTING",
-                    actor_id=attempt_command.worker_id, reason="fenced execution evidence reconciliation",
-                    trace_id=context.trace_id, correlation_id=context.correlation_id, causation_id=effect_id)
-            elif operation["status"] != "EXECUTING":
+            elif operation["status"] not in {"EXECUTING", "WAITING_EXTERNAL_RESULT", "RECONCILIATION_REQUIRED"}:
                 raise KernelError("OPERATION_STATUS_CONFLICT", "Gateway evidence reconciliation requires recoverable durable work")
             uow.commit()
     try:

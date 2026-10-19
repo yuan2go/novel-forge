@@ -1,0 +1,50 @@
+{
+  "schema_version": "author-first-native-recovery-checkpoint.v1",
+  "at": "2026-10-18T14:54:58.624382+00:00",
+  "source_sha": "f31d0b5de3f8960f745ea1202e18ccb9ad76b005",
+  "native_production_source_sha": "ef46b320f54ba9c37b89b2fea74345274cc05f9f",
+  "real_prose_d0_source_sha": "ac884c1773a6245c3e61f6a33e9defd35636f620",
+  "base_main_sha": "9f41f0c75108f708a9a77e6c8da89826cf00987e",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "book_id": "book:wp-nf-author-first-20261017",
+  "database": {
+    "name": "nf_author_first_native",
+    "port": 56437,
+    "cluster_system_identifier": "7697608597895058057",
+    "schema_head": "228"
+  },
+  "template": "creative-execution-template.v12",
+  "native_packs": {
+    "planning": "2.19.0",
+    "chapter": "3.2.0",
+    "optional_review": "1.7.0"
+  },
+  "delivery": {
+    "effective_chapters": 18,
+    "body_han": 77424,
+    "accepted_through_chapter": 0,
+    "first_round_target": 100,
+    "full_book_target": 600
+  },
+  "continuation": {
+    "source_operation_id": "fb1d6d52-5f6f-43bb-8748-31e18c9a3b21",
+    "successor_operation_id": "b1ed47c6-656c-40d7-884c-5f0c2ecb111b",
+    "registration": "SUCCEEDED_NATIVE_SQL_228_ADMITTED",
+    "automatic_receipt_reuse": "REQUIRES_FINAL_SUCCESSOR_CONSUMPTION_EVIDENCE",
+    "chapter19": "NOT_YET_PRODUCED"
+  },
+  "qualifications": {
+    "final_f31_full_matrix": "RUNNING_SEE_EXTERNAL_CANONICAL_RUN",
+    "production": "NOT_PROVEN",
+    "literary": "NOT_PROVEN",
+    "human_review": "NOT_RUN_USER_REQUESTED_MODEL_REVIEW",
+    "deepseek_model_review": "STARTED_NATIVE_WINDOW_01_04_NOT_YET_COMPLETE",
+    "full100_delivery": "NOT_COMPLETE"
+  },
+  "failure_preservation": {
+    "initial_upgrade_check": "FAIL_CONCURRENT_NATIVE_PACK_REVALIDATION; original log retained; backup restored audit-only for unchanged-history comparison",
+    "superseded_ac_full_matrix": "INCOMPLETE_POSTGRES_WITH_KNOWN_FAILURES; verified leaf interrupted; cleanup PASS",
+    "unknown_effects": "RETAINED_NO_FORGED_USAGE_SETTLEMENT"
+  },
+  "proof_ceiling": "EXECUTABLE_NATIVE_RECOVERY_AND_REAL_PROVIDER_WORKING_DELIVERY; QUALIFICATION_REQUIRES_COMPLETED_SCOPED_EVIDENCE"
+}

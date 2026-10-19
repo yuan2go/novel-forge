@@ -60,16 +60,20 @@ def require_entitlement_budget(cursor: Any, *, project_id: str, effect_id: str,
     row = rows[0]
     evidence = row[11] or {}
     caps = {name: (evidence.get(name) or {}).get("project_total") for name in ("call_caps", "token_caps")}
+    membership = evidence.get("resource_control_version") == "billing-channel-resources.v1"
+    limits_valid = (evidence.get("call_caps") == evidence.get("token_caps") == {}) if membership else all(
+        isinstance(value, int) and not isinstance(value, bool) and value > 0 for value in caps.values())
     if (row[1:4] != ("SETTLED", "ACCOUNT_ENTITLEMENT", "UNKNOWN")
         or any(value is not None for value in row[4:7])
         or row[7:9] != ("UNKNOWN", "UNKNOWN") or row[9] <= 0
         or row[10] != total_tokens
         or evidence.get("cost_authorization_ref") != scope["authorization_ref"]
-        or any(not isinstance(value, int) or isinstance(value, bool) or value <= 0 for value in caps.values())):
-        raise ValueError("entitlement qualification requires exact account authorization, unknown cost and finite call/token budgets")
+        or not limits_valid):
+        raise ValueError("entitlement qualification requires exact account authorization, unknown cost and its frozen resource contract")
     return {"reservation_id": str(row[0]), "accounting_scope": scope,
             "call_caps": dict(evidence["call_caps"]), "token_caps": dict(evidence["token_caps"]),
-            "estimated_tokens": int(row[9]), "actual_tokens": int(row[10]), "monetary_cost": "UNKNOWN"}
+            "estimated_tokens": int(row[9]), "actual_tokens": int(row[10]), "monetary_cost": "UNKNOWN",
+            **({"resource_control_version": "billing-channel-resources.v1"} if membership else {})}
 
 
 def entitlement_budget_rows(cursor: Any, *, project_id: str, effect_ids: tuple[str, ...]) -> dict[str, list[Any]]:

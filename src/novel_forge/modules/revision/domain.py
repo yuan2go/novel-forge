@@ -8,6 +8,33 @@ from novel_forge.modules.chapter_authority.realization_composition import (
 )
 
 
+def require_working_length_repair_scope(*, draft, draft_id, review, review_id, context_id):
+    from novel_forge.modules.review.diagnostics import open_diagnoses, prose_hash
+    from novel_forge.modules.review.repair_scope import validate_repair
+
+    pending = []
+    for issue in open_diagnoses(review):
+        repair = issue.get("repair") or {}
+        if (issue.get("status", "OPEN") != "OPEN"
+                or issue.get("severity") not in {"blocking", "major"}
+                or issue.get("judgment_kind") not in {"SEMANTIC_CONFLICT", "HARD_CONTRACT_VIOLATION", "SEMANTIC_CONTRADICTION"}
+                or repair.get("problem_owner") != "PLAN" or repair.get("repair_scope") != "FUTURE_REPLAN"):
+            continue
+        validate_repair(repair)
+        pending.append(issue["code"])
+    if not pending:
+        return
+    if (review.get("diagnostic_contract_version") != "actionable-diagnostics.v1"
+            or review.get("target_asset_version_id") != draft_id
+            or review.get("context_bundle_version_id") != context_id
+            or review.get("target_text_hash") != prose_hash(str(draft.get("text") or ""))):
+        raise KernelError("REVISION_DIAGNOSIS_STALE", "Repair routing must bind the exact source and Context")
+    raise KernelError("MANUSCRIPT_PLAN_CHANGE_REQUIRED", "Retain the source and diagnosis for the owning Planning decision before length repair",
+        details={"source_asset_version_id": draft_id, "review_asset_version_id": review_id,
+            "context_bundle_version_id": context_id, "diagnosis_codes": sorted(set(pending)),
+            "authority": "PROPOSAL_ONLY"})
+
+
 def _materialize_targeted_result(
     source: dict[str, Any], review: dict[str, Any], result: dict[str, Any], range_policy: str = "INTERSECTION_V1",
 ) -> tuple[dict[str, Any], dict[str, Any]]:

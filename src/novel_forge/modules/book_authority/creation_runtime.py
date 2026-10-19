@@ -70,11 +70,43 @@ def drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any,
     except _RecoveryCheckpoint as checkpoint:
         return checkpoint.reason
     except KernelError as error:
+        if error.code == "PLANNING_RUNTIME_CONTINUATION_COMMAND_DRIFT":
+            execution_probe()
+            book = composition.authority.require(book_run_id)
+            worker.require("book.authority.execute", book["project_id"])
+            if not continuation_live():
+                composition.authority.cancel(book_run_id, reason="Original creation cancellation", principal=composition.principal)
+                return "CANCELLED"
+            if book["state"] in {"ABORTED", "CANCELLED"}:
+                return "CANCELLED"
+            if book["state"] in {"PAUSED", "COMPLETED"}:
+                return book["state"]
+            if monotonic() >= deadline:
+                return "YIELDED_CHECKPOINT"
+            if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
+                return "WAIT_EXTERNAL_RECONCILIATION"
+            binding = composition.query.creation_executor_binding(project_id=book["project_id"], subject_id=book_run_id)
+            if not binding:
+                raise
+            original = composition.formation.require(binding["formation_run_id"])
+            if any(original[key] != book[key] for key in ("project_id", "workspace_id", "book_id")):
+                raise KernelError("PLANNING_DEPLOYMENT_REVALIDATION_SCOPE_INVALID", "Retain the exact Creation owner of this Book")
+            policy = composition.formation.frozen_input(binding["formation_run_id"]).generation_policy or {}
+            if _recover_pending_planning_deployment(composition, book, policy, execution_probe=execution_probe):
+                return "YIELDED_CHECKPOINT"
+            raise
         if error.code != "GENERATION_RECOVERY_EXHAUSTED":
             raise
         book = composition.authority.require(book_run_id)
+        if book["state"] == "COMPLETED":
+            return "COMPLETED"
+        if book["state"] in {"ABORTED", "CANCELLED"}:
+            return "CANCELLED"
+        if book["state"] == "PAUSED" and book.get("paused_reason") != error.code:
+            return "PAUSED"
         if book["state"] != "PAUSED" or book.get("paused_reason") != error.code:
-            composition.authority.pause(book_run_id, reason=error.code, principal=composition.principal)
+            composition.authority.pause(book_run_id, reason=error.code, principal=composition.principal,
+                expected_version=int(book["version"]))
         events({"kind": "GENERATION_RECOVERY_STOPPED", "book_run_id": book_run_id,
             "reason_code": error.code, "failure": error.details, "recovery_state": "EXHAUSTED",
             "business_impact": "SAVED_MANUSCRIPT_RETAINED_NO_FURTHER_DISPATCH"})
@@ -114,6 +146,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
             raise _RecoveryCheckpoint("COMPLETED")
         if current["state"] in {"ABORTED", "CANCELLED"}:
             raise _RecoveryCheckpoint("CANCELLED")
+        if current["state"] == "PAUSED" and current.get("paused_reason") != "GENERATION_RECOVERY_EXHAUSTED":
+            raise _RecoveryCheckpoint("PAUSED")
         if monotonic() >= deadline or recovery_actions >= maximum_ticks:
             raise _RecoveryCheckpoint("YIELDED_CHECKPOINT")
         if composition.query.unresolved_chapter_effects(book_run_id=book_run_id):
@@ -137,6 +171,8 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
             return "MANUSCRIPT_READY"
         if book["state"] in {"ABORTED", "CANCELLED"}:
             return "CANCELLED"
+        if book["state"] == "PAUSED" and book.get("paused_reason") != "GENERATION_RECOVERY_EXHAUSTED":
+            return "PAUSED"
         if monotonic() >= deadline:
             return "YIELDED_CHECKPOINT"
         from .creation_inputs import refresh_creation_style_scope
@@ -227,6 +263,13 @@ def _drive_book(*, composition: Any, chapter: Any, book_run_id: str, worker: Any
                 if not continuation_live():
                     composition.authority.cancel(book_run_id, reason="Original creation cancellation", principal=composition.principal)
                     return "CANCELLED"
+                current = composition.authority.require(book_run_id)
+                if current["state"] == "PAUSED":
+                    return "PAUSED"
+                if current["state"] in {"ABORTED", "CANCELLED"}:
+                    return "CANCELLED"
+                if current["state"] == "COMPLETED":
+                    return "COMPLETED"
                 if monotonic() >= deadline:
                     return "YIELDED_CHECKPOINT"
                 try:
@@ -285,7 +328,7 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
                       formation_worker: Any, book_worker: Any, maximum_ticks: int,
                       deadline: float, creation_policy: dict[str, Any] | None = None, execution_probe: Callable[[], object] = lambda: None,
                       creation_job_id: str = "") -> dict[str, Any]:
-    from novel_forge.workers.book_authority import execute_story_formation_claim, execute_book_opening_claim
+    from novel_forge.workers.book_authority import execute_story_formation_claim, execute_claimed_book_opening_execution
     from .creation_inputs import prepare_creation_inputs
     from .opening import OpenBookProductionRequest, _OPENING_INPUT_ROLES
 
@@ -458,7 +501,7 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
             if claim is None or claim.subject_id != opening[0]:
                 return {"opening_run_id": opening[0], "stop_reason": "WAITING_OPENING_DEPENDENCY"}
             try:
-                execute_book_opening_claim(jobs, composition.opening, composition.principal, claim, lease_seconds=60)
+                execute_claimed_book_opening_execution(jobs, composition.opening, composition.principal, claim, lease_seconds=60)
             except KernelError as error:
                 from novel_forge.modules.command_kernel.generation_isolation import recover_book_generations
                 try:
@@ -481,7 +524,8 @@ def continue_creation(*, composition: Any, content: Any, chapter: Any, formation
                         "checkpoint": composition.opening.require(opening[0])}
         opened = composition.opening.require(opening[0])
         if opened["lifecycle"] != "COMPLETE":
-            return {"opening_run_id": opening[0], "stop_reason": opened["lifecycle"], "checkpoint": opened}
+            stop = "YIELDED_CHECKPOINT" if opened["lifecycle"] in {"ADMITTED", "RUNNING"} else opened["lifecycle"]
+            return {"opening_run_id": opening[0], "stop_reason": stop, "checkpoint": opened}
         execution_probe()
         snapshot = composition.input_resolver.require(opened["result"]["input_snapshot_id"])
         design = AuthorityAssetQuery(content.database_url).require(project_id=project, asset_version_id=snapshot.book_design_version)
@@ -505,17 +549,18 @@ def _recover_pending_planning_deployment(composition, run, policy, *, execution_
     if auth.get("authorized_by_principal_id") != composition.principal.principal_id:
         raise KernelError("PLANNING_DEPLOYMENT_REVALIDATION_AUTHORIZATION_REQUIRED", "Require original Creator authorization")
     with AuthorityUnitOfWork(composition.authority.database_url) as uow:
-        uow.cursor.execute("""SELECT continuation_id FROM authority_story_planning_runtime_continuation
-            WHERE project_id=%s AND book_id=%s AND successor_operation_id IS NULL
-              AND target_release_sha<>%s ORDER BY created_at""",
-            [run["project_id"], run["book_id"], composition.planning.commit_sha])
-        pending = uow.cursor.fetchall()
+        from .production_policy import pending_planning_deployments
+        pending = pending_planning_deployments(uow.cursor, project_id=run["project_id"], book_id=run["book_id"],
+            book_run_id=run.get("book_run_id", ""), release_sha=composition.planning.commit_sha)
+    changed = False
     for (identity,) in pending:
         if require_binding(composition.authority.database_url, identity)["target_release_sha"] == composition.planning.commit_sha:
             continue
         register(composition.planning, identity, project_id=run["project_id"], principal=composition.principal,
             authorization_ref=auth["authorization_ref"], reason="Preserve unstarted native task across actual Creator deployment; unchanged story inputs and contracts",
             execution_probe=execution_probe)
+        changed = True
+    return changed
 
 
 def creation_cancellation(database_url: str, formation_run_id: str) -> dict[str, str] | None:
@@ -654,8 +699,14 @@ def creation_title(inputs: dict[str, Any]) -> tuple[str, bool]:
     return title, False
 
 
-def creation_runtime_environment(project_id: str, values: dict[str, str] | None = None) -> dict[str, str]:
+def creation_runtime_environment(project_id: str, values: dict[str, str] | None = None, *, input_only_policy: str | None = None) -> dict[str, str]:
     result = dict(os.environ if values is None else values)
+    if input_only_policy is not None:
+        from novel_forge.modules.production_execution.codex_configuration import CODEX_INPUT_ONLY_POLICY_V2
+        key = "NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY"
+        if input_only_policy != CODEX_INPUT_ONLY_POLICY_V2 or (key in result and result[key] != input_only_policy):
+            raise KernelError("CREATION_RUNTIME_POLICY_DRIFT", "Retain the exact structured generation policy frozen by this Formation")
+        result[key] = input_only_policy
     scope = hashlib.sha256(project_id.encode()).hexdigest()[:24]
     result.setdefault("NOVEL_FORGE_CHAPTER_CAPABILITY_PACK_ID", "chapter_generation_pack.creative." + scope)
     result.setdefault("NOVEL_FORGE_PLANNING_CAPABILITY_PACK_ID", "story_planning_pack.creative." + scope)
@@ -708,7 +759,7 @@ def creation_wait_class(reason: str) -> str:
     if reason in {"YIELDED_CHECKPOINT", "WAITING_LEASE_OR_DEPENDENCY", "WAITING_OPENING_DEPENDENCY",
                   "WAITING_CHAPTER_DEPENDENCY", "FORMATION_FAILED"}:
         return "TECHNICAL_WAIT"
-    if reason in {"WAITING_APPROVAL", "WAIT_PLAN_APPROVAL", "WAIT_REPLAN_APPROVAL", "WAIT_CONTROL_DECISION"}:
+    if reason in {"PAUSED", "WAITING_APPROVAL", "WAIT_PLAN_APPROVAL", "WAIT_REPLAN_APPROVAL", "WAIT_CONTROL_DECISION"}:
         return "AUTHOR_DECISION"
     return "OWNER_RECOVERY_REQUIRED"
 
@@ -1065,6 +1116,8 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             args.action, args.formation_run_id = "continue", replay_identity
             return execute_creation_command(settings, args)
         profiles = deepcopy(json.loads(args.creation_policy_file.read_text()))
+        runtime_values = creation_runtime_environment(args.project_id, runtime_values,
+            input_only_policy=profiles.get("codex_input_only_policy"))
         from novel_forge.modules.production_execution.codex_model_catalog import parse_codex_model_catalog
         catalog = parse_codex_model_catalog(os.environ.get("NOVEL_FORGE_CODEX_ROUTER_MODELS", ""))
         # CONSTRAINT: Headroom catalogs reserve output from the final Provider envelope instead of a fixed catalog allowance.
@@ -1185,6 +1238,13 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             agent_domain="story_planning", agent_scope_type="BOOK", runtime_environment=settings.environment)
     elif not formation_id:
         raise ValueError("Continue requires the original Formation identity")
+    if args.action != "start":
+        from .queries import PostgresBookProductionQuery
+        binding = PostgresBookProductionQuery(settings.database_url).creation_executor_binding(
+            project_id=args.project_id, subject_id=formation_id)
+        if binding:
+            runtime_values = creation_runtime_environment(args.project_id, runtime_values,
+                input_only_policy=binding.get("codex_input_only_policy"))
     execution = build_production_execution_composition(settings, env=runtime_values)
     try:
         chapter = build_chapter_authority_application(settings, execution=execution, env=runtime_values)
@@ -1211,11 +1271,15 @@ def execute_creation_command(settings: Any, args: Any, *, request_input: dict[st
             return {"stop_reason": "CANCELLED", **creation_status(settings.database_url,
                 project_id=args.project_id, formation_run_id=formation_id, principal=principal)}
         from .reader_pack import ensure_creation_reader_pack
+        from .manuscript import author_first
 
-        ensure_creation_reader_pack(settings, SimpleNamespace(project_id=run["project_id"],
-            workspace_id=run["workspace_id"], book_id=run["book_id"],
-            repository_root=args.repository_root), principal=principal, build_id=build_id, sha=sha,
-            pack_id=runtime_values["NOVEL_FORGE_READER_OUTCOME_CAPABILITY_PACK_ID"])
+        generation_policy = composition.formation.frozen_input(formation_id).generation_policy or {}
+        creation_profile = generation_policy.get("creation_input_policy", {}).get("profiles", {}).get("production_profile", {}).get("content", {})
+        if not author_first(creation_profile):
+            ensure_creation_reader_pack(settings, SimpleNamespace(project_id=run["project_id"],
+                workspace_id=run["workspace_id"], book_id=run["book_id"],
+                repository_root=args.repository_root), principal=principal, build_id=build_id, sha=sha,
+                pack_id=runtime_values["NOVEL_FORGE_READER_OUTCOME_CAPABILITY_PACK_ID"])
         if args.action == "recover":
             if not args.reason.strip():
                 raise ValueError("Recovery requires a reason describing the resolved blocker")

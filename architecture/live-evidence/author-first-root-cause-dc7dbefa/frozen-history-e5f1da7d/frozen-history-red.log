@@ -1,0 +1,174 @@
+FFFF                                                                     [100%]
+=================================== FAILURES ===================================
+_ test_preflight_uses_frozen_source_protocol_after_current_template_changes[True] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b2c1250>
+recorded_route = True
+
+    @pytest.mark.parametrize("recorded_route", [True, False])
+    def test_preflight_uses_frozen_source_protocol_after_current_template_changes(monkeypatch, recorded_route):
+        from types import SimpleNamespace
+        from novel_forge.modules.production_execution import execution_template
+        from novel_forge.modules.story_planning_runtime import execution, preflight_continuation, planning_repair_routing
+    
+        frozen = {"repair_routing": {"version": "native-repair-routing.v1"}}
+        decision = {"frozen_source": frozen}
+        monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: pytest.fail("Current Book policy cannot reinterpret a recorded source"))
+        monkeypatch.setattr(preflight_continuation, "verify_template_provenance", lambda cursor, value: frozen if value == decision else pytest.fail("Wrong source"))
+        monkeypatch.setattr(execution, "require_candidate_repair_operation", lambda *a, **k: "parent")
+        monkeypatch.setattr(planning_repair_routing, "native_planning_repair", lambda *a, **k: k["evidence_version"])
+    
+        class FrozenCursor:
+            def __init__(self):
+                self.reads = 0
+    
+            def execute(self, query, args):
+                self.reads += 1
+                assert args == (["repair", "project"] if self.reads == 1 else ["parent", "project", "chapter_plan.generate"])
+    
+            def fetchall(self):
+                return [(decision,)] if recorded_route or self.reads == 2 else []
+    
+        cursor = FrozenCursor()
+        command = SimpleNamespace(project_id="project", book_id="book", generator_operation_name="chapter_plan.generate",
+            logical_key="chapter:1", repair_of_candidate_id="candidate", repair_of_operation_id="")
+>       assert preflight_continuation._native_preflight_evidence(SimpleNamespace(cursor=cursor), command=command,
+            source_operation_id="repair", lineage=("parent", "repair")) == planning_repair_routing.REPAIR_VERSION
+
+tests/unit/test_native_stage_repair_bound.py:205: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/preflight_continuation.py:127: in _native_preflight_evidence
+    admission = selected_book_template(uow.cursor, project_id=command.project_id, book_id=command.book_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+a = (<tests.unit.test_native_stage_repair_bound.test_preflight_uses_frozen_source_protocol_after_current_template_changes.<locals>.FrozenCursor object at 0x10b2c1280>,)
+k = {'project_id': 'project', 'book_id': 'book'}
+
+>   monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: pytest.fail("Current Book policy cannot reinterpret a recorded source"))
+                                                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: Current Book policy cannot reinterpret a recorded source
+
+tests/unit/test_native_stage_repair_bound.py:186: Failed
+_ test_preflight_uses_frozen_source_protocol_after_current_template_changes[False] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b2c1af0>
+recorded_route = False
+
+    @pytest.mark.parametrize("recorded_route", [True, False])
+    def test_preflight_uses_frozen_source_protocol_after_current_template_changes(monkeypatch, recorded_route):
+        from types import SimpleNamespace
+        from novel_forge.modules.production_execution import execution_template
+        from novel_forge.modules.story_planning_runtime import execution, preflight_continuation, planning_repair_routing
+    
+        frozen = {"repair_routing": {"version": "native-repair-routing.v1"}}
+        decision = {"frozen_source": frozen}
+        monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: pytest.fail("Current Book policy cannot reinterpret a recorded source"))
+        monkeypatch.setattr(preflight_continuation, "verify_template_provenance", lambda cursor, value: frozen if value == decision else pytest.fail("Wrong source"))
+        monkeypatch.setattr(execution, "require_candidate_repair_operation", lambda *a, **k: "parent")
+        monkeypatch.setattr(planning_repair_routing, "native_planning_repair", lambda *a, **k: k["evidence_version"])
+    
+        class FrozenCursor:
+            def __init__(self):
+                self.reads = 0
+    
+            def execute(self, query, args):
+                self.reads += 1
+                assert args == (["repair", "project"] if self.reads == 1 else ["parent", "project", "chapter_plan.generate"])
+    
+            def fetchall(self):
+                return [(decision,)] if recorded_route or self.reads == 2 else []
+    
+        cursor = FrozenCursor()
+        command = SimpleNamespace(project_id="project", book_id="book", generator_operation_name="chapter_plan.generate",
+            logical_key="chapter:1", repair_of_candidate_id="candidate", repair_of_operation_id="")
+>       assert preflight_continuation._native_preflight_evidence(SimpleNamespace(cursor=cursor), command=command,
+            source_operation_id="repair", lineage=("parent", "repair")) == planning_repair_routing.REPAIR_VERSION
+
+tests/unit/test_native_stage_repair_bound.py:205: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/novel_forge/modules/story_planning_runtime/preflight_continuation.py:127: in _native_preflight_evidence
+    admission = selected_book_template(uow.cursor, project_id=command.project_id, book_id=command.book_id)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+a = (<tests.unit.test_native_stage_repair_bound.test_preflight_uses_frozen_source_protocol_after_current_template_changes.<locals>.FrozenCursor object at 0x10b2c2000>,)
+k = {'project_id': 'project', 'book_id': 'book'}
+
+>   monkeypatch.setattr(execution_template, "selected_book_template", lambda *a, **k: pytest.fail("Current Book policy cannot reinterpret a recorded source"))
+                                                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: Current Book policy cannot reinterpret a recorded source
+
+tests/unit/test_native_stage_repair_bound.py:186: Failed
+_ test_recorded_repair_replay_uses_original_stage_policy_after_current_policy_changes[planning-route-repair.v1] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b2c2960>
+contract = 'planning-route-repair.v1'
+
+    @pytest.mark.parametrize("contract", ["planning-route-repair.v1", "planning-route-repair.v2"])
+    def test_recorded_repair_replay_uses_original_stage_policy_after_current_policy_changes(monkeypatch, contract):
+        from types import SimpleNamespace
+        from novel_forge.modules.story_planning_runtime import stage_repairs
+    
+        template = {"mode": "CREATIVE_VALIDATION", "require_literary_qualification": False,
+            "member_authorization_ref": "member:original", "require_independent_review": True,
+            "repair_routing": {"version": "native-repair-routing.v2", "max_same_route_repairs": 2}}
+        admission = {"policy_snapshot": {"original": True}}
+        frozen = {"contract_version": contract, **({"policy_admission": admission} if contract.endswith("v2") else {})}
+        monkeypatch.setattr(stage_repairs, "selected_book_template", lambda *a, **k: pytest.fail("Replay cannot read changed current policy"))
+        monkeypatch.setattr(stage_repairs, "decision_template", lambda *a: template)
+        monkeypatch.setattr(stage_repairs, "verify_template_provenance", lambda *a: template)
+        monkeypatch.setattr(stage_repairs, "stage_ordinal", lambda *a, **k: 1)
+    
+        class FrozenCursor:
+            def execute(self, query, args):
+                assert args == ["parent", "chapter_plan.generate"]
+    
+            def fetchall(self):
+                return [({},)]
+    
+        command = SimpleNamespace(project_id="project", book_id="book", repair_of_operation_id="parent", repair_of_candidate_id="")
+>       result = stage_repairs.routing_repair_bound(FrozenCursor(), command=command, lineage=("parent", "repair"),
+            stage="chapter_plan.generate", maximum=2, frozen_repair=frozen)
+E       TypeError: routing_repair_bound() got an unexpected keyword argument 'frozen_repair'
+
+tests/unit/test_native_stage_repair_bound.py:233: TypeError
+_ test_recorded_repair_replay_uses_original_stage_policy_after_current_policy_changes[planning-route-repair.v2] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10b2c32c0>
+contract = 'planning-route-repair.v2'
+
+    @pytest.mark.parametrize("contract", ["planning-route-repair.v1", "planning-route-repair.v2"])
+    def test_recorded_repair_replay_uses_original_stage_policy_after_current_policy_changes(monkeypatch, contract):
+        from types import SimpleNamespace
+        from novel_forge.modules.story_planning_runtime import stage_repairs
+    
+        template = {"mode": "CREATIVE_VALIDATION", "require_literary_qualification": False,
+            "member_authorization_ref": "member:original", "require_independent_review": True,
+            "repair_routing": {"version": "native-repair-routing.v2", "max_same_route_repairs": 2}}
+        admission = {"policy_snapshot": {"original": True}}
+        frozen = {"contract_version": contract, **({"policy_admission": admission} if contract.endswith("v2") else {})}
+        monkeypatch.setattr(stage_repairs, "selected_book_template", lambda *a, **k: pytest.fail("Replay cannot read changed current policy"))
+        monkeypatch.setattr(stage_repairs, "decision_template", lambda *a: template)
+        monkeypatch.setattr(stage_repairs, "verify_template_provenance", lambda *a: template)
+        monkeypatch.setattr(stage_repairs, "stage_ordinal", lambda *a, **k: 1)
+    
+        class FrozenCursor:
+            def execute(self, query, args):
+                assert args == ["parent", "chapter_plan.generate"]
+    
+            def fetchall(self):
+                return [({},)]
+    
+        command = SimpleNamespace(project_id="project", book_id="book", repair_of_operation_id="parent", repair_of_candidate_id="")
+>       result = stage_repairs.routing_repair_bound(FrozenCursor(), command=command, lineage=("parent", "repair"),
+            stage="chapter_plan.generate", maximum=2, frozen_repair=frozen)
+E       TypeError: routing_repair_bound() got an unexpected keyword argument 'frozen_repair'
+
+tests/unit/test_native_stage_repair_bound.py:233: TypeError
+=========================== short test summary info ============================
+FAILED tests/unit/test_native_stage_repair_bound.py::test_preflight_uses_frozen_source_protocol_after_current_template_changes[True]
+FAILED tests/unit/test_native_stage_repair_bound.py::test_preflight_uses_frozen_source_protocol_after_current_template_changes[False]
+FAILED tests/unit/test_native_stage_repair_bound.py::test_recorded_repair_replay_uses_original_stage_policy_after_current_policy_changes[planning-route-repair.v1]
+FAILED tests/unit/test_native_stage_repair_bound.py::test_recorded_repair_replay_uses_original_stage_policy_after_current_policy_changes[planning-route-repair.v2]
+4 failed, 17 deselected in 0.59s

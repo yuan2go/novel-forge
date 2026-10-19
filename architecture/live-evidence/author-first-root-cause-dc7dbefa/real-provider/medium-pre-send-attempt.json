@@ -1,0 +1,51 @@
+[
+  {
+    "error": {},
+    "result": {
+      "error_code": "PROVIDER_ROUTING_BLOCKED",
+      "error_message": "PROVIDER_ROUTING_BLOCKED: routing-decision:04f1b33e9fc149d778d24dc3b3b1eda42ff22bed3c1755a14d6928fafcc13ac3",
+      "failure_class": "retryable",
+      "failure_details": {
+        "cause": "ROUTE_CANDIDATES_REJECTED",
+        "stage": "PROVIDER_ROUTE_ADMISSION",
+        "error_code": "PROVIDER_ROUTING_BLOCKED",
+        "task_stage": "world.design.generate",
+        "decision_id": "routing-decision:04f1b33e9fc149d778d24dc3b3b1eda42ff22bed3c1755a14d6928fafcc13ac3",
+        "retryability": "CHANGED_ADMISSION_REQUIRED",
+        "recovery_state": "NOT_SENT",
+        "business_impact": "NO_GENERATED_CANDIDATE",
+        "recovery_action": "INSPECT_ROUTE_ADMISSION",
+        "provider_invoked": false,
+        "execution_identity": {
+          "work_id": "book:wp-nf-author-first-20261017",
+          "chain_id": "sha256:9aef767c1779efa48715d4c64cdb6d3015f03ba79d97f182791b684367cf6d70",
+          "attempt_id": "00e38e23-7e95-4370-b389-625890695d1e",
+          "project_id": "project:wp-nf-author-first-20261017",
+          "operation_id": "ce998818-4ea5-49ab-bf7e-356c6b0089cf"
+        },
+        "candidate_rejections": [
+          {
+            "candidate_id": "codex-cli:gpt-6.1-sol:medium",
+            "rejected_reasons": [
+              "TEMPLATE_MODEL_UNAUTHORIZED"
+            ],
+            "estimated_total_tokens": 89928
+          }
+        ]
+      }
+    },
+    "status": "FAILED_RETRYABLE",
+    "queued_at": "2026-10-17T23:25:21.886927+08:00",
+    "worker_id": "story-planning-generation-worker",
+    "attempt_id": "00e38e23-7e95-4370-b389-625890695d1e",
+    "checkpoint": {},
+    "started_at": "2026-10-17T23:25:21.895406+08:00",
+    "finished_at": "2026-10-17T23:25:22.256185+08:00",
+    "max_attempts": 3,
+    "operation_id": "ce998818-4ea5-49ab-bf7e-356c6b0089cf",
+    "attempt_number": 1,
+    "checkpointed_at": null,
+    "result_submitted_at": "2026-10-17T23:25:22.256185+08:00",
+    "business_deadline_at": "2026-10-17T23:55:21.810283+08:00"
+  }
+]

@@ -100,7 +100,8 @@ class PostgresBookProductionQuery:
 
     def creation_executor_binding(
         self, *, project_id: str, subject_id: str
-    ) -> dict[str, str] | None:
+    ) -> dict[str, str | None] | None:
+        from novel_forge.modules.chapter_authority.working_revision import ROOT_VERSIONS, ROOT_VERSION
         with AuthorityUnitOfWork(self.database_url) as uow:
             uow.cursor.execute(
                 """WITH RECURSIVE subjects(subject_id,depth,path) AS (
@@ -117,9 +118,17 @@ class PostgresBookProductionQuery:
                   AND production.book_id=revision.command_payload->>'book_id'
                 WHERE revision.project_id=%s AND revision.operation_id=%s
                   AND revision.definition_name='chapter.slice.run'
-                  AND revision.definition_version='3.10.0-working-revision.v1'
+                  AND revision.definition_version=ANY(%s)
                   AND revision.definition_snapshot #>> '{policy,working_revision_contract}'='chapter-working-revision.v1'
                   AND revision.command_payload #>> '{preparation_report,working_revision,contract_version}'='chapter-working-revision.v1'
+                  AND (revision.definition_version=%s OR (
+                    revision.definition_snapshot#>>'{policy,working_regeneration_contract}'='working-plan-regeneration.v1'
+                    AND revision.command_payload#>>'{preparation_report,working_plan_regeneration,contract_version}'='working-plan-regeneration.v1'
+                    AND EXISTS(SELECT 1 FROM authority_plan_change_proposal correction
+                      JOIN authority_operation activation ON activation.operation_id=correction.activation_operation_id
+                      WHERE correction.proposal_id=revision.command_payload#>>'{preparation_report,working_plan_regeneration,proposal_id}'
+                        AND correction.project_id=revision.project_id AND correction.book_id=production.book_id
+                        AND correction.status='ACTIVE' AND activation.status='SUCCEEDED' AND activation.actor_id=revision.actor_id)))
                 UNION ALL
                 SELECT edition.source_book_run_id,subjects.depth+1,subjects.path || edition.source_book_run_id
                 FROM subjects JOIN authority_book_edition_run binding ON binding.book_run_id=subjects.subject_id AND binding.role='VALIDATION'
@@ -128,7 +137,8 @@ class PostgresBookProductionQuery:
                 WHERE edition.project_id=%s AND subjects.depth<64
                   AND NOT edition.source_book_run_id=ANY(subjects.path)
             ) SELECT run.formation_run_id,run.frozen_input_digest,
-                run.frozen_stage_inputs #>> '{generation_policy,auto_authorization,authorized_by_principal_id}'
+                run.frozen_stage_inputs #>> '{generation_policy,auto_authorization,authorized_by_principal_id}',
+                run.frozen_stage_inputs #>> '{generation_policy,creation_input_policy,codex_input_only_policy}'
                 FROM authority_story_formation_run run
                 WHERE run.project_id=%s AND run.frozen_stage_inputs #>> '{generation_policy,contract_version}' IN ('formation-generation.v5','formation-generation.v7')
                   AND (run.formation_run_id IN (SELECT subject_id FROM subjects) OR EXISTS(SELECT 1 FROM authority_book_opening_run opening
@@ -144,6 +154,8 @@ class PostgresBookProductionQuery:
                     subject_id,
                     project_id,
                     subject_id,
+                    list(ROOT_VERSIONS),
+                    ROOT_VERSION,
                     project_id,
                     project_id,
                 ],
@@ -157,7 +169,7 @@ class PostgresBookProductionQuery:
         return (
             dict(
                 zip(
-                    ("formation_run_id", "frozen_input_digest", "operator_id"),
+                    ("formation_run_id", "frozen_input_digest", "operator_id", "codex_input_only_policy"),
                     rows[0],
                     strict=True,
                 )
@@ -1907,6 +1919,7 @@ class PostgresBookProductionQuery:
         accepted_through_chapter: int,
         active_story_state_version_id: str = "",
         active_canon_snapshot_version_id: str = "",
+        working_regeneration_proposal_id: str = "",
     ) -> dict[str, Any]:
         from .manuscript import writing_frontier
         with AuthorityUnitOfWork(self.database_url) as owned:
@@ -1914,7 +1927,14 @@ class PostgresBookProductionQuery:
             native = owned.cursor.fetchone()
             from .manuscript import effective_workflow
             bound_book = {**native[0], "author_workflow": effective_workflow(owned.cursor, native[0])} if native else {}
-        if not bound_book or chapter_number != writing_frontier(bound_book) + 1:
+        regeneration = False
+        if bound_book and working_regeneration_proposal_id:
+            from novel_forge.modules.chapter_authority.working_regeneration import require_correction_scope
+            with AuthorityUnitOfWork(self.database_url) as correction:
+                require_correction_scope(correction, book=bound_book, chapter=chapter_number,
+                    proposal_id=working_regeneration_proposal_id, plan_id=chapter_plan_version_id)
+            regeneration = True
+        if not bound_book or not regeneration and chapter_number != writing_frontier(bound_book) + 1:
             raise KernelError(
                 "CHAPTER_PRODUCTION_SEQUENCE_INVALID",
                 "Chapter production admission must target the next unaccepted chapter",

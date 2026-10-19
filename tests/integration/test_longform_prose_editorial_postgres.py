@@ -17,6 +17,7 @@ from novel_forge.modules.book_followup_authority.prose_coordinator import (
 from novel_forge.modules.book_followup_authority.prose_review import PROSE_DIMENSIONS
 from novel_forge.modules.chapter_authority.model_effects import ModelProviderResult
 from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 from tests.integration.authority_postgres_support import (
     DATABASE_URL,
     ensure_migrated,
@@ -246,7 +247,6 @@ def test_automatic_review_pause_append_resume_and_incremental_reuse():
 
 
 def test_pause_wins_admission_race_without_orphan_ready_review(monkeypatch):
-    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
     ensure_migrated()
     helper = scripted_book.BookToChapterAuthorityVerticalPostgresTests()
@@ -401,6 +401,9 @@ def test_automatic_remote_pair_enters_native_plan_disposition_and_located_rechec
                 project_id=project, asset_version_id=f"{project}:chapter-plan-v2"
             )
             content = {**template.content, "chapter": 3, "title": "The Promise Returns"}
+            content["narrative_realization_slice"] = {
+                **content["narrative_realization_slice"], "chapter_number": 3
+            }
             uow.cursor.execute(
                 "INSERT INTO authority_asset(asset_id,project_id,asset_type) VALUES (%s,%s,'chapter_plan')",
                 [f"{project}:chapter-plan-3", project],
@@ -874,16 +877,14 @@ def _assert_native_plan_consumer(coordinator, scope, run_id):
         )
 
 
-def test_prose_window_uses_real_external_effect_and_materialized_provider_inputs(
-    tmp_path,
-):
+@pytest.fixture
+def native_prose_effect_window(tmp_path):
     from pathlib import Path
     from novel_forge.api.authority_dependencies import (
         build_production_execution_composition,
         build_longform_prose_review_model_port,
     )
     from novel_forge.infrastructure.settings import IndustrialSettings
-    from novel_forge.storage.authority_uow import AuthorityUnitOfWork
 
     ensure_migrated()
     helper = scripted_book.BookToChapterAuthorityVerticalPostgresTests()
@@ -902,7 +903,7 @@ def test_prose_window_uses_real_external_effect_and_materialized_provider_inputs
             fixture["principal"],
             authentication_source="server_configuration",
             permissions=frozenset(
-                {"book.authority.execute", "book.authority.query", "book.followup:*"}
+                {"book.authority.execute", "book.authority.query", "book.followup:*", "external_effect.resolve"}
             ),
         )
         scope = dict(
@@ -948,66 +949,413 @@ def test_prose_window_uses_real_external_effect_and_materialized_provider_inputs
             },
         )
 
-        class ReceiptLoss(BaseException):
-            pass
-
-        armed = [True]
-
-        def lose_after_receipt(point):
-            if point == "after_provider_success" and armed[0]:
-                armed[0] = False
-                raise ReceiptLoss()
-
-        model.fault_injector = lose_after_receipt
-        with pytest.raises(ReceiptLoss):
-            coordinator.advance(
-                **scope,
-                run_id=run["run_id"],
-                expected_version=0,
-                **metadata("effect-advance"),
-            )
-        interrupted = coordinator.report(**scope, run_id=run["run_id"])
-        operation_id = interrupted["operations"][0]["operation_id"]
-        with AuthorityUnitOfWork(DATABASE_URL) as uow:
-            uow.cursor.execute(
-                "SELECT status FROM authority_external_effect WHERE operation_id=%s",
-                [operation_id],
-            )
-            assert uow.cursor.fetchone()[0] == "SUCCEEDED"
-            uow.cursor.execute(
-                "UPDATE authority_lease_acquisition lease SET expires_at=acquired_at+INTERVAL '1 microsecond' FROM authority_attempt attempt WHERE lease.attempt_id=attempt.attempt_id AND attempt.operation_id=%s AND lease.status='HELD'",
-                [operation_id],
-            )
-            uow.commit()
-        _accept_chapter(helper, fixture, 2)
-        progress = coordinator.automatic_tick(**scope, run_id=run["run_id"])
-        assert progress["operations"][0]["status"] == "SUCCEEDED"
-        assert not progress["source_current"]
-        assert progress["manifest"] == interrupted["manifest"]
-        with AuthorityUnitOfWork(DATABASE_URL) as uow:
-            uow.cursor.execute(
-                "SELECT status,request_payload FROM authority_external_effect WHERE operation_id=%s",
-                [progress["operations"][0]["operation_id"]],
-            )
-            status, request_payload = uow.cursor.fetchone()
-            assert status == "SUCCEEDED"
-            assert request_payload["stage"] == "longform_prose_review"
-            uow.cursor.execute(
-                "SELECT COUNT(*) FROM authority_external_effect_dispatch dispatch JOIN authority_external_effect effect USING(external_effect_id) WHERE effect.operation_id=%s",
-                [operation_id],
-            )
-            assert uow.cursor.fetchone()[0] == 1
-            assert (
-                request_payload["_production_execution"]["execution_binding_domain"]
-                == "longform_prose_review"
-            )
-        following = coordinator.automatic_tick(**scope, run_id=run["run_id"])
-        assert following["run_id"] != run["run_id"]
-        assert (
-            coordinator.report(**scope, run_id=following["run_id"])["operations"][0][
-                "operation_id"
-            ]
-            == operation_id
-        )
+        yield dict(helper=helper,fixture=fixture,scope=scope,settings=settings,env=env,execution=execution,model=model,coordinator=coordinator,run=run)
     finally:
         helper.doCleanups()
+
+
+def test_prose_window_uses_real_external_effect_and_materialized_provider_inputs(native_prose_effect_window):
+    values=native_prose_effect_window
+    helper,fixture,scope,model,coordinator,run=(values[key] for key in ("helper","fixture","scope","model","coordinator","run"))
+    class ReceiptLoss(BaseException):
+        pass
+
+    armed = [True]
+
+    def lose_after_receipt(point):
+        if point == "after_provider_success" and armed[0]:
+            armed[0] = False
+            raise ReceiptLoss()
+
+    model.fault_injector = lose_after_receipt
+    with pytest.raises(ReceiptLoss):
+        coordinator.advance(
+            **scope,
+            run_id=run["run_id"],
+            expected_version=0,
+            **metadata("effect-advance"),
+        )
+    interrupted = coordinator.report(**scope, run_id=run["run_id"])
+    operation_id = interrupted["operations"][0]["operation_id"]
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            "SELECT status FROM authority_external_effect WHERE operation_id=%s",
+            [operation_id],
+        )
+        assert uow.cursor.fetchone()[0] == "SUCCEEDED"
+        uow.cursor.execute(
+            "UPDATE authority_lease_acquisition lease SET expires_at=acquired_at+INTERVAL '1 microsecond' FROM authority_attempt attempt WHERE lease.attempt_id=attempt.attempt_id AND attempt.operation_id=%s AND lease.status='HELD'",
+            [operation_id],
+        )
+        uow.commit()
+    _accept_chapter(helper, fixture, 2)
+    progress = coordinator.automatic_tick(**scope, run_id=run["run_id"])
+    assert progress["operations"][0]["status"] == "SUCCEEDED"
+    assert not progress["source_current"]
+    assert progress["manifest"] == interrupted["manifest"]
+    with AuthorityUnitOfWork(DATABASE_URL) as uow:
+        uow.cursor.execute(
+            "SELECT status,request_payload FROM authority_external_effect WHERE operation_id=%s",
+            [progress["operations"][0]["operation_id"]],
+        )
+        status, request_payload = uow.cursor.fetchone()
+        assert status == "SUCCEEDED"
+        assert request_payload["stage"] == "longform_prose_review"
+        uow.cursor.execute(
+            "SELECT COUNT(*) FROM authority_external_effect_dispatch dispatch JOIN authority_external_effect effect USING(external_effect_id) WHERE effect.operation_id=%s",
+            [operation_id],
+        )
+        assert uow.cursor.fetchone()[0] == 1
+        assert (
+            request_payload["_production_execution"]["execution_binding_domain"]
+            == "longform_prose_review"
+        )
+    following = coordinator.automatic_tick(**scope, run_id=run["run_id"])
+    assert following["run_id"] != run["run_id"]
+    assert (
+        coordinator.report(**scope, run_id=following["run_id"])["operations"][0][
+            "operation_id"
+        ]
+        == operation_id
+    )
+
+
+@pytest.mark.parametrize('recovery_case',['direct','coordinator','wrong-actor','missing-authority','live-lease','ambiguous','cancelled','query-failed_final','query-cancelled','query-not_found'])
+def test_unknown_review_rebuild_queries_original_effect_without_resending(native_prose_effect_window,recovery_case,monkeypatch):
+    from novel_forge.api.authority_dependencies import build_production_execution_composition, build_longform_prose_review_model_port
+    from novel_forge.modules.book_followup_authority.application import BookFollowupAdmission
+    from scripts.book_prose_qualification import WindowResponseLoss, ConsumerRestartRequired, require_unknown_checkpoint
+
+    values = native_prose_effect_window
+    scope,settings,env,execution,run = (values[key] for key in ('scope','settings','env','execution','run'))
+    coordinator = values['coordinator']
+    report = coordinator.report(**scope,run_id=run['run_id'])
+    execution.close()
+    execution = build_production_execution_composition(settings,env=env)
+    fault = WindowResponseLoss(execution.gateway,database_url=DATABASE_URL,
+        scope={**{key:value for key,value in scope.items() if key!='principal'},'run_id':run['run_id'],
+            'actor_id':scope['principal'].principal_id,'book_id':coordinator._book_id(scope['book_run_id'],scope['project_id']),
+            'manifest_digest':report['manifest_digest']},window=report['manifest']['windows'][0])
+    model = build_longform_prose_review_model_port(settings,execution=replace(execution,gateway=fault),env=env)
+    initial = BookFollowupAuthorityApplication(DATABASE_URL,application_build_id='prose-test',commit_sha='e'*40,prose_model_port=model)
+    advance = metadata('unknown-review')
+    with pytest.raises((ConsumerRestartRequired,KernelError)) as failure:
+        BookProseReviewCoordinator(initial).advance(**scope,run_id=run['run_id'],expected_version=0,**advance)
+    assert isinstance(failure.value,ConsumerRestartRequired) or failure.value.code == 'EFFECT_EXTERNAL_STATE_UNKNOWN'
+    operation_id = fault.operation_id
+    assert fault.triggered and operation_id
+    checkpoint = require_unknown_checkpoint(DATABASE_URL,operation_id)
+    execution.close()
+    rebuilt = build_production_execution_composition(settings,env=env)
+    try:
+        model = build_longform_prose_review_model_port(settings,execution=rebuilt,env=env)
+        followup = BookFollowupAuthorityApplication(DATABASE_URL,application_build_id='prose-test',commit_sha='e'*40,
+            prose_model_port=model,worker_id='review-rebuilt')
+        admission = BookFollowupAdmission(operation_id,scope['project_id'],True)
+        if recovery_case == 'missing-authority':
+            denied = replace(scope['principal'],permissions=scope['principal'].permissions-{'external_effect.resolve'})
+            with pytest.raises(PermissionError,match='external_effect.resolve'):
+                BookProseReviewCoordinator(followup).advance(**{**scope,'principal':denied},run_id=run['run_id'],expected_version=0,**advance)
+            require_unknown_checkpoint(DATABASE_URL,operation_id)
+            return
+        if recovery_case == 'wrong-actor':
+            from novel_forge.modules.authority_security.service import PrincipalType
+            other = replace(scope['principal'],principal_id='other-author',principal_type=PrincipalType.SERVICE)
+            with pytest.raises(PermissionError,match='original result'):
+                BookProseReviewCoordinator(followup).advance(**{**scope,'principal':other},run_id=run['run_id'],expected_version=0,**advance)
+            require_unknown_checkpoint(DATABASE_URL,operation_id)
+            return
+        if recovery_case == 'cancelled':
+            from novel_forge.modules.command_kernel.cancellation import CancelCommand,request_cancellation
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute('SELECT version,trace_id,correlation_id FROM authority_operation WHERE operation_id=%s',[operation_id])
+                version,trace,correlation = uow.cursor.fetchone()
+            request_cancellation(DATABASE_URL,CancelCommand(operation_id,scope['project_id'],scope['principal'].principal_id,
+                'Cancel the independent test review',version,'cancel:'+operation_id,trace,correlation))
+            with pytest.raises(KernelError,match='OPERATION_CANCELLATION_REQUESTED'):
+                followup.run_or_recover(admission)
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT count(*) FROM authority_effect_reconciliation_evidence WHERE external_effect_id=%s",[checkpoint['external_effect_id']])
+                assert uow.cursor.fetchone()[0] == 0
+                uow.cursor.execute("SELECT status FROM authority_attempt WHERE operation_id=%s",[operation_id])
+                assert uow.cursor.fetchone()[0] == 'CANCELLED'
+            return
+        if recovery_case == 'live-lease':
+            from novel_forge.modules.command_kernel.attempt_runtime import acquire_attempt_lease
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute('SELECT attempt_id FROM authority_attempt WHERE operation_id=%s',[operation_id])
+                attempt_id = uow.cursor.fetchone()[0]
+            acquire_attempt_lease(DATABASE_URL,attempt_id=attempt_id,project_id=scope['project_id'],worker_id='other-review-owner',
+                lease_seconds=30,trace_id='trace:live-review-owner',correlation_id=run['run_id'])
+            with pytest.raises(KernelError,match='CONTENT_RECOVERY_LEASE_ACTIVE'):
+                followup.run_or_recover(admission)
+            require_unknown_checkpoint(DATABASE_URL,operation_id)
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("UPDATE authority_lease_acquisition SET expires_at=acquired_at+INTERVAL '1 microsecond' WHERE attempt_id=%s AND status='HELD'",[attempt_id])
+                uow.commit()
+        if recovery_case.startswith('query-'):
+            from novel_forge.modules.command_kernel.external_effect_adapters import ProviderResult
+            outcome = recovery_case.removeprefix('query-')
+            original = rebuilt.gateway.for_recovery
+            class TerminalQuery:
+                def __init__(self,delegate):self.delegate=delegate
+                def __getattr__(self,key):return getattr(self.delegate,key)
+                def query(self,**kwargs):return ProviderResult(outcome,'fixture-query-terminal',{'request_sent':outcome!='not_found'})
+            monkeypatch.setattr(rebuilt.gateway,'for_recovery',lambda **kwargs:TerminalQuery(original(**kwargs)))
+            with pytest.raises(KernelError,match='CONTENT_RECOVERY_TERMINAL') as rejected:
+                followup.run_or_recover(admission)
+            assert outcome in str(rejected.value)
+            expected = {'failed_final':'FAILED_FINAL','cancelled':'CANCELLED','not_found':'FAILED_RETRYABLE'}[outcome]
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute('SELECT status FROM authority_operation WHERE operation_id=%s',[operation_id])
+                assert uow.cursor.fetchone()[0] == expected
+                uow.cursor.execute('SELECT status,result FROM authority_attempt WHERE operation_id=%s',[operation_id])
+                attempt = uow.cursor.fetchone()
+                assert attempt[0] == expected and attempt[1]['reconciliation_outcome'] == outcome
+                uow.cursor.execute("SELECT status FROM authority_lease_acquisition WHERE attempt_id=(SELECT attempt_id FROM authority_attempt WHERE operation_id=%s) ORDER BY fencing_token DESC LIMIT 1",[operation_id])
+                assert uow.cursor.fetchone()[0] == 'RELEASED'
+                uow.cursor.execute('SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s',[checkpoint['external_effect_id']])
+                assert uow.cursor.fetchone()[0] == 1
+                uow.cursor.execute('SELECT outcome FROM authority_effect_reconciliation_evidence WHERE external_effect_id=%s',[checkpoint['external_effect_id']])
+                assert uow.cursor.fetchall() == [(outcome,)]
+                uow.cursor.execute('SELECT count(*),max(attempt_number) FROM authority_attempt WHERE operation_id=%s',[operation_id])
+                assert uow.cursor.fetchone() == (1,1)
+            return
+        if recovery_case == 'ambiguous':
+            from novel_forge.modules.command_kernel.external_effect_adapters import ProviderResult
+            original = rebuilt.gateway.for_recovery
+            class AmbiguousQuery:
+                def __init__(self,delegate):self.delegate=delegate
+                def __getattr__(self,key):return getattr(self.delegate,key)
+                def query(self,**kwargs):return ProviderResult('ambiguous','fixture-query-unknown',{'remote_outcome':'UNKNOWN'})
+            monkeypatch.setattr(rebuilt.gateway,'for_recovery',lambda **kwargs:AmbiguousQuery(original(**kwargs)))
+            with pytest.raises(KernelError,match='EXTERNAL_EFFECT_RECONCILIATION_REQUIRED'):
+                followup.run_or_recover(admission)
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute('SELECT status FROM authority_external_effect WHERE external_effect_id=%s',[checkpoint['external_effect_id']])
+                assert uow.cursor.fetchone()[0] in {'UNKNOWN','RECONCILIATION_REQUIRED'}
+                uow.cursor.execute('SELECT status FROM authority_budget_reservation WHERE external_effect_id=%s',[checkpoint['external_effect_id']])
+                assert uow.cursor.fetchone()[0] == 'HELD_UNKNOWN'
+            monkeypatch.setattr(rebuilt.gateway,'for_recovery',original)
+        if recovery_case == 'coordinator':
+            ordinary = BookProseReviewCoordinator(followup)
+            report = ordinary.advance(**scope,run_id=run['run_id'],expected_version=0,**advance)
+            assert report['operations'][0]['operation_id'] == operation_id
+            assert report['operations'][0]['status'] == 'SUCCEEDED'
+        result = followup.run_or_recover(admission)
+        replay = followup.run_or_recover(admission)
+        assert result.output.asset_version_id == replay.output.asset_version_id
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute('SELECT status FROM authority_operation WHERE operation_id=%s',[operation_id])
+            assert uow.cursor.fetchone()[0] == 'SUCCEEDED'
+            uow.cursor.execute("SELECT external_effect_id,status FROM authority_external_effect WHERE operation_id=%s",[operation_id])
+            assert uow.cursor.fetchall() == [(checkpoint['external_effect_id'],'SUCCEEDED')]
+            uow.cursor.execute("SELECT count(*) FROM authority_external_effect_dispatch WHERE external_effect_id=%s",[checkpoint['external_effect_id']])
+            assert uow.cursor.fetchone()[0] == 1
+            uow.cursor.execute("SELECT count(*) FROM authority_external_receipt receipt JOIN authority_external_effect_dispatch dispatch USING(dispatch_id) WHERE dispatch.external_effect_id=%s",[checkpoint['external_effect_id']])
+            assert uow.cursor.fetchone()[0] == 1
+            uow.cursor.execute("SELECT count(*) FROM authority_effect_reconciliation_evidence WHERE external_effect_id=%s AND outcome='success'",[checkpoint['external_effect_id']])
+            assert uow.cursor.fetchone()[0] == 1
+            uow.cursor.execute("SELECT count(*),max(attempt_number) FROM authority_attempt WHERE operation_id=%s",[operation_id])
+            assert uow.cursor.fetchone() == (1,1)
+    finally:
+        rebuilt.close()
+
+
+@pytest.mark.parametrize('retry_mode', ['ordinary', 'correction', 'correction-response-loss'])
+@pytest.mark.parametrize('citation_mode', ['literal', 'indexed'])
+def test_chapter_literal_review_persists_exact_source_binding_and_replays_without_another_effect(native_prose_effect_window, retry_mode, citation_mode):
+    from novel_forge.api.authority_dependencies import build_production_execution_composition, build_longform_prose_review_model_port
+    from novel_forge.modules.book_followup_authority.prose_review import CHAPTER_LITERAL_CITATION_CONTRACT
+    from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+    values = native_prose_effect_window
+    scope = values['scope']
+    frozen = values['coordinator'].report(**scope, run_id=values['run']['run_id'])['manifest']
+    source_window = frozen['windows'][0]
+    span = source_window['spans'][0]
+    quote = span['text'][:min(32, len(span['text']))]
+    indexed = citation_mode == 'indexed'
+    if indexed:
+        from novel_forge.modules.book_followup_authority.prose_citations import citation_catalog
+        catalog = citation_catalog(source_window)
+        citation_id, selected = next(iter(catalog.items()))
+        quote = selected['quote']
+    schema_version = 'longform-prose-review.v5' if indexed else 'longform-prose-review.v4'
+    error_code = 'LONGFORM_PROSE_CITATION_ID_UNKNOWN' if indexed else 'LONGFORM_PROSE_CITATION_NOT_UNIQUE'
+    calls = []
+    def response(stage, inputs):
+        assert stage == 'longform_prose_review'
+        calls.append(inputs['window_id'])
+        if retry_mode != 'ordinary':
+            if len(calls) == 1:
+                assert 'prose_citation_repair' not in inputs
+            else:
+                feedback = inputs['prose_citation_repair']
+                assert feedback['source_report_hash'] and feedback['source_effect_id']
+                rejected_evidence = feedback['rejected_report']['findings'][0]['evidence'][0]
+                if indexed:
+                    assert feedback['contract_version'] == 'prose-indexed-citation-output-repair.v1'
+                    assert rejected_evidence == {'citation_id': 'UNKNOWN'}
+                    assert citation_id in feedback['allowed_citation_ids']
+                else:
+                    assert rejected_evidence['quote'] == '不在冻结原文中的引用'
+        invalid = retry_mode != 'ordinary' and len(calls) == 1
+        evidence = dict(citation_id='UNKNOWN' if invalid else citation_id) if indexed else dict(chapter_number=span['chapter_number'], quote='不在冻结原文中的引用' if invalid else quote)
+        return dict(schema_version=schema_version, manifest_digest=inputs['manifest_digest'], window_id=inputs['window_id'],
+                    reviewed_dimensions=list(PROSE_DIMENSIONS), findings=[dict(lineage_id='literal-chapter', dimension='motivation_cost',
+                    judgment='INSUFFICIENT_EVIDENCE', severity='NONE', confidence=0.5, claim='局部正文不能证明后续选择', rationale='仅保留给定原句作为待核查观察',
+                    evidence=[evidence], repair=dict(root_cause='UNCERTAIN', problem_owner='UNKNOWN',
+                    repair_scope='INVESTIGATE', revision_goal='核对后续原文', preserve=['已保存正文'], resolution_criteria=['后续文本支持判断']))])
+    execution = build_production_execution_composition(values['settings'], env=values['env'], chapter_fixture_factory=response)
+    try:
+        model = build_longform_prose_review_model_port(values['settings'], execution=execution, env=values['env'])
+        followup = BookFollowupAuthorityApplication(DATABASE_URL, application_build_id='prose-test', commit_sha='e'*40, prose_model_port=model)
+        coordinator = BookProseReviewCoordinator(followup)
+        policy = {**frozen['policy'], 'policy_version': 'chapter-literal-native.v1', 'diagnosis_contract': 'prose-root-cause.v1',
+                  'citation_locator_contract': CHAPTER_LITERAL_CITATION_CONTRACT, 'reading_mode': 'BODY_FIRST',
+                  'execution_mode': 'MANUAL', 'follow_acceptance': False}
+        if indexed:
+            policy.pop('citation_locator_contract')
+        run = coordinator.start(**scope, **metadata('chapter-literal-start'), policy=policy)
+        if indexed:
+            frozen_policy = coordinator.report(**scope, run_id=run['run_id'])['manifest']['policy']
+            assert frozen_policy['citation_locator_contract'] == 'indexed-prose-citation.v1'
+        command = dict(**scope, **metadata('chapter-literal-advance'), run_id=run['run_id'], expected_version=0)
+        if retry_mode != 'ordinary':
+            with pytest.raises(KernelError, match=error_code):
+                coordinator.advance(**command)
+            failed = coordinator.report(**scope, run_id=run['run_id'])['operations'][0]
+            operation_id = failed['operation_id']
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute('SELECT status,result FROM authority_attempt WHERE operation_id=%s', [operation_id])
+                original_failure = uow.cursor.fetchone()
+                assert original_failure[0] == 'FAILED_RETRYABLE'
+                assert original_failure[1]['error_code'] == error_code
+                diagnostic = original_failure[1]['failure_details']
+                assert diagnostic['reason'] == ('PASSAGE_ID_NOT_SUPPLIED' if indexed else 'QUOTE_NOT_FOUND')
+                if not indexed:
+                    assert diagnostic['exact_occurrences'] == 0
+                    assert diagnostic['chapter_number'] == span['chapter_number']
+                assert diagnostic['citation_ordinal'] == 0
+                assert 'quote' not in diagnostic and 'text' not in diagnostic
+                uow.cursor.execute('SELECT external_effect_id,request_payload FROM authority_external_effect WHERE operation_id=%s', [operation_id])
+                original_effect, original_input = uow.cursor.fetchone()
+            if retry_mode == 'correction-response-loss':
+                from scripts.book_prose_qualification import WindowResponseLoss, ConsumerRestartRequired
+                execution.close()
+                execution = build_production_execution_composition(values['settings'], env=values['env'], chapter_fixture_factory=response)
+                fault = WindowResponseLoss(execution.gateway, database_url=DATABASE_URL,
+                    scope={**{k:v for k,v in scope.items() if k!='principal'}, 'run_id':run['run_id'],
+                        'actor_id':scope['principal'].principal_id, 'book_id':coordinator._book_id(scope['book_run_id'],scope['project_id']),
+                        'manifest_digest':run['manifest_digest']},
+                    window=coordinator.report(**scope, run_id=run['run_id'])['manifest']['windows'][0])
+                model = build_longform_prose_review_model_port(values['settings'], execution=replace(execution, gateway=fault), env=values['env'])
+                interrupted = BookFollowupAuthorityApplication(DATABASE_URL, application_build_id='prose-test', commit_sha='e'*40, prose_model_port=model)
+                with pytest.raises((ConsumerRestartRequired, KernelError)) as loss:
+                    BookProseReviewCoordinator(interrupted).advance(**command)
+                assert fault.triggered, str(loss.value)
+                assert isinstance(loss.value, ConsumerRestartRequired) or loss.value.code == 'EFFECT_EXTERNAL_STATE_UNKNOWN'
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT status FROM authority_external_effect WHERE operation_id=%s AND external_effect_id<>%s", [operation_id, original_effect])
+                    assert uow.cursor.fetchone()[0] in {'UNKNOWN', 'RECONCILIATION_REQUIRED'}
+                execution.close()
+                execution = build_production_execution_composition(values['settings'], env=values['env'], chapter_fixture_factory=response)
+                model = build_longform_prose_review_model_port(values['settings'], execution=execution, env=values['env'])
+                followup = BookFollowupAuthorityApplication(DATABASE_URL, application_build_id='prose-test', commit_sha='e'*40, prose_model_port=model)
+                coordinator = BookProseReviewCoordinator(followup)
+        progress = coordinator.advance(**command)
+        assert progress['review_complete'] and progress['source_current']
+        operation = progress['operations'][0]
+        if retry_mode != 'ordinary':
+            assert operation['operation_id'] == operation_id
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute('SELECT status,result FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number', [operation_id])
+                attempts = uow.cursor.fetchall()
+                assert len(attempts) == 2 and attempts[0] == original_failure
+                assert attempts[1][0] == 'SUCCEEDED'
+                assert attempts[1][1]['asset_version_id'] == operation['report_asset_version_id']
+                assert attempts[1][1]['recovery_mode'] == ('lease_takeover' if retry_mode == 'correction-response-loss' else 'retry_attempt')
+                uow.cursor.execute('SELECT request_payload,status FROM authority_external_effect WHERE external_effect_id=%s', [original_effect])
+                assert uow.cursor.fetchone() == (original_input, 'SUCCEEDED')
+                uow.cursor.execute('SELECT count(*) FROM authority_external_effect_dispatch dispatch JOIN authority_external_effect effect USING(external_effect_id) WHERE effect.operation_id=%s', [operation_id])
+                assert uow.cursor.fetchone()[0] == 2
+        assert operation['status'] == 'SUCCEEDED'
+        document = AuthorityAssetQuery(DATABASE_URL).require(project_id=scope['project_id'], asset_version_id=operation['report_asset_version_id'])
+        citation = document.content['findings'][0]['evidence'][0]
+        assert document.content['schema_version'] == schema_version
+        assert citation['asset_version_id'] == span['asset_version_id'] and citation['text_hash'] == span['text_hash']
+        assert citation['quote'] == quote and citation['start'] == span['start']
+        assert coordinator.advance(**command)['review_complete']
+        assert len(calls) == (1 if retry_mode == 'ordinary' else 2)
+        with AuthorityUnitOfWork(DATABASE_URL) as uow:
+            uow.cursor.execute("SELECT receipt.payload->'evidence'->'result' FROM authority_external_receipt receipt JOIN authority_external_effect_dispatch dispatch USING(dispatch_id) JOIN authority_external_effect effect USING(external_effect_id) WHERE effect.operation_id=%s ORDER BY effect.created_at DESC LIMIT 1", [operation['operation_id']])
+            raw = uow.cursor.fetchone()[0]
+            assert raw['findings'][0]['evidence'] == ([dict(citation_id=citation_id)] if indexed else [dict(chapter_number=span['chapter_number'], quote=quote)])
+    finally:
+        execution.close()
+
+
+def test_known_literal_rejection_changes_native_retry_input_without_forgiving_citations(monkeypatch):
+    from contextlib import contextmanager
+    from types import SimpleNamespace
+    import psycopg
+    from psycopg.types.json import Jsonb
+    from novel_forge.modules.authority_handler_runtime import AuthorityHandlerRequest, AuthorityInputAsset
+    from novel_forge.modules.book_followup_authority import prose_recovery
+    from novel_forge.modules.book_followup_authority.prose_review import prose_review_invoke_payload, validate_window_report
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    from tests.unit.test_longform_prose_editorial import literal_report_case
+    frozen, window, raw = literal_report_case()
+    frozen['policy']['citation_locator_contract'] = 'chapter-literal-prose-citation.v1'
+    content = {**frozen, 'schema_version': 'longform-prose-window.v3', 'window': window}
+    raw['schema_version'] = 'longform-prose-review.v4'
+    citation = raw['findings'][0]['evidence'][0]
+    citation.pop('asset_version_id')
+    citation.pop('text_hash')
+    citation.update(chapter_number=1, quote='不曾提供的原文')
+    original = prose_review_invoke_payload(content)
+    source = AuthorityInputAsset('window', 'longform_prose_review_window', canonical_hash(content), content)
+    request = AuthorityHandlerRequest('review', 'p', 'w', 'author', 'trace', 'correlation', 'longform.prose_review',
+        '1.1.0', {'payload': {'book_id': 'book'}}, (source,), attempt_id='retry', database_url=DATABASE_URL)
+    payload = {'stage': 'longform_prose_review', 'input': original,
+        '_production_execution': {'book_id': 'book', 'attempt_id': 'prior', 'operation_id': 'review', 'project_id': 'p'}}
+    diagnostic = dict(error_code='LONGFORM_PROSE_CITATION_NOT_UNIQUE', error_message='Original literal does not resolve')
+    with psycopg.connect(DATABASE_URL) as c:
+        try:
+            for table in ('operation', 'attempt', 'external_effect', 'lease_acquisition', 'worker_cancel_signal', 'cancellation_command'):
+                c.execute(f'CREATE TEMP TABLE authority_{table} AS SELECT * FROM public.authority_{table} WITH NO DATA')
+            c.execute("INSERT INTO authority_operation(operation_id,project_id,workspace_id,actor_id,definition_name,input_asset_snapshot) VALUES('review','p','w','author','longform.prose_review',%s)",
+                [Jsonb([dict(asset_version_id='window',content_hash=source.content_hash)])])
+            c.execute("INSERT INTO authority_attempt(attempt_id,operation_id,attempt_number,status,result) VALUES('prior','review',1,'FAILED_RETRYABLE',%s)", [Jsonb(diagnostic)])
+            c.execute("INSERT INTO authority_external_effect(external_effect_id,operation_id,project_id,effect_type,status,request_payload,request_hash) VALUES('effect','review','p','model.invoke','SUCCEEDED',%s,%s)",
+                [Jsonb(payload),canonical_hash(payload)])
+            @contextmanager
+            def shared_uow(_database_url):
+                yield SimpleNamespace(cursor=c.cursor(), repositories=SimpleNamespace(external_effects=object()))
+            monkeypatch.setattr(prose_recovery, 'AuthorityUnitOfWork', shared_uow)
+            monkeypatch.setattr('novel_forge.modules.command_kernel.external_effect_runtime._read_verified_success',
+                lambda *_args, **_kw: {'provider_evidence': {'result': raw}, 'budget_reservation_status': 'SETTLED'})
+            repair = prose_recovery.literal_citation_retry_feedback(request, source=source, payload=original)
+            assert repair['prose_citation_repair']['source_effect_id'] == 'effect'
+            assert repair['prose_citation_repair']['rejected_report'] == raw
+            assert original == prose_review_invoke_payload(content)
+            with pytest.raises(KernelError, match='LONGFORM_PROSE_CITATION_NOT_UNIQUE'):
+                validate_window_report(raw, manifest=content, window=window)
+            for statement in (
+                "UPDATE authority_external_effect SET status='UNKNOWN'",
+                "UPDATE authority_external_effect SET effect_type='other'",
+                "UPDATE authority_external_effect SET request_hash='wrong'",
+                "UPDATE authority_operation SET actor_id='other'",
+                "UPDATE authority_operation SET workspace_id='other'",
+                "UPDATE authority_external_effect SET request_payload=jsonb_set(request_payload,'{input,window_id}','\"other\"')",
+                "UPDATE authority_operation SET input_asset_snapshot='[]'",
+                "INSERT INTO authority_lease_acquisition(attempt_id,status) VALUES('prior','HELD')",
+                "INSERT INTO authority_cancellation_command(operation_id) VALUES('review')",
+            ):
+                c.execute('SAVEPOINT rejected_report')
+                c.execute(statement)
+                with pytest.raises(KernelError, match='LONGFORM_PROSE_CITATION_REPAIR_UNSAFE'):
+                    prose_recovery.literal_citation_retry_feedback(request, source=source, payload=original)
+                c.execute('ROLLBACK TO SAVEPOINT rejected_report')
+        finally:
+            c.rollback()

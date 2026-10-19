@@ -27,6 +27,68 @@ from .domain import StoryPlanningGenerationCommand, canonical_hash
 DEFINITION_NAME = "story_planning.runtime_continuation.register"
 HANDLER_KEY = "novel_forge.story_planning.runtime_continuation.register"
 OUTPUT_KEY = "story_planning.runtime_continuation"
+ACKNOWLEDGED_ROUTING_CONTRACTS = {
+    '5.0.0': ('planning-completed-preparation-handoff.v1', 'source_operation_id'),
+    '11.0.0': ('planning-first-isolated-preparation-handoff.v1', 'custody_source_operation_id'),
+    '12.0.0': ('planning-first-isolated-preparation-handoff.v2', 'custody_source_operation_id'),
+    '13.0.0': ('planning-first-isolated-preparation-handoff.v3', 'custody_source_operation_id'),
+}
+
+
+def acknowledged_routing_link(cursor, *, continuation_id, successor_operation_id, project_id, book_id):
+    cursor.execute('''SELECT r.source_operation_id,r.successor_command,r.source_command,source.command_payload->'payload',
+        registration.definition_version,r.target_runtime,registration.operation_id,source.actor_id,registration.actor_id
+        FROM authority_story_planning_runtime_continuation r
+        JOIN authority_operation source ON source.operation_id=r.source_operation_id
+        JOIN authority_operation registration ON registration.operation_id=r.registered_by_operation_id
+        WHERE r.continuation_id=%s AND r.successor_operation_id=%s AND r.project_id=%s AND r.book_id=%s
+          AND source.project_id=r.project_id AND source.workspace_id=r.workspace_id
+          AND source.status='RECONCILIATION_REQUIRED' AND registration.status='SUCCEEDED'
+          AND registration.definition_name='story_planning.runtime_continuation.register' ''',
+        [continuation_id, successor_operation_id, project_id, book_id])
+    row = cursor.fetchone()
+    if not row or row[4] not in ACKNOWLEDGED_ROUTING_CONTRACTS or row[7] != row[8]:
+        return None
+    contract, source_key = ACKNOWLEDGED_ROUTING_CONTRACTS[row[4]]
+    proof = row[5].get('preparation_handoff', {})
+    if proof.get('contract_version') != contract or proof.get(source_key) != row[0]:
+        return None
+    source_attempt = proof.get('source_attempt_id') if source_key == 'source_operation_id' else None
+    if source_key == 'source_operation_id' and not source_attempt:
+        return None
+    if source_key == 'custody_source_operation_id' and not any(
+            member.get('operation_id') == row[0] and member.get('kind') == 'ACKNOWLEDGED_CANCELLATION'
+            for member in proof.get('stopped_ancestry', [])):
+        return None
+    cursor.execute('''SELECT EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status<>'CANCELLED')
+        OR EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
+            WHERE a.operation_id=%s AND l.status='HELD')
+        OR EXISTS(SELECT 1 FROM authority_worker_cancel_signal WHERE operation_id=%s AND acknowledged_at IS NULL)
+        OR EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=%s AND actor_id<>%s),
+        EXISTS(SELECT 1 FROM authority_worker_cancel_signal signal JOIN authority_attempt attempt USING(attempt_id)
+            WHERE signal.operation_id=%s AND attempt.operation_id=signal.operation_id AND attempt.status='CANCELLED'
+            AND signal.status='ACKNOWLEDGED' AND signal.acknowledged_at IS NOT NULL),
+        EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=%s AND actor_id=%s),
+        EXISTS(SELECT 1 FROM authority_attempt WHERE operation_id=%s AND status='CANCELLED'
+            AND (%s::text IS NULL OR attempt_id=%s))''',
+        [row[0],row[0],row[0],row[0],row[7],row[0],row[0],row[7],row[0],source_attempt,source_attempt])
+    stopped = cursor.fetchone()
+    if not stopped or stopped != (False, True, True, True):
+        return None
+    cursor.execute('''SELECT version.content,version.content_hash FROM authority_operation_output_asset output
+        JOIN authority_asset_version version USING(asset_version_id) JOIN authority_asset asset ON asset.asset_id=version.asset_id
+        WHERE output.operation_id=%s AND output.role='primary' AND output.content_hash=version.content_hash
+          AND asset.project_id=%s AND asset.asset_type='planning_runtime_continuation' ''', [row[6],project_id])
+    receipts = cursor.fetchall()
+    if len(receipts) != 1 or canonical_hash(receipts[0][0]) != receipts[0][1]:
+        return None
+    receipt = receipts[0][0]
+    if (receipt.get('contract_version') != 'planning-runtime-continuation.v'+row[4].split('.')[0]
+            or receipt.get('source_operation_id') != row[0] or receipt.get('continuation_id') != continuation_id
+            or receipt.get('source_command') != row[2] or receipt.get('successor_command') != row[1]
+            or receipt.get('target_runtime') != row[5]):
+        return None
+    return row[:4]
 
 
 def _context_projection_hash(context):
@@ -49,15 +111,15 @@ def capacity_upgrade_projection_hash(context):
 def runtime_continuation_definition(
     *, application_build_id: str, commit_sha: str, definition_version: str = "1.0.0"
 ) -> dict[str, Any]:
-    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0"}:
+    if definition_version not in {"1.0.0", "2.0.0", "3.0.0", "4.0.0", "5.0.0", "6.0.0", "7.0.0", "8.0.0", "9.0.0", "10.0.0", "11.0.0", "12.0.0", "13.0.0"}:
         raise ValueError("Unsupported runtime continuation definition")
     schema = {"type": "object"}
     return {
         "name": DEFINITION_NAME,
         "definition_version": definition_version,
         "family": "story_planning_runtime",
-        "command_schema_version": "planning-runtime-continuation.command.v" + definition_version[0],
-        "result_schema_version": "planning-runtime-continuation.result.v" + definition_version[0],
+        "command_schema_version": "planning-runtime-continuation.command.v" + definition_version.split('.')[0],
+        "result_schema_version": "planning-runtime-continuation.result.v" + definition_version.split('.')[0],
         "enabled": True,
         "command_schema": schema,
         "result_schema": schema,
@@ -67,7 +129,7 @@ def runtime_continuation_definition(
             "output_key": OUTPUT_KEY,
         },
         "handler_key": HANDLER_KEY,
-        "handler_contract_version": "planning-runtime-continuation.v" + definition_version[0],
+        "handler_contract_version": "planning-runtime-continuation.v" + definition_version.split('.')[0],
         "application_build_id": application_build_id,
         "commit_sha": commit_sha,
         "execution_mode": "transactional",
@@ -79,6 +141,15 @@ def runtime_continuation_definition(
             "zero_dispatch_required": definition_version == "1.0.0",
             **({'unstarted_isolated_successor_required': True} if definition_version == '4.0.0' else {}),
             **({'unsent_main_call_required': True, 'verified_preparation_required': True} if definition_version == '3.0.0' else {}),
+            **({'unsent_main_call_required': True, 'acknowledged_preparation_handoff_required': True} if definition_version == '5.0.0' else {}),
+            **({'unsent_main_call_required': True, 'terminal_preparation_custody_required': True} if definition_version == '6.0.0' else {}),
+            **({'unstarted_isolated_successor_required': True, 'exact_preparation_custody_required': True} if definition_version == '7.0.0' else {}),
+            **({'unsent_preparation_host_failure_required': True, 'exact_preparation_custody_required': True} if definition_version == '9.0.0' else {}),
+            **({'failed_pre_submit_main_custody_required': True, 'complete_prepared_projection_required': True} if definition_version == '10.0.0' else {}),
+            **({'first_isolation_preparation_custody_required': True, 'stopped_exact_ancestry_required': True} if definition_version == '11.0.0' else {}),
+            **({'first_isolation_preparation_custody_required': True, 'verified_zero_send_lineage_stop_supported': True} if definition_version == '12.0.0' else {}),
+            **({'first_isolation_preparation_custody_required': True, 'settled_preparation_capacity_failure_supported': True} if definition_version == '13.0.0' else {}),
+            **({'unsent_preparation_query_failure_required': True, 'exact_preparation_custody_required': True} if definition_version == '8.0.0' else {}),
             **({"world_contract_successor": "world-agency.v2", "settled_causal_lineage_required": True, "preserve_content_repair_counter": True} if definition_version == "2.0.0" else {}),
         },
         "idempotency_scope": "book:planning-runtime-continuation",
@@ -124,7 +195,7 @@ def require_source(
     row = uow.cursor.fetchone()
     if (
         row is None
-        or not ((row[0] in {"CANCELLED", "FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER"} and not row[5]) or (row[0] == "SUCCEEDED" and row[5]))
+        or not ((row[0] in {"CANCELLED", "FAILED_RETRYABLE", "FAILED_FINAL", "DEAD_LETTER", "RECONCILIATION_REQUIRED"} and not row[5]) or (row[0] == "SUCCEEDED" and row[5]))
     ):
         raise KernelError(
             "PLANNING_RUNTIME_CONTINUATION_SOURCE_INVALID",
@@ -140,6 +211,13 @@ def require_source(
             "PLANNING_RUNTIME_CONTINUATION_SCOPE_INVALID",
             "source command differs from its native Book scope",
         )
+    from .fresh_preparation_custody import require_source as require_fresh_preparation
+    fresh = require_fresh_preparation(uow, source_operation_id=source_operation_id, frozen=frozen) if not row[5] and frozen.get('execution_contract_version') == '1.21.0' else None
+    if fresh:
+        return fresh
+    if row[0] == "RECONCILIATION_REQUIRED":
+        from .preparation_recovery import require_source as require_preparation_source
+        return require_preparation_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen)
     uow.cursor.execute("SELECT proof FROM authority_generation_isolation WHERE operation_id=%s", [source_operation_id])
     isolation_row = uow.cursor.fetchone()
     if isolation_row:
@@ -156,12 +234,15 @@ def require_source(
             SELECT count(DISTINCT i.operation_id) FROM authority_generation_isolation i
               JOIN ancestors USING(operation_id)""", [source_operation_id])
         recovery_number = int(uow.cursor.fetchone()[0])
+        from .preparation_recovery import isolated_preparation_source
+        preparation = isolated_preparation_source(uow, source_operation_id=source_operation_id, frozen=frozen)
         return {"mode": "ISOLATED_PURE_GENERATION", "source_operation_id": source_operation_id,
             "command": frozen, "version": int(row[1]), "evidence_asset_version_id": proof["evidence_asset_version_id"],
             "evidence_hash": uow.repositories.asset_documents.require(project_id=project_id,
                 asset_version_id=proof["evidence_asset_version_id"]).content_hash,
             "snapshot": proof["pack_snapshot"], "depth": depth, "generation_isolation": proof,
-            "generation_recovery_number": recovery_number,"failure_retry_counter":retry_usage}
+            "generation_recovery_number": recovery_number,"failure_retry_counter":retry_usage,
+            **({"isolated_preparation": preparation} if preparation else {})}
     uow.cursor.execute(
         "SELECT status, error, result FROM authority_attempt WHERE operation_id=%s ORDER BY attempt_number DESC LIMIT 1",
         [source_operation_id],
@@ -175,7 +256,29 @@ def require_source(
         if attempt
         else ""
     )
+    if row[0] == 'FAILED_FINAL' and attempt and attempt[0] == 'FAILED_FINAL' and failure_code == 'CONTEXT_COMPRESSION_TASK_INVALID':
+        from .preparation_recovery import is_terminal_chunk_failure, require_source as require_preparation_source
+        if is_terminal_chunk_failure(attempt[2]):
+            return require_preparation_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, terminal=True)
+    if row[0] in {"FAILED_RETRYABLE", "FAILED_FINAL"} and failure_code == "PROVIDER_CONTEXT_CAPACITY_UNCERTAIN" and attempt:
+        return _pre_send_capacity_source(uow, source_operation_id=source_operation_id, row=row,
+            frozen=frozen, attempt=attempt, semantic_preparation_failure=True)
+    if failure_code == "MANUSCRIPT_CONTEXT_INVALID" and attempt:
+        from .preflight_continuation import require_input_scope_source
+        return require_input_scope_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
+    if failure_code == 'PLANNING_ROUTING_LINEAGE_DEPTH_EXCEEDED' and attempt:
+        from .preparation_recovery import unsent_query_source
+        prepared = unsent_query_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
+        if prepared:
+            return prepared
+    if failure_code == 'EFFECT_RETRYABLE_FAILURE_RECORDED' and attempt:
+        from .preparation_recovery import prepared_main_source
+        return prepared_main_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
     if failure_code == "PROGRAMMING_BUG" and attempt and dict(attempt[2] or {}).get("error_message") == "canceling statement due to statement timeout":
+        from .preparation_recovery import unsent_query_source
+        prepared = unsent_query_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
+        if prepared:
+            return prepared
         from .database_recovery import require_source as require_database_source
         return require_database_source(uow, source_operation_id=source_operation_id, row=row, frozen=frozen, attempt=attempt)
     if (row[0] == "FAILED_FINAL" and attempt and attempt[0] == "FAILED_FINAL"
@@ -943,6 +1046,7 @@ def _pre_send_capacity_source(
     rendered_capacity_failure: bool = False,
     world_capacity_failure: bool = False,
     rendered_chapter_capacity_failure: bool = False,
+    semantic_preparation_failure: bool = False,
 ) -> dict[str, Any]:
     from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
 
@@ -1014,6 +1118,11 @@ def _pre_send_capacity_source(
             if not unsafe:
                 projection_revalidation = {"contract_version": "complete-request-capacity-context.v1",
                     "context_asset_version_id": original.asset_version_id, "context_content_hash": original.content_hash}
+    if semantic_preparation_failure:
+        from .preflight_continuation import require_semantic_preparation_source
+        projection_revalidation = require_semantic_preparation_source(uow, source_operation_id=source_operation_id,
+            frozen=frozen, attempt=attempt)
+        unsafe = False
     if protected_world_failure:
         uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_external_effect WHERE operation_id=%s)
             OR EXISTS(SELECT 1 FROM authority_budget_reservation WHERE operation_id=%s)
@@ -1361,6 +1470,27 @@ def _capacity_authorization(
     }
 
 
+def _semantic_preparation_proof(allocation):
+    proof = allocation.get("semantic_preparation") or allocation.get("context_revalidation") or {}
+    return proof if proof.get("contract_version") == "same-capacity-semantic-preparation.v1" else None
+
+
+def _retained_capacity_limit(allocation, route, context_policy_ref):
+    from novel_forge.modules.chapter_authority.context_compression_provider import planning_input_capacity
+    proof = _semantic_preparation_proof(allocation)
+    if not proof:
+        return planning_input_capacity(route)
+    limit = min(512_000, route.model_context_limit)
+    selected = allocation.get("allocated_task_tokens")
+    if (context_policy_ref != "context-policy:chapter-generation-pack:v4"
+            or type(selected) is not int or not 0 < selected <= 512_000
+            or selected != allocation.get("prior_task_tokens")
+            or proof.get("single_request_limit") != limit
+            or allocation.get("single_request_ceiling") != limit):
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Retain the frozen selection target and complete-request window after isolation")
+    return selected
+
+
 def _capacity_target(
     application: Any,
     source: dict[str, Any],
@@ -1419,15 +1549,27 @@ def _capacity_target(
             source = {**source, "context_revalidation": {**source.get("context_revalidation", {}),
                 "contract_version": source.get("context_revalidation", {}).get("contract_version", "complete-request-capacity-context.v1"),
                 "context_asset_version_id": original.asset_version_id, "context_content_hash": original.content_hash}}
+    if source.get("context_revalidation", {}).get("contract_version") == "same-capacity-semantic-preparation.v1":
+        proof = source["context_revalidation"]
+        ceiling = min(512_000, route.model_context_limit)
+        if ceiling != proof["single_request_limit"] or capacity_upgrade:
+            raise KernelError("PLANNING_RUNTIME_CONTINUATION_CAPACITY_DRIFT", "Semantic preparation must retain the exact single-request capacity and frozen policy")
+        allocated = int(baseline)
     if (source.get("context_revalidation") or {}).get("world_input_delivery"):
         allocated = int(baseline)
     if source.get("context_revalidation", {}).get("contract_version") in {"world-method-scope-projection.v1", "chapter-method-scope-projection.v1", "world-protected-context-accounting.v1", "chapter-prior-method-audits.v1"}:
         allocated = min(baseline, ceiling)
+    inherited_semantic = None
     if source.get("capacity_inheritance"):
-        allocated = int(source["capacity_inheritance"]["allocation"]["allocated_task_tokens"])
-        if allocated > ceiling:
+        inherited_allocation = source["capacity_inheritance"]["allocation"]
+        allocated = int(inherited_allocation["allocated_task_tokens"])
+        inherited_limit = _retained_capacity_limit(inherited_allocation, route, context_policy_ref)
+        inherited_semantic = _semantic_preparation_proof(inherited_allocation)
+        if inherited_semantic:
+            ceiling = min(512_000, route.model_context_limit)
+        if allocated > inherited_limit:
             raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED", "Inherited allocation exceeds the current authorized model capacity")
-    if allocated <= baseline and not source.get("context_revalidation") and not capacity_upgrade:
+    if allocated <= baseline and not source.get("context_revalidation") and not capacity_upgrade and not inherited_semantic:
         raise KernelError(
             "PLANNING_CAPACITY_ALLOCATION_EXHAUSTED",
             "No authorized single-request capacity remains",
@@ -1447,7 +1589,7 @@ def _capacity_target(
                         command=successor, inputs=tuple(FrozenPlanningInput(**value) for value in source["inputs"]),
                         context_policy_ref=capacity_upgrade["source_context_policy_ref"], planning_task_token_budget=allocated,
                         preflight_only=True)
-                context = preparer._reproject_frozen_context(original_context.content,command=successor,task_tokens=allocated,
+                context = deepcopy(original_context.content) if source.get('completed_preparation', {}).get('contract_version') in {'planning-terminal-preparation-handoff.v1', 'planning-unsent-preparation-query-handoff.v1', 'planning-unsent-preparation-lineage-handoff.v1', 'planning-prepared-main-handoff.v1'} else preparer._reproject_frozen_context(original_context.content,command=successor,task_tokens=allocated,
                     projection_contract=proof.get("contract_version"), capacity_policy_upgrade=capacity_upgrade)
             else:
                 context, _ = preparer._context_bundle(
@@ -1463,7 +1605,7 @@ def _capacity_target(
         except KernelError as error:
             if error.code != "PLANNING_PROVIDER_CONTEXT_BUDGET_EXCEEDED":
                 raise
-            if allocated == ceiling or source.get("capacity_inheritance") or (source.get("context_revalidation") or {}).get("world_input_delivery"):
+            if allocated == ceiling or source.get("capacity_inheritance") or (source.get("context_revalidation") or {}).get("world_input_delivery") or source.get("context_revalidation", {}).get("contract_version") == "same-capacity-semantic-preparation.v1":
                 raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED",
                     "The retained task cannot fit its authorized single-request capacity",details=error.details) from error
             allocated=min(allocated*2,ceiling)
@@ -1480,6 +1622,7 @@ def _capacity_target(
         "external_intents_at_source": 2 if source.get('retained_world_action', {}).get('source_operation_id') == source['source_operation_id'] else 0,
         **({'retained_world_action': source['retained_world_action']} if source.get('retained_world_action') else {}),
         **({"context_revalidation": source["context_revalidation"]} if source.get("context_revalidation") else {}),
+        **({"semantic_preparation": inherited_semantic} if inherited_semantic else {}),
     }
     if source.get("capacity_inheritance"):
         target = {**target, "generation_isolation": source["capacity_inheritance"]["generation_isolation"]}
@@ -1489,6 +1632,11 @@ def _capacity_target(
     if source.get("inherited_world_source_correction"):
         correction = source["inherited_world_source_correction"]
         target = {**target,"world_source_correction":correction,"generation_isolation":correction["isolation"]}
+    if source.get("completed_preparation"):
+        allocation["external_intents_at_source"] = 0 if source["completed_preparation"]["contract_version"] in {"planning-unsent-preparation-query-handoff.v1", "planning-unsent-preparation-lineage-handoff.v1"} else len(source["completed_preparation"]["retained_preparation"])
+        if source['completed_preparation']['contract_version'] == 'planning-prepared-main-handoff.v1':
+            allocation['external_intents_at_source'] = source['source_effect_count']
+        target = {**target, "preparation_handoff": source["completed_preparation"]}
     return {**target, "planning_capacity": allocation}, authorization
 
 
@@ -1585,8 +1733,7 @@ def require_route_evidence(
             template = decision_template({"task":{"work_id":source["command"]["book_id"],
                 "policy_snapshot":admission["policy_snapshot"]}}) if admission else None
             repair = source["preflight_failure"]["blocked_decision"]["native_repair_evidence"]
-            if (not template or template['version'] not in {'creative-execution-template.v2','creative-execution-template.v3','creative-execution-template.v4','creative-execution-template.v5','creative-execution-template.v6','creative-execution-template.v7','creative-execution-template.v8','creative-execution-template.v9','creative-execution-template.v10','creative-execution-template.v11'}
-                    or not template.get('repair_routing')
+            if (not template or not template.get('repair_routing')
                     or repair.get('stage_repair_number', repair['repair_number']) > template['repair_routing']['max_same_route_repairs']
                     or repair['repair_number'] > 4
                     or repair['parent_candidate_id'] not in template['allowed_candidates']):
@@ -1811,11 +1958,15 @@ def register(
             "cancelled source version differs from the requested registration",
         )
     original = _command_from_payload(source["command"])
+    fresh_custody = bool(source.get('fresh_preparation'))
+    if source.get("completed_preparation") and source["snapshot"]["release_sha"] == application.commit_sha:
+        raise KernelError("PLANNING_RUNTIME_CONTINUATION_RELEASE_UNCHANGED", "Preparation deployment handoff requires its explicit corrected release")
     continuation_id = f"planning-runtime-continuation:{source_operation_id}"
     reference_contract = source.get("mode") == "PLANNING_REFERENCE_CONTRACT"
     world_source_correction = source.get("mode") == "ISOLATED_WORLD_SOURCE_CORRECTION"
     isolated_generation = source.get("mode") == "ISOLATED_PURE_GENERATION"
     database_failure = source.get("mode") == "KNOWN_UNSENT_CONTEXT_QUERY_FAILURE"
+    input_scope_failure = source.get("mode") == "UNSENT_CURRENT_WORKING_PLAN_SCOPE"
     if database_failure:
         from .database_recovery import require_diagnostic
         decision_evidence = {**decision_evidence, "unsent_context_query_diagnostic": require_diagnostic(decision_evidence, source)}
@@ -1882,8 +2033,10 @@ def register(
     capacity = source.get("mode") == "PRE_SEND_CAPACITY"
     if (
         not capacity
+        and not fresh_custody
         and not isolated_generation
         and not database_failure
+        and not input_scope_failure
         and not contract_change
         and not host_revalidation
         and not world_source_correction
@@ -1895,8 +2048,10 @@ def register(
         )
     if (
         not capacity
+        and not fresh_custody
         and not isolated_generation
         and not database_failure
+        and not input_scope_failure
         and not contract_change
         and not host_revalidation
         and not world_source_correction
@@ -1918,8 +2073,15 @@ def register(
     if source.get("preflight_failure"):
         from .preflight_continuation import require_capacity_target
         capacity_decision = require_capacity_target(source, target)
-    if isolated_generation:
+    if fresh_custody:
+        from .fresh_preparation_custody import target_runtime as fresh_target_runtime, authorization as fresh_authorization
+        target = fresh_target_runtime(application, source, target)
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            route_evidence = fresh_authorization(uow, source=source, successor=successor, principal=principal, target=target)
+    elif isolated_generation:
         target = {**target, "generation_isolation": source["generation_isolation"]}
+        if source.get("isolated_preparation"):
+            target["preparation_handoff"] = source["isolated_preparation"]
         if original.runtime_continuation_id:
             prior_runtime = require_binding(application.database_url, original.runtime_continuation_id)["target_runtime"]
             prior_capacity = prior_runtime.get("planning_capacity")
@@ -1927,9 +2089,8 @@ def register(
                 preparer = application.execution_binder.resolver.execution_preparer
                 route = preparer.planning_route
                 allocated = int(prior_capacity["allocated_task_tokens"])
-                from novel_forge.modules.chapter_authority.context_compression_provider import planning_input_capacity
-                ceiling = planning_input_capacity(route)
-                if allocated > ceiling:
+                inherited_limit = _retained_capacity_limit(prior_capacity, route, target["pack_snapshot"]["context_policy_ref"])
+                if allocated > inherited_limit:
                     raise KernelError("PLANNING_CAPACITY_ALLOCATION_EXHAUSTED", "The authorized successor model cannot retain original task capacity")
                 context, _ = preparer._context_bundle(operation_id=source_operation_id,
                     attempt_id=source["generation_isolation"]["local_execution"]["attempt_id"], command=successor,
@@ -1978,6 +2139,10 @@ def register(
             "original_diagnostic": source["diagnostic"],
             **({} if reference_contract else {"source_world": source["source_world"]}),
         }
+    elif input_scope_failure:
+        from .preflight_continuation import authorize_input_scope
+        with AuthorityUnitOfWork(application.database_url) as uow:
+            route_evidence = authorize_input_scope(uow, source=source, successor=successor, principal=principal, target=target)
     elif database_failure:
         from .database_recovery import authorization as database_authorization
         with AuthorityUnitOfWork(application.database_url) as uow:
@@ -1996,7 +2161,7 @@ def register(
                     decision_evidence.get("authorized_reasoning_effort") or ""
                 ),
             )
-    continuation_version = '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
+    continuation_version = '13.0.0' if source.get('fresh_preparation', {}).get('contract_version') == 'planning-first-isolated-preparation-handoff.v3' else '12.0.0' if fresh_custody else '10.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-prepared-main-handoff.v1' else '9.0.0' if source.get('completed_preparation', {}).get('contract_version') in {'planning-unsent-preparation-lineage-handoff.v1', 'planning-unsent-preparation-query-handoff.v1'} else '7.0.0' if source.get('isolated_preparation') else '6.0.0' if source.get('completed_preparation', {}).get('contract_version') == 'planning-terminal-preparation-handoff.v1' else '5.0.0' if source.get('completed_preparation') else '3.0.0' if source.get('retained_world_action') else '2.0.0' if contract_change or host_revalidation or world_source_correction else '1.0.0'
     definition = runtime_continuation_definition(
         application_build_id=application.application_build_id,
         commit_sha=application.commit_sha,
@@ -2014,7 +2179,7 @@ def register(
         "independent_human_review": "NOT_REVIEWED",
     }
     content = {
-        "contract_version": 'planning-runtime-continuation.v' + continuation_version[0],
+        "contract_version": 'planning-runtime-continuation.v' + continuation_version.split('.')[0],
         "continuation_id": continuation_id,
         "source_operation_id": source_operation_id,
         "source_evidence_asset_version_id": source["evidence_asset_version_id"],
@@ -2025,7 +2190,7 @@ def register(
         "successor_command": frozen_successor,
         "target_runtime": target,
         "decision_evidence": decision,
-        "source_release_sha": source["snapshot"]["release_sha"],
+        "source_release_sha": source.get("source_release_sha") or source["snapshot"]["release_sha"],
         "target_release_sha": application.commit_sha,
         "chain_depth": source["depth"],
         **({"source_preflight_failure": source["preflight_failure"], "capacity_decision": capacity_decision} if source.get("preflight_failure") else {}),
@@ -2044,6 +2209,7 @@ def register(
         )
         if (
             current != source
+            or (input_scope_failure and authorize_input_scope(uow, source=current, successor=successor, principal=principal, target=target) != route_evidence)
             or (database_failure and database_authorization(uow, source=current, successor=successor, principal=principal, target=target) != route_evidence)
             or (
                 contract_change
@@ -2102,8 +2268,10 @@ def register(
             )
             or (
                 not capacity
+                and not fresh_custody
                 and not isolated_generation
                 and not database_failure
+                and not input_scope_failure
                 and not contract_change
                 and not host_revalidation
                 and not world_source_correction
@@ -2122,6 +2290,12 @@ def register(
                 "PLANNING_RUNTIME_CONTINUATION_SOURCE_DRIFT",
                 "source changed before continuation registration",
             )
+        if fresh_custody:
+            if fresh_target_runtime(application, current, target) != target or fresh_authorization(
+                    uow, source=current, successor=successor, principal=principal, target=target) != route_evidence:
+                raise KernelError('PLANNING_RUNTIME_CONTINUATION_SOURCE_DRIFT', 'First custody retains frozen routing and current author membership authority')
+            from .fresh_preparation_custody import retire_paused_reservations
+            retire_paused_reservations(uow, source)
         if (source.get("source_operation_status") or (source.get("context_revalidation") or {}).get("source_operation_status")) == "FAILED_RETRYABLE":
             from novel_forge.modules.command_kernel.runtime import OperationTransitionCommand, transition_operation_in_uow
 
@@ -2162,7 +2336,7 @@ def register(
                 Jsonb(frozen_successor),
                 Jsonb(target),
                 Jsonb(decision),
-                source["snapshot"]["release_sha"],
+                source.get("source_release_sha") or source["snapshot"]["release_sha"],
                 application.commit_sha,
                 source["depth"],
             ],
@@ -2287,7 +2461,7 @@ def require_successor(
     expected_runtime = {
         key: value
         for key, value in binding["target_runtime"].items()
-        if key not in {"planning_capacity", "world_host_revalidation", "world_source_correction", "planning_reference_contract", "generation_isolation", "provider_schema_correction"}
+        if key not in {"planning_capacity", "world_host_revalidation", "world_source_correction", "planning_reference_contract", "generation_isolation", "provider_schema_correction", "preparation_handoff"}
     }
     if (
         validate_runtime

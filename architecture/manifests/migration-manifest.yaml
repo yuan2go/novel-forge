@@ -1,7 +1,7 @@
 {
   "schema_version": "architecture-manifest.v1",
   "registry": "novel_forge.storage.migrations.versions:VERSION_MODULES",
-  "head": "20261016_0222_planning_host_frozen_definition",
+  "head": "20261019_0235_source_isolation_convergence",
   "migration_ids": [
     "20260625_0001_initial_industrial_schema",
     "20260628_0002_query_and_release_indexes",
@@ -225,6 +225,19 @@
     "20261015_0219_world_exact_context_convergence",
     "20261015_0220_chapter_prior_audit_convergence",
     "20261016_0221_working_scope_fk_indexes",
-    "20261016_0222_planning_host_frozen_definition"
+    "20261016_0222_planning_host_frozen_definition",
+    "20261018_0223_working_plan_input_continuation",
+    "20261018_0224_working_regeneration_isolation",
+    "20261018_0225_impacted_working_plan_continuation",
+    "20261018_0226_semantic_preparation_continuation",
+    "20261018_0227_completed_preparation_handoff",
+    "20261018_0228_terminal_preparation_handoff",
+    "20261019_0229_routing_observation_preparation_recovery",
+    "20261019_0230_unsent_preparation_lineage",
+    "20261019_0231_prepared_main_handoff",
+    "20261019_0232_first_isolated_preparation_custody",
+    "20261019_0233_acknowledged_preparation_routing",
+    "20261019_0234_settled_preparation_capacity",
+    "20261019_0235_source_isolation_convergence"
   ]
 }

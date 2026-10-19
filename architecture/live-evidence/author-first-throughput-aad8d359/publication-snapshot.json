@@ -1,0 +1,50 @@
+{
+  "schema_version": "novel-forge.publication-snapshot.v1",
+  "source_commit": "aad8d3597daa66e0daf1a5f488691de9ffb03ee4",
+  "publication": "CODE_AND_EXISTING_EVIDENCE_ONLY",
+  "tests_builds_migrations_deployment_provider": "NOT_RUN_BY_USER_REQUEST",
+  "author_pause_preserved": true,
+  "private_prose_credentials_and_provider_payloads_excluded": true,
+  "files": [
+    {
+      "path": "classifications.json",
+      "source_sha256": "c3041f4323ce0cb3d3fc88408ba9bb9ae5dd3c6a9a257b38bd2d96a94c72fa24",
+      "bytes": 3128
+    },
+    {
+      "path": "continuation-checkpoint.json",
+      "source_sha256": "6fabe9197ffe5ce3c3dcb28c4b6daa9e6b874eea6b92454526c33619bbb44832",
+      "bytes": 1746
+    },
+    {
+      "path": "focused.command.json",
+      "source_sha256": "1f5f58fc57294328ed25b3cc5c31fd4e8d6d23b911540d85d77542fa5a733e99",
+      "bytes": 2660
+    },
+    {
+      "path": "formal-matrix-snapshot.json",
+      "source_sha256": "141d40ba248a9965b5cf3984f2d21e52051d3fb676e21ce54ebf6ae0504b7013",
+      "bytes": 2574
+    },
+    {
+      "path": "formal.command.json",
+      "source_sha256": "b9e324c014bcb0da244a5640506fbc03fb354a61bd7bb2ab8dfb9fc6ea23d7b3",
+      "bytes": 1265
+    },
+    {
+      "path": "prospective-readonly-request.json",
+      "source_sha256": "9d9144135cb494fbe3cf0ffdc7e7d2d31f10852f981eafbfafe8de263c66fd07",
+      "bytes": 4527
+    },
+    {
+      "path": "scope.json",
+      "source_sha256": "355ee0a228b1121a59440b99d98a594aa6cf923f5c272a897ebeec322747bd7b",
+      "bytes": 1094
+    },
+    {
+      "path": "throughput-reconciled.json",
+      "source_sha256": "85d9e89fcf47516463f50757d5bb865e9c38ce28ad73df174cbcb198ddfe2cec",
+      "bytes": 31310
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+[
+  {
+    "original_file": "formal-custody-before-e09f3fa1.xml",
+    "sha256": "97adea93299e42e5e823e6c632604b8416c96ebbd080b360fe4bfc6e422061c9",
+    "failed_cases": [
+      {
+        "classname": "tests.integration.test_narrative_qualification_report_postgres",
+        "name": "test_native_qualification_receipts_replay_without_promoting_fixture_or_mutating_authority",
+        "failure_codes": [
+          "FIXTURE_CONTRACT_ONLY",
+          "HISTORICAL_O",
+          "HISTORICAL_OR_UNVERIFIED_NATIVE_EVIDENCE",
+          "TIVE_EVIDENCE"
+        ]
+      },
+      {
+        "classname": "tests.integration.test_source_observation_isolation_postgres",
+        "name": "test_source_isolation_requires_owned_method_correction_and_preserves_unknown[None]",
+        "failure_codes": [
+          "CONTEXT",
+          "GENERATION_ISOLATION_SCOPE_UNSAFE"
+        ]
+      },
+      {
+        "classname": "tests.integration.test_planning_routing_bootstrap_postgres",
+        "name": "test_bootstrap_candidate_is_frozen_reviewable_and_permanently_ineligible",
+        "failure_codes": [
+          "BOOK_ARCHITECTURE",
+          "NARRATIVE_SEMANTIC_PROFILE_DRIFT"
+        ]
+      },
+      {
+        "classname": "tests.integration.test_synthesis_formation_postgres",
+        "name": "test_native_formation_generates_foundation_from_author_brief[legacy-runtime-recovery]",
+        "failure_codes": [
+          "PLANNING_NAR",
+          "PLANNING_NARRATIVE_INTENT_BINDING_INVALID"
+        ]
+      },
+      {
+        "classname": "tests.integration.test_prose_reviewer_sampling_postgres",
+        "name": "test_native_prose_reviewer_sample_isolated_from_formal_findings_and_human_feedback",
+        "failure_codes": []
+      }
+    ],
+    "original_retained_privately": true
+  },
+  {
+    "original_file": "prose-source-development-postgres-v1.xml",
+    "sha256": "188264822940fb68cfd83865cdb2b6a3297129105a909de9737a892607e55743",
+    "failed_cases": [
+      {
+        "classname": "tests.integration.test_narrative_qualification_report_postgres",
+        "name": "test_native_qualification_receipts_replay_without_promoting_fixture_or_mutating_authority",
+        "failure_codes": []
+      },
+      {
+        "classname": "tests.integration.test_prose_reviewer_sampling_postgres",
+        "name": "test_prose_coldstart_prepares_native_sampling_after_qualification_blocks_formal_send",
+        "failure_codes": [
+          "MODEL_EFFECT_RESERVATION_OVERRIDE_INVALID",
+          "PROVIDER_ROUTING_BLOCKED"
+        ]
+      }
+    ],
+    "original_retained_privately": true
+  },
+  {
+    "original_file": "prose-source-development-postgres-v2.xml",
+    "sha256": "4b0a444b66f61889c1d8cb11d87f99aa068a2d11a409755f21d6e32a207b7bb3",
+    "failed_cases": [
+      {
+        "classname": "tests.integration.test_synthesis_formation_postgres",
+        "name": "test_native_formation_generates_foundation_from_author_brief[legacy-runtime-recovery]",
+        "failure_codes": [
+          "PLANNING_NAR",
+          "PLANNING_NARRATIVE_INTENT_BINDING_INVALID"
+        ]
+      }
+    ],
+    "original_retained_privately": true
+  },
+  {
+    "original_file": "historical-pack-development-v3.xml",
+    "sha256": "31267b2a43fbdee35368d491e1a2567a8e9fc3e5429d9e1656e9ad8164edbabe",
+    "failed_cases": [
+      {
+        "classname": "tests.integration.test_synthesis_formation_postgres",
+        "name": "test_native_formation_generates_foundation_from_author_brief[legacy-runtime-recovery]",
+        "failure_codes": [
+          "STYLE_PROJECTION_MIGRATION_REQUIRED"
+        ]
+      }
+    ],
+    "original_retained_privately": true
+  }
+]

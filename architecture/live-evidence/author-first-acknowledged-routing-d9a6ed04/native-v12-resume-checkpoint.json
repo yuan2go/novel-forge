@@ -1,0 +1,14 @@
+{
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "project_id": "project:wp-nf-author-first-20261017",
+  "book_id": "book:wp-nf-author-first-20261017",
+  "state": "READY",
+  "version": 140,
+  "current_chapter": 19,
+  "accepted_through_chapter": 0,
+  "input_mode": "RESOLVED_AUTHORITY_INPUT",
+  "ordinary_continuation_target": 100,
+  "successor_operation_id": "629b658a-ce1e-48ff-9a5a-27370abe4a4c",
+  "same_frozen_context_hash": "sha256:1b6bd2e501fd64409de2536bb728897fe33f9a59cd4f12f5947d470bf2ecc061",
+  "main_dispatch": "PENDING"
+}

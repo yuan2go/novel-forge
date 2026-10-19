@@ -1,0 +1,43 @@
+{
+  "schema_version": "novel-forge.native-working-repair-checkpoint.v1",
+  "at": "2026-10-19T04:35:48.245944+00:00",
+  "source_sha": "80caedd02377270937ad76851725a28652fd12ce",
+  "production_fix_source_sha": "102892aa3124ebc874442abfaa23d680fa522e42",
+  "active_manuscript_runtime_source_sha": "1235e62f6e783edd2044e957be43a4a98494270c",
+  "evidence_ceiling": "EXECUTABLE",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "effective_chapters": 20,
+  "effective_body_han_at_twenty_chapter_checkpoint": 85832,
+  "full_book_target": 600,
+  "first_delivery_target": 100,
+  "chapter_body_han": [
+    4000,
+    5000
+  ],
+  "accepted_through_chapter": 0,
+  "author_choice": "NOT_GRANTED",
+  "hundred_chapter_delivery": "NOT_COMPLETED",
+  "checks": {
+    "unit355_source": "80caedd02377270937ad76851725a28652fd12ce",
+    "postgres12_source": "102892aa3124ebc874442abfaa23d680fa522e42",
+    "postgres1_corrected_source": "80caedd02377270937ad76851725a28652fd12ce",
+    "original13_one_failure_retained": true,
+    "all13_same_source_claim": false,
+    "documentation": "PASS",
+    "ruff": "PASS",
+    "current_full_matrix": "NOT_RUN",
+    "queued_full_matrix_source": "80caedd02377270937ad76851725a28652fd12ce"
+  },
+  "native_packs_reference": "../author-first-native21-first-route-1235e62f/native-pack-revalidation.json",
+  "exact_twenty_chapter_export_reference": "../author-first-native20-effective-06472af7/",
+  "paid_review": {
+    "provider": "deepseek",
+    "approved_total_usd": "10",
+    "authorization_increased": false,
+    "current_window17_20": "BOTH_ATTEMPTS_CORRECTLY_REJECTED",
+    "future21_100": "WAITING_FOR_SAVED_EXACT_VERSIONS"
+  },
+  "literary_qualification": "NOT_PROVEN",
+  "overall_production_qualification": "NOT_PROVEN",
+  "raw_provider_or_prose_committed": false
+}

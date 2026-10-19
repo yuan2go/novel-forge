@@ -1439,12 +1439,32 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
         self.assertFalse(change["direct_plan_mutation_allowed"])
         self.assertFalse(change["canon_mutation_allowed"])
 
+        from novel_forge.modules.command_kernel.errors import KernelError
+
+        refused_native_records = {
+            "quality.model_reference_evaluation.record",
+            "quality.model_reference_adjudication.record",
+        }
+        for name in sorted(refused_native_records):
+            with self.assertRaisesRegex(KernelError, "MODEL_REFERENCE_PROVENANCE_INVALID"):
+                self.run_op(name, [quality_subject], {"model_reference": {
+                    "recording_actor_id": self.principal.principal_id,
+                    "fixture_protocol_only": True, "real_model_call": False,
+                }})
+
         with AuthorityUnitOfWork(DATABASE_URL) as uow:
             uow.cursor.execute(
-                "SELECT definition_name, status FROM authority_operation WHERE project_id = %s",
+                "SELECT operation_id, definition_name, status FROM authority_operation WHERE project_id = %s",
                 [self.project_id],
             )
-            operations = uow.cursor.fetchall()
+            all_operations = uow.cursor.fetchall()
+            uow.cursor.execute("SELECT created_by_operation_id FROM authority_book WHERE book_id=%s", [book_id])
+            scope_operation_id = uow.cursor.fetchone()[0]
+            scope_operations = [row for row in all_operations if row[0] == scope_operation_id]
+            self.assertEqual(len(scope_operations), 1)
+            self.assertTrue(scope_operations[0][1].startswith("scope-fixture-definition-"))
+            self.assertEqual(scope_operations[0][2], "SUCCEEDED")
+            operations = [(name, status) for identity, name, status in all_operations if identity != scope_operation_id]
             uow.cursor.execute(
                 "SELECT COUNT(*) FROM audit_log WHERE project_id = %s AND action LIKE 'content.%%.materialized'",
                 [self.project_id],
@@ -1455,7 +1475,9 @@ class ContentAuthorityRuntimePostgresTests(unittest.TestCase):
                 [self.project_id],
             )
             outbox = uow.cursor.fetchone()[0]
-        self.assertEqual({name for name, _ in operations}, set(CONTENT_CODECS))
+        executed = {name for name, _ in operations}
+        self.assertEqual(executed | refused_native_records, set(CONTENT_CODECS))
+        self.assertFalse(executed & refused_native_records)
         self.assertEqual(
             {name: status for name, status in operations if status != "SUCCEEDED"},
             {},

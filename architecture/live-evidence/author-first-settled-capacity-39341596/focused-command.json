@@ -1,0 +1,65 @@
+{
+  "at": "2026-10-19T05:50:42.001344+00:00",
+  "source_sha": "393415967a4ad42abaef11d62a93f0468d5fe4c2",
+  "source_root": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/settled-capacity-source/novel-forge",
+  "commands": {
+    "postgres": [
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+      "-m",
+      "pytest",
+      "tests/integration/test_semantic_preparation_continuation_postgres.py",
+      "-q",
+      "--tb=short",
+      "--junitxml=/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/settled-capacity-final-postgres-39341596.xml"
+    ],
+    "unit": [
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+      "-m",
+      "pytest",
+      "tests/unit/test_planning_preparation_recovery.py",
+      "tests/unit/test_complete_request_capacity.py",
+      "tests/unit/test_codex_execution_evidence.py",
+      "tests/unit/test_planning_runtime_continuation.py",
+      "tests/unit/test_generation_execution_policy.py",
+      "tests/unit/test_postgres_migrations.py",
+      "tests/unit/test_craft_migration_convergence.py",
+      "tests/unit/test_coordinated_migration_identity.py",
+      "tests/unit/test_semantic_context_units.py",
+      "tests/unit/test_execution_backend_conformance.py",
+      "-q",
+      "--tb=short",
+      "--junitxml=/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/settled-capacity-final-unit-39341596.xml"
+    ],
+    "docs": [
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/qualification-venv/bin/python",
+      "-m",
+      "novel_forge.tools.documentation_reality",
+      "--repo-root",
+      ".",
+      "--expected-sha",
+      "393415967a4ad42abaef11d62a93f0468d5fe4c2",
+      "--output",
+      "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/settled-capacity-final-docs-39341596.json"
+    ],
+    "ruff": [
+      "/Volumes/DevSSD/Development/Workspace/projects/novel-forge/.venv/bin/ruff",
+      "check",
+      "src/novel_forge/modules/command_kernel/generation_isolation.py",
+      "src/novel_forge/modules/production_execution/backends.py",
+      "src/novel_forge/modules/production_execution/codex_configuration.py",
+      "src/novel_forge/modules/production_execution/token_meter.py",
+      "src/novel_forge/modules/story_planning_runtime/fresh_preparation_custody.py",
+      "src/novel_forge/modules/story_planning_runtime/runtime_continuation.py",
+      "src/novel_forge/storage/migrations/versions/__init__.py",
+      "src/novel_forge/storage/migrations/versions/v20261019_0234_settled_preparation_capacity.py",
+      "tests/integration/test_semantic_preparation_continuation_postgres.py",
+      "tests/unit/test_complete_request_capacity.py",
+      "tests/unit/test_craft_migration_convergence.py",
+      "tests/unit/test_planning_preparation_recovery.py"
+    ]
+  },
+  "postgres_expected_tests": 27,
+  "focused_database": "nf_author_first_custody_final_test",
+  "native_production_database_not_used": true,
+  "no_skip_or_xfail_added": true
+}

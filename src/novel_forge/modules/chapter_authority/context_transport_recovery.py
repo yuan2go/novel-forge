@@ -13,6 +13,9 @@ def recover_unsent_context_transport(authority, *, book_run_id, principal, root_
     principal.require('book.authority.execute', book['project_id'])
     principal.require('chapter.authority.execute', book['project_id'])
     if root_operation_id is not None:
+        from .working_regeneration import recover_unsent_owner_projection
+        if recover_unsent_owner_projection(authority, book=book, root_id=root_operation_id, principal=principal):
+            return True
         return _recover_input_role_transport(authority, book, root_operation_id, principal)
     if not book.get('active_chapter_request_id'):
         return False

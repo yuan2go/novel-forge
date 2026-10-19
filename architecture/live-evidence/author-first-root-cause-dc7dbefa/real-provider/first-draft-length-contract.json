@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "evidence_class": "FIRST_DRAFT_ACTUAL_INPUT_LENGTH_CONTRACT",
+  "operation_id": "d91a49f0-c575-4b37-bc18-8cba8b270895",
+  "actual_prompt_hash": "sha256:50c5c5004d1ca48a0170d36349defb6771b6a66b56347f4749ad32e3d9b294be",
+  "frozen_minimum": 4000,
+  "frozen_maximum": 5000,
+  "planning_target_han_characters": 4500,
+  "unit": "HAN_CHARACTERS_V1",
+  "first_draft_actual_han": 3802,
+  "first_draft_requirement_status": "LENGTH_TARGET_UNMET",
+  "actual_prompt_contract_fragments": [
+    ",\"chapter_generation_length\":{\"contract_version\":\"chapter-generation-length.v1\",\"maximum\":5000,\"minimum\":4000,\"planning_target_han_characters\":4500,\"platform_profile_asset_version_id\":\"authority-output:5b3fdd57-567a-4cd3-8cb4-6cbcbf26e1c3:chapter.platform_profile:v1\",\"platform_profile_content_hash\":\"sha256:ce5e5b457c01a3f905f2796bad0629e86c301524448b5f9cc51ccf1efd80dd41\",\"platform_rules_hash\":\"sha256:6645c5df83cfe0a1d2238126709930f06f5b20760206ff25f1028feedc695b11\",\"unit\":\"HA"
+  ],
+  "classification": "PROVIDER_FIRST_DRAFT_UNDER_TARGET_NATIVE_REVISION_REQUIRED_NOT_A_SAVED_PROSE_OR_EXPORT_BLOCK"
+}

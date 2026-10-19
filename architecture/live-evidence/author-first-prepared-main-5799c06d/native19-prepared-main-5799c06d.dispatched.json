@@ -1,0 +1,69 @@
+{
+  "at": "2026-10-18T18:51:23.066423+00:00",
+  "source_sha": "5799c06df20d15b578d264ddfb01e400bb573ba2",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "control_operation_id": "169ddec8-739f-44cc-af5a-9f3e914aabad",
+  "control_version": "10.0.0",
+  "source_operation_id": "b85c20d5-95aa-4fa8-9c56-4cf9c8086d8d",
+  "successor_operation_id": "8bda22d9-188f-464e-a0ca-24248edb649c",
+  "source_status": "FAILED_FINAL",
+  "source_version": 4,
+  "original_failed_effect_id": "2c4a591d-292c-49ba-8199-a6015d0a860d",
+  "original_failed_request_hash": "sha256:c870044327270f3de5b9c47ed6d91774dc948ee027f3bb41b60bf4052d38a343",
+  "original_effect_status": "FAILED_RETRYABLE",
+  "original_failure": {
+    "message": "Planning gateway execution failed: KernelError: CORPUS_CONSUMPTION_INPUT_BOUND: provider input exceeds lineage inspection bounds",
+    "error_type": "ExternalEffectAdapterError",
+    "failure_kind": "transport",
+    "request_sent": false
+  },
+  "successor_effect_id": "0b8f89b3-22f6-4d24-8b1c-32b0f2f93f3a",
+  "successor_request_hash": "sha256:ffdeb2a79392110f8feadb945980a4f9953931bd303e33768bffbb07ea8aaf16",
+  "complete_input_equal": true,
+  "complete_input_hash": "sha256:71d6f84b7fe79cc6e541bb3d920578c99393aaa66b9054503656d21a931b9488",
+  "complete_capacity_projection_equal": true,
+  "complete_capacity_projection_hash": "sha256:1b25c980cef642cbd4022a1d4a5ab9a2fb3d6b5f334fb29a4ae7857f1bd6c7da",
+  "retained_preparation_count": 148,
+  "new_preparation_effect_count": 0,
+  "successor_stages": [
+    [
+      "chapter_plan.generate",
+      1
+    ]
+  ],
+  "actual_provider_prompt_sha256": "sha256:d77b560ff7d02e1b8b189cfeac53a579da9c42e010836ba3db86643b38db4a14",
+  "actual_provider_prompt_bytes": 408435,
+  "all18_predecessor_versions_and_hashes_present": true,
+  "complete_prior_prose_chapters": [
+    1,
+    2,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+  ],
+  "compressed_prior_prose_chapters": [
+    3,
+    4,
+    12
+  ],
+  "accepted_through_chapter": 0,
+  "working_prose_is_not_formal_canon": true,
+  "stage_outcome": "RUNNING_NOT_YET_RESULT",
+  "capacity_measurement": {
+    "limit": 475000,
+    "token_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+    "after_reserved": 474478,
+    "before_reserved": 477000,
+    "actual_provider_tokens": null
+  }
+}

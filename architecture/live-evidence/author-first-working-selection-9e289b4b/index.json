@@ -1,0 +1,57 @@
+{
+  "schema_version": "novel-forge.live-evidence.v1",
+  "at": "2026-10-18T19:20:13.792052+00:00",
+  "source_sha": "9e289b4bb40c1346de8f60bad556345dfd790fbf",
+  "native_generation_sha": "5799c06df20d15b578d264ddfb01e400bb573ba2",
+  "main_baseline": "9f41f0c75108f708a9a77e6c8da89826cf00987e",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "database": {
+    "name": "nf_author_first_native",
+    "port": 56437,
+    "cluster_system_identifier": "7697608597895058057",
+    "schema_head": 231
+  },
+  "template": "creative-execution-template.v12",
+  "packs": {
+    "planning": "2.19.0",
+    "chapter": "3.2.0"
+  },
+  "classification": "ACTUAL_WORKING_SELECTION_CHECKPOINT_DEFECT_AFTER_VERIFIED_PRE_SUBMIT_RETIREMENT",
+  "fix": "Working selection uses exact historical Planning retirement proof plus existing optional observer ownership. Adoption remains strict; no historical status or unknown usage is rewritten.",
+  "checks": {
+    "exact_focused_tests": 185,
+    "exact_default_author_first_serialized_tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skips": 0,
+    "independent_spec_review": "NO_FINDINGS",
+    "independent_standards_review": "NO_CODE_FINDINGS"
+  },
+  "native_saved_revision_reused": true,
+  "new_writer_or_revision_calls_for_selection": 0,
+  "effective_chapter_count": 19,
+  "total_body_han": 81633,
+  "chapter19": {
+    "first_han": 3854,
+    "effective_full_han": 4214,
+    "effective_body_han": 4209,
+    "first_retained": true
+  },
+  "pause_resume": {
+    "paused_version": 135,
+    "resumed_version": 136,
+    "chapter": 19
+  },
+  "author_selection": "NOT_GRANTED",
+  "accepted_through_chapter": 0,
+  "next_checkpoint": "Native Planning20 executing under ordinary continuation to100",
+  "full_matrix": {
+    "a60d3a97": "RUNNING_POSTGRESQL_AFTER_BACKEND_AND_MIGRATION_COMPATIBILITY_PASS",
+    "final9e289b4b": "QUEUED_AFTER_VERIFIED_PRIOR_CLEANUP",
+    "superseded5799c06d": "WAIT_ONLY_QUEUE_CANCELLED_BEFORE_ANY_FORMAL_RUN"
+  },
+  "production_100": "INCOMPLETE",
+  "literary_qualification": "NOT_PROVEN",
+  "model_review": "USER_AUTHORIZED_USD10_WAITING_EFFECTIVE17_20_WINDOW",
+  "raw_prose_and_credentials": "PRIVATE_OUTSIDE_GIT"
+}

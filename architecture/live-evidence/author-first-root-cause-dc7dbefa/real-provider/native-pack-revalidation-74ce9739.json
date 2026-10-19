@@ -1,0 +1,17 @@
+{
+  "source_sha": "74ce97399a45b1c3063a80eb9bfe3456379bd59a",
+  "same_book": "book:wp-nf-author-first-20261017",
+  "planning_semantic_hashes_unchanged": true,
+  "results": [
+    {
+      "domain": "story_planning",
+      "status": "ALREADY_CURRENT",
+      "version": "2.19.0"
+    },
+    {
+      "domain": "chapter",
+      "status": "ALREADY_CURRENT",
+      "version": "3.2.0"
+    }
+  ]
+}

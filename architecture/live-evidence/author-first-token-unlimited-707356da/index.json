@@ -1,0 +1,77 @@
+{
+  "schema_version": "author-first-token-unlimited-evidence.v1",
+  "work_package": "WP-NF-AUTHOR-FIRST-CONTINUATION-AND-RECOVERY-01",
+  "parent_pr": 183,
+  "source_sha": "707356dad005e5e23d020ec8993eb2f4cf1dc62d",
+  "status": "LOCAL_TOKEN_CAP_REMOVED_REAL_PROVIDER_FAILURE_UNRESOLVED",
+  "user_instruction": "Cancel token limits; user confirms the token limit has now been removed.",
+  "repair": "context_headroom_output_reserve no longer clamps remaining model context to an inherited fixed-output model_output_limit when complete-request admission supplies system_limit. Existing fixed-output contracts remain unchanged.",
+  "red_signal": "Existing headroom regression with inherited 32000 returned 32000 instead of remaining context 238400.",
+  "verification": {
+    "unit_tests": 98,
+    "unit_subtests": 8,
+    "native_tests": 2,
+    "documentation": "PASS",
+    "instruction_surface": "PASS",
+    "ruff": "PASS",
+    "full_formal_matrix": "NOT_RUN"
+  },
+  "native_readbacks": [
+    {
+      "path": "readbacks/b859384152eb2b1a.json.gz",
+      "test": "tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export[single-interruption]",
+      "source_sha": "707356dad005e5e23d020ec8993eb2f4cf1dc62d",
+      "database": "nf_author_token_test",
+      "cluster": "7697608597895058057",
+      "saved_deliveries": 8,
+      "books": [
+        {
+          "book_run_id": "book-run:8e4e4e8d-0e08-4572-8428-9572d79e9c7c",
+          "current_chapter": 8,
+          "accepted_through_chapter": 0
+        }
+      ],
+      "dispatch_proof": "readbacks/b859384152eb2b1a-dispatch.json"
+    },
+    {
+      "path": "readbacks/084bfc1ea5d1eeae.json.gz",
+      "test": "tests/integration/test_creation_cli_postgres.py::test_native_start_freezes_current_work_and_reuses_original_formation[headroom-catalog-admission]",
+      "source_sha": "707356dad005e5e23d020ec8993eb2f4cf1dc62d",
+      "database": "nf_author_token_test",
+      "cluster": "7697608597895058057",
+      "saved_deliveries": 0,
+      "books": []
+    }
+  ],
+  "runtime_configuration": "Removed unused legacy NOVEL_FORGE_CODEX_ESCALATION_OUTPUT_LIMIT=32000 from a new private config; original preserved. Catalog output_limit remains null; no paid route enabled.",
+  "actual_process": "token-unlimited-actual-process.json",
+  "actual_http_body": "NOT_OBSERVED; do not infer a project-configured output cap from remote max_output_tokens error text.",
+  "real_runtime_source": "809e81f9548fc3bb6ab6bffdb06453aa7506062d; current World process started before 707356da, and is not claimed as verification of that new code.",
+  "real_resume": "Original Formation retained; old unknowns are isolated under existing authorization, then a linked successor dispatched after the user confirmed the token limit was removed.",
+  "no_literary_qualification": true,
+  "no_100_chapter_claim": true,
+  "verified_prompt_stdin_matches": 32,
+  "real_checkpoint": {
+    "formation_run_id": "story-formation:b21252b1bd3fcc4aa608d57686c1f65b0138c638812d3daa1df8f961b02e2bba",
+    "book_id": "book:wp-nf-author-first-20261017",
+    "lifecycle": "FAILED",
+    "stage": "WORLD_BIBLE",
+    "version": 10,
+    "unknown_effects": 3,
+    "isolated_predecessors": 2,
+    "real_saved_chapters": 0,
+    "real_selected_chapters": 0,
+    "real_accepted_chapters": 0,
+    "first_drafts": [],
+    "effective_drafts": []
+  },
+  "actual_failure": {
+    "observed_error": "stream disconnected before completion: Incomplete response returned, reason: max_output_tokens",
+    "local_process_stop": "EXITED_1; no local termination reason/signal",
+    "result_file": "MISSING",
+    "interpretation": "Error text is an observed Provider/CLI protocol outcome; it does not establish a project-configured cap or a numeric remote cap. Actual running CLI argv had no output-token cap; HTTP body NOT_OBSERVED.",
+    "same_request_sent_again": false,
+    "further_unchanged_retry": "NOT_RUN"
+  },
+  "remaining": "Real World/Foundation completion, actual consecutive normal-length chapters and real exact-version export/readback remain unfulfilled. This packet claims local cap removal and scoped validation only."
+}

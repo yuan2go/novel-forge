@@ -1,0 +1,79 @@
+{
+  "schema_version": "native-writer-isolation-successor-proof.v1",
+  "at": "2026-10-19T01:48:18.629591+00:00",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "operations": [
+    [
+      "2beecd08-6495-49c1-b6bf-587393dc56d6",
+      "0a7a09e3-b617-467f-9992-831edb76db5d",
+      "FAILED_FINAL",
+      "223aa7a860bbfe5220f50fdfc0508498"
+    ],
+    [
+      "69f5649c-36b9-4dee-8805-813e11e5cf9e",
+      "0a7a09e3-b617-467f-9992-831edb76db5d",
+      "SUCCEEDED",
+      "223aa7a860bbfe5220f50fdfc0508498"
+    ]
+  ],
+  "old_effect_id": "124025fd-801f-49d1-bfc2-dfaf74faec37",
+  "old_effect_status": "UNKNOWN",
+  "old_request_hash": "sha256:3cfacebefa1fa24926b7003c06bb7b1f6669ee25fb1d542a795d031ddd2426de",
+  "old_budget_status": "HELD_UNKNOWN",
+  "old_settled_at": null,
+  "isolation_id": "ecdb868f-2ca5-4876-bed3-e3ab3391703f",
+  "isolation": {
+    "contract_version": "pure-generation-isolation.v1",
+    "actor_id": "writing-craft-native-operator",
+    "operation_id": "2beecd08-6495-49c1-b6bf-587393dc56d6",
+    "business_commit_right": "REVOKED",
+    "activation_right": "REVOKED",
+    "remote_outcome": "UNKNOWN"
+  },
+  "native_successor_edge": [
+    "d721d95f-722e-48c9-aca5-b45e5659decf",
+    "kernel-failed-step-successor.v2",
+    "writing-craft-native-operator",
+    "2beecd08-6495-49c1-b6bf-587393dc56d6",
+    "69f5649c-36b9-4dee-8805-813e11e5cf9e"
+  ],
+  "same_native_root_and_exact_input_snapshot": true,
+  "completed_stages_reused": [
+    [
+      "22e2abd4-07b2-43f2-9eb0-afb554270fdf",
+      "chapter.context.retrieve",
+      "SUCCEEDED"
+    ],
+    [
+      "24564501-95b4-4305-b365-2e315195e140",
+      "chapter.revision.review",
+      "SUCCEEDED"
+    ],
+    [
+      "2a968d9f-d147-4d55-855b-97200af3dae9",
+      "chapter.review.evaluate",
+      "SUCCEEDED"
+    ],
+    [
+      "2ac4ebcd-5ee3-447e-bb78-494892569b33",
+      "chapter.revision.apply",
+      "SUCCEEDED"
+    ],
+    [
+      "6469dc27-284e-4549-8f61-fccfb627dd69",
+      "chapter.memo.generate",
+      "SUCCEEDED"
+    ],
+    [
+      "8045d9fb-24f4-4b10-85f0-cc4f949883a5",
+      "chapter.context.build",
+      "SUCCEEDED"
+    ]
+  ],
+  "no_writer_or_revision_resend_for_rereview_capacity_failure": true,
+  "first_draft_version": "authority-output:69f5649c-36b9-4dee-8805-813e11e5cf9e:chapter.draft:v1",
+  "first_draft_han": 3943,
+  "length_revision_han_including_repeated_title": 4205,
+  "formal_acceptance": "NOT_GRANTED",
+  "readonly": true
+}

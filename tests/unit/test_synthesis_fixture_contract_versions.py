@@ -20,10 +20,21 @@ def test_foundation_fixture_paths_match_exact_frozen_contract(stage, contract):
 @pytest.mark.parametrize('version', ['1.18.0', '1.19.0', '1.20.0'])
 def test_current_planning_fixture_uses_mission4_without_rewriting_legacy(monkeypatch, version):
     monkeypatch.setattr(CreativeGroundingTransport, 'planning', lambda *a: {'required_state_delta': {'field': 'value'}})
+    # WHY: This unit checks wire-version conversion; native frozen Context loading has PostgreSQL coverage.
+    monkeypatch.setattr('tests.integration.current_planning_wire_support.current_planning_fixture_inputs', lambda inputs, database_url: inputs)
     output = SynthesisChapterTransport().planning('chapter_plan.generate', {'planning_command': {
         'execution_contract_version': version, 'creative_requirements_contract': 'work-requirements.v2'}})
     assert output['chapter_contract_schema_version'] == ('chapter-mission-scene.v3' if version == '1.18.0' else 'chapter-mission-scene.v4')
     assert ('serialization_function' in output) is (version in {'1.19.0', '1.20.0'})
+
+
+@pytest.mark.parametrize('version', ['1.18.0', '1.21.0'])
+def test_current_planning_fixture_still_requires_its_frozen_context(version):
+    from tests.integration.current_planning_wire_support import current_planning_fixture_inputs
+
+    with pytest.raises(ValueError, match='actual frozen Context'):
+        current_planning_fixture_inputs({'stage': 'chapter_plan.generate', 'planning_command': {
+            'execution_contract_version': version}}, '')
 
 
 @pytest.mark.parametrize('agency', [False, True])

@@ -32,7 +32,9 @@ def test_current_foundation_search_fixture_obeys_actual_v5_schema():
 @pytest.mark.parametrize("version", ["1.18.0", "1.19.0", "1.20.0"])
 def test_historical_planning_fixture_keeps_original_provider_body(version):
     original = {"world_realization": [{"state_ref": {"asset_version_id": "frozen", "content_hash": "original"}}]}
-    assert current_planning_wire_result(original, {"planning_command": {"execution_contract_version": version}}) is original
+    frozen = deepcopy(original)
+    assert current_planning_wire_result(original, {"planning_command": {"execution_contract_version": version}}) == frozen
+    assert original == frozen
     result = SynthesisTransport().planning("creative.candidates.generate", {"foundation_task": {"contract_version": "foundation-generation.v4"}})
     assert "narrative_search_projection" not in result
     _validate(foundation_output_schema("creative.candidates.generate", work_requirements=True, rfc6901_paths=True), result, path="$")

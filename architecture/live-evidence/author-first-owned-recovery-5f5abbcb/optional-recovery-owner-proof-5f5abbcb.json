@@ -1,0 +1,83 @@
+{
+  "schema_version": "author-first-owned-saved-result-recovery.v1",
+  "at": "2026-10-18T17:51:55.985801+00:00",
+  "source_sha": "5f5abbcb9e435ba44a0679e568de4d555f38462c",
+  "first_native_symptom": "execution backend is not registered: remote-provider-deepseek",
+  "first_native_command": "continue-to-100-1c0e28d6-v1",
+  "unrelated_review_operation_id": "0e1e06e9-41e9-4289-9216-d1b5948959e8",
+  "unrelated_review_effect_id": "d2203202-1fff-49c0-8495-b4094ec40f2d",
+  "root_cause": "Book-wide saved-result recovery scanned an active optional review through the Codex-only ordinary writing session",
+  "owner_selection": {
+    "planning": "story_planning.generate",
+    "chapter": "exact active Chapter or working revision Root",
+    "prose_review": "frozen admitted Operation ids"
+  },
+  "protections": [
+    "original project/book/actor identity",
+    "unknown not settled or resent",
+    "unrelated success not settled",
+    "own missing backend still refuses",
+    "isolation and frozen execution checks retained"
+  ],
+  "development_source_binding": "final worktree changes committed without alteration; exact-head formal matrix queued",
+  "evidence": [
+    {
+      "path": "optional-recovery-owner-red.xml",
+      "sha256": "sha256:ef171d2744d2bc42bcbf944ba38dde0ddf271b238c73ec0f7a21db198a93c0f5",
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "path": "optional-recovery-owner-working-v2.xml",
+      "sha256": "sha256:5bf494b58b18bdf63c6d721c4bee3a3a54e04327b92ba36c13630c751f45f417",
+      "counts": {
+        "tests": 95,
+        "failures": 3,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "path": "optional-recovery-owner-working-v3.xml",
+      "sha256": "sha256:0b8e8a199f1b7c3e1cd6ae471895f39641a14d5a6d365eaeaa6e701d7e972cd4",
+      "counts": {
+        "tests": 95,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "path": "optional-recovery-owner-pg-final.xml",
+      "sha256": "sha256:4f2b5ba977b77e4a72992f0ed481151133e225b131f9ba69be20fe5a9762d0c9",
+      "counts": {
+        "tests": 47,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "path": "optional-recovery-owner-pg-final-v2.xml",
+      "sha256": "sha256:659ae81d63613724feb08785e60af5b311de04013b34edbd47c25895564ed263",
+      "counts": {
+        "tests": 47,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "path": "optional-recovery-owner-docs-working-final.json",
+      "sha256": "sha256:0892406553e845c6b340b5c32a793c832135c5d1803840814357f54f63b219c6"
+    }
+  ],
+  "native_installation": "PENDING_NATIVE_PAUSE_CHECKPOINT",
+  "full100": "NOT_COMPLETE",
+  "accepted_through_chapter": 0,
+  "not_human_or_literary_qualification": true
+}

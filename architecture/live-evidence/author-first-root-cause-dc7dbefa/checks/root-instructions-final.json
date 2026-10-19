@@ -1,0 +1,2809 @@
+{
+  "errors": [],
+  "instruction_identity_sha256": "sha256:fda5e7a5bfc92f09dd5da36dde9b450c4af393fbbab08af007a1ceb00159eff9",
+  "schema_version": "novel-forge.ai-instruction-reality.v1",
+  "source_count": 280,
+  "sources": [
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_POLICY",
+      "owner": "repository-governance",
+      "path": "AGENTS.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:70625877c9804584f1aa91e358c78ace073559d9aa1a91336bb22a6ea458ecfa",
+      "size": 5095,
+      "source_id": "coding-agent-policy"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_POLICY",
+      "owner": "repository-governance",
+      "path": "CLAUDE.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:c6def1b6fa44f3e4b88199afda516899a4b1390a235b0b9a5e0363c552187c77",
+      "size": 194,
+      "source_id": "coding-agent-policy"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "INSTRUCTION_BINDING",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/agent_session_pack.json",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ff35c98625c130aa7ba371f1e9ef37de218f153246a123f910d6388f892fee6c",
+      "size": 10657,
+      "source_id": "capability-pack-instruction-bindings"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/agent_session_system_instruction.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:dc7af7138384d1ad9fb5636122655c48e47f6815f53cac9403a93fa52e894d3d",
+      "size": 405,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/agent_session_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:6770272dedd724622365c33414f05851d1c19c1c7d3741dd1140e2056550e8b6",
+      "size": 376,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_system_instruction.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:1cec9ce01ecb7cfdf36d805e5487ba61a9daf8cdac5c0a39bdd3ea7ec95aef64",
+      "size": 619,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_system_instruction_v1.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:c36ae6a6b64ba27aaab0b7ffd42b7cf05be4410ac25cdb2d667ee5c9cfa5ad45",
+      "size": 296,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_system_instruction_v2.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:e14d88f41fe8c3f55795d75873432603c38cf8bbf9caae985c846105240fd0b8",
+      "size": 405,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:8b66a263372be80a9ed440bc7ed1d6f7606c18e3211f648a2d0889f37b541e6a",
+      "size": 152,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v10.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:d2399264315aabfa5e75b341d2316c015effaf6562b7044555ede5668e5323d1",
+      "size": 1548,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v11.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:b60d5af0af82787a8cbf692817068f244e2bcb42012d0c2e007c6bc38d6593b1",
+      "size": 1793,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v12.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:be4f6de5758ff8f38849340b9bb07adb729a6ed75ef01cbe275e047464d60875",
+      "size": 2506,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v13.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:fefe83e58c29a61cd6bbada82e2b0118628bac63fee5bbb44b68f05d2f56a7d3",
+      "size": 2813,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v15.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:38c35f9685033a4ec63ab21ca7c5942dd4e278ef1202e62e373c7d04251c4049",
+      "size": 2196,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v2.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:a69eebbacb169071e28ec4133fda95a11e5dbc426ac7a05f8c4e51298f84cbbe",
+      "size": 241,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v5.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:27506871d1af591bf16af02c2be471f484a067f097fc071332228b6a0d5c93ac",
+      "size": 278,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v6.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:80a4672b21a765a3f5c42acca7520009f29a34593042c8ff34bab0eb09cf3aef",
+      "size": 182,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v7.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:89c126e270a6d4ba6ae91572c1c523c2527694314a22d8fead44a4bba8802e26",
+      "size": 320,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v8.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:d280bf7ee4fb201d3e9feeeb6f5d90b0314a551292326726ff53ecc9695d5871",
+      "size": 783,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/chapter_generation_template_v9.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:9a6769fa826548016a0ec661ad8a177a13a6fe12194d5568ecb093e8eee8a1d4",
+      "size": 1345,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/character_design_work_v2.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:b5ffa963075b5f2253e924cbb029c938d421e7ef305c0775a0deb0c3b91aa11d",
+      "size": 1082,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/character_design_work_v3.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:b5ffa963075b5f2253e924cbb029c938d421e7ef305c0775a0deb0c3b91aa11d",
+      "size": 1082,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/long_outline_work_v2.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:71e9877fcad749a356134d156d572684579b9643674e2db9707f7af81c055f7f",
+      "size": 2588,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/longform_prose_review_system_instruction.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:3433df978a0cc93f2975566cf27da28f1573293bf62f9877f2b521497552533a",
+      "size": 766,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/longform_prose_review_system_instruction_v2.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e29839276770af7dd35d2fd66a3c52e08bd81c490ee2719b0a7b87380c6e753",
+      "size": 957,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/longform_prose_review_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:51f69fbc0d7d0a5dc4a036127a9a2110edcf4257fc8d1eec99c90f0a88590995",
+      "size": 148,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/longform_prose_review_template_v3.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:78d5c07bd6d8121f574725e705b45576d524e7420c2baddc1c0233688aa09204",
+      "size": 162,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/model_reference_system_instruction_v1.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:bd97dc4c04261497d8618824235ab2473d99bcc306db2056e979d3d26b5e8a94",
+      "size": 392,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/model_reference_template_v1.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:f7bc0972ca0287e4de4a621167bc333c056cc4cc9b766fd7d0206f55b676f3b2",
+      "size": 481,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/narrative_beat_design_work_v2.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:838bb637b8b5474af92dcaef00b4c8e6e6d5e4fbc2322b193b4c5e2385ec58a1",
+      "size": 1332,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/narrative_evaluation_system_instruction.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:cf69cace3ae3dcf856c05b9fd413e954b0d5215240444624e4ca7dfec52ad7b2",
+      "size": 1992,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/narrative_evaluation_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:29162621cb468e41f3fa070fe0501f4cdd6531dc4c1528d520562dbcaee0941c",
+      "size": 184,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/reader_outcome_system_instruction.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:935fb24505dec2130ddcf3c494ce2afb415161f969ff678d5ba2817418356238",
+      "size": 286,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/reader_outcome_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:cda7e283fa1a7c294932c2d45071815d02dddb803ac5daf897bdb76ff7995313",
+      "size": 333,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/scene_screenplay_system_instruction.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:e63e0e607817322b5b674230e793b9a03da3e2e2f2ddd2f8e2122bf97a50416b",
+      "size": 462,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/scene_screenplay_system_instruction_v1.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:46d1bd1ee6b15192d8113c8a7b595ead8a287e7c194910774da2b4f6782e1dd9",
+      "size": 875,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/scene_screenplay_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:986da7427bd1902bd664a89265e7b031ae7733d2cdc8197289deded6eae30c09",
+      "size": 396,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/story_planning_creative_json_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:a8e387fea2b40129d00ef8870c9da5c59d0aeb4af430636f2a048228f8dee0ad",
+      "size": 2496,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/story_planning_strict_tool_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:fae1b2644834d3183f4758c765a7b34b8e3fbb6d3833a7045f90863dc4841dee",
+      "size": 924,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/story_planning_system_instruction.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:5b144cac1adc3c6f2223a95625f72c5bb448a0521e31db1d2672010fe6405b9f",
+      "size": 7483,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/story_planning_system_instruction_v10.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:31865f29e0f3a5081be42b0dc8b96b390a06ddac2b2e8f08f7b0e32315665e19",
+      "size": 8493,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/story_planning_system_instruction_v11.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:65d80bd8fd530b21f67bac12495f3c3c714d7d95174010dcfc1e445efa09cc5a",
+      "size": 9358,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/story_planning_system_instruction_v12.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:a00f045d6cd4db29c9cb767ad43b8eabde327a61f36a34d337cfadbf091b59ba",
+      "size": 10869,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/story_planning_system_instruction_v7.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:de4d1381697a282d53985db6228a81b52aa84a2231766b01fc0113942d49b283",
+      "size": 5867,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/story_planning_system_instruction_v9.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:b6e7113f13e17c0d3d2ca63a8b7f6163e65a59cf0d02abbe3413d390e529670d",
+      "size": 7889,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/story_planning_template.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:144021c742309f09756debe21e8f5441de22f812cab4325ff555b6d394aedc44",
+      "size": 321,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/story_planning_template_v2.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:a219c0f0a25a157b68bc52481162ba26cba00e9b6d1d70880883abe8f3c8916b",
+      "size": 535,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/artifacts/story_planning_template_v3.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:c449e3d702b44191cb93ed0238c9557e80f537783e2d22dde58d20133a4249ad",
+      "size": 779,
+      "source_id": "capability-pack-prompts"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "INSTRUCTION_BINDING",
+      "owner": "capability-pack-authority",
+      "path": "config/capability_packs/chapter_generation_pack.json",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:adb5b1a29d6f3b40118f75eb165be3e553bc1c3fe7860917a514fb6a56f641fa",
+      "size": 40153,
+      "source_id": "capability-pack-instruction-bindings"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/agent-loop-governance/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:d35583efb62fb6b7cca223af3e7506a991a0d51690323ee4cf4f847a1452436b",
+      "size": 5005,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/analysis-to-asset-conversion/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:831a6b877cd6dba22b98f86d211a80c3c6f6ac4923903e78729ac5b8016c7883",
+      "size": 2320,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/anti-copy-abstraction/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:02cfbd6b5b1e9c644644a40ede08ce91df6e954dae77f9676d42492ffda248fc",
+      "size": 4867,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/anti-copy-abstraction/legacy-v1.0.0.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:574222188fe361af4530d1b50b3ab71cd00dfe788c852e05419fc9ccc7893515",
+      "size": 3971,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/ask-matt/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/ask-matt/PHASE-BOUNDARIES.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:a8aa20158609ef39e2b308b6ba0660c91066838d07a867202e63a7744a88a3ed",
+      "size": 4249,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/ask-matt/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:32b3c71d6dbb5a7c15147e8a503a9df28e9a567f45eba6a6bb42aa903225c6ff",
+      "size": 12452,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/ask-matt/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:bdffbc5a0a99ed1b6ef3253d251d755fd18162b9845972e380007f844b09b05c",
+      "size": 137,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/canon-continuity-graph/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:a5b946be2a78e72d68c830ef8f14670f0ba8df82f8451c4af85e17bcc47a4296",
+      "size": 977,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/canon-continuity-graph/legacy-v1.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:47cc7b18ffb04bd3e754a0f274d0a63b77dac4aca250602dc3e0a642a8114065",
+      "size": 5392,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/chapter-outline/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:37d50a2b8741fe36431cf1655e178d834858a9e32b4a9ed7cfd6673759cec9b6",
+      "size": 3883,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/chapter-outline/legacy-calibration-20261003.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:e23e0e8f3fe0660896496115b2eb86c0fcd54b79b103ca3180870d00b65a29c9",
+      "size": 1064,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/chapter-outline/legacy-narrative-intent-20261010.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:b355ad1e0a9cfa2e8b86960c1782cdd3021855ec579008a125a9c6a08c79a96e",
+      "size": 2899,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/chapter-outline/legacy-v1.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:fd8d3e02c7cc428eb96037d9d7d8036b59b26252f76388ba7f44e3338fe5bf76",
+      "size": 3864,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/character-design/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:b7187aac9a9cbb9e542e0ea39270384e52219ea2ee7eabd7cbdd5af3646c6c4e",
+      "size": 2452,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/character-design/legacy-calibration-20261003.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4eb820e8f541067ad5f3277b860596a095dd8f2f67c5d80bec44e95333f02cea",
+      "size": 2847,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/character-design/legacy-narrative-intent-20261010.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:b1a7097473a1f84f25fb47dd83a15c95b9ac1eba97fecfb4df42d1d6dd92b39f",
+      "size": 1578,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/chief-of-staff/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/chief-of-staff/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:6cc6e47ab5022f3e45e5be0fedbb0f6e645f4f0190d6b0c51c7cd60c2d7c1d98",
+      "size": 2112,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/chief-of-staff/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:c0f68ed9da6977adc97a791be3bb0830d301b2d27f9c635d92d6f325bffefb83",
+      "size": 184,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/classic-literary-depth-analysis/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:55a22fd03ae6410f8d0e8148a6feccf424d24fcb50ce7dc5305d1a008b6733b2",
+      "size": 2209,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/claude-handoff/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/claude-handoff/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:79357a18425d66d4c24048bedf83dceb79d3bba356f38014950f764a7fab4026",
+      "size": 1424,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/claude-handoff/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:2308a672978864633286fb9f0792b08657e501426b3f7883fc418d5d2eac5eb0",
+      "size": 141,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/code-review/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/code-review/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:47f4e52c21694def9c7c11cbfbf891ca35eac7a93e395797515be3c8a409ae50",
+      "size": 6589,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/code-review/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:8229ca854e11dc8e6aef2131ee03f31fb1561cf905fab9ccc325180cf3331352",
+      "size": 100,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/codebase-design/DEEPENING.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:f3dd099ce99289bd213914d8ee3e2429b78309c3957ca4583f7659551b1d53c1",
+      "size": 2553,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/codebase-design/DESIGN-IT-TWICE.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:52b52e75655a27aea59c6966b410bac82448968ad46ef1ebb9f07c274e3ae010",
+      "size": 2665,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/codebase-design/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/codebase-design/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:2c20617f87ec8af6a434859f381b2f061a69b530444e74eb39e78bb016a6d1e2",
+      "size": 6446,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/codebase-design/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:edebc9e4fcfe102114012575eaa9600b9b5fd08c311664f389c36e7bc717740f",
+      "size": 102,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/context-builder-source-isolation/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4e808849452f21042d16ba7fc3e9f3b1f8c99edc4745b3868bead94acc9021fc",
+      "size": 2041,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/context-builder-source-isolation/legacy-calibration-20261003.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:16071b45e41ec6c55f835653ef137e19bace61d904b434024196112307d1d513",
+      "size": 3477,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/diagnosing-bugs/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/diagnosing-bugs/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:9168404abda0967a5d32977e3498cd95fda6807018852f3de736a78357c82b40",
+      "size": 8530,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/diagnosing-bugs/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:3e430dbe4334a87597488c060cb3dc3786bb00c9182877d6f5ec41f62490e90b",
+      "size": 103,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/diagnosing-bugs/scripts/hitl-loop.template.sh",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:35103539fc36873eea36074769ad454f9379d6fc8b2dc0e26ce987fd3bfe5503",
+      "size": 1316,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/domain-modeling/ADR-FORMAT.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:944c92aa790e8fbdc9199640b170979abb8a34ba8d0fe18c2a01a63bce140ca0",
+      "size": 2733,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/domain-modeling/GLOSSARY-FORMAT.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:21dcc40cdec8e151a829b98ab1517c1867bc444e3665134a98c6983411996801",
+      "size": 2300,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/domain-modeling/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/domain-modeling/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:7b925d7b1e341a2eeae33ad68a8a8c0ab889a38ddd22a7598e4c240e5a7556a3",
+      "size": 3346,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/domain-modeling/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:f6bf2aa996c6e6f53fdd0708e18a0d16a56aed8322cca59fedbe3c0d2c75f06b",
+      "size": 101,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/evidence-fact-verification/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:906df71ccfee72274cf6d926597637469427aa1574a41ceabd1c8eed6918e6c0",
+      "size": 3649,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/git-guardrails-claude-code/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/git-guardrails-claude-code/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:69b291d655626a01602b998a1836fcb93c058ede68dfafddfd71e87f17074764",
+      "size": 2313,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/git-guardrails-claude-code/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:d53cd783fc0ac208dec9a4c267989284384785aab6422dccdaed42f9e40243ec",
+      "size": 112,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/git-guardrails-claude-code/scripts/block-dangerous-git.sh",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:234922b83c0a1737ee7300806c21ac0f389b07aaeb65c2d71ccedafbc5e1ea4b",
+      "size": 507,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/grill-me/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/grill-me/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:caaf8b8de1684f96e26b28f3c29189db5c89cce4b73e1c93d86164f66ef88637",
+      "size": 157,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/grill-me/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:c061e39c3e0f9d865fb1b97556d485704af2a8a58f4b8221a8917a5c2074a32b",
+      "size": 137,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/grill-with-docs/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/grill-with-docs/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:7de372c13488f1ee96cc11cd8907b56b6809cc93eef776eeddd37de6b6cbe3fe",
+      "size": 247,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/grill-with-docs/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:94cd0ab161fb468a836349f5ed482ba58ce8e709a05c57ce533d739dbd35cca9",
+      "size": 145,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/grilling/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/grilling/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:10ff989e7498b23b5acb49d5048f11dcd906757d2f79c5cdf8a00001381296f2",
+      "size": 1987,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/grilling/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:1411d7df7d99b7e621a1ff8283c8133cc2464be63d064e52d8ce169c6800ee9b",
+      "size": 113,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/handoff/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/handoff/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4cbb043950dad2ffd3662ff1a5a0b51ae676004b5cae10e3787e8ee7a4ee69d3",
+      "size": 940,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/handoff/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:5c479fd562c691851690e8b18c8501045bef0943c10743d636b2fae26add1d28",
+      "size": 141,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/hot-novel-business-deconstruction/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:14aa658140a77f78741dd899af851ade1ddcc6d614857ab565841f931df4ea43",
+      "size": 3494,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/hot-novel-business-deconstruction/legacy-v1.0.0.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:7feaaf6da55d30956f953f4b12228729dacb18bf4d4ebdf505727b625f77dcdf",
+      "size": 2421,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/hot-novel-deconstruction/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:3db55b8c90f431a76cbb8086220eb85a9d6194254903fe5f4816fb0d3175897d",
+      "size": 6242,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/hot-novel-deconstruction/legacy-v2.0.0.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:3844f7152f4d1bd1c2b5a8b95c916abb5d44d8a26e0c84800bdf6a7e38270cdb",
+      "size": 5405,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/implement-spec/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/implement-spec/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:7a22dd2e60b8fcece478ced9d2533582adf3520d695acd3ab715341535c9e56d",
+      "size": 2780,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/implement-spec/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:fd41efb42c60c96320d6531be7e4bf15cbf5518cd652d57dff27ccffa46988e9",
+      "size": 168,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/implement/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/implement/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:f28bed1a2a7dcf604c802a99869bae9d577b6bfc2061fe655c8b0dbb1ee16cfd",
+      "size": 477,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/implement/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:8970a8596ade0c28ab427f41a4ea242d6bdf6186c59ebf55e1238dbecaab79dc",
+      "size": 139,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/improve-codebase-architecture/HTML-REPORT.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:581e8bb5a521e46bbda8ca7e19b15948bed882187108092ebb90c62513b77528",
+      "size": 6641,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/improve-codebase-architecture/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/improve-codebase-architecture/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:552240a5ab5cec6b67c15dd1ad6e9f6962b1bca6ce870059a8c2713760c20392",
+      "size": 6000,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/improve-codebase-architecture/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:c8cb20f68ebf0edb4e497bc11ae5fcaa196004e661cd189015b04f4109ced7f1",
+      "size": 166,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/long-outline/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0d2a4c057ba1c7a8255fe812b6ec1a40117506f43a5cfa63e572637b1e779745",
+      "size": 6376,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/long-outline/legacy-calibration-20261003.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4e4a9f2183602bc506d5daba09e446df9bbd849532b02b72e22b4ae6b7e6219b",
+      "size": 3871,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/long-outline/legacy-event-planning-20261011.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:764933ad61cdc6c9af3200f87043f7ca2cde3cd5e447f47612b14ed613bec76d",
+      "size": 4191,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/long-outline/legacy-narrative-intent-20261010.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0507650ab6eff7a5d9dff784d585eb3cdb39d93b259c45b38b2fc9531cd4cdaf",
+      "size": 3317,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/longform-temporal-query/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ea6805f1b44acfaaf0b01e04939864930336eb7f516cd9328a9f6c3eded80f8f",
+      "size": 3635,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/loop-me/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/loop-me/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:e44d1cc3e760fb86ac42964c2a5f1fcac511715db50fb375f3f7be814de1eaa7",
+      "size": 2522,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/loop-me/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:b66fa10079957051be6a812f45e55b67ac394b71d5ba88349962b4c9205802c3",
+      "size": 140,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/material-curation/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:588efc5a4fc9cb15196fdea17565dfdcffc589e800dc13a754a02c9ba9189060",
+      "size": 3072,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/migrate-to-shoehorn/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/migrate-to-shoehorn/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:de4da4c11d924fac79c924b2ee3d2db4a5cb98386eb490a599119463d036ae72",
+      "size": 2795,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/migrate-to-shoehorn/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:395c2db852e66a199f1cd07f7ed92d66cb6f0787460c5475926f1a5e778b699d",
+      "size": 110,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/mkaos-knowledge-asset-os/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:6f26df621b32a5776e1d32aeb47966b39af577e45013cc8b99c196485002d559",
+      "size": 5155,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/multi-scale-pacing/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:5819439651a7e7ac69640b4a834550f67b80091cdaa3e345850de25423d48bc7",
+      "size": 3885,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/multidisciplinary-knowledge/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:7e1b6946db00c5a9018e934d77e2d16c614f1830beea4a16a80c9e78b9566278",
+      "size": 3881,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/multidisciplinary-knowledge/legacy-v1.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ef27e852557903648f86d5a7bd11b595bce4ab859690d9b60597183350f983ef",
+      "size": 3615,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/multidisciplinary-knowledge/writing-theory-methods-v1.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:96e476561247ea6aa8e8ddf04cfd0c70ab7a7c8ef31853fef0a718f3cf272ddc",
+      "size": 2880,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/multidisciplinary-knowledge/writing-theory-methods-v2.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:9cd12de980c604437615edd3d8c42884dfc49fbdba8beea33654bbc0f503e202",
+      "size": 3214,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/narrative-beat-design/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:28284201d889de7b3bf3145b57c81e873d496509d83c4318f6e0860f035656ba",
+      "size": 2419,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/narrative-beat-design/legacy-calibration-20261003.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:943fcd71f29a854463357e44267a1631c8e76e3f4b0a1bb46792fe2d31c05e06",
+      "size": 4666,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/narrative-beat-design/legacy-narrative-intent-20261010.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:95eb1c50f20982b7b693272d41b60ca9056a4c7133677173056570a4c7cc566f",
+      "size": 1545,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/novel-os-engineering-audit/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:8e69cda7879199be989385abeb28763f84da2cfa4f224efd01116100ad61de24",
+      "size": 2962,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/platform-strategy-os/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:5aff23f16416c66dc03dea781aac7922f35752e9e8e7e54003627b8fa1e61a43",
+      "size": 3103,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/pr/CREDITS.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:a7a087127665d7298a72280ef6e19c41ad8404523712a788c8dc3ab414bc2497",
+      "size": 604,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/pr/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/pr/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ab63f1cf78647389edcd386c9427c5dfca27ed2836930c24773ffee834c19bcd",
+      "size": 4169,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/pr/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:2295b586624db4ef546f3fd4695492f039d941a46d8a1593a702ce3ca511b8ad",
+      "size": 93,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/project-planning/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:18904fc154876d5f427bafae96213f5d2e20192c96e7d1c52302d65892dcd41e",
+      "size": 3667,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/prose-generation/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:02ef4e0daeca1412c87936d2c970c80f134b5d5b553edf39911cff0cabe8662f",
+      "size": 4411,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/prose-generation/legacy-calibration-20261003.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ae0e31c4435151294bbf2659cc3deb7743a78668a57788f4157e88c956150bd9",
+      "size": 2014,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/prose-generation/legacy-v1.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4e5ca7a08841ae4384585f1385851406fb08a92972eba0c035b985bed7c7616c",
+      "size": 2912,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/prose-generation/legacy-v2.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:cfc3e878aef3da772a21c6e2e23eb08b3275499f3a2f742e9d2ee04c66ed3c05",
+      "size": 1153,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/prose-generation/legacy-v4.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:7b6b03f212e97a2ee5ed9d6c0a101d1f70cc85766db28b63432c2f30bee9b9d2",
+      "size": 2891,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/prototype/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/prototype/LOGIC.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:f61c7d249e786a79ef289018901c348271e1798dd0b0bc5607b5c6f4d4a01ab9",
+      "size": 6036,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/prototype/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:714de632d116bb73f65cdb5a882db15b9369a6713b9a47c0fad827848f0bfbe3",
+      "size": 2931,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/prototype/UI.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:723211e878acbc7b6ff09755263f3295cde724ba902ff0064da41eed51d45ad3",
+      "size": 6913,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/prototype/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:5af65e43ab41a350436697b81e27b7f848d36782043b73c322bb2c9fa9cc55dc",
+      "size": 100,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/provider-runtime-policy/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:a0536729d5ad4a78db32340bb6c9b18d25c62c0312e807734fbec1a2a3694e1a",
+      "size": 3966,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/publish-release-gate-os/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:f0a59f6399b9f0d1b0dd08dba220d8479c3797b6b21e6adc32245b457d2d9c1f",
+      "size": 3410,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/published-fiction-craft-analysis/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ffcbead275b93bff7942dd72bf1c142f37ab94d88dc13b4865822a64f2dafdae",
+      "size": 2226,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/quality-review/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:e850857ed4e67bfa0decdb6b5c23c6ee56bd69e3bf05b5fd2d543876ca359eb1",
+      "size": 3060,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/quality-review/legacy-calibration-20261003.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:c278970af4057ff3c98318648be312a051da6060acc7102e4011f5bd1daa8a14",
+      "size": 1030,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/quality-review/legacy-v1.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:d8ada86b028cbc5e921d0aed88cd691884cc89fd0799b36d86e1c3b24d868496",
+      "size": 3964,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/quality-review/legacy-v3.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:b29a40dd5b4e9954147c1d0ffb81a41418f67d185d6d55feeb7075cb6033759a",
+      "size": 2784,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/quality-review/legacy-v4.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:e850857ed4e67bfa0decdb6b5c23c6ee56bd69e3bf05b5fd2d543876ca359eb1",
+      "size": 3060,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/reader-feedback/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:965c943755f9d21df33b5f4f636225d887ffd76b5f96eefc9bcdde0f27ad628c",
+      "size": 1527,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/reader-feedback/legacy-calibration-20261003.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4e050589d442a819970144f6b699aaf65bb306022851b840e1ac07a4594530bc",
+      "size": 2904,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/research/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/research/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:985569f15739c713d6784887c3d186d4ef9ac85bec5ad9c068d25bf0739928e4",
+      "size": 794,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/research/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:9b4c470d63221c1f68f22df70b83e2f12401b317babe0d1b7b5f24a974474d0d",
+      "size": 94,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/retro/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/retro/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:33fbc28568e3146f20fd908b12998bc0ab30aa4f4c87288199a40793efa94696",
+      "size": 4369,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/retro/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:cb6fb9d7e6b4be5975f41f6def1dd00a1255bad5d9b02696b124c924a8b8745c",
+      "size": 146,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/review-issue-gate/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:2a1a0efd8c72f2fb5478e793c6517b95af2973078e30f06c14a03c6f528140f2",
+      "size": 2783,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/scaffold-exercises/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/scaffold-exercises/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:75f5c9d771606fb9762f16522efc954df11c324f87148d8ff069bce166257de9",
+      "size": 3589,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/scaffold-exercises/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:525b33913340bea7947ad2de17f2a7c5fb94be543345fe80ae753b9a44ba601d",
+      "size": 108,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-matt-pocock-skills/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-matt-pocock-skills/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:9a0c21694be19fa3eefc39343355d3af7414716ba364882c7432c2f821eac3e9",
+      "size": 6847,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-matt-pocock-skills/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:9527de0110541c45712319025155aeab8dc7d77c6ed6e5e83271bab1851ab939",
+      "size": 152,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-matt-pocock-skills/domain.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:593a7042218689f1d24df89df14eaf0a20e19e0d0a7d479a01947ac78f0784b9",
+      "size": 2042,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-matt-pocock-skills/issue-tracker-github.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:da619c7423506c905ceea62d4d71c955371c2f2c743aada92a01e3deffa93474",
+      "size": 4142,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-matt-pocock-skills/issue-tracker-gitlab.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ea175f73d193b3f55819c0ed9bbccf6ee0e70ad8f928e3d7607596c53380acd6",
+      "size": 3809,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-matt-pocock-skills/issue-tracker-local.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:7dcda20a2eb4bdc89b95d1143423c0691309921cadae3132e6424f371030506e",
+      "size": 1810,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-matt-pocock-skills/triage-labels.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4f53c9b40ce2651e3611aa090eaedbd6dbc9b71ef8c5f7e65eac0d8263190d0d",
+      "size": 1045,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-pre-commit/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-pre-commit/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:c9819d7f1e3b198064edc1faa3154224ed67395e9f07f5d3cea4b67cf0a11a98",
+      "size": 2258,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-pre-commit/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:acf41db398c5c43afe504008bb7d615a97b6498b0f1f6c5b2395254c0bfb57d1",
+      "size": 99,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-ts-deep-modules/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-ts-deep-modules/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:29acca66ac99d4532e2a6f0370d8125d7cba1e87c9ac66573203c75189d3e6c7",
+      "size": 7546,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-ts-deep-modules/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:159f680217d50747702620c05fd65734a152185b3219a8ca5ee4630878a354fa",
+      "size": 149,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/setup-ts-deep-modules/dependency-cruiser.config.cjs",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:3c4973bec69f73b2117654abf9e666a7c28665b213be20e6d39869e29842428e",
+      "size": 3712,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/skill-governance/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ffecfa91592be04f911e007be7764dfda1153bdbcbe1bfdfa23db3053c939980",
+      "size": 3680,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/tdd/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/tdd/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:93ea419b76e9caaf26153b828e984f7c3fb136f4caa67b14af95f32ea965a1cc",
+      "size": 3550,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/tdd/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ea6f01cf1b8c06a4b0f5b649d74b1b8ce8685e72af1b38d70d877693e092af0b",
+      "size": 87,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/tdd/mocking.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:3ceb807fdf4a47d6a93d4d9a891e5ba6d362a6247bd08adc451feebfc17361ef",
+      "size": 1481,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/tdd/tests.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:859f9e592c188fda4fc7277dd180e4ce9c7a2e13f6efe1f6f29eccc9d28c106a",
+      "size": 2214,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/teach/GLOSSARY-FORMAT.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:9b99859ec28437668130d8f2ce5a342938970f8a1ed4fd38c3eab4f4b5fff210",
+      "size": 2122,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/teach/LEARNING-RECORD-FORMAT.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:701fa34b6748aa89e6c960ffb815257f481a7d77fb2900f9028f7edf3fdd6052",
+      "size": 2747,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/teach/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/teach/MISSION-FORMAT.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:8cacbb3c0644d3ae0ea4965564797099401a6930a23f7cf462918576587f2418",
+      "size": 1540,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/teach/RESOURCES-FORMAT.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:e9cacf34026e11a8d1c8f9de88abe5bcbf654f4ebdb25cae8c0de0d5f48f44ec",
+      "size": 1924,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/teach/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:a32df9dcdfc0c4fdc1c98e1ed3940c5f56b84c1aa90ff60346f32b8b53915b43",
+      "size": 9506,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/teach/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:5856f3ae8aec742f1499c640aecdd5f1d6af5fa210a7c6ec794de8263a6f733f",
+      "size": 139,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/to-questionnaire/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/to-questionnaire/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:b5eb929842ee0e93d867c5e906d183d350f2f2d149eaeaa86967d94d8eda1d3b",
+      "size": 2904,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/to-questionnaire/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:9e8a06c38c8842eea8d4922cb9d1ead8e3ace647bab259b943c994a1b4742bc2",
+      "size": 166,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/to-spec/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/to-spec/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:43ad9cf318e5e7d3d1fa360253a37021796dc87a0c2e595ad262661a10f85088",
+      "size": 3043,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/to-spec/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:1c5b4d1e3d8e52287ef19cc2742fdbbfae1914ac75d33af3e4c8174f08cc55bb",
+      "size": 135,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/to-tickets/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/to-tickets/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:56ec23c5b2782785d4e65bff9e315b6d3aeb4ef977c174a219e99489fada1995",
+      "size": 5812,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/to-tickets/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:21bc6215fffcd7614e9f772bb1760e87cc5fc7dcc707e7d282bc9414267a6090",
+      "size": 146,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/topic-development/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:28ccd79d7fb451fad18fe872bbd5bc773908a32028759e2e5c5c5af15050b903",
+      "size": 2554,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/topic-development/legacy-calibration-20261003.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:34d9235996a0b45808e3183204954a13db0601ef8d7eac7eeb12c7be01f1261e",
+      "size": 3118,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/topic-development/legacy-narrative-intent-20261010.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:d31881351bf0d2a0dac80d0dd9379beccad314f750938197c8719fff463ec00b",
+      "size": 1636,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/training-exercise/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:930e8d89a62ad90717344d2236f750202e708f6369ac1304565adf688641cd8d",
+      "size": 2961,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/triage/AGENT-BRIEF.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:7f5f87fed3033df1b06e083c480f3e847b1fbb0647746b8a4c6a50f9f26ef44f",
+      "size": 7942,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/triage/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/triage/OUT-OF-SCOPE.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:1fbf9b432130c6380aa65813b55553cfda150309b27c595e183f8e335b8a190d",
+      "size": 4667,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/triage/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:917b0baf74be583e74f110857ed45df2766617f75c00baf61fd136d7af515edf",
+      "size": 6558,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/triage/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:2e683717720cf456d165d0bb1a68bb600d0b6a8ccb61841c172e50d26f95351c",
+      "size": 135,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/wait-what/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/wait-what/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:d961bb37defd975c539427edb8f450cdbccdcdd552e213c1ece46676a7970905",
+      "size": 396,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/wait-what/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:b41faadf741d51e4ea184148b2d1854d93f947aaf754c7844f70a00f04194999",
+      "size": 158,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/wayfinder/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/wayfinder/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:fee6e1d0c50f0e736b4ef8a599060c959afae904c9a97d82c97f049fcc3aa0f1",
+      "size": 11908,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/wayfinder/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:88bc81a11a6d52ac67aeaa76b8b619e387020d47c5133a4dd4927fd15c4ad073",
+      "size": 144,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/wizard/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/wizard/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:bdf31d48211ea559878f95a4f344aeabf8d85897488ba564382bab0b000daac1",
+      "size": 4123,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/wizard/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:98f44d682d58e262f160dc59a8befc365e0aa65820dd0261864af26aa8e59d83",
+      "size": 96,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/wizard/template.sh",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:33cbe9dfb1d0e9185b60248a52aabed14bc64785a00cac695e302e739dd6c153",
+      "size": 8567,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/world-consequence-modeling/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0a88ff4679894cd4e90273821057f25e84811652d64d3de5deb987fb94b8d6c5",
+      "size": 3431,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/worldbuilding/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:e157c96a421a872ad9e4131c1a24fb12f48e01b4c572cab79987a14107f3d14f",
+      "size": 1983,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/worldbuilding/legacy-calibration-20261003.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:8c987220d8aaa4cd5fb8fbe92780d5559c527e35cd17913e6e1a5c6595274cbe",
+      "size": 3180,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent-and-agent-runtime",
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "path": "skills/worldbuilding/legacy-narrative-intent-20261010.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:05c1ba7c5c5f882a2702717f6c7b3b589962dd7802ccffb10d4ae98797b6bdb7",
+      "size": 1109,
+      "source_id": "runtime-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/writing-beats/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/writing-beats/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:a96abafa2372eede8267d770138b322d6125da8adaa7ccf0a5e08e4ee13ee71e",
+      "size": 4855,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/writing-beats/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ddaef01da61d8e3c5f482c4403033c20cf5823f08a1dbf1d4c871670831d01e2",
+      "size": 142,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/writing-for-agents/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/writing-for-agents/SKILL-MECHANICS.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:c768e6307c7c10728c401c213f2c4ba71c542127eeb7ad2956aabd15a0fa0059",
+      "size": 2629,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/writing-for-agents/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:551adca942227b44192edba88acd4e8db911f0121ce58ad16944ccf6a896a74a",
+      "size": 10886,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/writing-for-agents/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:eacb24b2a618cfb81dacb0416f4fdd75ddf3a8060f8ddb99aae1b1e301907e4b",
+      "size": 102,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/writing-fragments/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/writing-fragments/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:298b0edd23df229183630de592ed8aa4289233560f2040691f6eb77caeaad4ea",
+      "size": 3558,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/writing-fragments/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:81167f25ee8ea1bb4b4958f12b6702ea972ad31b05e03ec91e39fa4bae0c2641",
+      "size": 140,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/writing-shape/LICENSE",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+      "size": 1068,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/writing-shape/SKILL.md",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:f5e6c57bdd85178ace4a260c92f46da6b64ddee18215b461d875739c68976f72",
+      "size": 5922,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "coding-agent",
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "path": "skills/writing-shape/agents/openai.yaml",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:56de45430e23104ff178415f5ecf7821d51a9cfabd8814b1607ebf39da2ef5cd",
+      "size": 144,
+      "source_id": "mattpocock-coding-skills"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/book_authority/working_prose.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:e63a1d47d79a27cf1a98e97715ebb151a5b3a797bdf1e73c4a5979f7468540ae",
+      "size": 33556,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/book_followup_authority/screenplay_execution.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:2bc6405a3c76e5d68091593f8e6262e30dcb6865d354e477a0ba8f342e91e4ba",
+      "size": 6035,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/chapter_authority/candidate_repair.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:e322ecacf8e5151374a01e7429a38e559bebc99584c7a5b12bc5aaa0974fe4a1",
+      "size": 44543,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/chapter_authority/canon_output_recovery.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:a2d57b1497488df438be039e4e03c993686fec04123aca61bbfb0bdd8ed69a2f",
+      "size": 15913,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/chapter_authority/canon_support_coverage.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:d57dde1298f567316f1d2d6f14f01a420207dc14fdbdc7466b5bce0e24054536",
+      "size": 16424,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/chapter_authority/current_quote_recovery.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:14b8653c8a7a39aa388d7d4a2d9ef5786088084b52eb03791a92dd92c62299f5",
+      "size": 29023,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/chapter_authority/current_semantic_recovery.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:22cc5865817c6f1ce729c354379509cd9c664d0ffb8e1bf6493546e31b398ffd",
+      "size": 16034,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/chapter_authority/domain_handlers.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:e792fc385b808702eb029532df8d17277b8cb79a764f53f05cf3cb44347f09f7",
+      "size": 47706,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:216f06d1fed7c8d018d9b946be9e3baac7cde412dfa8dc161f649bfe1bb73d72",
+      "size": 320614,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/chapter_authority/provider_views.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:a8cd61b065800c929687bb1d3306153f4d682ac59085609c4ad3475f9ead63c9",
+      "size": 227358,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/chapter_authority/realization_composition.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:6bd87e02137df2b875c89366a0ccfba4dbc97cf238feaf4256634bbd60f8db08",
+      "size": 39381,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/mkaos_authority/craft_context_projection.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ed9220d7555fb85ef0686be4ee640a8d3f2d2c70354223d76e532a928e8ca26b",
+      "size": 17692,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "planning-provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "mkaos-authority",
+      "path": "src/novel_forge/modules/mkaos_authority/domain.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:3daf3fc26c8eb5c60a036de520d2fa7155e17bb62e993638a25e38d17c804e6a",
+      "size": 44116,
+      "source_id": "mkaos-selection-candidate-guidance"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/provider_qualification/runner.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:04b3c8ba8294f9d2c95850f53bfedabe5ae1548559669f200bd0eaf6213cebe2",
+      "size": 7004,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "reader-and-provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "reader-calibration",
+      "path": "src/novel_forge/modules/reader_calibration/manuscript_blind.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:6dde803a20496ff19bbf1468892543337c4ea214c401e61bbbc5bdf6ae2821b3",
+      "size": 20122,
+      "source_id": "reader-manuscript-reading-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/review/craft.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:ace2c7125344e2d4f1501e6fbca612dbd033f479e50258caac2e2ed6aa12d310",
+      "size": 35925,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/review/prose_comparison.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:cccd15905522647451114d064d90a1dcf8022bf6a525a4346d73b5e1b80c4070",
+      "size": 2826,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/revision/domain.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:7dfd14f95e5bd6cec1591559871dba45918b5206a3920dec4a3cfc698e5e1f26",
+      "size": 31779,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/source_authority/deconstruction.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:7ea1a9ae649274047dfd158072bc84c254f970e27209b00963f68c2d04f36506",
+      "size": 19904,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/source_import/corpus_ingestion/narrative_contracts.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:dae6473b981a41577d1aeda69d7927be8d46ce658923c0efbdeca274f5b17dcc",
+      "size": 17611,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/source_import/execution.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:f55707b0324d9db25a51ea321b48339b090233fec716f89cb3dbc043e739dc29",
+      "size": 113620,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/story_planning_runtime/execution.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4eead892e330f8574dfcfcc24949c28e6241f2556c0394ce8063f5dbff43a352",
+      "size": 374060,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/story_planning_runtime/knowledge_translation.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:3b61fe7eaad3390a74275336edf341bc065d0f8d1254e4331e8393ae708c2c69",
+      "size": 14916,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:2a11edccba208f41d1e43d659122ca3e6980ccc6bb42d95c927e27de53ee59f5",
+      "size": 115098,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "path": "src/novel_forge/modules/worldbuilding/actor_isolation.py",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:82bb123048d7d69a679b5821caa1815da72a869f394edb273b4b98377aa31165",
+      "size": 18007,
+      "source_id": "runtime-embedded-instructions"
+    },
+    {
+      "consumer": "provider-runtime",
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "admin-runtime",
+      "path": "web/admin/app/features/evaluation/api.ts",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION",
+      "sha256": "sha256:4710cea0d08a0a8ac31a5367b858226ff7d92c6e3b650d1c601643ab30dc1fda",
+      "size": 3214,
+      "source_id": "admin-embedded-instructions"
+    }
+  ],
+  "status": "PASS"
+}

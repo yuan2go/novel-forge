@@ -120,3 +120,25 @@ def test_binding_digest_ignores_only_successor_attachment():
     assert binding_identity(old) != binding_identity(
         {**old, "successor_command": {"input": "changed"}}
     )
+
+
+@pytest.mark.parametrize('version', ['planning-runtime-continuation.v4', 'planning-runtime-continuation.v7'])
+def test_effective_deployment_requires_original_binding_and_explicit_saved_receipt(monkeypatch, version):
+    from unittest.mock import MagicMock
+    from novel_forge.modules.story_planning_runtime.runtime_deployment import effective_binding
+    binding = dict(project_id='project', source_operation_id='original', source_command={'actor_id':'author'},
+        successor_command={'runtime_continuation_id':'pending'}, successor_operation_id=None,
+        target_runtime={'generation_isolation': {'remote_outcome':'UNKNOWN'}}, target_release_sha='old')
+    proof = dict(contract_version=version, source_binding_hash=binding_identity(binding),
+        source_command=deepcopy(binding['source_command']), successor_command=deepcopy(binding['successor_command']),
+        target_release_sha='new', target_runtime={'preparation_handoff': {'contract_version':'planning-isolated-preparation-handoff.v1'}})
+    uow = MagicMock()
+    uow.__enter__.return_value = uow
+    uow.cursor.fetchone.return_value = (proof,)
+    monkeypatch.setattr('novel_forge.modules.story_planning_runtime.runtime_deployment.AuthorityUnitOfWork', lambda *_:uow)
+    result = effective_binding('db', binding)
+    assert result['target_runtime'] == proof['target_runtime'] and result['target_release_sha'] == 'new'
+    assert binding['target_release_sha'] == 'old' and 'preparation_handoff' not in binding['target_runtime']
+    proof['source_binding_hash'] = 'other-book-or-request'
+    with pytest.raises(KernelError, match='SOURCE_DRIFT'):
+        effective_binding('db', binding)

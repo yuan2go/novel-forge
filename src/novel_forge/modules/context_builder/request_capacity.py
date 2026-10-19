@@ -26,7 +26,7 @@ def validate_projection_quotes(data: dict, quotes: tuple[str, ...]) -> list[dict
     candidates = []
     def source_view(value):
         if isinstance(value, dict):
-            if value.get("version") in {"working-observations.v1", "working-observations-provider.v1"}:
+            if value.get("version") in ("working-observations.v1", "working-observations-provider.v1"):
                 return {"source_coverage": value.get("source_coverage", [])}
             result = {}
             for key, child in value.items():
@@ -66,7 +66,7 @@ def working_observation_index(data):
     result = {}
     def visit(value):
         if isinstance(value, dict):
-            if value.get("version") in {"working-observations.v1", "working-observations-provider.v1"} and value.get("authority") == "UNREVIEWED_WORKING_OBSERVATIONS":
+            if value.get("version") in ("working-observations.v1", "working-observations-provider.v1") and value.get("authority") == "UNREVIEWED_WORKING_OBSERVATIONS":
                 for entry in value.get("entries") or []:
                     source = entry.get("source") or {}
                     identity = (source.get("asset_version_id"), source.get("content_hash"))
@@ -338,35 +338,29 @@ def verify_request_composition(candidates, compressed, *, supplied, task, source
         return proof, [originals[identity] for identity in sorted(closed - selected)]
     transformed = [unit for unit in units if origins[unit["unit_id"]] not in unchanged]
     external = set(task.get("external_dependency_refs") or ()) | {alias for unit in units if origins[unit["unit_id"]] in unchanged for alias in unit.get("source_aliases", ())}
-    for window in semantic_units.final_windows(transformed, selected, external_refs=external):
-        pending = [window]
-        while pending:
-            group = pending.pop(0)
-            chunk = {"contract_version": "task-context-compression.v3", "semantic_contract": semantic_units.SEMANTIC_CONTRACT,
-                "policy_version": "task-scoped-context.v1", "frozen_input_boundary": source_boundary,
-                "task_fingerprint": task["source_projection_hash"], "task": task, "source_binding": source_boundary["sources"][0],
-                "units": group, "required_unit_ids": [unit["unit_id"] for unit in group if unit["required"]],
-                "target_tokens": 512_000, "selected_unit_ids": [unit["unit_id"] for unit in group if unit["unit_id"] in selected],
-                "composition_check": {key: proof[key] for key in ("phase", "supplied_projection_hash", "selection_hash", "catalog_hash")}}
-            if not chunk_fits(chunk):
-                if len(group) == 1:
-                    raise KernelError("TASK_CONTEXT_CAUSAL_UNIT_TOO_LARGE", "A final Provider semantic risk unit cannot fit the complete checker request")
-                middle = len(group) // 2
-                pending[0:0] = [group[:middle], group[middle:]]
-                continue
-            verdict = dict(model_call("context_fidelity", chunk))
-            allowed = {unit["unit_id"] for unit in group}
-            missing = set(verdict.get("missing_unit_ids") or ())
-            distorted = set(verdict.get("distorted_unit_ids") or ())
-            unsupported = (missing | distorted) - allowed or verdict.get("supported") is not True or (verdict.get("coverage_complete") is not True and not missing)
-            requested = allowed if unsupported or distorted else missing
-            if requested and requested <= selected:
-                affected = {origins[identity] for identity in allowed}
-                requested = {identity for identity, source in origins.items() if source in affected}
-                if requested <= selected:
-                    raise KernelError("TASK_CONTEXT_FINAL_COMPOSITION_UNCERTAIN", "Final combination still has an unresolved semantic risk despite carrying its complete original sources", details={"proof": proof, "verdict": verdict})
-            additions.update(requested - selected)
-            proof["checks"].append({"task": chunk, "fidelity": {key: value for key, value in verdict.items() if key != "_execution_evidence"}, "execution_evidence": dict(verdict.get("_execution_evidence") or {})})
+    def check_task(group):
+        return {"contract_version": "task-context-compression.v3", "semantic_contract": semantic_units.SEMANTIC_CONTRACT,
+            "policy_version": "task-scoped-context.v1", "frozen_input_boundary": source_boundary,
+            "task_fingerprint": task["source_projection_hash"], "task": task, "source_binding": source_boundary["sources"][0],
+            "units": group, "required_unit_ids": [unit["unit_id"] for unit in group if unit["required"]],
+            "target_tokens": 512_000, "selected_unit_ids": [unit["unit_id"] for unit in group if unit["unit_id"] in selected],
+            "composition_check": {key: proof[key] for key in ("phase", "supplied_projection_hash", "selection_hash", "catalog_hash")}}
+    windows = semantic_units.final_windows(transformed, selected, external_refs=external)
+    for group in semantic_units.pack_final_windows(windows, payload=check_task, fits=chunk_fits):
+        chunk = check_task(group)
+        verdict = dict(model_call("context_fidelity", chunk))
+        allowed = {unit["unit_id"] for unit in group}
+        missing = set(verdict.get("missing_unit_ids") or ())
+        distorted = set(verdict.get("distorted_unit_ids") or ())
+        unsupported = (missing | distorted) - allowed or verdict.get("supported") is not True or (verdict.get("coverage_complete") is not True and not missing)
+        requested = allowed if unsupported or distorted else missing
+        if requested and requested <= selected:
+            affected = {origins[identity] for identity in allowed}
+            requested = {identity for identity, source in origins.items() if source in affected}
+            if requested <= selected:
+                raise KernelError("TASK_CONTEXT_FINAL_COMPOSITION_UNCERTAIN", "Final combination still has an unresolved semantic risk despite carrying its complete original sources", details={"proof": proof, "verdict": verdict})
+        additions.update(requested - selected)
+        proof["checks"].append({"task": chunk, "fidelity": {key: value for key, value in verdict.items() if key != "_execution_evidence"}, "execution_evidence": dict(verdict.get("_execution_evidence") or {})})
     return proof, [originals[identity] for identity in sorted(additions)]
 
 
@@ -390,7 +384,17 @@ def prepare_request_capacity(
     if before <= limit:
         return None
     method = route.token_accounting_method
-    if method not in TOKENIZER_METHODS and route.model_profile.model_provider != "scripted_provider_v2":
+    conservative_semantic = False
+    if semantic:
+        from novel_forge.modules.production_execution.provider_admission import build_route_token_accounting_contract
+        accounting = build_route_token_accounting_contract(provider=route.model_profile.model_provider,
+            model=route.model_profile.model_id, route_identity="complete-request-preparation",
+            accounting_method=method, accounting_evidence_ref=route.token_accounting_evidence_ref,
+            model_context_limit=route.model_context_limit, execution_token_limit=SYSTEM_CONTEXT_LIMIT,
+            output_reserve=1, safety_margin=route.token_safety_margin, framing_overhead=route.token_framing_overhead,
+            contract_version="provider-token-accounting-v4")
+        conservative_semantic = accounting.precision in {"PROVEN_UPPER_BOUND", "APPLICATION_VISIBLE_UPPER_BOUND"}
+    if method not in TOKENIZER_METHODS and route.model_profile.model_provider != "scripted_provider_v2" and not conservative_semantic:
         raise KernelError("PROVIDER_CONTEXT_CAPACITY_UNCERTAIN", "a byte upper bound exceeds capacity; configure a matched tokenizer before lossy compression",
                           details={"upper_bound": before, "limit": limit, "actual_tokens": None})
     paths = dict(sorted(historical_expression_paths(original, semantic=semantic, history_exact_chapters=history_exact_chapters).items(),
@@ -559,13 +563,15 @@ def prepare_request_capacity(
                                      "token_method": method, "actual_provider_tokens": None}
         if after <= current_limit:
             return projection
-        if receipt["fast_path"]:
+        if receipt["fast_path"] or semantic and receipt["effective_material_target_tokens"] > target:
             raise KernelError("TASK_CONTEXT_COMPRESSION_NO_PROGRESS", "All remaining source expression is required or already verified; the complete request still exceeds capacity",
                               details={"projection": projection})
         working = [replace(by_id[item.asset_version_id], context_class=ContextClass.PROTECTED)
                    if item.asset_version_id in raw_required_ids or by_id[item.asset_version_id].safe_summary == item.safe_summary and by_id[item.asset_version_id].compression_trace
                    else item for item in candidates]
-        next_target = min(target - max(1, after - current_limit), target * 3 // 4)
+        next_target = target - max(1, after - current_limit)
+        if not semantic:
+            next_target = min(next_target, target * 3 // 4)
         if next_target <= 0:
             raise KernelError("TASK_CONTEXT_COMPRESSION_NO_PROGRESS", "Verified source restoration leaves no remaining capacity; retain completed Effects",
                               details={"projection": projection})
@@ -577,7 +583,7 @@ def protected_expression_quotes(value: Any, *, include_working_observations: boo
     quotes = set()
     def visit(item):
         if isinstance(item, dict):
-            if include_working_observations and item.get("version") in {"working-observations.v1", "working-observations-provider.v1"} and item.get("authority") == "UNREVIEWED_WORKING_OBSERVATIONS":
+            if include_working_observations and item.get("version") in ("working-observations.v1", "working-observations-provider.v1") and item.get("authority") == "UNREVIEWED_WORKING_OBSERVATIONS":
                 for entry in item.get("entries") or []:
                     quote = (entry.get("location") or {}).get("quote")
                     if quote and quote == entry.get("quote") and (entry.get("source") or {}).get("asset_version_id"):

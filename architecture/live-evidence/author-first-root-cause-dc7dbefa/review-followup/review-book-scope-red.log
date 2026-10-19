@@ -1,0 +1,195 @@
+FFFF.                                                                    [100%]
+=================================== FAILURES ===================================
+_ test_creation_worker_records_setup_refusal_before_any_provider_dispatch[book_phase-binding] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10dc9ac30>
+failure_point = 'binding', entry = 'book_phase'
+
+    @pytest.mark.parametrize("failure_point", ["binding", "policy", "principal"])
+    @pytest.mark.parametrize("entry", ["creation", "book_phase"])
+    def test_creation_worker_records_setup_refusal_before_any_provider_dispatch(monkeypatch, failure_point, entry):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from novel_forge.workers import book_authority as worker
+        from novel_forge.modules.command_kernel.errors import KernelError
+    
+        failure = KernelError("CREATION_EXECUTOR_BINDING_CONFLICT", "unavailable original binding")
+        binding = Mock(return_value={"codex_input_only_policy": "codex-input-only.v2", "operator_id": "operator"})
+        if failure_point == "binding":
+            binding.side_effect = failure
+        monkeypatch.setattr(worker, "PostgresBookProductionQuery", lambda _: SimpleNamespace(creation_executor_binding=binding))
+        monkeypatch.setenv("NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY", "" if failure_point == "policy" else "codex-input-only.v2")
+        principal = Mock()
+        if failure_point == "principal":
+            principal.side_effect = failure
+        monkeypatch.setattr(worker, "build_trusted_principal_resolver", lambda **_: SimpleNamespace(resolve_api_principal=principal))
+        jobs = SimpleNamespace(get=Mock(return_value={"status": "CLAIMED"}), fail=Mock())
+        monkeypatch.setattr(worker, "RuntimeJobAuthority", lambda _: jobs)
+        dispatch = Mock(side_effect=AssertionError("setup refusal cannot build a Provider"))
+        monkeypatch.setattr(worker, "build_production_execution_composition", dispatch)
+        claim = SimpleNamespace(project_id="project", subject_id="formation", runtime_job_id="job", input_snapshot={"operator_id": "operator"})
+        with pytest.raises(KernelError) as stopped:
+            if entry == "creation":
+                worker.execute_creation_worker_claim(SimpleNamespace(database_url="unused"), claim)
+            else:
+                legacy = SimpleNamespace(query=SimpleNamespace(creation_executor_binding=binding), principal=SimpleNamespace(require=Mock()))
+                worker.execute_book_phase_with_creation_scope(SimpleNamespace(database_url="unused"), claim, legacy, dispatch)
+        assert stopped.value.code == ("CREATION_RUNTIME_POLICY_DRIFT" if failure_point == "policy" else failure.code)
+>       jobs.fail.assert_called_once()
+
+tests/unit/test_creation_coordination.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Mock id='4526289168'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'mock' to have been called once. Called 0 times.
+
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:923: AssertionError
+_ test_creation_worker_records_setup_refusal_before_any_provider_dispatch[book_phase-policy] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e095f10>
+failure_point = 'policy', entry = 'book_phase'
+
+    @pytest.mark.parametrize("failure_point", ["binding", "policy", "principal"])
+    @pytest.mark.parametrize("entry", ["creation", "book_phase"])
+    def test_creation_worker_records_setup_refusal_before_any_provider_dispatch(monkeypatch, failure_point, entry):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from novel_forge.workers import book_authority as worker
+        from novel_forge.modules.command_kernel.errors import KernelError
+    
+        failure = KernelError("CREATION_EXECUTOR_BINDING_CONFLICT", "unavailable original binding")
+        binding = Mock(return_value={"codex_input_only_policy": "codex-input-only.v2", "operator_id": "operator"})
+        if failure_point == "binding":
+            binding.side_effect = failure
+        monkeypatch.setattr(worker, "PostgresBookProductionQuery", lambda _: SimpleNamespace(creation_executor_binding=binding))
+        monkeypatch.setenv("NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY", "" if failure_point == "policy" else "codex-input-only.v2")
+        principal = Mock()
+        if failure_point == "principal":
+            principal.side_effect = failure
+        monkeypatch.setattr(worker, "build_trusted_principal_resolver", lambda **_: SimpleNamespace(resolve_api_principal=principal))
+        jobs = SimpleNamespace(get=Mock(return_value={"status": "CLAIMED"}), fail=Mock())
+        monkeypatch.setattr(worker, "RuntimeJobAuthority", lambda _: jobs)
+        dispatch = Mock(side_effect=AssertionError("setup refusal cannot build a Provider"))
+        monkeypatch.setattr(worker, "build_production_execution_composition", dispatch)
+        claim = SimpleNamespace(project_id="project", subject_id="formation", runtime_job_id="job", input_snapshot={"operator_id": "operator"})
+        with pytest.raises(KernelError) as stopped:
+            if entry == "creation":
+                worker.execute_creation_worker_claim(SimpleNamespace(database_url="unused"), claim)
+            else:
+                legacy = SimpleNamespace(query=SimpleNamespace(creation_executor_binding=binding), principal=SimpleNamespace(require=Mock()))
+                worker.execute_book_phase_with_creation_scope(SimpleNamespace(database_url="unused"), claim, legacy, dispatch)
+        assert stopped.value.code == ("CREATION_RUNTIME_POLICY_DRIFT" if failure_point == "policy" else failure.code)
+>       jobs.fail.assert_called_once()
+
+tests/unit/test_creation_coordination.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Mock id='4530469248'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'mock' to have been called once. Called 0 times.
+
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:923: AssertionError
+_ test_creation_worker_records_setup_refusal_before_any_provider_dispatch[book_phase-principal] _
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e097d10>
+failure_point = 'principal', entry = 'book_phase'
+
+    @pytest.mark.parametrize("failure_point", ["binding", "policy", "principal"])
+    @pytest.mark.parametrize("entry", ["creation", "book_phase"])
+    def test_creation_worker_records_setup_refusal_before_any_provider_dispatch(monkeypatch, failure_point, entry):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from novel_forge.workers import book_authority as worker
+        from novel_forge.modules.command_kernel.errors import KernelError
+    
+        failure = KernelError("CREATION_EXECUTOR_BINDING_CONFLICT", "unavailable original binding")
+        binding = Mock(return_value={"codex_input_only_policy": "codex-input-only.v2", "operator_id": "operator"})
+        if failure_point == "binding":
+            binding.side_effect = failure
+        monkeypatch.setattr(worker, "PostgresBookProductionQuery", lambda _: SimpleNamespace(creation_executor_binding=binding))
+        monkeypatch.setenv("NOVEL_FORGE_CODEX_INPUT_ONLY_POLICY", "" if failure_point == "policy" else "codex-input-only.v2")
+        principal = Mock()
+        if failure_point == "principal":
+            principal.side_effect = failure
+        monkeypatch.setattr(worker, "build_trusted_principal_resolver", lambda **_: SimpleNamespace(resolve_api_principal=principal))
+        jobs = SimpleNamespace(get=Mock(return_value={"status": "CLAIMED"}), fail=Mock())
+        monkeypatch.setattr(worker, "RuntimeJobAuthority", lambda _: jobs)
+        dispatch = Mock(side_effect=AssertionError("setup refusal cannot build a Provider"))
+        monkeypatch.setattr(worker, "build_production_execution_composition", dispatch)
+        claim = SimpleNamespace(project_id="project", subject_id="formation", runtime_job_id="job", input_snapshot={"operator_id": "operator"})
+        with pytest.raises(KernelError) as stopped:
+            if entry == "creation":
+                worker.execute_creation_worker_claim(SimpleNamespace(database_url="unused"), claim)
+            else:
+                legacy = SimpleNamespace(query=SimpleNamespace(creation_executor_binding=binding), principal=SimpleNamespace(require=Mock()))
+                worker.execute_book_phase_with_creation_scope(SimpleNamespace(database_url="unused"), claim, legacy, dispatch)
+        assert stopped.value.code == ("CREATION_RUNTIME_POLICY_DRIFT" if failure_point == "policy" else failure.code)
+>       jobs.fail.assert_called_once()
+
+tests/unit/test_creation_coordination.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Mock id='4530466512'>
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+>           raise AssertionError(msg)
+E           AssertionError: Expected 'mock' to have been called once. Called 0 times.
+
+/opt/homebrew/Cellar/python@3.12/3.12.2_1/Frameworks/Python.framework/Versions/3.12/lib/python3.12/unittest/mock.py:923: AssertionError
+______ test_book_scope_failure_records_only_a_still_claimed_job[CLAIMED] _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x10e134560>
+status = 'CLAIMED'
+
+    @pytest.mark.parametrize("status", ["CLAIMED", "RETRY_WAIT"])
+    def test_book_scope_failure_records_only_a_still_claimed_job(monkeypatch, status):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        from novel_forge.workers import book_authority as worker
+        from novel_forge.modules.command_kernel.errors import KernelError
+        jobs = SimpleNamespace(get=Mock(return_value={"status": status}), fail=Mock())
+        monkeypatch.setattr(worker, "RuntimeJobAuthority", lambda _: jobs)
+        legacy = SimpleNamespace(query=SimpleNamespace(creation_executor_binding=lambda **_: None))
+        claim = SimpleNamespace(project_id="project", subject_id="book", runtime_job_id="job")
+        failure = KernelError("PHASE_FAILED", "Original owner failure")
+        execute = Mock(side_effect=failure)
+        with pytest.raises(KernelError, match="PHASE_FAILED"):
+            worker.execute_book_phase_with_creation_scope(SimpleNamespace(database_url="unused"), claim, legacy, execute)
+>       assert jobs.fail.call_count == (1 if status == "CLAIMED" else 0)
+E       AssertionError: assert 0 == 1
+E        +  where 0 = <Mock id='4531115008'>.call_count
+E        +    where <Mock id='4531115008'> = namespace(get=<Mock id='4531112176'>, fail=<Mock id='4531115008'>).fail
+
+tests/unit/test_creation_coordination.py:76: AssertionError
+=========================== short test summary info ============================
+FAILED tests/unit/test_creation_coordination.py::test_creation_worker_records_setup_refusal_before_any_provider_dispatch[book_phase-binding]
+FAILED tests/unit/test_creation_coordination.py::test_creation_worker_records_setup_refusal_before_any_provider_dispatch[book_phase-policy]
+FAILED tests/unit/test_creation_coordination.py::test_creation_worker_records_setup_refusal_before_any_provider_dispatch[book_phase-principal]
+FAILED tests/unit/test_creation_coordination.py::test_book_scope_failure_records_only_a_still_claimed_job[CLAIMED]
+4 failed, 1 passed, 33 deselected in 0.85s

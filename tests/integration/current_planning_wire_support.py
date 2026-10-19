@@ -8,11 +8,31 @@ from novel_forge.modules.story_planning_runtime.narrative_search import (
 )
 
 
+def current_planning_fixture_response(stage, inputs, database_url):
+    from novel_forge.modules.story_planning_runtime.execution import planning_fixture_response
+
+    frozen = current_planning_fixture_inputs({**inputs, "stage": stage}, database_url)
+    return current_planning_wire_result(planning_fixture_response(stage, frozen), frozen)
+
+
 def current_planning_wire_result(result, inputs):
     command = inputs.get("planning_command") or {}
+    value = deepcopy(current_world_fixture_wire_result(inputs.get("stage"), result, inputs.get("world_preparation") or {}))
+    if command.get("creative_requirements_contract") in {"work-requirements.v1", "work-requirements.v2"}:
+        for row in value.get("chapter_function_matrix", []):
+            row["required_state_delta"] = {"status": "CHANGED", **row["required_state_delta"]}
+        for event in value.get("narrative_event_chain", []):
+            event["feature_status"] = {name: {"status": "APPLICABLE", "rationale": "Selected causal strategy of this synthetic mystery fixture"}
+                for name in ("decision", "resistance", "irreversible_change")}
+        if inputs.get("stage") == "chapter_plan.generate":
+            value["chapter_contract_schema_version"] = (
+                "chapter-mission-scene.v4" if command.get("execution_contract_version") in {"1.19.0", "1.20.0", "1.21.0"}
+                else "chapter-mission-scene.v3")
+            if value["chapter_contract_schema_version"] == "chapter-mission-scene.v4":
+                value["serialization_function"] = "payoff_and_new_obligation"
+            value["required_state_delta"] = {"status": "CHANGED", **value["required_state_delta"]}
     if command.get("execution_contract_version") != "1.21.0":
-        return result
-    value = deepcopy(result)
+        return value
     story_state = (command.get("input_versions") or {}).get("story_state")
     if story_state is not None and "entry_state_ref" in value:
         value["entry_state_ref"] = story_state
@@ -137,7 +157,7 @@ def current_world_disclosure_result(result, task):
     value = deepcopy(result)
     for candidate in value.get("candidates", []):
         raw = json.loads(candidate["transition"]["payload_json"])
-        if raw.get("state_kind") != "disclosure_event" or raw.get("transition_id") != "reveal-accepted-notice":
+        if raw.get("state_kind") != "disclosure_event" or raw.get("transition_id") != "reveal-accepted-notice" or "action_mode" in raw:
             continue
         event_id = raw["changes"]["fact_id"]
         sources = [entry for entry in task["context_projection"]["selection"]
@@ -151,7 +171,7 @@ def current_world_disclosure_result(result, task):
             raise ValueError("current disclosure fixture requires an exact declared presentation channel")
         source = sources[0]
         actor = characters[0]["character_id"]
-        knowledge_key = f"character_id={actor}&fact_id={event_id}"
+        knowledge_key = f"character_id={actor}|fact_id={event_id}"
         predicate = {"requirement_id": "observe-accepted-notice-status", "state_kind": "world_state",
                      "entity_key": source["entity_key"], "field": "status", "operator": "EQUALS", "value": source["state"]["status"]}
         observe = {
@@ -174,6 +194,30 @@ def current_world_disclosure_result(result, task):
         candidate["preparation_paths"] = [{"path_id": "observe-notice-before-disclosure", "rationale": "The actor observes an exact frozen objective source before choosing disclosure; this is an unaccepted preparation proposal.",
                                              "steps": [{"chapter_offset": 0, "transition": {"payload_json": json.dumps(observe)}}]}]
     return value
+
+
+def current_world_fixture_wire_result(stage, result, task):
+    import json
+    from novel_forge.modules.worldbuilding.production_schema import agency_transition_paths
+
+    if task.get("epistemic_contract") != "world-agency.v2":
+        return result
+    if stage == "world_candidates.generate":
+        result = current_world_disclosure_result(result, task)
+        for transition in agency_transition_paths(result).values():
+            payload = json.loads(transition["payload_json"])
+            if ("action_mode" not in payload and payload["action"] == "act on the approved faction pressure"
+                    and payload["state_kind"] not in {"character_knowledge", "character_belief", "reader_knowledge", "disclosure_event"}):
+                payload["action_mode"] = "ROUTINE"
+                transition["payload_json"] = json.dumps(payload)
+    elif stage == "world_candidates.evaluate":
+        result = deepcopy(result)
+        result["action_classifications"] = [
+            {"field_path": path, "supported": current_world_fixture_classification(transition),
+             "rationale": "Check the exact scripted action classification; the native causal gate separately verifies frozen sources, actor isolation and preparation order."}
+            for path, transition in agency_transition_paths(task["generated_portfolio"]).items()
+        ]
+    return result
 
 
 def current_world_fixture_classification(transition):
@@ -213,16 +257,22 @@ def current_planning_fixture_inputs(inputs, database_url):
             edition_run = (command.get("edition_execution") or {}).get("book_run_id")
             uow.cursor.execute("SELECT s.foundation_set FROM authority_book_production b JOIN authority_book_production_input_snapshot s ON s.snapshot_id=b.input_snapshot_id WHERE b.project_id=%s AND b.book_id=%s AND (%s::text IS NULL OR b.book_run_id=%s)", [command["project_id"], command["book_id"], edition_run, edition_run])
             snapshots = uow.cursor.fetchall()
-            if len(snapshots) != 1:
+            if len(snapshots) == 1:
+                bindings = [b for b in snapshots[0][0]["bindings"] if b["role"] == "CHARACTER_CAST"]
+                if len(bindings) != 1:
+                    raise ValueError("Chapter fixture requires one exact frozen cast")
+            elif not snapshots and (view.get("realization_reference_contract") or {}).get("character_references") is None:
+                bindings = [b for b in inputs.get("frozen_inputs", []) if b.get("role") == "character_cast"]
+                if bindings and (len(bindings) != 1 or command.get("input_versions", {}).get("character_cast") != bindings[0]["asset_version_id"]):
+                    raise ValueError("Pre-Book planning fixture must retain its exact cast input")
+            else:
                 raise ValueError("Chapter fixture requires one exact active Book input snapshot")
-            bindings = [b for b in snapshots[0][0]["bindings"] if b["role"] == "CHARACTER_CAST"]
-            if len(bindings) != 1:
-                raise ValueError("Chapter fixture requires one exact frozen cast")
-            binding = bindings[0]
-            cast = uow.repositories.asset_documents.require(project_id=command["project_id"], asset_version_id=binding["asset_version_id"])
-            if cast.content_hash != binding["content_hash"]:
-                raise ValueError("Chapter fixture cast must match the frozen content hash")
-            frozen_cast = {"controlled_frozen_cast": deepcopy(cast.content)}
+            if bindings:
+                binding = bindings[0]
+                cast = uow.repositories.asset_documents.require(project_id=command["project_id"], asset_version_id=binding["asset_version_id"])
+                if cast.content_hash != binding["content_hash"] or cast.content.get("book_id") != command["book_id"]:
+                    raise ValueError("Chapter fixture cast must match the frozen Book and content hash")
+                frozen_cast = {"controlled_frozen_cast": deepcopy(cast.content)}
     if version == "1.18.0":
         return {**inputs, **frozen_cast, "controlled_execution_contract_version": version}
     return {**inputs, **frozen_cast, "realization_reference_contract": deepcopy(view["realization_reference_contract"]), "controlled_frozen_segments": deepcopy(view["segments"])}

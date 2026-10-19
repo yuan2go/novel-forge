@@ -147,7 +147,11 @@ class RuntimePolicyPostgresTests(unittest.TestCase):
     def test_router_policy_is_operator_owned_and_applied_by_canonical_selector(
         self,
     ) -> None:
-        from types import SimpleNamespace
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+
+        from novel_forge.api.authority_dependencies import build_production_execution_composition
+        from novel_forge.infrastructure.settings import IndustrialSettings
 
         from novel_forge.modules.authority_handler_runtime.policy_commands import (
             configure_owned_policy,
@@ -192,8 +196,15 @@ class RuntimePolicyPostgresTests(unittest.TestCase):
             task_money_limit="1",
             task_token_limit=10000,
         )
-        _, decision = router.select(
-            SimpleNamespace(),
+        root = Path(self.enterContext(TemporaryDirectory()))
+        execution = build_production_execution_composition(
+            IndustrialSettings(root=root, database_url=DATABASE_URL),
+            env={"NOVEL_FORGE_ENVIRONMENT": "test", "NOVEL_FORGE_MODEL_PROVIDER": "mock",
+                "NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT": str(root / "objects")},
+        )
+        self.addCleanup(execution.close)
+        selected, decision = router.select(
+            execution.gateway.routes["draft"],
             task_type="draft",
             project_id=self.project_id,
             work_id=f"book:{self.project_id}",
@@ -212,4 +223,6 @@ class RuntimePolicyPostgresTests(unittest.TestCase):
         self.assertEqual(
             decision["task"]["policy_snapshot"]["actor_id"], self.principal.principal_id
         )
-        self.assertEqual(decision["status"], "BLOCKED")
+        self.assertEqual(decision["status"], "SELECTED")
+        self.assertEqual(selected.model_profile.model_id, decision["selected"]["candidate"]["model"])
+        self.assertIn("QUALITY_FLOOR_NOT_MET", decision["selected"]["diagnostic_reasons"])

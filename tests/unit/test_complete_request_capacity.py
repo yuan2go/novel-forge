@@ -394,7 +394,8 @@ def test_codex_separate_protocol_schema_is_frozen_and_included_in_capacity():
     assert replace(envelope, protocol_schema_json="{}").envelope_hash != envelope.envelope_hash
 
 
-def test_cli_backend_checks_the_actual_schema_file_before_starting_a_process(tmp_path):
+@pytest.mark.parametrize("serialization", ["current", "historical_pretty", "compact"])
+def test_cli_backend_checks_the_actual_schema_file_before_starting_a_process(tmp_path, serialization):
     import sys
     from novel_forge.modules.production_execution import (
         CodexCliExecutionBackend, CodexProcessSupervisor, ExecutionRuntimeClass,
@@ -420,6 +421,13 @@ def test_cli_backend_checks_the_actual_schema_file_before_starting_a_process(tmp
     configured = route(model="fixture-codex")
     configured.model_profile.model_provider = "codex-cli"
     frozen = route_protocol_schema(configured, schema, "fixture:v1")
+    from novel_forge.modules.production_execution.codex_configuration import codex_output_schema
+    wire = codex_output_schema(schema, schema_ref="fixture:v1")
+    compact = json.dumps(wire, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n"
+    if serialization == "current":
+        assert frozen == compact
+    else:
+        frozen = compact if serialization == "compact" else json.dumps(wire, ensure_ascii=False, sort_keys=True, indent=2) + "\n"
     payload = ResolvedExecutionPayload(request_payload={"protocol_schema_json": frozen}, input_text="task",
         working_directory=str(tmp_path), timeout_seconds=60, output_schema_version="fixture:v1", output_schema=schema)
     prepared = backend._prepare_payload(request, payload, selected)
@@ -428,3 +436,69 @@ def test_cli_backend_checks_the_actual_schema_file_before_starting_a_process(tmp
     assert Path(schema_path).read_bytes() == frozen.encode()
     with pytest.raises(ValueError, match="PROVIDER_PROTOCOL_SCHEMA_DRIFT"):
         backend._prepare_payload(request, replace(payload, output_schema={**schema, "description": "changed"}), selected)
+
+
+@pytest.mark.parametrize("metadata_version", [{"schema": "fixture.v1"}, ["fixture.v1"]])
+def test_quote_protection_recurses_through_structured_version_metadata(metadata_version):
+    from novel_forge.modules.context_builder.request_capacity import (
+        protected_expression_quotes, validate_projection_quotes, working_observation_index,
+    )
+
+    quote = "她将旧凿留在住处，带着小册去上课。"
+    observation = {"version": "working-observations.v1", "authority": "UNREVIEWED_WORKING_OBSERVATIONS",
+        "entries": [{"observation_id": "working:chapter1:one", "quote": quote, "location": {"quote": quote},
+            "source": {"asset_version_id": "draft:one", "content_hash": "sha256:" + "a" * 64}}]}
+    payload = {"version": metadata_version, "nested": [{"version": metadata_version}], "working": observation,
+        "source": {"asset_version_id": "draft:one", "safe_summary": quote}, "preserve_quotes": [quote]}
+    assert protected_expression_quotes(payload, include_working_observations=True) == (quote,)
+    assert working_observation_index(payload) == {("draft:one", "sha256:" + "a" * 64): [observation["entries"][0]]}
+    assert validate_projection_quotes(payload, (quote,))
+    omitted = {**payload, "source": {"asset_version_id": "draft:one", "safe_summary": "她仍在住处。"}}
+    with pytest.raises(KernelError, match="QUOTE"):
+        validate_projection_quotes(omitted, (quote,))
+
+
+def test_complete_rereview_fits_same_capacity_with_frozen_lossless_comparison_transport(monkeypatch):
+    from novel_forge.modules.chapter_authority import execution_gateway as gateway
+    from novel_forge.modules.chapter_authority.provider_views import expand_exact_context_references
+    from novel_forge.modules.review.prose_comparison import prose_comparison_view
+    before = ''.join(f'{index}：许照川归还工具。🙂\n\n' for index in range(150))
+    after = '午后。\n' + before[:410] + '他歇过酸痛的手，再走回去。' + before[410:]
+    task = {'contract_version': 'fixture:rereview', 'prose_comparison': prose_comparison_view(
+        {'text': before}, {'text': after}, original_id='draft:v1', revised_id='revision:v1'),
+        'revised_chapter': {'text': after}, 'cross_chapter_window': {'sources': [{'chapter': 19, 'text': '前章完整工作稿。' * 600}]}}
+    context = {'contract_version': 'fixture:context', 'accepted_through_chapter': 0}
+    monkeypatch.setattr(gateway, 'build_provider_task_view', lambda *_args, **_kw: deepcopy(task))
+    monkeypatch.setattr(gateway, 'build_provider_context_view', lambda *_args, **_kw: deepcopy(context))
+    materialization = {'materialization_hash': 'sha256:fixture', 'pack_artifacts': {
+        key: {'ref': key, 'version': 'v1', 'content': {'text': text}}
+        for key, text in {'system_instruction': 'Preserve both complete bodies.', 'skill': 'Compare exact sources.',
+            'prompt_template': '{{provider_data_envelope}}'}.items()},
+        'context_selection': [{'content': {}}], 'knowledge_selection': [{'ref': 'knowledge:fixture', 'content': {'rule': 'Source isolation'}}],
+        'tool_permissions': {'allowed': ['model.provider.invoke']}, 'output_schema': {'ref': 'schema:fixture', 'content': {'type': 'object'}}}
+    materialization['pack_artifacts']['prompt_template'].update(ref='prompt-template:chapter-generation-pack', version='v13')
+    scope = {'scope_kind': 'book', 'scope_id': 'b', 'project_id': 'p', 'book_id': 'b'}
+    def render(version):
+        return gateway._materialize_production_codex_prompt(stage='rereview', inputs={}, target_scope=scope,
+            materialization=materialization, prose_review_transport_version=version)
+    legacy, legacy_evidence = render('')
+    current, evidence = render('prose-review-exact-transport.v1')
+    assert evidence['prose_review_transport_version'] == 'prose-review-exact-transport.v1'
+    assert 'prose_review_transport_version' not in legacy_evidence
+    assert '__exact_text_edits__' in current and 'simultaneously' in current
+    assert len(current.encode()) + 1000 < len(legacy.encode())
+    assert render(legacy_evidence.get('prose_review_transport_version', '')) == (legacy, legacy_evidence)
+    assert render(evidence['prose_review_transport_version']) == (current, evidence)
+    start = current.index('{"context_bundle":')
+    envelope = json.JSONDecoder().raw_decode(current[start:])[0]
+    assert expand_exact_context_references(envelope, prose_comparison=True) == {'input_manifest': task, 'context_bundle': context}
+    def never_call(*_args):
+        pytest.fail('Exact mandatory prose cannot be dropped or trigger a compressor')
+    capacity = len(current.encode()) + 100
+    with pytest.raises(KernelError, match='TASK_CONTEXT_REQUIRED_BUDGET_EXCEEDED'):
+        prepare_request_capacity(original={'input_manifest': task, 'context_bundle': context}, stage='rereview',
+            route=route(method='SCRIPTED_UTF8_BYTES_EXACT_V1', model='fixture'), source_boundary={},
+            measure=lambda _: (len(legacy.encode()) + 100, capacity), model_call=never_call, chunk_fits=lambda _: True)
+    assert prepare_request_capacity(original={'input_manifest': task, 'context_bundle': context}, stage='rereview',
+        route=route(method='SCRIPTED_UTF8_BYTES_EXACT_V1', model='fixture'), source_boundary={},
+        measure=lambda _: (len(current.encode()) + 100, capacity), model_call=never_call, chunk_fits=lambda _: True) is None

@@ -701,8 +701,8 @@ def _command(
     input_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     from novel_forge.modules.book_authority.manuscript import AUTHOR_ROOT_VERSION
-    from .working_revision import ROOT_VERSION as WORKING_REVISION_ROOT
-    if definition_version in {AUTHOR_ROOT_VERSION, WORKING_REVISION_ROOT} and definition_name != CHAPTER_SLICE_ROOT_DEFINITION_NAME:
+    from .working_revision import ROOT_VERSIONS as WORKING_ROOTS
+    if definition_version in {AUTHOR_ROOT_VERSION, *WORKING_ROOTS} and definition_name != CHAPTER_SLICE_ROOT_DEFINITION_NAME:
         definition_version = "3.10.0"
     if definition_name == ChapterNode.DRAFT.definition_name and definition_version == "3.9.0" and not (request.preparation_report or {}).get("author_draft_adoption"):
         from .definitions import CHAPTER_DRAFT_DEFINITION_VERSION

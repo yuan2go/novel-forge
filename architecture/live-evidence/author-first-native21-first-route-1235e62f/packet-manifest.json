@@ -1,0 +1,47 @@
+{
+  "schema_version": "checked-evidence-manifest.v1",
+  "source_sha": "1235e62f6e783edd2044e957be43a4a98494270c",
+  "files": [
+    {
+      "path": "classification.json",
+      "sha256": "sha256:256154ba4b9cd8b13df0fefd53e371f325f5501f98fa8d78197bf36f5e108157"
+    },
+    {
+      "path": "documentation-reality.json",
+      "sha256": "sha256:bb254ec603dd0f658195bfbee314bb502a4bdbdf89da9a4202f9de92a6ce51fb"
+    },
+    {
+      "path": "focused-postgres.xml.gz",
+      "sha256": "sha256:59fa0549c2592167f40696ea06d42a75e4dbd9add88b000e21878d6967e3d6bc"
+    },
+    {
+      "path": "focused-unit.xml.gz",
+      "sha256": "sha256:e8aabd39b52345f93cdb5f00eb3e68aca405b63b1c4b74972f3c8bb9cb820376"
+    },
+    {
+      "path": "index.json",
+      "sha256": "sha256:bd4e3393f61872c900614274b756a5b63f97964c83caa1a9cee955f2f8e61201"
+    },
+    {
+      "path": "native-pack-revalidation.json",
+      "sha256": "sha256:49ac7e09534165d6997e765f2792830073f36374dab8ee550693c7ffa3e24a00"
+    },
+    {
+      "path": "native21-first-route-recovery-1235e62f.json",
+      "sha256": "sha256:962913a57fbfeca8f7fc0dffc5b63f0e487d95c39e97ee5bcee5361b4cb9e74d"
+    },
+    {
+      "path": "native21-successor-missing-task-recovery-1235e62f.json",
+      "sha256": "sha256:eaa1b1ea58a4399d759b87c1e8ba7c1e9ca7fe4b57c7a1781356c0cfc82913c0"
+    },
+    {
+      "path": "original-isolation-history.json",
+      "sha256": "sha256:868931bf143c57e01d640a71614a9a01ac2ccb9692ff63718062ceb181226bbb"
+    },
+    {
+      "path": "original-process-failure.json",
+      "sha256": "sha256:93e06a87a2d8a19cebd758c06cbd66ede99870f684222d7210bb9771265ce342"
+    }
+  ],
+  "raw_prose_or_provider_payloads_committed": false
+}

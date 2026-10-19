@@ -412,8 +412,32 @@ class PostgresPlanChangeAuthority:
                 "only approved PlanChangeProposal can activate",
             )
         if proposal["status"] == "ACTIVE":
+            from novel_forge.modules.chapter_group_authority.replan_retirement import require_replan_activation
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                uow.cursor.execute("SELECT 1 FROM authority_plan_change_impact WHERE proposal_id=%s AND impacted_asset_version_id=%s",
+                    [proposal_id, proposal["target_asset_version_id"]])
+                missing = uow.cursor.fetchone() is None
+                uow.cursor.execute("""SELECT EXISTS(SELECT 1 FROM authority_book_replan replan
+                    JOIN authority_book_production book USING(book_run_id)
+                    WHERE replan.plan_change_proposal_id=%s AND replan.project_id=%s
+                      AND replan.status IN ('ACTIVE','REGENERATING') AND book.state='REPLAN_GENERATING')""",
+                    [proposal_id, proposal["project_id"]])
+                pending = bool(uow.cursor.fetchone()[0])
+                if missing and pending and require_replan_activation(uow.cursor,
+                    project_id=proposal["project_id"], proposal_id=proposal_id):
+                    if uow.repositories.plan_change.reconcile_replaced_target_impact(proposal_id):
+                        uow.repositories.operation_graph.record_event({
+                            "event_id": str(uuid4()), "audit_id": str(uuid4()), "outbox_id": str(uuid4()),
+                            "aggregate_type": "plan_change_proposal", "aggregate_id": proposal_id,
+                            "operation_id": proposal["activation_operation_id"], "project_id": proposal["project_id"],
+                            "event_type": "plan_change.replaced_target_impact_reconciled",
+                            "correlation_id": proposal["proposal_operation_id"], "causation_id": proposal["approval_operation_id"],
+                            "payload": {"proposal_id": proposal_id, "target_asset_version_id": proposal["target_asset_version_id"]}})
+                    uow.commit()
             return proposal
         with AuthorityUnitOfWork(self.database_url) as uow:
+            from novel_forge.modules.chapter_group_authority.replan_retirement import require_replan_activation
+            require_replan_activation(uow.cursor, project_id=proposal["project_id"], proposal_id=proposal_id)
             uow.repositories.plan_change.require_current_inferred_impacts(
                 project_id=proposal["project_id"],
                 book_id=proposal["book_id"],
@@ -549,6 +573,7 @@ class PostgresPlanChangeAuthority:
         )
         self._probe("after_plan_activation_before_outbox")
         with AuthorityUnitOfWork(self.database_url) as uow:
+            require_replan_activation(uow.cursor, project_id=proposal["project_id"], proposal_id=proposal_id)
             uow.repositories.plan_change.require_current_inferred_impacts(
                 project_id=proposal["project_id"],
                 book_id=proposal["book_id"],

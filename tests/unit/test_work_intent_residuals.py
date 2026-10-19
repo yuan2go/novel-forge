@@ -910,7 +910,8 @@ def test_foundation_actual_final_assembly_uses_work_methods(stage, author, old_m
 
 
 @pytest.mark.parametrize("working", [False, True])
-def test_body_first_review_withholds_design_and_keeps_exact_prose(working):
+@pytest.mark.parametrize("literal", [False, True])
+def test_body_first_review_withholds_design_and_keeps_exact_prose(working, literal):
     source = {
         "chapter_number": 1, "acceptance_id": "source", "asset_version_id": "draft:1",
         "asset_hash": "hash", "text": "她选择回家，明日才去渡河。",
@@ -921,6 +922,8 @@ def test_body_first_review_withholds_design_and_keeps_exact_prose(working):
     policy = {"policy_version": "body-first.v1", "window_codepoints": 1000,
               "overlap_codepoints": 0, "context_token_budget": 2048,
               "maximum_windows": 1, "reading_mode": "BODY_FIRST"}
+    if literal:
+        policy.update(diagnosis_contract="prose-root-cause.v1", citation_locator_contract="literal-prose-citation.v1")
     args = dict(project_id="p", workspace_id="w", book_run_id="book", sources=[source], policy=policy)
     manifest = freeze_manifest(**args)
     window = manifest["windows"][0]
@@ -936,6 +939,11 @@ def test_body_first_review_withholds_design_and_keeps_exact_prose(working):
                "selected_inputs": [{"asset_type": "longform_prose_review_window", "projection": projection}]}
     view = build_provider_context_view("longform_prose_review", context, {})
     assert "具体续读期待" in view["instruction"]
+    if literal:
+        assert "asset_version_id、text_hash 必须逐字复制引文所属的同一 span" in view["instruction"]
+        assert "唯一精确引文" in view["instruction"]
+    else:
+        assert "Unicode code-point 坐标和精确 quote" in view["instruction"]
     assert "中文玄幻/武侠" not in str(view)
     window["spans"][0]["creative_baseline"] = None
     with pytest.raises(KernelError, match="LONGFORM_PROSE_CONTEXT_INVALID"):
