@@ -60,11 +60,10 @@ def require_task_current(uow, task, *, lock=False):
     book = _book(uow, task["project_id"], task["book_run_id"], lock=lock)
     rows, entries, text = _sources(uow, book, task["chapter"])
     changed = len(rows) != len(task["sources"]) or any(
-        any(current[key] != frozen[key] for key in ("chapter", "asset_version_id", "content_hash", "source_resolution"))
+        any(current[key] != frozen[key] for key in ("chapter", "asset_version_id", "content_hash", "source_resolution", "memory_source", "sidecar_head"))
         or current["coverage"] == "WORKING_MEMORY_DEPENDENCY_CHANGED"
         for current, frozen in zip(rows, task["sources"]))
-    if (changed or rows[-1]["memory_source"] != task["sources"][-1]["memory_source"]
-            or rows[-1]["sidecar_head"] != task["sources"][-1]["sidecar_head"] or text != task["text"]):
+    if changed or text != task["text"]:
         raise KernelError("WORKING_MEMORY_SOURCE_STALE", "Selected prose, lineage or memory changed after extraction was frozen")
     return book
 

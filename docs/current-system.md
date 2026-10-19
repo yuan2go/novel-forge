@@ -349,7 +349,8 @@ the next request only after the preceding receipt succeeds. Thus later extractio
 reference earlier observation IDs. The separate `working_memory_extract` Pack and route
 use existing Context, Provider, Effect, receipt, accounting, Attempt, fence and cancellation
 mechanics. No Provider I/O holds a Book business lock. Materialization rechecks the exact
-selected prose, lineage and target sidecar under the Book lock. Unfinished or failed
+selected prose, lineage, every frozen memory reference and raw sidecar head under the
+Book lock. Unfinished or failed
 native results are not adopted as usable sidecars. Located empty native results are
 reported separately from missing Writer metadata. A cancelled or failed extraction
 retains its original history and stops its batch; diagnosed terminal retries require an
@@ -363,7 +364,7 @@ it never substitutes today's preview for an old request. An Effect records an in
 its receipt and transport artifacts retain their own execution status. Reading sources
 or a preview does not prove that a model consumed or understood them.
 
-new memory-extraction and v10 requests additionally retain the complete application
+New memory-extraction and v10 requests additionally retain the complete application
 Provider envelope as `provider-request-snapshot.v1` within admission v2. Readback verifies
 its digest, frozen Effect identity and available receipt input hashes. A dispatch row
 is reported separately from an Effect intent. Older requests without this snapshot

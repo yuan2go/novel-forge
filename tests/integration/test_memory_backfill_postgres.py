@@ -50,7 +50,7 @@ def test_native_memory_extraction_keeps_receipts_replays_and_source_guards(tmp_p
                     independent.execute("SELECT book_id FROM authority_book WHERE book_id=%s FOR UPDATE NOWAIT", [book["book_id"]])
                     independent.execute("SELECT book_run_id FROM authority_book_production WHERE book_run_id=%s FOR UPDATE NOWAIT", [book["book_run_id"]])
                 target = race.pop()
-                save_manuscript_memory(app, book["book_run_id"], chapter=2, source_asset_version_id=target["asset_version_id"],
+                save_manuscript_memory(app, book["book_run_id"], chapter=target["chapter"], source_asset_version_id=target["asset_version_id"],
                     expected_version=app.require(book["book_run_id"])["version"], observations=[],
                     idempotency_key=book["book_run_id"] + ":during-provider", source_kind="ASSISTANT_ANALYSIS", principal=principal)
             return default_chapter_fixture_response(stage, inputs)
@@ -129,14 +129,15 @@ def test_native_memory_extraction_keeps_receipts_replays_and_source_guards(tmp_p
             assert followup.run_or_recover(BookFollowupAdmission(**repaired["operations"][0])).output.asset_version_id
             raced = admit_backfill(app, followup, **{**options, "expected_version": app.require(book["book_run_id"])["version"],
                 "idempotency_key": options["idempotency_key"] + ":concurrent-source-change", "chapters": [2]})
-            race.append(target)
+            race.append(coverage["sources"][0])
             with pytest.raises(KernelError, match="WORKING_MEMORY_SOURCE_STALE"):
                 followup.run_or_recover(BookFollowupAdmission(**raced["operations"][0]))
             with AuthorityUnitOfWork(DATABASE_URL) as uow:
                 uow.cursor.execute("SELECT status FROM authority_external_effect WHERE operation_id=%s", [raced["operations"][0]["operation_id"]])
                 assert uow.cursor.fetchone()[0] == "SUCCEEDED"
             latest = memory_coverage(DATABASE_URL, project_id=book["project_id"], book_run_id=book["book_run_id"], principal=principal)
-            assert latest["sources"][1]["provenance"]["kind"] == "ASSISTANT_ANALYSIS"
+            assert latest["sources"][0]["provenance"]["kind"] == "ASSISTANT_ANALYSIS"
+            assert latest["sources"][1]["provenance"]["kind"] == "NATIVE_PROVIDER_OBSERVATION"
 
         finally:
             execution.close()
