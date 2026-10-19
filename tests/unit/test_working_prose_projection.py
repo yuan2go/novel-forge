@@ -171,12 +171,18 @@ def test_creation_default_does_not_send_unrelated_complete_history():
     from pathlib import Path
 
     selected = json.loads(Path("config/execution_templates/creation_inputs.json").read_text())["profiles"]["production_profile"]["content"]["working_prose_policy"]
-    sources = [{"chapter": number, "text": f"Unrelated history {number}.\n\n" + "旧日闲事。" * 100}
+    from novel_forge.modules.book_authority.working_task import build_working_task
+    task = build_working_task(sources=[{"asset_version_id": "plan:21", "content_hash": "sha256:plan",
+        "asset_type": "chapter_plan", "content": {"chapter_number": 21, "chapter_intent": "寻找失踪的铜钥。"}}],
+        book={"project_id": "p", "book_id": "b", "book_run_id": "run"}, chapter=21, stage="CHAPTER")
+    sources = [{"chapter": number, "asset_version_id": f"draft:{number}",
+                "text": f"Unrelated history {number}.\n\n" + "\n\n".join("旧日闲事。" * 10 for _ in range(10))}
                for number in range(1, 21)]
-    projected = project_working_sources(sources, target_chapter=21, policy=selected)
-    assert [row["chapter"] for row in projected if row["passages"]] == [19, 20]
-    assert all(row["omitted_ranges"] for row in projected[:-2])
-    assert all(not row["omitted_ranges"] for row in projected[-2:])
+    projected = project_working_sources(sources, target_chapter=21, policy=selected, task=task)
+    assert [row["chapter"] for row in projected if row["passages"]] == [20]
+    assert all(row["omitted_ranges"] for row in projected)
+    assert projected[-1]["passages"][-1]["end"] == len(sources[-1]["text"])
+    assert len(projected[-1]["passages"]) == selected["recent_tail_paragraphs"] + selected["neighbor_paragraphs"]
 
 
 def test_retrieval_policy_retains_queries_and_causal_quotes_without_full_history():
@@ -734,3 +740,142 @@ def test_progression_does_not_silently_drop_early_predecessors():
     book = {"project_id": "p", "book_id": "b", "book_run_id": "run", "accepted_through_chapter": 0}
     with pytest.raises(KernelError, match="WORKING_PROSE_HISTORY_INCOMPLETE"):
         manuscript.freeze_working_context(MagicMock(), book, 5, projection_policy=policy(version=PROGRESSION_POLICY_VERSION, history_chapters=3))
+
+
+def test_task_passage_retrieval_recalls_chinese_evidence_without_observations():
+    from novel_forge.modules.book_authority.task_retrieval import select_task_passages
+
+    texts = ["沈砚把青铜钥匙藏进东城水闸下的石缝。"]
+    texts += [f"沈砚收起碗筷，走回第{number}间屋子休息。" for number in range(2, 21)]
+    texts.append("东城水闸已经塌了，钥匙却仍卡在石缝中。")
+    units = [(number, 0, len(text), text) for number, text in enumerate(texts, 1)]
+    task = {"goal": "沈砚去东城水闸取回青铜钥匙", "queries": [], "subjects": ["沈砚"],
+        "object_refs": ["青铜钥匙"], "place_refs": ["东城水闸"], "target_chapter": 22}
+    before = deepcopy((units, task))
+    result = select_task_passages(units, task=task)
+    assert [row["chapter"] for row in result["selected"]] == [1, 21]
+    assert (units, task) == before
+    assert result["semantic_completeness"] == "NOT_ESTABLISHED"
+    assert all(type(row["score"]) is int for row in result["selected"])
+    assert all("沈砚" not in row["matched_terms"] for row in result["selected"])
+
+
+@pytest.mark.parametrize("subject,goal", [("沈砚", "沈砚继续讨论本章情况"), ("Mira Vale", "Mira Vale continues the conversation")])
+def test_task_passage_retrieval_does_not_recall_by_protagonist_alone(subject, goal):
+    from novel_forge.modules.book_authority.task_retrieval import select_task_passages
+
+    units = [(number, 0, len(subject), subject) for number in range(1, 101)]
+    result = select_task_passages(units, task={"goal": goal, "subjects": [subject]})
+    assert result["selected"] == []
+    assert result["candidate_count"] == 0
+
+
+def test_task_passage_retrieval_preserves_unicode_coordinates_and_english_evidence():
+    from novel_forge.modules.book_authority.task_retrieval import select_task_passages
+
+    prefix = "😀前情。\r\n\r\n"
+    clue = "Mira hid the bronze key beneath the aqueduct.\r\n\r\n"
+    tail = "Mira prepared supper."
+    original = prefix + clue + tail
+    units = [(1, 0, len(prefix), prefix), (1, len(prefix), len(prefix + clue), clue),
+        (1, len(prefix + clue), len(original), tail)]
+    task = {"queries": ["Find the bronze key beneath the aqueduct"], "subjects": ["Mira"],
+        "sources": [{"asset_version_id": "plan:2", "content_hash": "exact-plan-hash"}]}
+    task["task_hash"] = canonical_hash(task)
+    result = select_task_passages(units, task=task)
+    assert len(result["selected"]) == 1
+    selected = result["selected"][0]
+    assert (selected["start"], selected["end"]) == (len(prefix), len(prefix + clue))
+    assert original[selected["start"]:selected["end"]] == clue
+    assert selected["text_hash"] == text_hash(clue)
+    assert result["task_hash"] == task["task_hash"]
+
+
+def test_task_passage_retrieval_covers_scenes_and_limits_repeated_chapter_candidates():
+    from novel_forge.modules.book_authority.task_retrieval import select_task_passages
+
+    bell = "The copper bell was hidden under the table.\n\n"
+    units = [(1, index * len(bell), (index + 1) * len(bell), bell) for index in range(10)]
+    second = "The copper bell was stolen from the temple."
+    knife = "The silver knife was buried in the garden."
+    units.extend([(2, 0, len(second), second), (3, 0, len(knife), knife)])
+    task = {"scenes": [{"scene_id": "temple", "object_refs": ["copper bell"]},
+        {"scene_id": "garden", "object_refs": ["silver knife"]}]}
+    result = select_task_passages(units, task=task, limit=4, per_chapter=2)
+    assert len(result["selected"]) == 4
+    assert {row["chapter"] for row in result["selected"]} == {1, 2, 3}
+    assert sum(row["chapter"] == 1 for row in result["selected"]) == 2
+    assert {query for row in result["selected"] for query in row["matched_queries"]} == {
+        "scenes/0/object_refs/0", "scenes/1/object_refs/0"}
+    assert result["omitted_candidate_count"] == 8
+    assert [row["chapter"] for row in result["selected"]] == sorted(row["chapter"] for row in result["selected"])
+
+
+def test_task_passage_retrieval_replay_is_order_independent_and_decimal_context_independent():
+    from decimal import Inexact, localcontext, ROUND_DOWN
+    from novel_forge.modules.book_authority.task_retrieval import select_task_passages
+
+    texts = ["Mira's bronze key fell beneath the aqueduct.", "The bronze key opened the vault.",
+        "Nobody remembered the aqueduct gate.", "Mira walked home."]
+    units = [(number, 0, len(text), text) for number, text in enumerate(texts, 1)]
+    task = {"queries": ["bronze key aqueduct"], "subjects": ["Mira"],
+        "field_sources": [{"asset_version_id": "plan:5", "pointer": "/goal", "text": "bronze key aqueduct"}]}
+    expected = select_task_passages(units, task=task, limit=2)
+    with localcontext() as context:
+        context.prec = 3
+        context.rounding = ROUND_DOWN
+        context.traps[Inexact] = True
+        actual = select_task_passages(list(reversed(units)), task=task, limit=2)
+    assert actual == expected
+    changed = {**task, "field_sources": [{**task["field_sources"][0], "asset_version_id": "plan:6"}]}
+    assert select_task_passages(units, task=changed, limit=2)["task_hash"] != expected["task_hash"]
+
+
+def test_task_passage_retrieval_supports_literal_single_character_refs_and_optional_empty_selection():
+    from novel_forge.modules.book_authority.task_retrieval import select_task_passages
+
+    text = "沈砚将那口鼎藏在井底。"
+    units = [(1, 0, len(text), text)]
+    task = {"subjects": ["沈砚"], "object_refs": ["鼎"]}
+    assert len(select_task_passages(units, task=task)["selected"]) == 1
+    disabled = select_task_passages(units, task=task, limit=0)
+    assert disabled["selected"] == [] and disabled["candidate_count"] == 1
+    assert select_task_passages(units, task={})["selected"] == []
+
+
+def test_task_passage_retrieval_rejects_changed_task_or_invalid_source_ranges():
+    from novel_forge.modules.book_authority.task_retrieval import select_task_passages
+
+    task = {"queries": ["bronze key"]}
+    task["task_hash"] = canonical_hash(task)
+    changed = {**task, "queries": ["silver knife"]}
+    with pytest.raises(KernelError, match="WORKING_TASK_RETRIEVAL_IDENTITY_INVALID"):
+        select_task_passages([], task=changed)
+    for units in ([(1, 0, 2, "😀")], [(1, 0, 3, "key"), (1, 1, 4, "key")], [(3, 0, 3, "key")]):
+        with pytest.raises(KernelError, match="WORKING_TASK_RETRIEVAL_RANGE_INVALID"):
+            select_task_passages(units, task={"object_refs": ["key"], "target_chapter": 3})
+
+
+def test_task_passage_retrieval_keeps_named_refs_distinct_from_subjects():
+    from novel_forge.modules.book_authority.task_retrieval import select_task_passages
+
+    texts = ["明月站在窗前。", "山里落下了一场雪。", "明月山下的石门已被封闭。"]
+    units = [(number, 0, len(text), text) for number, text in enumerate(texts, 1)]
+    task = {"subjects": ["明月"], "place_refs": ["明月山"]}
+    result = select_task_passages(units, task=task)
+    assert [row["chapter"] for row in result["selected"]] == [3]
+    assert result["queries"] == [{"query_id": "place_refs/0", "scope": "task", "kind": "place_refs", "text": "明月山"}]
+    assert "明月山" in result["selected"][0]["matched_terms"]
+
+
+def test_task_passage_retrieval_does_not_turn_generic_goal_words_into_history_queries():
+    from novel_forge.modules.book_authority.task_retrieval import select_task_passages
+
+    text = "沈砚继续讨论本章情况。"
+    units = [(number, 0, len(text), text) for number in range(1, 21)]
+    result = select_task_passages(units, task={"subjects": ["沈砚"], "goal": "沈砚继续讨论本章情况"})
+    assert result["candidate_count"] == 0
+    assert result["selected"] == []
+    broad = select_task_passages(units, task={"subjects": ["character:lead"], "goal": "沈砚"})
+    assert broad["candidate_count"] == 0
+    assert broad["selected"] == []

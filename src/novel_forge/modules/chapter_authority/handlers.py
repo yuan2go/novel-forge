@@ -1082,7 +1082,7 @@ class _ContextHandler:
 
     def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
         plan = next(
-            (item for item in request.inputs if item.asset_type == "chapter_plan"), None
+            (item for item in request.inputs if item.input_type == "chapter_plan"), None
         )
         if plan is None:
             raise KernelError(
@@ -1289,8 +1289,10 @@ class _ContextHandler:
                 candidate_metadata[source_id] = merge_task_retrieval_projections(candidate_metadata[source_id], documents, preserve_json=semantic_context)
         host_quality_segments: list[dict[str, Any]] = []
         working = (request.command.get("preparation_report") or {}).get("working_manuscript")
-        from novel_forge.modules.book_authority.working_prose import working_source_rows
+        from novel_forge.modules.book_authority.working_prose import working_auxiliary_source_refs, working_source_rows
         working_ids = {row["asset_version_id"] for row in working_source_rows(working)} if working else set()
+        working_ids.update(source["asset_version_id"] for source in working_auxiliary_source_refs(working)
+            if source["asset_version_id"] not in candidate_metadata)
         frozen_candidates = [
             item
             for item in request.inputs

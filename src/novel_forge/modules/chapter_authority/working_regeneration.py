@@ -90,7 +90,9 @@ def prepare_regeneration(app, *, supervisor, uow, book, source, original, propos
     book = {**book, 'author_workflow': effective_workflow(uow.cursor, book)}
     prepared = supervisor.prepare_chapter_command(book=book, group=group, chapter_plan=plan,
         realization=realization, chapter_number=original.chapter, working_regeneration_proposal_id=proposal_id)
-    report = {**dict(prepared.preparation_report or {}), 'working_manuscript': freeze_working_context(uow, book, original.chapter)}
+    report = {**dict(prepared.preparation_report or {}), 'working_manuscript': freeze_working_context(uow, book, original.chapter,
+        task_source_refs=[{'asset_version_id': prepared.execution_chapter_plan_asset_version_id or prepared.chapter_plan_asset_version_id,
+            'content_hash': prepared.execution_chapter_plan_content_hash or prepared.chapter_plan_content_hash}], task_stage='CHAPTER')}
     prepared = replace(prepared, preparation_report=report)
     request = reserved_chapter_command(app.database_url, book=book,
         persisted={'command_payload': asdict(prepared), 'chapter_number': original.chapter, 'stable_idempotency_key': original.idempotency_key},

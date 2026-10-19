@@ -7196,6 +7196,26 @@
         {
           "path": "src/novel_forge/modules/book_authority/working_policy.py",
           "symbol": "select_working_policy"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "PostgresBookAuthority.submit_chapter"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/queries.py",
+          "symbol": "PostgresBookProductionQuery.require_arc_working_set"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "freeze_working_context"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "verify_working_context"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/working_regeneration.py",
+          "symbol": "prepare_regeneration"
         }
       ],
       "domain_symbols": [
@@ -7222,6 +7242,34 @@
         {
           "path": "src/novel_forge/modules/book_authority/working_policy.py",
           "symbol": "selected_working_policy"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_task.py",
+          "symbol": "build_working_task"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_task.py",
+          "symbol": "validate_working_task"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/task_retrieval.py",
+          "symbol": "select_task_passages"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_selection.py",
+          "symbol": "task_passage_ranges"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_selection.py",
+          "symbol": "select_working_context"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_selection.py",
+          "symbol": "selected_memory_ranges"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_selection.py",
+          "symbol": "validate_working_selection"
         }
       ],
       "commands_operations": [
@@ -7270,6 +7318,10 @@
           {
             "path": "src/novel_forge/modules/book_authority/working_policy.py",
             "symbol": "select_working_policy"
+          },
+          {
+            "path": "src/novel_forge/modules/book_authority/manuscript.py",
+            "symbol": "freeze_working_context"
           }
         ]
       },
@@ -7580,6 +7632,10 @@
         {
           "path": "src/novel_forge/modules/chapter_authority/receipt_recovery.py",
           "symbol": "retained_owner_context"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "verify_working_context"
         }
       ],
       "domain_symbols": [
@@ -7726,7 +7782,8 @@
         "source-import-and-knowledge",
         "canon-and-narrative-state",
         "capability-pack-instruction-runtime",
-        "external-effect-provider-control"
+        "external-effect-provider-control",
+        "book-production-coordination"
       ],
       "downstream_consumers": [
         "hierarchical-planning",
@@ -10668,7 +10725,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:397ed3132510afd7a3cea508bb6c34dbbb38fa21eda17e700e5c7d381cd14360"
+    "implementation_tree_sha": "sha256:de875adaefceb55a5c01984f0fd5d76447a4ef5ba5251654dd997ba3a912cf3d"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

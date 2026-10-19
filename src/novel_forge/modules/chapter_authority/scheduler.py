@@ -1140,8 +1140,11 @@ class ChapterAuthorityScheduler:
         if node in {ChapterNode.CONTEXT, ChapterNode.EXECUTION_INTENT}:
             working = (request.preparation_report or {}).get("working_manuscript")
             if working:
-                from novel_forge.modules.book_authority.working_prose import working_source_rows
+                from novel_forge.modules.book_authority.working_prose import working_auxiliary_source_refs, working_source_rows
                 inputs.extend({"asset_version_id": row["asset_version_id"], "content_hash": row["content_hash"]} for row in working_source_rows(working))
+                for reference in working_auxiliary_source_refs(working):
+                    if reference not in inputs:
+                        inputs.append(reference)
         if explicit_inputs is not None:
             inputs = list(explicit_inputs)
         if node is ChapterNode.QUALITY_LONGFORM and self.registry.model_effects_required:

@@ -594,6 +594,8 @@ class StoryPlanningGenerationApplication:
                     raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Planning working sources require their exact Book owner")
                 verify_working_context(uow, owner[0], working)
             input_assets.extend({"asset_version_id": source["asset_version_id"], "content_hash": source["content_hash"]} for source in working_source_rows(working))
+            from novel_forge.modules.book_authority.working_prose import working_auxiliary_source_refs
+            input_assets.extend(working_auxiliary_source_refs(working))
         if command.edition_execution:
             from novel_forge.modules.book_authority.edition_planning import require_edition_planning_request, validate_edition_plan_scope
             require_edition_planning_request(self.database_url, project_id=command.project_id, book_id=command.book_id,

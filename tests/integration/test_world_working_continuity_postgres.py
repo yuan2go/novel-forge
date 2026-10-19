@@ -624,7 +624,9 @@ def _run_native_semantic_capacity(tmp_path, monkeypatch, *, upgrade_context_effe
         from novel_forge.modules.command_kernel.errors import KernelError
         policy = json.loads((root / "config/execution_templates/creation_inputs.json").read_text())
         policy["narrative_execution_contract"] = "native-narrative-execution.v3"
-        policy["profiles"]["production_profile"]["content"]["working_prose_policy"]["version"] = "working-prose-projection.v6"
+        policy["profiles"]["production_profile"]["content"]["working_prose_policy"] = {
+            "version": "working-prose-projection.v6", "history_chapters": 128,
+            "recent_complete_chapters": 2, "max_characters": None, "queries": [], "guidance_mode": "COMBINED"}
         policy_file = tmp_path / "frozen-complete-capacity-v3.json"
         policy_file.write_text(json.dumps(policy))
         args.creation_policy_file = policy_file

@@ -183,3 +183,168 @@ def test_bad_optional_metadata_never_invalidates_structurally_complete_prose():
     assert optional_draft_memory(raw["working_memory_json"], "Complete prose.")["prose_preserved"]
     with pytest.raises(KernelError):
         validate_chapter_provider_output_against_schema("draft", schema, {**raw, "scene_artifacts": []})
+
+
+def _task_book():
+    return {"project_id": "project:1", "book_id": "book:1", "book_run_id": "run:1"}
+
+
+def _task_source(kind, content, version="plan:5"):
+    return {"asset_version_id": version, "content_hash": canonical_hash(content), "asset_type": kind, "content": content}
+
+
+def test_working_task_extracts_current_mission_scene_and_scoped_refs_without_governance_text():
+    from novel_forge.modules.book_authority.working_task import build_working_task, validate_working_task
+
+    content = {"chapter_number": 5, "chapter_intent": "夺回渡桥的通行权", "objective": "Make the bridge promise costly.",
+        "scene_plan": [{"scene_id": "scene:5:1", "goal": "修复旧桥", "conflict": "守桥人拒绝交出绳索", "stakes": "药物必须在天黑前送达",
+            "participants": ["Mira", "guard"], "pov_character_id": "Mira", "location_id": "north-bridge",
+            "object_refs": ["copper-key"], "realization_event_ids": ["planned:bridge-repair"]}],
+        "narrative_realization_slice": {"chapter_number": 5, "events": [
+            {"event_id": "planned:bridge-repair", "chapter_number": 5, "actor_ref": {"character_id": "Mira"},
+                "action": "用钥匙打开绳索仓库", "causes": ["earlier:key-given"]}]},
+        "constraint_envelope": {"objective": "PRIVATE-ADMINISTRATION", "character_id": "UNRELATED-ROLE"},
+        "execution_evidence": {"text": "WHOLE-GOVERNANCE-PAYLOAD"}}
+    sources = [_task_source("chapter_plan", content)]
+    task = build_working_task(sources=sources, book=_task_book(), chapter=5, stage="CHAPTER", extra_queries=["铜钥匙", "铜钥匙"])
+    validate_working_task(task, sources=sources, book=_task_book(), chapter=5, stage="CHAPTER", extra_queries=["铜钥匙"])
+    assert task["goal"] == "夺回渡桥的通行权\nMake the bridge promise costly."
+    assert task["explicit_queries"] == ["铜钥匙"] and "用钥匙打开绳索仓库" in task["queries"]
+    scene = task["scenes"][0]
+    assert scene["subjects"] == ["Mira", "guard"] and "Mira" not in scene["queries"]
+    assert scene["goal"] == "修复旧桥" and "药物必须在天黑前送达" in scene["queries"]
+    assert scene["place_refs"] == ["north-bridge"] and scene["object_refs"] == ["copper-key"]
+    assert task["event_refs"] == ["planned:bridge-repair", "earlier:key-given"]
+    assert task["authority"] == "FROZEN_PLAN_RETRIEVAL_ONLY" and "structured_facts" not in task
+    assert all(word not in json.dumps(task) for word in ("PRIVATE-ADMINISTRATION", "UNRELATED-ROLE", "WHOLE-GOVERNANCE-PAYLOAD"))
+    action = next(row for row in task["field_sources"] if row["text"] == "用钥匙打开绳索仓库")
+    assert action["pointer"] == "/narrative_realization_slice/events/0/action"
+
+
+def test_planning_working_task_uses_current_matrix_row_events_and_exact_arc_segment():
+    from novel_forge.modules.book_authority.working_task import build_working_task
+
+    group = {"chapter_range": [5, 7], "objective": "ENTIRE-GROUP-OBJECTIVE", "narrative_segment_ref": {"volume_plan_version_id": "volume:1", "segment_id": "segment:bridge"},
+        "chapter_function_matrix": [
+            {"chapter_number": 5, "ending_hook": "渡桥上的灯突然熄灭", "required_state_delta": {"summary": "夺回通行权"}},
+            {"chapter_number": 6, "ending_hook": "FUTURE-MATRIX-SECRET"}],
+        "narrative_event_chain": [
+            {"chapter_number": 5, "event_id": "event:5", "action": "带药穿过封锁"},
+            {"chapter_number": 6, "event_id": "event:6", "action": "FUTURE-EVENT-SECRET"}]}
+    arc = {"objective": "WHOLE-ARC-PAYOFF", "arc_segments": [
+        {"volume_plan_version_id": "volume:1", "narrative_segment_id": "segment:bridge", "objective": "兑现修桥的承诺"},
+        {"volume_plan_version_id": "volume:2", "narrative_segment_id": "segment:bridge", "objective": "FUTURE-VOLUME-PAYOFF"}]}
+    task = build_working_task(sources=[_task_source("chapter_group_plan", group, "group:5"), _task_source("arc_plan", arc, "arc:1")], book=_task_book(), chapter=5, stage="PLANNING")
+    assert task["goal"] == "兑现修桥的承诺"
+    assert task["queries"] == ["渡桥上的灯突然熄灭", "夺回通行权", "带药穿过封锁"]
+    assert task["event_refs"] == ["event:5"]
+    assert all(word not in json.dumps(task) for word in ("ENTIRE-GROUP-OBJECTIVE", "FUTURE-MATRIX-SECRET", "FUTURE-EVENT-SECRET", "WHOLE-ARC-PAYOFF", "FUTURE-VOLUME-PAYOFF"))
+    assert any(row["pointer"] == "/chapter_function_matrix/0/ending_hook" for row in task["field_sources"])
+
+
+@pytest.mark.parametrize("window", [{"from_chapter": 4, "to_chapter": 6}, {"start_chapter": 4, "end_chapter": 6}])
+def test_working_task_respects_arc_windows_and_retains_unscoped_source_receipts(window):
+    from novel_forge.modules.book_authority.working_task import build_working_task
+
+    sources = [_task_source("arc_plan", {"target_window": window, "objective": "repair the bridge"}, "arc:current"),
+        _task_source("arc_plan", {"target_window": {"from_chapter": 7, "to_chapter": 9}, "objective": "FUTURE-ARC"}, "arc:future"),
+        _task_source("arc_plan", {"objective": "UNSCOPED-ARC"}, "arc:unknown")]
+    task = build_working_task(sources=sources, book=_task_book(), chapter=5, stage="PLANNING")
+    assert task["goal"] == "repair the bridge" and len(task["sources"]) == 3
+    assert {row["asset_version_id"] for row in task["field_sources"]} == {"arc:current"}
+    assert "FUTURE-ARC" not in json.dumps(task) and "UNSCOPED-ARC" not in json.dumps(task)
+
+
+def test_working_task_binds_candidate_payload_pointer_and_deterministic_source_identity():
+    from novel_forge.modules.book_authority.working_task import build_working_task, validate_working_task
+
+    source_a = _task_source("planning_generation_candidate", {"generator_operation_name": "chapter_plan.generate",
+        "candidate_payload": {"chapter_number": 5, "chapter_intent": "Find the missing copper key"}}, "candidate:5")
+    source_b = _task_source("arc_plan", {"objective": "unknown scope"}, "arc:1")
+    kwargs = {"book": _task_book(), "chapter": 5, "stage": "CHAPTER"}
+    task = build_working_task(sources=[source_a, source_b], **kwargs)
+    assert task == build_working_task(sources=[source_b, source_a], **kwargs)
+    assert task["field_sources"][0]["pointer"] == "/candidate_payload/chapter_intent"
+    assert task["sources"][1]["asset_type"] == "planning_generation_candidate" and task["sources"][1]["plan_kind"] == "chapter_plan"
+    validate_working_task(task, sources=[source_a, source_b], **kwargs)
+    changed_identity = {**source_b, "content_hash": "sha256:" + "f" * 64}
+    assert task["task_hash"] != build_working_task(sources=[source_a, changed_identity], **kwargs)["task_hash"]
+    before = deepcopy(task)
+    source_a["content"]["candidate_payload"]["chapter_intent"] = "Different goal"
+    assert task == before
+    with pytest.raises(KernelError, match="exact frozen Plan source fields"):
+        validate_working_task(task, sources=[source_a, source_b], **kwargs)
+
+
+@pytest.mark.parametrize("field,value", [("goal", "INVENTED-RECALL"), ("queries", ["INVENTED-RECALL"]), ("explicit_queries", ["INVENTED-POLICY"])])
+def test_rehashed_working_task_cannot_invent_source_fields_or_policy_queries(field, value):
+    from novel_forge.modules.book_authority.working_task import build_working_task, validate_working_task
+
+    sources = [_task_source("chapter_plan", {"chapter_number": 5, "chapter_intent": "Repair the bridge"})]
+    kwargs = {"book": _task_book(), "chapter": 5, "stage": "CHAPTER"}
+    task = build_working_task(sources=sources, extra_queries=["lost key"], **kwargs)
+    task[field] = value
+    task["task_hash"] = canonical_hash({key: item for key, item in task.items() if key != "task_hash"})
+    with pytest.raises(KernelError):
+        validate_working_task(task, sources=sources, extra_queries=["lost key"], **kwargs)
+
+
+def test_working_task_rejects_future_chapter_cross_book_and_stage_drift():
+    from novel_forge.modules.book_authority.working_task import build_working_task, validate_working_task
+
+    kwargs = {"book": _task_book(), "chapter": 5, "stage": "CHAPTER"}
+    for content in ({"chapter_number": 6, "chapter_intent": "future"}, {"chapter_number": 5, "project_id": "other-project"}):
+        with pytest.raises(KernelError):
+            build_working_task(sources=[_task_source("chapter_plan", content)], **kwargs)
+    source_row = _task_source("chapter_plan", {"chapter_number": 5, "chapter_intent": "Find the key"})
+    task = build_working_task(sources=[source_row], **kwargs)
+    with pytest.raises(KernelError, match="another Book, Chapter or stage"):
+        validate_working_task(task, **{**kwargs, "stage": "PLANNING"})
+    task["authority"] = "CANON"
+    task["task_hash"] = canonical_hash({key: value for key, value in task.items() if key != "task_hash"})
+    with pytest.raises(KernelError, match="retrieval-only"):
+        validate_working_task(task, **kwargs)
+
+
+def test_working_task_frozen_cast_expands_only_exact_current_character_names_and_unique_aliases():
+    from novel_forge.modules.book_authority.working_task import build_working_task, validate_working_task
+    from novel_forge.modules.hierarchical_planning.domain import character_planning_locator
+
+    identity = "character:lin-shu"
+    locator = character_planning_locator(identity)
+    plan = {"chapter_number": 5, "chapter_intent": "找到铜钥匙", "scene_plan": [
+        {"scene_id": "scene:5", "goal": "林殊履行修桥的承诺", "participants": [locator]}]}
+    cast = {"book_id": "book:1", "characters": [
+        {"character_id": identity, "name": "林殊", "aliases": ["小林", "先生"], "backstory": "CAST-BACKSTORY-MUST-NOT-BECOME-A-QUERY"},
+        {"character_id": "character:other", "name": "王言", "aliases": ["先生", "老王"]}]}
+    sources = [_task_source("chapter_plan", plan), _task_source("character_cast", cast, "cast:1")]
+    book = {**_task_book(), "workspace_id": "workspace:1", "input_snapshot_id": "snapshot:1"}
+    task = build_working_task(sources=sources, book=book, chapter=5, stage="CHAPTER")
+    assert task["subjects"] == []
+    assert task["scenes"][0]["subjects"] == [locator, identity, "林殊", "小林"]
+    assert all(word not in json.dumps(task, ensure_ascii=False) for word in ("先生", "王言", "老王", "CAST-BACKSTORY-MUST-NOT-BECOME-A-QUERY"))
+    cast_fields = [row for row in task["field_sources"] if row["asset_version_id"] == "cast:1"]
+    assert {row["pointer"] for row in cast_fields} == {"/characters/0/character_id", "/characters/0/name", "/characters/0/aliases/0"}
+    assert all(row["field"] == "subjects" and row["scene_id"] == "scene:5" for row in cast_fields)
+    validate_working_task(task, book=_task_book(), chapter=5, stage="CHAPTER")
+    validate_working_task(task, book=book, chapter=5, stage="CHAPTER", sources=sources)
+    sources[1]["content"]["characters"][0]["name"] = "CHANGED-FROZEN-NAME"
+    with pytest.raises(KernelError, match="exact frozen Plan source fields"):
+        validate_working_task(task, book=book, chapter=5, stage="CHAPTER", sources=sources)
+
+
+def test_working_task_to_passage_retrieval_uses_chinese_scene_need_with_frozen_name_scope():
+    from novel_forge.modules.book_authority.task_retrieval import select_task_passages
+    from novel_forge.modules.book_authority.working_task import build_working_task
+
+    cast = {"book_id": "book:1", "generator_operation_name": "character.cast.generate", "characters": [
+        {"character_id": "character:lin-shu", "name": "林殊", "aliases": ["小林"]}]}
+    plan = {"chapter_number": 5, "scene_plan": [{"scene_id": "scene:5", "goal": "林殊要履行修桥的承诺", "participants": ["character:lin-shu"]}]}
+    book = {**_task_book(), "workspace_id": "workspace:1", "input_snapshot_id": "snapshot:1"}
+    task = build_working_task(sources=[_task_source("chapter_plan", plan), _task_source("planning_generation_candidate", cast, "cast:1")],
+        book=book, chapter=5, stage="CHAPTER", extra_queries=[])
+    old_promise, same_name_only = "桥头，林殊亲口许下修桥的承诺。", "林殊低头喝完了粥。"
+    result = select_task_passages([(1, 0, len(old_promise), old_promise), (4, 0, len(same_name_only), same_name_only)], task=task)
+    assert result["task_hash"] == task["task_hash"]
+    assert [row["chapter"] for row in result["selected"]] == [1]
+    assert result["selected"][0]["matched_queries"] == ["scenes/0/goal"]

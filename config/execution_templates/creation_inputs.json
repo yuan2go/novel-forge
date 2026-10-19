@@ -25,9 +25,14 @@
           "scope": "PLANNED_FUTURE_ONLY"
         },
         "working_prose_policy": {
-          "version": "working-prose-projection.v8",
-          "history_chapters": 128,
-          "recent_complete_chapters": 2,
+          "version": "working-prose-projection.v9",
+          "history_chapters": 10000,
+          "recent_complete_chapters": 0,
+          "recent_tail_paragraphs": 4,
+          "retrieval_passages": 12,
+          "retrieval_per_chapter": 3,
+          "neighbor_paragraphs": 1,
+          "passage_characters": 512,
           "max_characters": null,
           "queries": [],
           "guidance_mode": "COMBINED"

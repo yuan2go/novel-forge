@@ -835,7 +835,10 @@ class PostgresBookAuthority:
                     raise KernelError("WORKING_PROSE_AUTHOR_SELECTION_REQUIRED", "A prospective per-Chapter policy requires its authenticated author/operator")
             with AuthorityUnitOfWork(self.database_url) as uow:
                 working = freeze_working_context(uow, book, command.chapter_number,
-                    projection_policy=selected_policy if selected_policy is not None else "FROM_PROFILE")
+                    projection_policy=selected_policy if selected_policy is not None else "FROM_PROFILE",
+                    task_source_refs=[{"asset_version_id": command.execution_chapter_plan_asset_version_id or command.chapter_plan_asset_version_id,
+                        "content_hash": command.execution_chapter_plan_content_hash or command.chapter_plan_content_hash}],
+                    task_stage="CHAPTER")
             command = replace(command, preparation_report={**dict(command.preparation_report or {}),
                 "author_workflow": book["author_workflow"], "working_manuscript": working})
         self._require_chapter_production_admission(book, command)

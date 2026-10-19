@@ -634,12 +634,12 @@ Use `diagnosis_contract: prose-root-cause.v1` in a new long-form review policy t
 root-cause routing; historical review contracts are retained. FUTURE_REPLAN and INVESTIGATE
 proposals remain attached to author-edit candidates; selection is not issue-resolution proof.
 
-New Creation profiles enable `working-prose-projection.v7`,
+New Creation profiles enable `working-prose-projection.v9`,
 `working-story-schedule.v1`, `working-craft-delivery.v2`, `narrative-craft-budget.v5`
 and `native-prose-plan-feedback.v1`. The exact working Craft policy is
 `{"version":"working-craft-delivery.v2","use":"SELECTED_CONTINUATION_WITH_LOCATED_TRANSITIONS"}`;
 its frozen strategy is `narrative-craft-strategy.v4`. Historical profiles retain their
-existing versions. The v5/v6/v7 source-history manifest contains every predecessor, while
+existing versions. The v5-v9 source-history manifest contains every predecessor, while
 passages and located observations remain bounded by real request capacity. Check the
 host manifest separately from the shorter Provider projection; no omitted prose or
 receipt may be treated as realized experience or method success. Verify the selected working sources through Book,
@@ -651,6 +651,12 @@ Changed selected versions invalidate it. Existing policies retain historical cur
 Focused checks additionally cover `test_longform_narrative_contracts.py`,
 `test_craft_selection.py`, `test_prose_planning_evidence_working.py` and the native
 working-memory PostgreSQL variant. These checks prove consumption, not literary effects.
+For v9, also inspect the task, frozen Cast and original-range cases in
+`test_working_memory.py` and the local retrieval/selection cases in
+`test_working_prose_projection.py`. Verify native Chapter submission, Planning Arc Working
+Set preparation, regeneration and Book freeze/verify with their actual scoped inputs.
+The new source integration is `CODE_EXISTS`; historical scripted PostgreSQL memory
+qualification does not automatically qualify v9 or establish real Provider consumption.
 For method continuation, retain `NOT_ASSESSED` delivery allocations separately from
 source-bound working Review and formal acceptance. CONTINUE/DEFER can retain a stable
 same-phase instance; ADVANCE/END require located native phase Review support on the exact
@@ -861,9 +867,10 @@ and host Prompt `provider_view.capacity_projection` receipt. New story-only
 windows and their existing fidelity Effects, not a
 literary score or absolute semantic-losslessness certificate.
 Inspect frozen `capacity_history_exact_chapters` in both the selected Manifest and
-Context artifact, and the same field in the extraction. New v4 Packs retain one exact
-predecessor at capacity time; `recent_complete_chapters` still describes material
-preparation. Missing fields retain historical protection. The renderer rejects a
+Context artifact, and the same field in the extraction. New v4 Packs protect the supplied
+predecessor material at capacity time. With v9 this is the selected original ranges;
+capacity protection does not restore the omitted chapter. `recent_complete_chapters`
+still describes material preparation. Missing fields retain historical protection. The renderer rejects a
 policy mismatch instead of substituting repository defaults. An omitted range remains
 retrievable through Book's original manuscript/working-history source version; use the
 existing manuscript source and memory preparation entries before changing the task.
@@ -939,7 +946,7 @@ version. An absent version preserves the historical rendering; an unsupported ve
 raises `CONTEXT_EXTRACT_TRANSPORT_INVALID`. Preserve the original Effect and reconcile
 its outcome before creating a new derivation; do not patch its frozen display version.
 Legacy 64,000-token Planning and 24,000-character history policies remain frozen;
-new ordinary creation uses v4 Context and v7 working prose. Explicit legacy Planning
+new ordinary creation uses v4 Context and v9 working prose. Explicit legacy Planning
 without the narrative intent boundary retains Pack 2.13.0 and Context v2; selecting
 that contract does not opt into the new capacity policy. Relevant history selection
 is still bounded by its Book/task policy, independently of physical capacity.
@@ -1658,10 +1665,47 @@ novel-forge authority-manuscript select-working-policy --project-id "$PROJECT" \
 ```
 
 The file contains the `working_prose_policy` object, not the entire Creation template.
-New Creation uses v8 with complete recent chapters and located historical retrieval.
-Empty or missing observations are coverage gaps; inspect exact older versions and select
-relevant query terms when that experience is needed. Do not label a recent-only input as
-complete historical memory. Selection keeps `PAUSED` unchanged, binds the original
+New Creation uses v9. Its template retains `queries=[]`, while Book automatically derives
+retrieval demand from the exact current ChapterPlan. For ChapterPlan generation and
+validation, Planning binds its frozen Arc inputs and the parent ChapterGroup's current
+Chapter-function row; ChapterGroup generation uses Arc inputs and the frozen Cast without
+binding its own Group output. The frozen input snapshot's unique `CHARACTER_CAST` binding supplies
+exact character names and unambiguous aliases; verification rereads that same version and
+hash. Do not substitute the latest Cast or stringify the governance payload into queries.
+`retrieval_task` binds stage, Chapter, source identities and field pointers;
+`context_selection` records the local ranking, original ranges, selection reasons and hashes.
+
+The current template defaults are:
+
+| Policy field | Default | Meaning |
+| --- | --- | --- |
+| `history_chapters` | `10000` | Chapter window for local historical passage candidates |
+| `recent_complete_chapters` | `0` | No recent chapter is required in full by default |
+| `recent_tail_paragraphs` | `4` | Predecessor ending paragraphs or long-paragraph source units |
+| `passage_characters` | `512` | Maximum Unicode codepoints per indexed source unit |
+| `retrieval_passages` | `12` | Ranked historical hits before memory and supporting ranges |
+| `retrieval_per_chapter` | `3` | Maximum ranked hits from one historical chapter |
+| `neighbor_paragraphs` | `1` | Adjacent source units retained around a selected range |
+| `max_characters` | `null` | No separate fixed prose-character allocation |
+
+V9 handles single newlines and CRLF and splits overlong paragraphs at sentence endings or
+whitespace when available, preserving original Unicode locations and text hashes. These
+paragraphs or units are not declarations of complete scenes. Their size and selection
+counts can be changed prospectively through this policy; they are not generation-failure
+token ceilings. Selected observations and recursive causal support may require additional
+ranges. Real rendered-request capacity remains enforced by its existing owner.
+
+Local task retrieval remains available when memory is absent. Task scope and selected
+ranges choose relevant latest observations and promises, with belief, hearsay, reader-only
+scope, knowledge owner and recursive causes retained. Inspect
+`source_coverage[*].memory_source` for exact sidecar or prose-source version IDs, content
+hashes and observations hashes, including predecessors omitted from delivered prose.
+Replay rebuilds selected memory and its causal support from those frozen versions
+independently of newer sidecar updates. Missing annotations remain explicit
+gaps and cannot block complete prose from being saved. Inspect omitted-candidate counts,
+source coverage and exact older versions when needed; lexical selection does not establish
+complete semantic memory. Frozen v2-v8 requests retain their original behavior, including
+v8's explicit-query and complete-recent selection. Policy selection keeps `PAUSED` unchanged, binds the original
 authenticated author, and replays only the same policy/reason/version. A stale checkpoint,
 active Chapter or unresolved Effect is rejected; reconcile it through the existing owner.
 The selection cannot reinterpret a frozen request or authorize a new Provider dispatch.

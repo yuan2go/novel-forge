@@ -1,5 +1,6 @@
 from copy import deepcopy
 import json
+import re
 from typing import Any, Mapping
 
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -8,9 +9,21 @@ from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 
 MEMORY_VERSION = "working-observations.v1"
 PROVIDER_MEMORY_VERSION = "working-observations-provider.v1"
+FROZEN_MEMORY_SOURCE_VERSION = "working-memory-source.v1"
 KINDS = {"CHARACTER_STATE", "KNOWLEDGE", "RELATIONSHIP", "EVENT", "CONSEQUENCE", "PROMISE"}
 PERSPECTIVES = {"OBSERVED", "BELIEF", "HEARSAY", "READER_ONLY"}
 ENTRY_KEYS = {"kind", "subject", "state_key", "claim", "perspective", "knowledge_owner", "quote", "causes"}
+
+
+def validate_frozen_memory_source(value: Any) -> None:
+    if (not isinstance(value, Mapping)
+            or set(value) != {"version", "kind", "asset_version_id", "content_hash", "observations_hash"}
+            or value["version"] != FROZEN_MEMORY_SOURCE_VERSION
+            or not isinstance(value["kind"], str) or value["kind"] not in {"WRITER_SELF_OBSERVATION", "MANUSCRIPT_MEMORY"}
+            or any(not isinstance(value[key], str) or not value[key] for key in ("asset_version_id", "content_hash"))
+            or not isinstance(value["observations_hash"], str)
+            or re.fullmatch(r"sha256:[0-9a-f]{64}", value["observations_hash"]) is None):
+        raise KernelError("WORKING_MEMORY_SOURCE_INVALID", "Frozen memory requires an exact source version and observation digest")
 
 
 def normalize_observations(raw: Any, text: str, *, available_causes: set[str] | None = None) -> dict[str, Any]:
@@ -62,10 +75,72 @@ def validate_observations(memory: Mapping[str, Any], text: str, *, available_cau
         raise KernelError("WORKING_MEMORY_INVALID", "Observation identity or located evidence changed")
 
 
+def _task_memory_scope(task: Mapping[str, Any], queries: list[str]) -> tuple[set[str], set[str], list[re.Pattern[str]]]:
+    if (not isinstance(task, Mapping) or not isinstance(task.get("scenes", []), list)
+            or any(not isinstance(scene, Mapping) for scene in task.get("scenes", []))):
+        raise KernelError("WORKING_MEMORY_SELECTION_POLICY_INVALID", "Task scenes require explicit scoped selectors")
+    scopes = [task, *task.get("scenes", [])]
+    if any(not isinstance(scope.get(key, []), list)
+            or any(not isinstance(value, str) for value in scope.get(key, []))
+            for scope in scopes for key in ("subjects", "queries", "event_refs", "object_refs", "place_refs")):
+        raise KernelError("WORKING_MEMORY_SELECTION_POLICY_INVALID", "Task selectors require explicit string lists")
+    subjects = {value.strip().casefold() for scope in scopes for value in scope.get("subjects", []) if value.strip()}
+    references = {value.strip() for scope in scopes for key in ("event_refs", "object_refs", "place_refs")
+                  for value in scope.get(key, []) if value.strip()}
+    terms = {value.strip().casefold() for value in [*queries, *(query for scope in scopes for query in scope.get("queries", []))] if value.strip()} - subjects
+    terms.update(value.casefold() for value in references)
+    patterns = []
+    for term in sorted(terms):
+        left = r"(?<![a-z0-9_])" if term[0].isascii() and (term[0].isalnum() or term[0] == "_") else ""
+        right = r"(?![a-z0-9_])" if term[-1].isascii() and (term[-1].isalnum() or term[-1] == "_") else ""
+        patterns.append(re.compile(left + re.escape(term) + right))
+    return subjects, references, patterns
+
+
+def _task_memory_entry_selected(entry: Mapping[str, Any], *, current: set[str],
+                                scope: tuple[set[str], set[str], list[re.Pattern[str]]],
+                                selected_ranges: Mapping[str, list[Mapping[str, int]]]) -> bool:
+    subjects, references, patterns = scope
+    if entry["observation_id"] in references or any(
+            entry["location"]["start"] < selected["end"] and selected["start"] < entry["location"]["end"]
+            for selected in selected_ranges.get(entry["source"]["asset_version_id"], [])):
+        return True
+    related = any(pattern.search(entry[field].casefold()) for pattern in patterns
+                  for field in ("claim", "subject", "state_key", "quote"))
+    participant = bool(subjects.intersection({entry["subject"].strip().casefold(), entry["knowledge_owner"].strip().casefold()}))
+    if entry["kind"] in {"CHARACTER_STATE", "KNOWLEDGE", "RELATIONSHIP"}:
+        return entry["observation_id"] in current and (participant or related)
+    if entry["kind"] == "PROMISE":
+        return participant or related
+    return related
+
+
 def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str], max_characters: int | None, dependency_closed: bool = False,
-                           recent_complete_from: int | None = None) -> dict[str, Any]:
+                           recent_complete_from: int | None = None, task: Mapping[str, Any] | None = None,
+                           selected_ranges: Mapping[str, list[Mapping[str, int]]] | None = None,
+                           frozen_sources: Mapping[str, Mapping[str, Any]] | None = None) -> dict[str, Any]:
     if max_characters is None and (not dependency_closed or type(recent_complete_from) is not int):
         raise KernelError("WORKING_MEMORY_SELECTION_POLICY_REQUIRED", "Unallocated retrieval requires scoped latest observations and dependency closure")
+    scope = _task_memory_scope(task, queries) if task is not None else None
+    if scope is not None:
+        if not dependency_closed:
+            raise KernelError("WORKING_MEMORY_SELECTION_POLICY_REQUIRED", "Task-selected observations require complete causal sources")
+        ranges = selected_ranges if selected_ranges is not None else {}
+        by_version = {row["asset_version_id"]: row for row in sources}
+        if not isinstance(ranges, Mapping) or any(
+                version not in by_version or not isinstance(rows, list)
+                or any(not isinstance(row, Mapping) or type(row.get("start")) is not int or type(row.get("end")) is not int
+                       or not 0 <= row["start"] < row["end"] <= len(by_version[version]["text"]) for row in rows)
+                for version, rows in ranges.items()):
+            raise KernelError("WORKING_MEMORY_SELECTION_POLICY_INVALID", "Selected ranges require exact source versions and prose offsets")
+    if frozen_sources is not None:
+        if scope is None or not isinstance(frozen_sources, Mapping) or set(frozen_sources) != {row["asset_version_id"] for row in sources}:
+            raise KernelError("WORKING_MEMORY_SOURCE_INVALID", "Task memory must freeze every candidate source, including omitted observations")
+        for source in sources:
+            reference = frozen_sources[source["asset_version_id"]]
+            validate_frozen_memory_source(reference)
+            if reference["observations_hash"] != canonical_hash(source.get("observations")):
+                raise KernelError("WORKING_MEMORY_SOURCE_INVALID", "Frozen observations differ from their candidate source digest")
     entries, coverage, known = [], [], set()
     for source in sources:
         memory = source.get("observations")
@@ -83,7 +158,8 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
                 status = "LOCATED_UNREVIEWED"
             except (KernelError, TypeError, ValueError, KeyError) as error:
                 status = getattr(error, "code", "WORKING_MEMORY_INVALID")
-        coverage.append({"chapter": source["chapter"], "asset_version_id": source["asset_version_id"], "status": status})
+        coverage.append({"chapter": source["chapter"], "asset_version_id": source["asset_version_id"], "status": status,
+            **({"memory_source": deepcopy(dict(frozen_sources[source["asset_version_id"]]))} if frozen_sources is not None else {})})
     latest = {}
     for entry in entries:
         if entry["kind"] in {"CHARACTER_STATE", "KNOWLEDGE", "RELATIONSHIP"}:
@@ -94,7 +170,10 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
         -int(row["observation_id"] in current), -row["source"]["chapter"], row["location"]["start"]))
     selected, omitted, remaining = [], [], max_characters
     for entry in ranked:
-        if recent_complete_from is not None and not (
+        if scope is not None and not _task_memory_entry_selected(entry, current=current, scope=scope, selected_ranges=ranges):
+            omitted.append(entry["observation_id"])
+            continue
+        if scope is None and recent_complete_from is not None and not (
                 entry["observation_id"] in current or entry["kind"] == "PROMISE"
                 or entry["source"]["chapter"] >= recent_complete_from
                 or any(q.casefold() in (entry["claim"] + entry["subject"] + entry["state_key"]).casefold() for q in queries)):
