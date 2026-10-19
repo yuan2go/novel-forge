@@ -1345,7 +1345,7 @@ class PostgresChapterExecutionContractBinder:
         }
         from .request_snapshot import admission_with_request_snapshot
         admission_contract = admission_with_request_snapshot(admission_contract, stage=stage,
-            frozen_inputs=provider_inputs, envelope=envelope)
+            frozen_inputs=provider_inputs, frozen_context=contract.get("context_selection"), envelope=envelope)
         admission_ref = f"production_execution/provider_admissions/{token}"
         admission_document = self._ensure_contract(
             operation_id=operation_id,
