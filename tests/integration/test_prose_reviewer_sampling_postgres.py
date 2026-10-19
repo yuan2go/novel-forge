@@ -277,8 +277,8 @@ def test_prose_coldstart_prepares_native_sampling_after_qualification_blocks_for
         scope = dict(project_id=project, workspace_id=workspace, book_run_id=fixture["book"].book_run_id, principal=principal)
         run = coordinator.start(**scope, **metadata("coldstart-prose"), policy={"policy_version": "v1", "window_codepoints": 2048,
             "overlap_codepoints": 32, "context_token_budget": 16000, "maximum_windows": 1})
-        with patch.object(ProductionExecutionGatewayExternalEffectAdapter, "execute", side_effect=AssertionError("unqualified task must never dispatch")):
-            with pytest.raises(KernelError, match="PROVIDER_ROUTING_BLOCKED"):
+        with patch.object(ProductionExecutionGatewayExternalEffectAdapter, "execute", side_effect=AssertionError("unfunded task must never dispatch")):
+            with pytest.raises(KernelError, match="MODEL_EFFECT_RESERVATION_OVERRIDE_INVALID"):
                 coordinator.advance(**scope, run_id=run["run_id"], expected_version=0, **metadata("coldstart-advance"))
         progress = coordinator.report(**scope, run_id=run["run_id"])
         source = progress["operations"][0]["operation_id"]

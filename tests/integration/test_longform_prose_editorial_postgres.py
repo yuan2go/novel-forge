@@ -1020,7 +1020,7 @@ def test_prose_window_uses_real_external_effect_and_materialized_provider_inputs
     )
 
 
-@pytest.mark.parametrize('recovery_case',['direct','coordinator','wrong-actor','live-lease','ambiguous','cancelled','query-failed_final','query-cancelled','query-not_found'])
+@pytest.mark.parametrize('recovery_case',['direct','coordinator','wrong-actor','missing-authority','live-lease','ambiguous','cancelled','query-failed_final','query-cancelled','query-not_found'])
 def test_unknown_review_rebuild_queries_original_effect_without_resending(native_prose_effect_window,recovery_case,monkeypatch):
     from novel_forge.api.authority_dependencies import build_production_execution_composition, build_longform_prose_review_model_port
     from novel_forge.modules.book_followup_authority.application import BookFollowupAdmission
@@ -1052,6 +1052,12 @@ def test_unknown_review_rebuild_queries_original_effect_without_resending(native
         followup = BookFollowupAuthorityApplication(DATABASE_URL,application_build_id='prose-test',commit_sha='e'*40,
             prose_model_port=model,worker_id='review-rebuilt')
         admission = BookFollowupAdmission(operation_id,scope['project_id'],True)
+        if recovery_case == 'missing-authority':
+            denied = replace(scope['principal'],permissions=scope['principal'].permissions-{'external_effect.resolve'})
+            with pytest.raises(PermissionError,match='external_effect.resolve'):
+                BookProseReviewCoordinator(followup).advance(**{**scope,'principal':denied},run_id=run['run_id'],expected_version=0,**advance)
+            require_unknown_checkpoint(DATABASE_URL,operation_id)
+            return
         if recovery_case == 'wrong-actor':
             from novel_forge.modules.authority_security.service import PrincipalType
             other = replace(scope['principal'],principal_id='other-author',principal_type=PrincipalType.SERVICE)

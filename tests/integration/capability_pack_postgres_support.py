@@ -810,7 +810,10 @@ class CapabilityPackPostgresHarness:
             ("PROMPT_TEMPLATE", "template_ref", "template_version", "template_hash"),
         ):
             original = by_identity[(kind, prompt[ref_key], prompt[version_key])]
-            if kind == "PROMPT_TEMPLATE":
+            if kind == "PROMPT_TEMPLATE" or (
+                prompt["system_instruction_ref"], prompt["system_instruction_version"],
+                prompt["template_ref"], prompt["template_version"]
+            ) == ("prompt-system:story-planning-pack", "v12", "prompt-template:story-planning-pack", "v3"):
                 continue
             new_version = f"{original['version']}-fixture-{generation}"
             original["version"] = new_version

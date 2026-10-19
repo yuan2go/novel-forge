@@ -101,7 +101,8 @@ def test_native_qualification_receipts_replay_without_promoting_fixture_or_mutat
         == report
     )
     assert report["status"] == "NOT_PROVEN"
-    assert report["evidence_scope"] == "FIXTURE_CONTRACT_ONLY"
+    assert any(item.source_class != "SCRIPTED_FIXTURE" for item in receipts)
+    assert report["evidence_scope"] == "HISTORICAL_OR_UNVERIFIED_NATIVE_EVIDENCE"
     assert report["prose_qualification_allowed"] is False
     assert (
         report["evidence_dimensions"]["HUMAN_EDITORIAL"]["status"] == "WAITING_EVIDENCE"

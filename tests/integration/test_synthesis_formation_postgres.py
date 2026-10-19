@@ -1958,15 +1958,48 @@ def test_native_formation_generates_foundation_from_author_brief(
                 permissions=principal.permissions - {"book.authority.approve_replan"},
             )
             ticks = []
-            stop = drive(
-                composition=composition,
-                chapter=chapter,
-                book_run_id=book_run.book_run_id,
-                worker=worker,
-                events=ticks.append,
-                maximum_ticks=80,
-                deadline=time.monotonic() + 240,
-            )
+            from contextlib import nullcontext
+            from novel_forge.modules.command_kernel.errors import KernelError
+
+            retained_sources = {
+                role: asset_query.require(project_id=harness.project_id, asset_version_id=versions[role])
+                for role in ("book_design", "creative_foundation", "character_cast", "style_policy")
+            } if runtime_recovery else {}
+            boundary = pytest.raises(KernelError, match="^STYLE_PROJECTION_MIGRATION_REQUIRED:") if runtime_recovery else nullcontext()
+            with boundary:
+                stop = drive(
+                    composition=composition,
+                    chapter=chapter,
+                    book_run_id=book_run.book_run_id,
+                    worker=worker,
+                    events=ticks.append,
+                    maximum_ticks=80,
+                    deadline=time.monotonic() + 240,
+                )
+            if runtime_recovery:
+                style = retained_sources["style_policy"]
+                assert style.content["contract_version"] == "foundation-style-projection.v2"
+                assert not any(fact.get("key") == "work_applicability" for fact in style.content["structured_facts"])
+                assert {item["asset_version_id"]: item["content_hash"] for item in style.content["source_bindings"]} == {
+                    item.asset_version_id: item.content_hash for role, item in retained_sources.items() if role != "style_policy"
+                }
+                for source in retained_sources.values():
+                    assert asset_query.require(project_id=harness.project_id, asset_version_id=source.asset_version_id) == source
+                assert not any(call["stage"] in {"draft", "revision"} for call in transport.chapter.calls)
+                with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                    uow.cursor.execute("SELECT accepted_through_chapter FROM authority_book_production WHERE book_run_id=%s", [book_run.book_run_id])
+                    assert uow.cursor.fetchone() == (0,)
+                    uow.cursor.execute("SELECT count(*) FROM authority_external_effect WHERE project_id=%s AND request_payload->>'stage' IN ('draft','revision')", [harness.project_id])
+                    assert uow.cursor.fetchone() == (0,)
+                assert not asset_query.list_versions(project_id=harness.project_id, asset_type="draft_chapter")
+                _assert_runtime_continuation_once(formation, harness, transport, principal)
+                (tmp_path / "legacy-runtime-current-chapter-boundary.json").write_text(json.dumps({
+                    "planning_continuation": "REPLAYED_WITHOUT_PROVIDER", "chapter_admission": "STYLE_PROJECTION_MIGRATION_REQUIRED",
+                    "accepted_through_chapter": 0, "writer_dispatches": 0,
+                    "retained_sources": {role: {"asset_version_id": item.asset_version_id, "content_hash": item.content_hash} for role, item in retained_sources.items()},
+                    "proof_ceiling": "SCRIPTED_HISTORICAL_COMPATIBILITY_ONLY",
+                }, indent=2))
+                return
             assert stop == ("COMPLETED" if creative_validation else "ACCEPTED_TARGET_REACHED"), (stop, ticks[-3:])
         from tests.integration.creative_grounding_support import (
             verify_creative_workspace,

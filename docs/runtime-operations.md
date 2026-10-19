@@ -295,6 +295,8 @@ recovery. Preserve the old failure, Sources and unknown usage; no history reset 
 manually substituted source is required.
 
 For a stopped native `longform.prose_review` sidecar, replay its original advance command.
+Ordinary advancement with no unresolved Effect or unsettled receipt does not require
+external-result resolution authority. Actual recovery still requires that permission.
 Recovery checks the immutable window, current matching manuscript prefix, actor, permissions,
 Tool denial, cancellation, all original receipts and released writers. Isolation, one native
 root successor and its scheduling intent commit atomically. The original window event resolves
@@ -1228,7 +1230,10 @@ Keep raw expression and examples in their permitted analysis scope. Experimental
 approval allows an existing Planning ADOPT/ADAPT/REJECT decision, not production certification.
 Known abstraction Schema/composition failures use Corpus's existing
 `recover-abstraction-schema` or `recover-abstraction-composition` entry with the original
-operation identity and retained receipts. UNKNOWN is reconciled before any successor.
+operation identity and retained receipts. Known outcomes reconcile their original receipts.
+The existing owned, read-only Source method correction may fence a stopped UNKNOWN
+generation and bind its authorized versioned successor over the same curated revision;
+remote outcome and usage remain unknown. Other contracts cannot use that exception.
 
 The Planning Context records selected/rejected candidates, match and applicability reasons,
 receipt-backed recent usage and frozen Craft policy. Chapter run queries with
@@ -3392,10 +3397,15 @@ and work-v3. Qualification profile v3 includes work applicability
 semantics in its hash. New longform windows v2 include per-candidate creative baselines;
 legacy v1 source identity must be explicitly selected when checking or resuming a v1 manifest. Current Screenplay requires prose-generation-v4 or quality-review-v4
 and its separate adaptation schema. Historical artifacts remain available for recovery. Historical Planning catalogs retain the original v3 source identity and exclude later v4 entries; the resolver reads the preserved v3 bytes from its legacy snapshot, while current profiles resolve v4 from the current Skill.
-For current Chapter work, selected style must be foundation-style-projection.v4 with
+For current Chapter work, selected style must be foundation-style-projection.v4/v5 with
 source-bound Book applicability. An explicit preparation asset override does not waive
-this requirement. STYLE_PROJECTION_MIGRATION_REQUIRED blocks legacy v2/v3 before Writer;
-inspect and explicitly migrate through the owning Content/Book commands. Frozen older
+this requirement. STYLE_PROJECTION_MIGRATION_REQUIRED blocks legacy v2/v3 before Writer.
+The existing Content/Book refresh only upgrades source-bound v4 to v5. Migration of
+v2/v3 sources lacking applicability declarations is NOT_IMPLEMENTED; a successful
+historical Planning continuation does not authorize a current Chapter or synthesize
+the missing declarations. The historical recovery regression checks this refusal,
+unchanged source hashes and zero Writer dispatch; the current-production case retains
+the three-chapter positive chain. Frozen older
 Chapter tasks retain their exact style and baseline rather than substituting the new one.
 New retrieval plans bind writer_projection_version=accepted-writer-history.v2. Inspect
 the exact semantic view and source/projection hashes: narrative history should contain

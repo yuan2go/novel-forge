@@ -20,15 +20,23 @@ from novel_forge.modules.command_kernel.errors import KernelError
 
 
 @pytest.mark.parametrize("native_recovery", [False, True])
-def test_review_without_external_recovery_does_not_require_resolution_authority(native_recovery):
+def test_review_without_external_recovery_does_not_require_resolution_authority(native_recovery, monkeypatch):
     from types import SimpleNamespace
+    from unittest.mock import MagicMock
+    from novel_forge.modules.book_followup_authority import prose_recovery, prose_coordinator
     from novel_forge.modules.book_followup_authority.prose_recovery import recover_prose_review
     principal = Principal(principal_id="reviewer", principal_type=PrincipalType.SERVICE,
         authentication_source="server_configuration", project_scope=frozenset({"p"}), permissions=frozenset({"book.authority.execute", "book.followup:longform.prose_review"}))
-    coordinator = SimpleNamespace(followup=SimpleNamespace(prose_model_port=SimpleNamespace(
+    coordinator = SimpleNamespace(database_url='owned-review-database', followup=SimpleNamespace(prose_model_port=SimpleNamespace(
         capability_binder=object() if native_recovery else None)))
     scope = dict(run_id="review", project_id="p", workspace_id="w", book_run_id="book", principal=principal)
     if native_recovery:
+        uow = MagicMock()
+        uow.cursor.fetchone.return_value = ('b',)
+        uow.cursor.fetchall.return_value = [('pending-review', 'reviewer')]
+        uow.__enter__.return_value = uow
+        monkeypatch.setattr(prose_recovery, 'AuthorityUnitOfWork', lambda _: uow)
+        monkeypatch.setattr(prose_coordinator, 'load_review_run', lambda *args, **kwargs: {})
         with pytest.raises(PermissionError, match="external_effect.resolve"):
             recover_prose_review(coordinator, **scope)
     else:

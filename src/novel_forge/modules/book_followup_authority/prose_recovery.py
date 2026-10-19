@@ -82,7 +82,6 @@ def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_
     binder = getattr(getattr(followup,'prose_model_port',None), 'capability_binder', None)
     if binder is None:
         return []
-    principal.require('external_effect.resolve', project_id)
     from novel_forge.modules.production_execution.saved_result_recovery import recover_saved_local_results
     with AuthorityUnitOfWork(coordinator.database_url) as uow:
         load_review_run(uow,run_id=run_id,project_id=project_id,workspace_id=workspace_id,book_run_id=book_run_id)
@@ -90,8 +89,18 @@ def recover_prose_review(coordinator, *, run_id, project_id, workspace_id, book_
         book_id = uow.cursor.fetchone()[0]
         uow.cursor.execute("""SELECT operation.operation_id,operation.actor_id FROM authority_book_prose_review_event event
             JOIN authority_operation operation ON operation.operation_id=authority_generation_current_operation(event.content->>'operation_id')
-            WHERE event.run_id=%s AND event.kind='WINDOW_ADMITTED' AND operation.project_id=%s""",[run_id,project_id])
+            WHERE event.run_id=%s AND event.kind='WINDOW_ADMITTED' AND operation.project_id=%s
+            AND (operation.status IN ('WAITING_EXTERNAL_RESULT','RECONCILIATION_REQUIRED') OR EXISTS(
+                SELECT 1 FROM authority_external_effect effect
+                LEFT JOIN authority_budget_reservation budget USING(external_effect_id)
+                WHERE effect.operation_id=operation.operation_id AND effect.effect_type='model.invoke'
+                  AND NOT authority_generation_isolated(effect.external_effect_id)
+                  AND (effect.status IN ('DISPATCHING','DISPATCHED','UNKNOWN','RECONCILIATION_REQUIRED')
+                    OR (effect.status='SUCCEEDED' AND budget.status IN ('RESERVED','HELD_UNKNOWN')))))""",[run_id,project_id])
         frozen_rows = uow.cursor.fetchall()
+        if not frozen_rows:
+            return []
+        principal.require('external_effect.resolve', project_id)
         for _, actor_id in frozen_rows:
             principal.require_recovery_actor(actor_id)
         frozen_operations = tuple(row[0] for row in frozen_rows)

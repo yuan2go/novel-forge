@@ -620,14 +620,14 @@ def test_acknowledged_routing_link_retains_exact_frozen_contract_and_revoked_sub
             c.rollback()
 
 
-def test_settled_capacity_upgrade_preserves_prior_functions_and_restored_business_facts(tmp_path):
+@pytest.mark.parametrize('prior', ['20261019_0233_acknowledged_preparation_routing', '20261019_0234_settled_preparation_capacity'])
+def test_settled_capacity_upgrade_preserves_prior_functions_and_restored_business_facts(tmp_path, prior):
     from novel_forge.storage.migrations import run_migrations
     from tests.integration.migration_window_postgres_support import (
         disposable_database_at_migration, restored_generation_backup,
         _database_fingerprint, assert_database_at_migration,
     )
-    prior = '20261019_0233_acknowledged_preparation_routing'
-    current = '20261019_0234_settled_preparation_capacity'
+    current = '20261019_0235_source_isolation_convergence'
     with disposable_database_at_migration(DATABASE_URL, prefix='settled_capacity', target_migration_id=prior) as original:
         with restored_generation_backup(original, backup_root=tmp_path / 'restore') as restored:
             _, before = _database_fingerprint(restored)
@@ -636,6 +636,9 @@ def test_settled_capacity_upgrade_preserves_prior_functions_and_restored_busines
                     'authority_first_preparation_member_stopped', 'authority_first_preparation_member_v12_stopped']
                 old = dict(c.execute('SELECT proname,pg_get_functiondef(oid) FROM pg_proc WHERE proname=ANY(%s)', [names]).fetchall())
                 assert set(old) == set(names)
+                isolated_before = c.execute("SELECT prosrc FROM pg_proc WHERE proname='authority_generation_isolation_guard'").fetchone()[0]
+                assert 'working-plan-regeneration.v1' in isolated_before
+                assert 'source-generation-isolation.v1' not in isolated_before
             status = run_migrations(restored, backup_directory=str(tmp_path / 'upgrade-backup'))
             assert status['ok']
             assert_database_at_migration(restored, target_migration_id=current)
@@ -646,4 +649,7 @@ def test_settled_capacity_upgrade_preserves_prior_functions_and_restored_busines
                 assert old == dict(c.execute('SELECT proname,pg_get_functiondef(oid) FROM pg_proc WHERE proname=ANY(%s)', [names]).fetchall())
                 guard = c.execute("SELECT pg_get_functiondef(oid) FROM pg_proc WHERE proname='authority_planning_result_repair_guard'").fetchone()[0]
                 assert 'authority_first_isolated_preparation_v13_permitted' in guard
+                isolated_after = c.execute("SELECT prosrc FROM pg_proc WHERE proname='authority_generation_isolation_guard'").fetchone()[0]
+                assert 'working-plan-regeneration.v1' in isolated_after
+                assert 'source-generation-isolation.v1' in isolated_after
             assert run_migrations(restored)['ok']
