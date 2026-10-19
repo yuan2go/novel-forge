@@ -6,7 +6,8 @@ from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 
 from .derived_cache import task_selection_cache
 
-VERSION = "working-source-locators.v1"
+LEGACY_VERSION = "working-source-locators.v1"
+VERSION = "working-source-locators.v2"
 BOUNDARY = "HISTORICAL_GENERATION_PLAN_LOCATORS_NOT_EVENT_REALIZATION_OR_KNOWLEDGE"
 
 
@@ -24,7 +25,9 @@ def explicit_chapters(task, target_chapter):
     return result
 
 
-def freeze_source_locators(uow, book, documents):
+def freeze_source_locators(uow, book, documents, *, version=VERSION):
+    if version not in {LEGACY_VERSION, VERSION}:
+        raise KernelError("WORKING_SOURCE_LOCATOR_INVALID", "Unsupported source locator algorithm")
     entries = []
     for chapter, document in documents:
         draft = source_draft_content(document)
@@ -44,7 +47,7 @@ def freeze_source_locators(uow, book, documents):
                     or content.get("project_id") != book["project_id"] or content.get("book_id") != book["book_id"]
                     or content.get("chapter", content.get("chapter_number")) != chapter):
                 raise KernelError("WORKING_SOURCE_LOCATOR_INVALID", "The historical generation plan must match this selected manuscript")
-            key = (VERSION, document.asset_version_id, document.content_hash, plan.asset_version_id, plan.content_hash)
+            key = (version, document.asset_version_id, document.content_hash, plan.asset_version_id, plan.content_hash)
             cached = task_selection_cache.get(key)
             if cached is not None:
                 entries.append(cached)
@@ -59,24 +62,27 @@ def freeze_source_locators(uow, book, documents):
             entry.update(plan=pointer, event_refs=sorted(events), status="HISTORICAL_PLAN_HINT_ONLY")
             task_selection_cache.put(key, entry)
         entries.append(entry)
-    body = {"version": VERSION, "boundary": BOUNDARY, "entries": entries}
+    body = {"version": version, "boundary": BOUNDARY, "entries": entries}
     return {**body, "index_hash": canonical_hash(body)}
 
 
 def source_locator_receipt(index, task, target_chapter):
-    if (index.get("version") != VERSION or index.get("boundary") != BOUNDARY
+    if (index.get("version") not in {LEGACY_VERSION, VERSION} or index.get("boundary") != BOUNDARY
             or index.get("index_hash") != canonical_hash({key: value for key, value in index.items() if key != "index_hash"})):
         raise KernelError("WORKING_SOURCE_LOCATOR_INVALID", "Source locators require their original checked index")
     scopes = [task, *task.get("scenes", [])]
     events = {value for scope in scopes for value in scope.get("event_refs", [])}
     chapters = explicit_chapters(task, target_chapter)
+    current = index["version"] == VERSION
     selected = []
     for entry in index["entries"]:
         matched = sorted(events.intersection(entry["event_refs"]))
-        if matched or entry["chapter"] in chapters:
+        handoff = current and entry["chapter"] == task.get("handoff_predecessor")
+        if matched or entry["chapter"] in chapters or handoff:
             selected.append({**entry, "matched_event_refs": matched,
-                "explicit_chapter_reference": entry["chapter"] in chapters})
-    body = {"version": VERSION, "boundary": BOUNDARY, "index_hash": index["index_hash"],
+                "explicit_chapter_reference": entry["chapter"] in chapters,
+                **({"predecessor_handoff": handoff} if current else {})})
+    body = {"version": index["version"], "boundary": BOUNDARY, "index_hash": index["index_hash"],
         "source_count": len(index["entries"]), "unavailable_plan_count": sum(entry["plan"] is None for entry in index["entries"]),
         "selected": selected, "unlocated_event_refs": sorted(events - {value for entry in selected for value in entry["matched_event_refs"]})}
     return {**body, "receipt_hash": canonical_hash(body)}
@@ -85,24 +91,26 @@ def source_locator_receipt(index, task, target_chapter):
 def validate_locator_receipt(receipt, task, sources, target_chapter):
     failure = KernelError("WORKING_SOURCE_LOCATOR_INVALID", "Task locators must bind historical source plans and complete selected prose")
     if (not isinstance(receipt, dict) or set(receipt) != {"version", "boundary", "index_hash", "source_count", "unavailable_plan_count", "selected", "unlocated_event_refs", "receipt_hash"}
-            or receipt.get("version") != VERSION or receipt.get("boundary") != BOUNDARY
+            or receipt.get("version") not in {LEGACY_VERSION, VERSION} or receipt.get("boundary") != BOUNDARY
             or receipt.get("receipt_hash") != canonical_hash({key: value for key, value in receipt.items() if key != "receipt_hash"})
             or receipt.get("source_count") != target_chapter - 1
             or type(receipt.get("unavailable_plan_count")) is not int or not 0 <= receipt["unavailable_plan_count"] <= receipt["source_count"]
             or not isinstance(receipt.get("selected"), list) or not isinstance(receipt.get("unlocated_event_refs"), list)):
         raise failure
+    current = receipt["version"] == VERSION
     by_id = {source["asset_version_id"]: source for source in sources}
     events = {value for scope in [task, *task.get("scenes", [])] for value in scope.get("event_refs", [])}
     chapters = explicit_chapters(task, target_chapter)
     identities = []
     for entry in receipt["selected"]:
-        if (not isinstance(entry, dict) or set(entry) != {"chapter", "asset_version_id", "content_hash", "text_hash", "plan", "event_refs", "status", "matched_event_refs", "explicit_chapter_reference"}
+        if (not isinstance(entry, dict) or set(entry) != {"chapter", "asset_version_id", "content_hash", "text_hash", "plan", "event_refs", "status", "matched_event_refs", "explicit_chapter_reference"} | ({"predecessor_handoff"} if current else set())
                 or entry.get("asset_version_id") not in by_id or not isinstance(entry.get("event_refs"), list)
                 or any(not isinstance(ref, str) or not ref for ref in entry["event_refs"])
                 or entry.get("matched_event_refs") != sorted(events.intersection(entry["event_refs"]))
                 or type(entry.get("explicit_chapter_reference")) is not bool
                 or entry["explicit_chapter_reference"] != (entry["chapter"] in chapters)
-                or not (entry["matched_event_refs"] or entry["explicit_chapter_reference"])):
+                or current and (type(entry.get("predecessor_handoff")) is not bool or entry["predecessor_handoff"] != (entry["chapter"] == task.get("handoff_predecessor")))
+                or not (entry["matched_event_refs"] or entry["explicit_chapter_reference"] or current and entry["predecessor_handoff"])):
             raise failure
         source = by_id[entry["asset_version_id"]]
         if any(entry[key] != source[key] for key in ("chapter", "asset_version_id", "content_hash", "text_hash")):
@@ -115,5 +123,7 @@ def validate_locator_receipt(receipt, task, sources, target_chapter):
             raise failure
         identities.append(entry["asset_version_id"])
     located = {value for entry in receipt["selected"] for value in entry["matched_event_refs"]}
-    if len(identities) != len(set(identities)) or receipt["unlocated_event_refs"] != sorted(events - located):
+    required = chapters | ({task["handoff_predecessor"]} if current and task.get("handoff_predecessor", 0) > 0 else set())
+    if (len(identities) != len(set(identities)) or receipt["unlocated_event_refs"] != sorted(events - located)
+            or current and not required.issubset({entry["chapter"] for entry in receipt["selected"]})):
         raise failure

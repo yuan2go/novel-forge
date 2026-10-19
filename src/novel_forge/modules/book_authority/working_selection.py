@@ -85,7 +85,7 @@ def select_working_context(sources: list[dict[str, Any]], *, target_chapter: int
     passages = [{"chapter": number, "asset_version_id": by_chapter[number]["asset_version_id"],
         "start": start, "end": end, "text_hash": text_hash(by_chapter[number]["text"][start:end]),
         "reasons": sorted(reason)} for (number, start, end), reason in sorted(reasons.items())]
-    body = {"contract_version": "working-task-selection.v2" if locator_receipt is not None else "working-task-selection.v1", "task_hash": task["task_hash"],
+    body = {"contract_version": "working-task-selection.v3" if locator_receipt is not None and locator_receipt["version"] == "working-source-locators.v2" else "working-task-selection.v2" if locator_receipt is not None else "working-task-selection.v1", "task_hash": task["task_hash"],
         "policy_hash": canonical_hash(policy), "retrieval": retrieved, "passages": passages,
         "boundary": "LOCATED_EXCERPTS_NOT_COMPLETE_SEMANTIC_MEMORY"}
     if locator_receipt is not None:
@@ -113,10 +113,10 @@ def validate_working_selection(snapshot: Mapping[str, Any]) -> None:
 
     task, policy = snapshot.get("retrieval_task"), snapshot.get("projection_policy")
     selection = snapshot.get("context_selection")
-    locator = isinstance(selection, Mapping) and selection.get("contract_version") == "working-task-selection.v2"
+    locator = isinstance(selection, Mapping) and selection.get("contract_version") in {"working-task-selection.v2", "working-task-selection.v3"}
     if (not isinstance(task, Mapping) or not isinstance(policy, Mapping) or not isinstance(selection, Mapping)
             or set(selection) != {"contract_version", "task_hash", "policy_hash", "retrieval", "passages", "boundary", "selection_hash"} | ({"source_locator_receipt"} if locator else set())
-            or selection.get("contract_version") not in {"working-task-selection.v1", "working-task-selection.v2"}
+            or selection.get("contract_version") not in {"working-task-selection.v1", "working-task-selection.v2", "working-task-selection.v3"}
             or selection.get("task_hash") != task.get("task_hash")
             or selection.get("policy_hash") != canonical_hash(policy)
             or selection.get("boundary") != "LOCATED_EXCERPTS_NOT_COMPLETE_SEMANTIC_MEMORY"
@@ -128,6 +128,8 @@ def validate_working_selection(snapshot: Mapping[str, Any]) -> None:
     if locator:
         from .source_locators import validate_locator_receipt
         validate_locator_receipt(selection["source_locator_receipt"], task, snapshot["sources"], snapshot["target_chapter"])
+        if (selection["contract_version"] == "working-task-selection.v3") != (selection["source_locator_receipt"]["version"] == "working-source-locators.v2"):
+            raise KernelError("WORKING_SELECTION_INVALID", "Selection algorithm must retain its frozen locator contract")
     retrieval = selection["retrieval"]
     if (set(retrieval) != {"contract_version", "task_hash", "source_units_hash", "selection_policy", "input_unit_count",
             "candidate_count", "queries", "selected", "omitted_candidate_count", "semantic_completeness", "selection_hash"}

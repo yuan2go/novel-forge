@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, Mapping, Sequence
+import re
 
 from novel_forge.modules.chapter_authority.character_references import compile_character_references
 from novel_forge.modules.command_kernel.errors import KernelError
@@ -9,9 +10,11 @@ from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 
 
 WORKING_TASK_VERSION = "working-retrieval-task.v1"
+CURRENT_WORKING_TASK_VERSION = "working-retrieval-task.v2"
 WORKING_TASK_AUTHORITY = "FROZEN_PLAN_RETRIEVAL_ONLY"
 _PLAN_TYPES = frozenset({"chapter_plan", "chapter_group_plan", "arc_plan"})
 _SOURCE_TYPES = _PLAN_TYPES | {"character_cast"}
+_CURRENT_SOURCE_TYPES = _SOURCE_TYPES | {"volume_plan"}
 _LIST_FIELDS = ("queries", "subjects", "event_refs", "object_refs", "place_refs")
 _TEXT_FIELDS = ("conflict", "stakes", "premise", "ending_hook", "entry_state", "exit_state")
 _EVENT_TEXT_FIELDS = ("action", "motivation", "resistance", "decision", "consequence", "stakes")
@@ -46,11 +49,13 @@ def _scope(book: Mapping[str, Any], chapter: int, stage: str) -> dict[str, Any]:
             "target_chapter": chapter, "stage": stage}
 
 
-def _source(source: Mapping[str, Any], book: Mapping[str, Any]) -> tuple[dict[str, str], Mapping[str, Any], str]:
+def _source(source: Mapping[str, Any], book: Mapping[str, Any], *, current: bool = False) -> tuple[dict[str, str], Mapping[str, Any], str]:
     if not isinstance(source, Mapping) or not isinstance(source.get("content"), Mapping):
         raise _invalid("working task sources require exact frozen plan content")
     binding = {key: _required_string(source.get(key), key) for key in ("asset_version_id", "content_hash", "asset_type")}
     content = source["content"]
+    if current and canonical_hash(content) != binding["content_hash"]:
+        raise _invalid("Current task source failed its frozen digest")
     for key in ("project_id", "book_id"):
         if key in content and content[key] != book[key]:
             raise _invalid("working task source belongs to another Book scope")
@@ -61,11 +66,11 @@ def _source(source: Mapping[str, Any], book: Mapping[str, Any]) -> tuple[dict[st
         generated_kind = "character_cast"
     if kind == "planning_generation_candidate":
         kind = generated_kind
-    if kind not in _SOURCE_TYPES or generated_kind and generated_kind != kind:
+    if kind not in (_CURRENT_SOURCE_TYPES if current else _SOURCE_TYPES) or generated_kind and generated_kind != kind:
         raise _invalid("working task source must identify an exact supported frozen Plan or cast kind")
     binding["plan_kind"] = kind
     markers = {"chapter_plan": ("chapter_number", "chapter"), "chapter_group_plan": ("chapter_function_matrix",),
-               "arc_plan": ("arc_segments", "objective", "target_window"), "character_cast": ("characters",)}[kind]
+               "arc_plan": ("arc_segments", "objective", "target_window"), "character_cast": ("characters",), "volume_plan": ("narrative_segments", "chapter_range")}[kind]
     pointer = ""
     if not any(key in content for key in markers) and isinstance(content.get("candidate_payload"), Mapping):
         content = content["candidate_payload"]
@@ -100,6 +105,19 @@ def _current_rows(kind: str, content: Mapping[str, Any], pointer: str, chapter: 
         if "chapter" in content and content["chapter"] != number:
             raise _invalid("ChapterPlan task source has conflicting Chapter identities")
         return [(content, pointer)]
+    if kind == "volume_plan":
+        if _in_window(content, chapter) is not True:
+            raise _invalid("Volume task source must contain the current Chapter")
+        segments = content.get("narrative_segments")
+        if segments is None:
+            return [(content, pointer)]
+        if not isinstance(segments, list):
+            raise _invalid("Volume task segments require their frozen ordered rows")
+        rows = [(row, f"{pointer}/narrative_segments/{index}") for index, row in enumerate(segments)
+                if isinstance(row, Mapping) and _in_window(row, chapter) is True]
+        if len(rows) != 1:
+            raise _invalid("Volume task must bind exactly one current narrative segment")
+        return rows
     if kind == "chapter_group_plan":
         if _in_window(content, chapter) is False:
             raise _invalid("ChapterGroup task source lies outside the target Chapter")
@@ -195,6 +213,23 @@ def _bind_character_subjects(task: dict[str, Any], sources: list[tuple[dict[str,
         cast_version_id=binding["asset_version_id"], cast_content_hash=binding["content_hash"], cast=cast, scenes=None)
     tokens = references["token_bindings"]
     for scope in [task, *task["scenes"]]:
+        if task["contract_version"] == CURRENT_WORKING_TASK_VERSION:
+            text_fields = [field for field in list(task["field_sources"]) if field["scene_id"] == scope.get("scene_id", "") and field["field"] in {"goal", "queries"}]
+            for field in text_fields:
+                matches = []
+                for token in sorted(tokens, key=lambda item: (-len(item), item)):
+                    if len(token) < 2 and field["text"].strip() != token:
+                        continue
+                    pattern = re.escape(token) if re.search(r"[\u3400-\u9fff]", token) else r"(?<![\w])" + re.escape(token) + r"(?![\w])"
+                    for match in re.finditer(pattern, field["text"]):
+                        if any(low <= match.start() and match.end() <= high for low, high in matches):
+                            continue
+                        matches.append(match.span())
+                        if token not in scope["subjects"]:
+                            scope["subjects"].append(token)
+                        evidence = {**field, "field": "subjects"}
+                        if evidence not in task["field_sources"]:
+                            task["field_sources"].append(evidence)
         selected_ids = {tokens[token] for token in scope["subjects"] if token in tokens}
         fields = _TaskFields(task["field_sources"], binding["asset_version_id"], scope.get("scene_id", ""))
         for index, row in enumerate(characters):
@@ -211,19 +246,23 @@ def _bind_character_subjects(task: dict[str, Any], sources: list[tuple[dict[str,
 
 
 def build_working_task(*, sources: Sequence[Mapping[str, Any]], book: Mapping[str, Any], chapter: int,
-                       stage: str, extra_queries: Sequence[str] = ()) -> dict[str, Any]:
+                       stage: str, extra_queries: Sequence[str] = (), version: str = WORKING_TASK_VERSION) -> dict[str, Any]:
     scope = _scope(book, chapter, stage)
+    if version not in {WORKING_TASK_VERSION, CURRENT_WORKING_TASK_VERSION}:
+        raise _invalid("Unknown working task algorithm")
     explicit_queries = _strings(extra_queries, "extra_queries")
     if not isinstance(sources, (list, tuple)):
         raise _invalid("working task sources require a collection of exact frozen Plans")
-    normalized = sorted((_source(source, book) for source in sources), key=lambda item: item[0]["asset_version_id"])
+    normalized = sorted((_source(source, book, current=version == CURRENT_WORKING_TASK_VERSION) for source in sources), key=lambda item: item[0]["asset_version_id"])
     identities = [binding["asset_version_id"] for binding, _, _ in normalized]
     if len(identities) != len(set(identities)):
         raise _invalid("working task source identities must be unique")
     fields: list[dict[str, str]] = []
-    task: dict[str, Any] = {"contract_version": WORKING_TASK_VERSION, "authority": WORKING_TASK_AUTHORITY, **scope,
+    task: dict[str, Any] = {"contract_version": version, "authority": WORKING_TASK_AUTHORITY, **scope,
                             "goal": "", **{key: [] for key in _LIST_FIELDS}, "explicit_queries": explicit_queries,
                             "scenes": [], "sources": [binding for binding, _, _ in normalized], "field_sources": fields}
+    if version == CURRENT_WORKING_TASK_VERSION:
+        task["handoff_predecessor"] = chapter - 1
     task["queries"] = list(explicit_queries)
     current = [(binding, content, pointer, _current_rows(binding["plan_kind"], content, pointer, chapter))
                for binding, content, pointer in normalized]
@@ -231,6 +270,8 @@ def build_working_task(*, sources: Sequence[Mapping[str, Any]], book: Mapping[st
                     for _, content, _, rows in current if rows
                     if isinstance((ref := content.get("narrative_segment_ref")), Mapping)
                     and isinstance(ref.get("volume_plan_version_id"), str) and isinstance(ref.get("segment_id"), str)}
+    segment_refs.update((binding["asset_version_id"], row.get("segment_id"))
+        for binding, _, _, rows in current if binding["plan_kind"] == "volume_plan" for row, _ in rows if row.get("segment_id"))
     goals: list[str] = []
     for binding, content, pointer, rows in current:
         selected = _TaskFields(fields, binding["asset_version_id"])
@@ -276,6 +317,8 @@ def build_working_task(*, sources: Sequence[Mapping[str, Any]], book: Mapping[st
             task[key] = list(dict.fromkeys([*task[key], *selected.values[key]]))
     task["goal"] = "\n".join(goals)
     _bind_character_subjects(task, normalized, book)
+    if version == CURRENT_WORKING_TASK_VERSION and not (task["goal"] or task["queries"] or task["scenes"]):
+        raise _invalid("Current task requires native demand; retain historical empty tasks only through their original version")
     task["task_hash"] = canonical_hash(task)
     return task
 
@@ -284,9 +327,13 @@ def validate_working_task(task: Mapping[str, Any], *, book: Mapping[str, Any], c
                           sources: Sequence[Mapping[str, Any]] | None = None,
                           extra_queries: Sequence[str] | None = None) -> None:
     scope = _scope(book, chapter, stage)
-    keys = {"contract_version", "authority", *scope, "goal", *_LIST_FIELDS, "explicit_queries", "scenes", "sources", "field_sources", "task_hash"}
-    if not isinstance(task, Mapping) or set(task) != keys or task.get("contract_version") != WORKING_TASK_VERSION or task.get("authority") != WORKING_TASK_AUTHORITY:
+    current = isinstance(task, Mapping) and task.get("contract_version") == CURRENT_WORKING_TASK_VERSION
+    source_types = _CURRENT_SOURCE_TYPES if current else _SOURCE_TYPES
+    keys = {"contract_version", "authority", *scope, "goal", *_LIST_FIELDS, "explicit_queries", "scenes", "sources", "field_sources", "task_hash"} | ({"handoff_predecessor"} if current else set())
+    if not isinstance(task, Mapping) or set(task) != keys or task.get("contract_version") not in {WORKING_TASK_VERSION, CURRENT_WORKING_TASK_VERSION} or task.get("authority") != WORKING_TASK_AUTHORITY:
         raise _invalid("working task requires the frozen retrieval-only contract")
+    if current and (type(task.get("handoff_predecessor")) is not int or task["handoff_predecessor"] != chapter - 1):
+        raise _invalid("Working task handoff must bind the exact delivered predecessor")
     if any(task.get(key) != value or type(task.get(key)) is not type(value) for key, value in scope.items()):
         raise _invalid("working task belongs to another Book, Chapter or stage")
     for value in [task, *task["scenes"]] if isinstance(task["scenes"], list) else []:
@@ -313,7 +360,7 @@ def validate_working_task(task: Mapping[str, Any], *, book: Mapping[str, Any], c
         source_ids.append(_required_string(binding.get("asset_version_id"), "asset_version_id"))
         for key in ("content_hash", "asset_type", "plan_kind"):
             _required_string(binding.get(key), key)
-        if binding["plan_kind"] not in _SOURCE_TYPES or binding["asset_type"] not in {*_SOURCE_TYPES, "planning_generation_candidate"} or binding["asset_type"] != "planning_generation_candidate" and binding["asset_type"] != binding["plan_kind"]:
+        if binding["plan_kind"] not in source_types or binding["asset_type"] not in {*source_types, "planning_generation_candidate"} or binding["asset_type"] != "planning_generation_candidate" and binding["asset_type"] != binding["plan_kind"]:
             raise _invalid("working task source kind is invalid")
     if source_ids != sorted(set(source_ids)):
         raise _invalid("working task sources require ordered unique identities")
@@ -325,6 +372,6 @@ def validate_working_task(task: Mapping[str, Any], *, book: Mapping[str, Any], c
     if task.get("task_hash") != canonical_hash({key: value for key, value in task.items() if key != "task_hash"}):
         raise _invalid("working task hash differs from its frozen demand and source identities")
     if sources is not None:
-        expected = build_working_task(sources=sources, book=book, chapter=chapter, stage=stage, extra_queries=task["explicit_queries"])
+        expected = build_working_task(sources=sources, book=book, chapter=chapter, stage=stage, extra_queries=task["explicit_queries"], version=task["contract_version"])
         if dict(task) != expected:
             raise _invalid("working task differs from its exact frozen Plan source fields")

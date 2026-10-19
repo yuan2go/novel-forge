@@ -1774,7 +1774,7 @@ class PostgresBookProductionQuery:
                 task_source_refs.extend({"asset_version_id": str(row[0]), "content_hash": str(row[1])} for row in uow.cursor.fetchall())
             working = freeze_working_context(uow, scope[4], chapter_number,
                 task_source_refs=task_source_refs,
-                task_stage="PLANNING") if author_working else None
+                task_stage="PLANNING", task_parent_plan_version_id=cursor["volume_plan_version"]) if author_working else None
             formal_chapter = int(scope[3]) if working else chapter_number - 1
             if formal_chapter == 0:
                 initial_story_state_id = str(scope[2] or "")

@@ -600,7 +600,7 @@ def _working_task_sources(uow, book, pointers, *, require_current=True):
 def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
                            projection_policy: Any = "FROM_PROFILE", scheduling_policy: Any = None,
                            task_source_refs: list[dict[str, str]] | None = None,
-                           task_stage: str = "CHAPTER") -> dict[str, Any]:
+                           task_stage: str = "CHAPTER", task_parent_plan_version_id: str | None = None) -> dict[str, Any]:
     from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, LONGFORM_POLICY_VERSIONS, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, RESOLVED_POLICY_VERSIONS, RETRIEVAL_POLICY_VERSIONS, TASK_POLICY_VERSIONS, WORKING_SCHEDULE_POLICY, freeze_source_history, project_working_sources, working_instruction, working_prose_policy
 
     schedule_policy = scheduling_policy
@@ -617,13 +617,20 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
         raise KernelError("WORKING_SCHEDULE_POLICY_INVALID", "Working scheduling requires the exact versioned source projection policy")
     task = None
     if projection_policy and projection_policy["version"] in TASK_POLICY_VERSIONS:
-        from .working_task import build_working_task
+        from .working_task import build_working_task, CURRENT_WORKING_TASK_VERSION, WORKING_TASK_VERSION
         if not task_source_refs:
             raise KernelError("WORKING_TASK_REQUIRED", "Task projection requires the exact current planning input")
         pointers = list(task_source_refs)
+        if projection_policy["version"] == "working-prose-projection.v10" and task_parent_plan_version_id:
+            uow.cursor.execute("SELECT content_hash FROM authority_asset_version WHERE asset_version_id=%s", [task_parent_plan_version_id])
+            parent = uow.cursor.fetchone()
+            if parent is None:
+                raise KernelError("WORKING_TASK_SOURCE_INVALID", "Current Planning parent source is missing")
+            pointers.append({"asset_version_id": task_parent_plan_version_id, "content_hash": parent[0]})
         pointers.append(_working_task_cast_ref(uow, book))
         task = build_working_task(sources=_working_task_sources(uow, book, pointers), book=book,
-            chapter=chapter, stage=task_stage, extra_queries=projection_policy["queries"])
+            chapter=chapter, stage=task_stage, extra_queries=projection_policy["queries"],
+            version=CURRENT_WORKING_TASK_VERSION if projection_policy["version"] == "working-prose-projection.v10" else WORKING_TASK_VERSION)
     _, changes = working_dependency_changes(uow, book)
     rows = []
     frozen_memory_sources = {} if task is not None else None
@@ -956,9 +963,10 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
             source.update(observations=memory, memory_provenance=provenance)
             frozen_memory_sources[source["asset_version_id"]] = row["memory_source"]
         source_locators = None
-        if snapshot["context_selection"]["contract_version"] == "working-task-selection.v2":
+        if snapshot["context_selection"]["contract_version"] in {"working-task-selection.v2", "working-task-selection.v3"}:
             from .source_locators import freeze_source_locators
-            source_locators = freeze_source_locators(uow, book, [(row["chapter"], source_documents[row["asset_version_id"]]) for row in history_sources])
+            source_locators = freeze_source_locators(uow, book, [(row["chapter"], source_documents[row["asset_version_id"]]) for row in history_sources],
+                version=snapshot["context_selection"]["source_locator_receipt"]["version"])
         initial = select_working_context(raw_sources, target_chapter=snapshot["target_chapter"],
             policy=snapshot["projection_policy"], task=task, source_locators=source_locators)
         memory = compile_working_memory(raw_sources, queries=snapshot["projection_policy"]["queries"],

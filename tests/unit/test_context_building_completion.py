@@ -199,7 +199,8 @@ def test_native_event_locators_recover_changed_wording_without_realizing_future_
         "recent_complete_chapters": 0, "recent_tail_paragraphs": 1, "retrieval_passages": 12, "retrieval_per_chapter": 3,
         "neighbor_paragraphs": 0, "passage_characters": 512, "max_characters": None, "queries": [], "guidance_mode": "COMBINED"}})
     result = select_working_context(rows, target_chapter=4, policy=policy, task=task, source_locators=index)
-    assert result["contract_version"] == "working-task-selection.v2"
+    assert result["contract_version"] == "working-task-selection.v3"
+    assert result["source_locator_receipt"]["version"] == "working-source-locators.v2"
     assert [entry["chapter"] for entry in result["source_locator_receipt"]["selected"]] == [1]
     assert not any(entry["chapter"] == 2 for entry in result["passages"])
     assert {entry["chapter"] for entry in result["passages"] if "TASK_SOURCE_LOCATOR" in entry["reasons"]} == {1}
@@ -248,3 +249,60 @@ def test_request_readback_retains_root_working_snapshot_beside_each_provider_env
     effect = result['writer_effects'][0]
     assert effect['provider_admission']['content'] == contract
     assert effect['input_snapshot_status'] == ('FROZEN_APPLICATION_REQUEST' if complete_snapshot else 'LEGACY_HASH_ONLY')
+
+
+def test_current_planning_task_binds_volume_segment_cast_mentions_and_matching_arc_without_future_facts():
+    from novel_forge.modules.book_authority.working_task import build_working_task, validate_working_task
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    book = dict(project_id='project', workspace_id='workspace', book_id='book', book_run_id='run', input_snapshot_id='input')
+    def bound(kind, identity, value):
+        content = {**{key: book[key] for key in ('project_id', 'book_id')}, **value}
+        return dict(asset_type=kind, asset_version_id=identity, content_hash=canonical_hash(content), content=content)
+    volume = bound('volume_plan', 'volume', {'chapter_range': [1, 100], 'narrative_segments': [
+        {'segment_id': 'learning', 'chapter_range': [13, 22], 'objective': 'Mira chooses a limited lesson after paying the agreed fee.'},
+        {'segment_id': 'later', 'chapter_range': [23, 40], 'objective': 'Mirabelle discovers an unrelated future island.'}]})
+    arc = bound('arc_plan', 'arc', {'arc_segments': [
+        {'volume_plan_version_id': 'volume', 'narrative_segment_id': 'learning', 'objective': 'Respect the original labour boundary.'},
+        {'volume_plan_version_id': 'volume', 'narrative_segment_id': 'later', 'objective': 'Assume the future island has already been found.'}]})
+    cast = bound('character_cast', 'cast', {'characters': [
+        {'character_id': 'actor:mira', 'name': 'Mira', 'aliases': []},
+        {'character_id': 'actor:mirabelle', 'name': 'Mirabelle', 'aliases': []}]})
+    task = build_working_task(sources=[arc, volume, cast], book=book, chapter=21, stage='PLANNING', version='working-retrieval-task.v2')
+    assert task['handoff_predecessor'] == 20
+    assert 'limited lesson' in task['goal'] and 'labour boundary' in task['goal']
+    assert 'island' not in task['goal'] and task['subjects'] == ['Mira', 'actor:mira']
+    assert any(row['asset_version_id'] == 'volume' and row['pointer'] == '/narrative_segments/0/objective' for row in task['field_sources'])
+    validate_working_task(task, book=book, chapter=21, stage='PLANNING', sources=[arc, volume, cast])
+    old = build_working_task(sources=[arc, cast], book=book, chapter=21, stage='PLANNING')
+    assert old['goal'] == '' and old['subjects'] == [] and 'handoff_predecessor' not in old
+    validate_working_task(old, book=book, chapter=21, stage='PLANNING', sources=[arc, cast])
+    volume['content']['narrative_segments'][0]['objective'] = 'Changed source'
+    with pytest.raises(KernelError, match='frozen digest'):
+        build_working_task(sources=[arc, volume, cast], book=book, chapter=21, stage='PLANNING', version='working-retrieval-task.v2')
+
+
+def test_current_handoff_keeps_the_complete_predecessor_and_legacy_locator_replays_original_scope():
+    from novel_forge.modules.book_authority.source_locators import source_locator_receipt, BOUNDARY
+    from novel_forge.modules.book_authority.working_selection import select_working_context
+    from novel_forge.modules.book_authority.working_prose import working_prose_policy
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    rows = [source(1, 'An unrelated walk.'), source(2, 'The mistaken guess.\n' + 'Necessary original action. ' * 40 + '\nThe correction and consequence.')]
+    entries = [{**{key: row[key] for key in ('chapter', 'asset_version_id', 'content_hash', 'text_hash')},
+        'plan': None, 'event_refs': [], 'status': 'SOURCE_PLAN_UNAVAILABLE'} for row in rows]
+    def index(version):
+        body = dict(version=version, boundary=BOUNDARY, entries=entries)
+        return {**body, 'index_hash': canonical_hash(body)}
+    task = dict(goal='Current native task', scenes=[], handoff_predecessor=2)
+    current = source_locator_receipt(index('working-source-locators.v2'), task, 3)
+    assert [row['chapter'] for row in current['selected']] == [2]
+    assert current['selected'][0]['predecessor_handoff'] is True
+    assert current['selected'][0]['explicit_chapter_reference'] is False
+    assert source_locator_receipt(index('working-source-locators.v1'), task, 3)['selected'] == []
+    task['task_hash'] = canonical_hash(task)
+    policy = working_prose_policy({'working_prose_policy': {'version': 'working-prose-projection.v10', 'history_chapters': 10000,
+        'recent_complete_chapters': 0, 'recent_tail_paragraphs': 1, 'retrieval_passages': 12, 'retrieval_per_chapter': 3,
+        'neighbor_paragraphs': 0, 'passage_characters': 512, 'max_characters': None, 'queries': [], 'guidance_mode': 'COMBINED'}})
+    selection = select_working_context(rows, target_chapter=3, policy=policy, task=task, source_locators=index('working-source-locators.v2'))
+    spans = [(row['start'], row['end']) for row in selection['passages'] if row['chapter'] == 2]
+    assert spans[0][0] == 0 and spans[-1][1] == len(rows[1]['text'])
+    assert all(left[1] == right[0] for left, right in zip(spans, spans[1:]))
