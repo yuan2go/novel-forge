@@ -173,7 +173,8 @@ def admit_backfill(authority, followup, *, book_run_id, expected_version, idempo
             causation_id=book["root_operation_id"], payload={"chapters": chapters, "expected_version": expected_version, "retry_operation_id": retry_operation_id, "retry_reason": retry_reason}, handler=freeze_batch)
         first = advance_backfill(authority, followup, batch_operation_id=batch["operation_id"], principal=principal)
         transaction.commit()
-    return {"status": "ADMITTED", "provider_calls_in_request": 0, "batch_operation_id": batch["operation_id"],
+    state = backfill_batch_state(authority.database_url, project_id=book["project_id"], batch_operation_id=batch["operation_id"])
+    return {"status": state if state != "IN_PROGRESS" else "ADMITTED", "provider_calls_in_request": 0, "batch_operation_id": batch["operation_id"],
         "chapters": batch["chapters"], "operations": first,
         "resume": "Existing Book followup worker and Kernel run/reconcile/cancel operations", "formal_acceptance": "NOT_GRANTED"}
 
@@ -190,6 +191,19 @@ def advance_backfill(authority, followup, *, batch_operation_id, principal):
         principal.require("book.authority.execute", project_id)
         uow.cursor.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", [batch_operation_id])
         batch = uow.repositories.operations.transaction_result(batch_operation_id, project_id)["result"]
+        terminal = backfill_batch_state(authority.database_url, project_id=project_id, batch_operation_id=batch_operation_id)
+        if terminal == "COMPLETED":
+            transaction.commit()
+            return []
+        if terminal == "STOPPED":
+            uow.cursor.execute("""SELECT child.operation_id FROM authority_operation member JOIN authority_operation child
+                ON child.operation_id=member.command_payload#>>'{payload,extraction_operation_id}' AND child.project_id=member.project_id
+                WHERE member.project_id=%s AND member.command_payload#>>'{payload,batch_operation_id}'=%s
+                  AND member.command_payload#>>'{payload,action}'='working_memory_batch_member' AND child.status<>'SUCCEEDED'
+                ORDER BY member.created_at LIMIT 1""", [project_id, batch_operation_id])
+            stopped = uow.cursor.fetchone()
+            transaction.commit()
+            return [{"operation_id": stopped[0], "project_id": project_id, "replayed": True}] if stopped else []
         book = _book(uow, project_id, payload["book_run_id"], lock=True)
         rows = _sources(uow, book, batch["through_chapter"])[0] if batch["through_chapter"] else []
         def identity(source):
@@ -246,6 +260,16 @@ def advance_backfill(authority, followup, *, batch_operation_id, principal):
             payload={"batch_operation_id": batch_operation_id}, handler=lambda owner_uow, operation_id, checkpoint: {"status": "COMPLETED"})
         transaction.commit()
         return []
+
+
+def backfill_batch_state(database_url, *, project_id, batch_operation_id):
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("""SELECT command_payload#>>'{payload,action}' FROM authority_operation
+            WHERE project_id=%s AND status='SUCCEEDED' AND command_payload#>>'{payload,batch_operation_id}'=%s
+              AND command_payload#>>'{payload,action}' IN ('working_memory_batch_complete','working_memory_batch_stop')
+            ORDER BY created_at LIMIT 1""", [project_id, batch_operation_id])
+        row = uow.cursor.fetchone()
+    return "IN_PROGRESS" if row is None else "COMPLETED" if row[0] == "working_memory_batch_complete" else "STOPPED"
 
 
 def _stop_batch(authority, book, batch_operation_id, principal, status):

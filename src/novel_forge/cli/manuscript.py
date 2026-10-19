@@ -109,7 +109,8 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
                     composition.authority.followup.run_or_recover(BookFollowupAdmission(**pending[0]))
                     pending = advance_backfill(composition.authority, composition.authority.followup,
                         batch_operation_id=result["batch_operation_id"], principal=principal)
-                result["status"] = "COMPLETED"
+                from novel_forge.modules.book_authority.memory_backfill import backfill_batch_state
+                result["status"] = backfill_batch_state(settings.database_url, project_id=args.project_id, batch_operation_id=result["batch_operation_id"])
             return result
         finally:
             execution.close()
