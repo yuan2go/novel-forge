@@ -691,6 +691,12 @@ without requiring a fabricated isolated ancestor. Migration 0236 requires a priv
 database backup; old migration bodies and v1-v13 continuation semantics remain intact.
 Never clear Effect rows or reservations to make the policy checkpoint pass. Revalidate
 the unchanged Pack contracts and original authenticated route before successor admission.
+If the observed CLI version label changed, v15 / acknowledged handoff v2 can compare
+the original verified receipt's entitlement to the current native entitlement. Only
+`cli_version` may differ; account, billing identity, executable digest, configuration,
+local paths and execution policies must reconstruct both authentication digests. The
+frozen `codex-cli-version-reconciliation.v1` records both snapshots and hashes. Migration
+0237 appends this guard; it does not relax v14 or rewrite old Provider evidence.
 V10 retains v9's policy fields and task binding, adding attributed promise lifecycle and
 v2 working memory. Frozen v2-v9 inputs keep their original meaning. New v10 Writer
 self-observations use v2; malformed optional metadata preserves the full prose and leaves

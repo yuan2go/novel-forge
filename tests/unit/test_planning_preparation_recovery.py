@@ -1404,3 +1404,46 @@ def test_first_acknowledged_preparation_keeps_native_receipts_without_inventing_
         assert proof['isolated_generation_count'] == 0
         assert proof['retained_preparation'][0]['receipt_contract'] == 'ACKNOWLEDGED_PREPARATION'
     assert s.effects == before
+
+
+@pytest.mark.parametrize('change', ['', 'cli-version', 'billing', 'executable', 'configuration', 'home', 'retry'])
+def test_acknowledged_membership_route_reconciles_only_verified_cli_version(first_native_route, change):
+    from novel_forge.modules.story_planning_runtime import fresh_preparation_custody as fresh
+    from novel_forge.modules.production_execution.codex_configuration import codex_local_binding_hash
+    source, target = first_native_route
+    proof = source['fresh_preparation']
+    source['mode'] = 'ACKNOWLEDGED_PREPARATION_CUSTODY'
+    proof.update(contract_version=fresh.ACKNOWLEDGED_CONTRACT, isolated_generation_count=0,
+        stopped_ancestry=[dict(operation_id=source['source_operation_id'], kind='ACKNOWLEDGED_CANCELLATION')])
+    old = dict(authorization_ref='original-native-authority', account_identity_ref='account', cli_version='original-cli',
+        executable_sha256='sha256:' + 'a' * 64, configuration_ref='config',
+        billing_identity=dict(account_ref='account', billing_channel='ACCOUNT_ENTITLEMENT'))
+    target['account']['entitlement'] = deepcopy(old)
+    original = 'original:codex:' + codex_local_binding_hash(**target['account'])
+    proof['original_route']['auth_profile_ref'] = original
+    source['original_account_entitlement'] = old
+    if change:
+        target['account']['entitlement']['cli_version'] = 'observed-cli'
+    if change == 'billing':
+        target['account']['entitlement']['billing_identity']['account_ref'] = 'other'
+    elif change == 'executable':
+        target['account']['entitlement']['executable_sha256'] = 'sha256:' + 'b' * 64
+    elif change == 'configuration':
+        target['account']['entitlement']['configuration_ref'] = 'other'
+    elif change == 'home':
+        target['account']['codex_home'] = '/other'
+    elif change == 'retry':
+        target['account']['retry_policy'] = 'codex-no-transport-retry.v1'
+    target['auth_profile_ref'] = 'original:codex:' + codex_local_binding_hash(**target['account'])
+    if change not in {'', 'cli-version'}:
+        with pytest.raises(KernelError, match='PLANNING_PREPARATION_REUSE_DRIFT'):
+            fresh.target_runtime(None, source, target)
+    else:
+        result = fresh.target_runtime(None, source, target)
+        authorization = fresh._first_route_authorization(source, target)
+        assert authorization['source_auth_profile_ref'] == original
+        assert result['preparation_handoff']['contract_version'] == (fresh.ACCOUNT_VERSION_CONTRACT if change else fresh.ACKNOWLEDGED_CONTRACT)
+        if change:
+            receipt = result['preparation_handoff']['account_version_reconciliation']
+            assert receipt['original_entitlement'] == old
+            assert receipt['target_auth_profile_ref'] == target['auth_profile_ref']

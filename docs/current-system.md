@@ -375,6 +375,11 @@ Context, Pack semantics, account, route and verified receipts. It requires no is
 ancestor; it neither fabricates isolation nor converts an unknown result into success.
 The v14 control command and migration 0236 append this case alongside earlier guards.
 The policy checkpoint recognizes the resulting revoked, never-sent pause intent.
+For this acknowledged first handoff, v15 / handoff v2 can reconcile a changed CLI
+version label only when the original verified receipt and current entitlement retain
+the exact account, billing identity, executable digest and configuration. It records
+both authentication digests and entitlement snapshots; all other route or identity
+changes reject. Migration 0237 adds the corresponding guard without changing v14.
 
 The Editor memory read distinguishes `CURRENT_V3_PREVIEW` from
 `FROZEN_CHAPTER_REQUEST`. Supplying a `chapter_request_id` reads that Book's persisted
