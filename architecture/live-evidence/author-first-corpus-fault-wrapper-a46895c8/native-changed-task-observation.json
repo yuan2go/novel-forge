@@ -1,0 +1,16 @@
+{
+  "at": "2026-10-19T05:04:18.803050+00:00",
+  "runtime_sha": "1235e62f6e783edd2044e957be43a4a98494270c",
+  "old_effect_id": "7600552c-e56f-4d00-800a-bc6d9b37f51b",
+  "new_effect_id": "94462c01-7c37-472b-94d1-b541eb74a546",
+  "old_task_hash": "sha256:8e1e1cac9d54f7006b0b4eaddad048e6f6ff311724a0a1556ea19cbca70ae622",
+  "new_task_hash": "sha256:a5b6d12e44ba68d65ef6af50ef9ac5f863ae703c57407e5c161a4c99be42c808",
+  "old_preserve_quote_count": 0,
+  "new_preserve_quote_count": 5,
+  "only_changed_field": "task.preserve_quotes",
+  "all_other_task_fields_identical": true,
+  "old_complete_task_input_unchanged": false,
+  "neither_unknown_nor_original_result_overwritten": true,
+  "observation": "Changed exact quote constraints from final composition revalidation; not an identical-task replay",
+  "new_raw_quote_text_committed": false
+}

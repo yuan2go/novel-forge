@@ -1,0 +1,39 @@
+{
+  "at": "2026-10-19T05:09:36.154183+00:00",
+  "implementation_sha": "a46895c84163f1d0be55bc7346a99e8551e13dfd",
+  "manuscript_runtime_sha": "1235e62f6e783edd2044e957be43a4a98494270c",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "current_chapter": 20,
+  "state": "READY",
+  "version": 145,
+  "accepted_through_chapter": 0,
+  "full_book_target": 600,
+  "delivery_window": 100,
+  "effective_body_han_at_twenty": 85832,
+  "author_choice": "NOT_GRANTED",
+  "active_operation_id": "e1721b3f-4294-4d54-a2f6-3be5b9b6c67b",
+  "preparation_counts": [
+    {
+      "stage": "context_compress",
+      "status": "DISPATCHING",
+      "count": 1
+    },
+    {
+      "stage": "context_fidelity",
+      "status": "SUCCEEDED",
+      "count": 82
+    },
+    {
+      "stage": "context_compress",
+      "status": "SUCCEEDED",
+      "count": 30
+    }
+  ],
+  "completed_receipt_not_claimed_as_semantic_pass": true,
+  "main_input_consumption_proof": "PENDING",
+  "native_writer_pid": 83076,
+  "writer_not_restarted": true,
+  "exact_twenty_chapter_export": "../author-first-native20-effective-06472af7/",
+  "hundred_chapter_delivery": "NOT_COMPLETED",
+  "literary_qualification": "NOT_PROVEN"
+}

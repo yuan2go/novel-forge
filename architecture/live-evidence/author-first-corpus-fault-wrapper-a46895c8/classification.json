@@ -1,0 +1,13 @@
+{
+  "source_sha": "a46895c84163f1d0be55bc7346a99e8551e13dfd",
+  "classification": "STALE_FAULT_INJECTION_WRAPPER_INTERFACE",
+  "first_failure": "Expected process-exit marker missing",
+  "actual_first_failure": "Fault wrapper rejected existing reuse_effect_id argument before intended original execution and crash",
+  "observed_error": "PROGRAMMING_BUG: crash_after_receipt() got an unexpected keyword argument reuse_effect_id",
+  "fix": "Explicitly accept the existing empty-string default and forward the unchanged retained Effect identity to the original _execute",
+  "production_code_modified": false,
+  "test_assertions_modified": false,
+  "review": "Spec read-only review: no finding; native receipt matching and no-resend checks remain",
+  "historical_failed_operations_and_reports_retained": true,
+  "ordinary_manuscript_path_affected": false
+}

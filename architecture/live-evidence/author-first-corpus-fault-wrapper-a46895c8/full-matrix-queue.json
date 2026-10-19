@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-19T05:03:52.301434+00:00",
+  "pid": 26210,
+  "source_sha": "a46895c84163f1d0be55bc7346a99e8551e13dfd",
+  "status": "QUEUED_NOT_RUN_YET",
+  "waits_for_full_pid": 59695,
+  "required_checks": {
+    "corpus_native_fault_case_exact_source": 1,
+    "docs": "PASS",
+    "ruff": "PASS",
+    "b57342b4_original_checks": "82_UNIT_4_POSTGRES_PASS",
+    "production_trees_unchanged_from_b57342b4": true
+  },
+  "all_cases_required_in_full_latest_source": true,
+  "no_matrix_timeout_change": true,
+  "fresh_pycache": true,
+  "prior_failures_retained": true,
+  "original_cleanup_required": "PASS_AND_ZERO_REMAINING",
+  "native_writer_pid": 83076,
+  "active_native_runtime_unchanged": true
+}
