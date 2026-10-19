@@ -672,9 +672,11 @@ def normalize_draft_result(
     memory = None
     working = (context_content or {}).get("working_manuscript") or {}
     if (working.get("projection_policy") or {}).get("version") in MEMORY_POLICY_VERSIONS:
-        from novel_forge.modules.narrative_state.working_memory import optional_draft_memory
+        from novel_forge.modules.narrative_state.working_memory import MEMORY_VERSION, OBSERVATIONS_V2, optional_draft_memory
         memory = optional_draft_memory(result.get("working_memory_json"), text,
-            available_causes={row["observation_id"] for row in working.get("working_memory", {}).get("entries", [])})
+            available_causes={row["observation_id"] for row in working.get("working_memory", {}).get("entries", [])},
+            version=OBSERVATIONS_V2 if working["projection_policy"]["version"] == "working-prose-projection.v10" else MEMORY_VERSION,
+            prior_observations=working.get("working_memory", {}).get("entries", []))
     return {
         **composition,
         **({"working_memory": memory} if memory is not None else {}),

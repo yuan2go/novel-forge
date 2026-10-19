@@ -57,6 +57,7 @@ class BookFollowupAuthorityApplication:
         model_port: ReaderOutcomeModelPort | None = None,
         prose_model_port: ReaderOutcomeModelPort | None = None,
         screenplay_model_ports: dict[str, ReaderOutcomeModelPort] | None = None,
+        memory_model_port: ReaderOutcomeModelPort | None = None,
         reader_judge_resolver: ReaderJudgeRuntimeResolver | None = None,
         worker_id: str = "book-followup-authority-worker",
         coordinated_reader: bool = False,
@@ -73,6 +74,7 @@ class BookFollowupAuthorityApplication:
             reader_judge_resolver or ReaderJudgeRuntimeResolver(database_url),
             prose_model_port,
             screenplay_model_ports,
+            memory_model_port,
         )
         self.worker_id = worker_id
         self.coordinated_reader = coordinated_reader
@@ -154,7 +156,7 @@ class BookFollowupAuthorityApplication:
             with AuthorityUnitOfWork(self.database_url) as uow:
                 require_reader_book_scope(uow.cursor, project_id=request.project_id, workspace_id=request.workspace_id,
                     actor_id=request.actor_id, payload=request.payload, source_operation_id=recovery_source_operation_id)
-        policy_snapshot = original_policy if original_policy is not None else {} if request.definition_name.startswith("screenplay_") else self.reader_policies.freeze_for_admission(
+        policy_snapshot = original_policy if original_policy is not None else {} if request.definition_name.startswith("screenplay_") or request.definition_name == "working_memory_extract" else self.reader_policies.freeze_for_admission(
             project_id=request.project_id,
             idempotency_key=request.idempotency_key,
             actor_id=principal.principal_id,

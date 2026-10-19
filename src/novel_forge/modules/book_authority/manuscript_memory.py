@@ -13,8 +13,7 @@ def memory_ref(book: dict[str, Any], version_id: str) -> str:
 
 
 def source_memory(uow, book, source):
-    from .manuscript import _optional_document
-    sidecar = _optional_document(uow, book["project_id"], memory_ref(book, source.asset_version_id))
+    sidecar = effective_memory_sidecar(uow, book, source)
     if sidecar:
         if any(sidecar.content.get(k) != value for k, value in {
                 "book_run_id": book["book_run_id"], "source_asset_version_id": source.asset_version_id,
@@ -41,7 +40,7 @@ def _frozen_memory_source(book, source, document, kind):
                     "chapter": source_draft_content(source)["chapter"],
                     "source_asset_version_id": source.asset_version_id, "source_content_hash": source.content_hash}.items())
                 or not isinstance(content.get("source_kind"), str)
-                or content["source_kind"] not in {"AUTHOR_ANNOTATION", "ASSISTANT_ANALYSIS"}):
+                or content["source_kind"] not in {"AUTHOR_ANNOTATION", "ASSISTANT_ANALYSIS", "NATIVE_PROVIDER_OBSERVATION"}):
             memory, provenance = None, {"status": "SOURCE_BINDING_INVALID"}
         else:
             memory = content.get("observations")
@@ -61,8 +60,7 @@ def _frozen_memory_source(book, source, document, kind):
 
 
 def freeze_source_memory(uow, book, source):
-    from .manuscript import _optional_document
-    sidecar = _optional_document(uow, book["project_id"], memory_ref(book, source.asset_version_id))
+    sidecar = effective_memory_sidecar(uow, book, source)
     return _frozen_memory_source(book, source, source if sidecar is None else sidecar,
         "WRITER_SELF_OBSERVATION" if sidecar is None else "MANUSCRIPT_MEMORY")
 
@@ -75,6 +73,8 @@ def replay_source_memory(uow, book, source, reference):
     else:
         document = uow.repositories.asset_documents.require(project_id=book["project_id"],
             asset_version_id=reference["asset_version_id"])
+    if reference["kind"] == "MANUSCRIPT_MEMORY":
+        validate_native_memory(uow, book, document)
     memory, provenance, expected = _frozen_memory_source(book, source, document, reference["kind"])
     if expected != reference:
         raise KernelError("WORKING_MEMORY_SOURCE_INVALID", "Frozen memory must replay its immutable version, binding and observations")
@@ -279,3 +279,55 @@ def save_manuscript_memory(authority, book_run_id: str, *, chapter: int, source_
         correlation_id=book["root_operation_id"], causation_id=book["root_operation_id"],
         payload={"chapter": chapter, "source_asset_version_id": source_asset_version_id, "expected_version": expected_version,
                  "observations": observations, "source_kind": source_kind}, handler=commit, input_assets=refs)
+
+
+def validate_native_memory(uow, book, document):
+    content = document.content
+    if content.get("source_kind") != "NATIVE_PROVIDER_OBSERVATION":
+        return
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    key = (book["project_id"], book["book_run_id"], document.asset_version_id, document.content_hash)
+    validated = getattr(uow, "_validated_native_memory", set())
+    if key in validated:
+        return
+    uow.cursor.execute("""SELECT op.status,result.content,version.content_hash,result.content_hash,task.content,task.content_hash
+        FROM authority_operation op
+        JOIN authority_operation_output_asset output USING(operation_id)
+        JOIN authority_asset_version result ON result.asset_version_id=output.asset_version_id
+        JOIN authority_asset asset ON asset.asset_id=result.asset_id
+        JOIN authority_asset_version task ON task.asset_version_id=result.content->>'task_asset_version_id'
+        JOIN authority_asset task_asset ON task_asset.asset_id=task.asset_id AND task_asset.project_id=op.project_id
+        JOIN authority_asset_version version ON version.asset_version_id=%s
+        WHERE op.operation_id=%s AND op.project_id=%s AND op.definition_name='working_memory_extract'
+          AND asset.asset_type='working_memory_result' AND task_asset.asset_type='working_memory_task'""",
+        [document.asset_version_id, content.get("native_operation_id"), book["project_id"]])
+    row = uow.cursor.fetchone()
+    if (not row or row[0] != "SUCCEEDED" or row[1].get("task_hash") != content.get("task_hash")
+            or row[1].get("observations") != content.get("observations")
+            or row[2] != document.content_hash or canonical_hash(content) != document.content_hash
+            or canonical_hash(row[1]) != row[3] or canonical_hash(row[4]) != row[5]
+            or row[4].get("task_hash") != content.get("task_hash")
+            or any(row[4].get(field) != content.get(field) for field in ("book_run_id", "project_id", "book_id", "chapter"))
+            or not row[4].get("sources")
+            or row[4]["sources"][-1]["asset_version_id"] != content.get("source_asset_version_id")
+            or row[4]["sources"][-1]["content_hash"] != content.get("source_content_hash")):
+        raise KernelError("WORKING_MEMORY_RECEIPT_INVALID", "Native observations require their original successful extraction result and exact source task")
+    validated.add(key)
+    uow._validated_native_memory = validated
+
+
+def effective_memory_sidecar(uow, book, source):
+    from .manuscript import _optional_document
+    sidecar = _optional_document(uow, book["project_id"], memory_ref(book, source.asset_version_id))
+    while sidecar is not None:
+        try:
+            validate_native_memory(uow, book, sidecar)
+            return sidecar
+        except KernelError as error:
+            if error.code != "WORKING_MEMORY_RECEIPT_INVALID":
+                raise
+        uow.cursor.execute("SELECT asset_version_id FROM authority_asset_version WHERE asset_id=%s AND version_number<%s ORDER BY version_number DESC LIMIT 1",
+            [sidecar.asset_id, sidecar.version_number])
+        previous = uow.cursor.fetchone()
+        sidecar = uow.repositories.asset_documents.require(project_id=book["project_id"], asset_version_id=previous[0]) if previous else None
+    return None

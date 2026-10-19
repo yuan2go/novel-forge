@@ -622,14 +622,73 @@ For working memory, also run `test_working_memory.py`, `test_prose_repair_scope.
 `working-memory-interruption` native PostgreSQL variant. It checks eight chapter deliveries,
 interruption reconciliation, exact annotation replay, checkpoint rejection, historical
 selection invalidation and export; its Provider is scripted. Retain any failed attempts.
-The native editor API exposes GET/POST `/product/editor/manuscripts/memory`. GET takes
-`project_id`, `book_run_id` and a bounded `max_characters` and reads the current selected
-packet without Provider calls. POST binds `chapter`, `source_asset_version_id`, exact
+The native editor API exposes GET/POST `/product/editor/manuscripts/memory`. A GET with
+`project_id`, `book_run_id` and bounded `max_characters` returns `CURRENT_V3_PREVIEW`;
+its nested snapshot and compatibility `working_memory` field are a current preview,
+not an actual request. Add `chapter_request_id` for `FROZEN_CHAPTER_REQUEST`: this reads
+the original Root snapshot, source inputs, Writer Effects and receipts, and stored
+Context/materialization artifacts. It does not rebuild from current sidecars. The
+same read is available as `authority-manuscript memory-request --chapter-request-id ...`.
+
+POST annotations still bind `chapter`, `source_asset_version_id`, exact
 `expected_version`, a replay-safe `idempotency_key`, `source_kind` and located observations.
-Allowed annotation source kinds are AUTHOR_ANNOTATION and ASSISTANT_ANALYSIS. A new version
-is required after manuscript changes; do not annotate discarded sources or label analysis
-as a model receipt. Enable v3 only prospectively in an authorized profile/request and
-budget the entire rendered Provider input. A readback packet does not prove dispatch.
+Allowed manual kinds are AUTHOR_ANNOTATION and ASSISTANT_ANALYSIS; they cannot impersonate
+native Provider receipts. Existing frozen requests retain the old sidecar or Writer-source
+version after a new annotation or extraction.
+
+For native backfill configure both `NOVEL_FORGE_WORKING_MEMORY_PROVIDER` and
+`NOVEL_FORGE_WORKING_MEMORY_MODEL`, the selected route's existing authorization, and the
+scoped `working_memory_pack` deployment. Build its explicit profile through
+`novel_forge.modules.capability_packs.memory_profiles.build_working_memory_pack_profile`
+with the registered `working_memory_extract` definition hash, then use the existing
+register/compile/approve/deploy/activate path. `register_validation_runtime_definitions`
+returns that hash as `working_memory`; the existing validation installer accepts the
+profile. A configured route alone is not a paid grant or an approved Pack.
+
+```bash
+novel-forge authority-manuscript memory-coverage --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
+novel-forge authority-manuscript memory-backfill --project-id "$PROJECT" --book-run-id "$BOOK_RUN" \
+  --expected-version "$BOOK_VERSION" --idempotency-key "$BACKFILL_KEY" --foreground
+```
+
+Omit `--foreground` to leave the persisted batch to the existing Book followup worker.
+Omit `--chapters` to select missing, invalid or empty Writer memory automatically. Explicit
+chapters request re-extraction. The batch freezes the original selected source scope;
+each following Chapter request freezes newly available prior observations separately.
+GET `/product/editor/manuscripts/memory/coverage` reports source versions, coverage and
+extraction operations. POST `/product/editor/manuscripts/memory/backfill` uses the same
+Book checkpoint/key with optional `chapters`; admission performs no Provider call.
+Current source/sidecar changes stop stale submission, preserving the original receipt.
+
+`authority-manuscript memory-run --operation-id ...` resumes the original extraction.
+`memory-cancel --operation-id ... --expected-version ... --idempotency-key ... --reason ...`
+uses the operation version from coverage and the existing Kernel cancellation path;
+POST `/product/editor/manuscripts/memory/cancel` is equivalent. Cancellation also prevents
+later batch members from admission. For a diagnosed terminal failure, submit a new
+`memory-backfill` with one explicit `--chapters N`, `--retry-operation-id ...` and
+`--retry-reason ...`. This binds the failed original and changed task, preserves failure
+history, and rejects an unresolved Effect or held writer. Reconcile UNKNOWN first.
+Missing/failed memory does not erase or reject a complete Draft. Observation location
+and receipt validity do not establish semantic completeness or literary quality.
+
+Select v10 only prospectively using the existing `select-working-policy` command below.
+It retains v9's policy fields and task binding, adding attributed promise lifecycle and
+v2 working memory. Frozen v2-v9 inputs keep their original meaning. New v10 Writer
+self-observations use v2; malformed optional metadata preserves the full prose and leaves
+a queryable coverage gap for backfill. The process-local rank cache is disposable,
+byte-bounded and keyed by task, exact source-unit digest, algorithm and rank limits;
+segmentation/tokenization cache only immutable source values. Source and final request
+validation remain mandatory. Measure cold and warm runs separately with original history,
+selected prose, full input, token accounting basis and stage timings.
+
+For changes to this path run `test_context_building_completion.py`,
+`test_memory_backfill_postgres.py`, existing working-memory/projection/history,
+Planning/World continuity and capacity/replay suites, plus the default-author-first and
+working-memory-interruption native cases. Run PostgreSQL suites serially per disposable
+`_test` database: their autouse fixture truncates business tables. Retain failed runs;
+scripted/native engineering evidence remains separate from real Provider creation and
+long-form literary qualification.
+
 Use `diagnosis_contract: prose-root-cause.v1` in a new long-form review policy to enable
 root-cause routing; historical review contracts are retained. FUTURE_REPLAN and INVESTIGATE
 proposals remain attached to author-edit candidates; selection is not issue-resolution proof.

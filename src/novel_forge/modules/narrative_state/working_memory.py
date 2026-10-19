@@ -8,7 +8,12 @@ from novel_forge.modules.review.diagnostics import prose_hash as text_hash, vali
 from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 
 MEMORY_VERSION = "working-observations.v1"
+OBSERVATIONS_V2 = "working-observations.v2"
+LIFECYCLE_KEYS = {"start", "end", "promise_status", "supersedes"}
 PROVIDER_MEMORY_VERSION = "working-observations-provider.v1"
+PACKET_V2 = "working-observations-packet.v2"
+PROVIDER_PACKET_V2 = "working-observations-provider.v2"
+PROVIDER_MEMORY_VERSIONS = {PROVIDER_MEMORY_VERSION, PROVIDER_PACKET_V2}
 FROZEN_MEMORY_SOURCE_VERSION = "working-memory-source.v1"
 KINDS = {"CHARACTER_STATE", "KNOWLEDGE", "RELATIONSHIP", "EVENT", "CONSEQUENCE", "PROMISE"}
 PERSPECTIVES = {"OBSERVED", "BELIEF", "HEARSAY", "READER_ONLY"}
@@ -26,12 +31,15 @@ def validate_frozen_memory_source(value: Any) -> None:
         raise KernelError("WORKING_MEMORY_SOURCE_INVALID", "Frozen memory requires an exact source version and observation digest")
 
 
-def normalize_observations(raw: Any, text: str, *, available_causes: set[str] | None = None) -> dict[str, Any]:
+def normalize_observations(raw: Any, text: str, *, available_causes: set[str] | None = None, version: str = MEMORY_VERSION) -> dict[str, Any]:
+    if version not in {MEMORY_VERSION, OBSERVATIONS_V2}:
+        raise KernelError("WORKING_MEMORY_VERSION_INVALID", "Unknown observation identity version")
+    keys = ENTRY_KEYS | (LIFECYCLE_KEYS if version == OBSERVATIONS_V2 else set())
     if not isinstance(raw, list) or len(raw) > 64:
         raise KernelError("WORKING_MEMORY_INVALID", "Observations require a bounded list")
     entries = []
     for ordinal, entry in enumerate(raw):
-        if (not isinstance(entry, Mapping) or set(entry) != ENTRY_KEYS
+        if (not isinstance(entry, Mapping) or set(entry) != keys
                 or not isinstance(entry["kind"], str) or entry["kind"] not in KINDS
                 or not isinstance(entry["perspective"], str) or entry["perspective"] not in PERSPECTIVES
                 or any(not isinstance(entry[k], str) or not entry[k].strip() or len(entry[k]) > limit
@@ -42,21 +50,30 @@ def normalize_observations(raw: Any, text: str, *, available_causes: set[str] | 
                 or not isinstance(entry["causes"], list) or len(entry["causes"]) > 8
                 or any(not isinstance(cause, str) or cause not in (available_causes or set()) for cause in entry["causes"])):
             raise KernelError("WORKING_MEMORY_INVALID", "Observation attribution or causal source is invalid")
-        location = validate_location({"quote": entry["quote"]}, text)
-        value = {**deepcopy(dict(entry)), "location": location, "ordinal": ordinal}
+        if version == OBSERVATIONS_V2:
+            if (not isinstance(entry["promise_status"], str) or entry["promise_status"] not in ({"OPEN", "FULFILLED", "RELEASED", "UNKNOWN"} if entry["kind"] == "PROMISE" else {"NOT_APPLICABLE"})
+                    or not isinstance(entry["supersedes"], list) or len(entry["supersedes"]) != len(set(entry["supersedes"]))
+                    or any(identity not in (available_causes or set()) for identity in entry["supersedes"])
+                    or entry["kind"] != "PROMISE" and entry["supersedes"]
+                    or entry["promise_status"] in {"FULFILLED", "RELEASED"} and not entry["supersedes"]):
+                raise KernelError("WORKING_MEMORY_LIFECYCLE_INVALID", "Promise closure requires explicit earlier observation identities")
+        location = validate_location({"quote": entry["quote"], **({key: entry[key] for key in ("start", "end")} if version == OBSERVATIONS_V2 else {})}, text)
+        value = {**deepcopy(dict(entry)), **({key: location[key] for key in ("start", "end")} if version == OBSERVATIONS_V2 else {}), "location": location, "ordinal": ordinal}
         value["observation_id"] = canonical_hash({"text_hash": text_hash(text), **value})
         entries.append(value)
-    return {"version": MEMORY_VERSION, "text_hash": text_hash(text), "entries": entries,
+    return {"version": version, "text_hash": text_hash(text), "entries": entries,
             "authority": "UNREVIEWED_WORKING_OBSERVATIONS", "semantic_support": "NOT_VERIFIED"}
 
 
-def optional_draft_memory(raw: Any, text: str, *, available_causes: set[str] | None = None) -> dict[str, Any]:
+def optional_draft_memory(raw: Any, text: str, *, available_causes: set[str] | None = None, version: str = MEMORY_VERSION, prior_observations: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     if raw is None:
         return {"status": "NOT_REQUESTED"}
     try:
         if not isinstance(raw, str) or len(raw) > 100_000:
             raise KernelError("WORKING_MEMORY_INVALID", "Observation envelope must be bounded JSON text")
-        memory = normalize_observations(json.loads(raw), text, available_causes=available_causes)
+        memory = normalize_observations(json.loads(raw), text, available_causes=available_causes, version=version)
+        if version == OBSERVATIONS_V2:
+            validate_promise_transitions(memory["entries"], prior_observations or [])
         return {"status": "LOCATED_UNREVIEWED", "observations": memory}
     except (KernelError, ValueError, TypeError, KeyError) as error:
         return {"status": "UNAVAILABLE", "error_code": getattr(error, "code", "WORKING_MEMORY_JSON_INVALID"),
@@ -69,10 +86,21 @@ def validate_observations(memory: Mapping[str, Any], text: str, *, available_cau
         raise KernelError("WORKING_MEMORY_STALE", "Observations belong to another prose version")
     if any(not isinstance(row, Mapping) or not ENTRY_KEYS.issubset(row) for row in memory["entries"]):
         raise KernelError("WORKING_MEMORY_INVALID", "Observation fields are missing")
-    rebuilt = normalize_observations([{k: row[k] for k in ENTRY_KEYS} for row in memory["entries"]], text,
-                                     available_causes=available_causes)
+    version = memory.get("version")
+    keys = ENTRY_KEYS | (LIFECYCLE_KEYS if version == OBSERVATIONS_V2 else set())
+    rebuilt = normalize_observations([{k: row[k] for k in keys} for row in memory["entries"]], text,
+                                     available_causes=available_causes, version=version)
     if dict(memory) != rebuilt:
         raise KernelError("WORKING_MEMORY_INVALID", "Observation identity or located evidence changed")
+
+
+def validate_promise_transitions(entries, earlier):
+    by_id = {row["observation_id"]: row for row in earlier}
+    for entry in entries:
+        for identity in entry.get("supersedes", []):
+            prior = by_id.get(identity)
+            if not prior or any(entry[key] != prior[key] for key in ("kind", "subject", "state_key", "perspective", "knowledge_owner")):
+                raise KernelError("WORKING_MEMORY_LIFECYCLE_INVALID", "Promise transitions require the same exact attributed earlier promise")
 
 
 def _task_memory_scope(task: Mapping[str, Any], queries: list[str]) -> tuple[set[str], set[str], list[re.Pattern[str]]]:
@@ -99,7 +127,7 @@ def _task_memory_scope(task: Mapping[str, Any], queries: list[str]) -> tuple[set
 
 def _task_memory_entry_selected(entry: Mapping[str, Any], *, current: set[str],
                                 scope: tuple[set[str], set[str], list[re.Pattern[str]]],
-                                selected_ranges: Mapping[str, list[Mapping[str, int]]]) -> bool:
+                                selected_ranges: Mapping[str, list[Mapping[str, int]]], closed: set[str]) -> bool:
     subjects, references, patterns = scope
     if entry["observation_id"] in references or any(
             entry["location"]["start"] < selected["end"] and selected["start"] < entry["location"]["end"]
@@ -111,14 +139,14 @@ def _task_memory_entry_selected(entry: Mapping[str, Any], *, current: set[str],
     if entry["kind"] in {"CHARACTER_STATE", "KNOWLEDGE", "RELATIONSHIP"}:
         return entry["observation_id"] in current and (participant or related)
     if entry["kind"] == "PROMISE":
-        return participant or related
+        return related or participant and entry["observation_id"] not in closed and entry.get("promise_status") not in {"FULFILLED", "RELEASED"}
     return related
 
 
 def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str], max_characters: int | None, dependency_closed: bool = False,
                            recent_complete_from: int | None = None, task: Mapping[str, Any] | None = None,
                            selected_ranges: Mapping[str, list[Mapping[str, int]]] | None = None,
-                           frozen_sources: Mapping[str, Mapping[str, Any]] | None = None) -> dict[str, Any]:
+                           frozen_sources: Mapping[str, Mapping[str, Any]] | None = None, lifecycle: bool = False) -> dict[str, Any]:
     if max_characters is None and (not dependency_closed or type(recent_complete_from) is not int):
         raise KernelError("WORKING_MEMORY_SELECTION_POLICY_REQUIRED", "Unallocated retrieval requires scoped latest observations and dependency closure")
     scope = _task_memory_scope(task, queries) if task is not None else None
@@ -150,6 +178,8 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
                 validate_observations(memory, source["text"], available_causes=known)
                 if source.get("dependency_changes"):
                     raise KernelError("WORKING_MEMORY_DEPENDENCY_CHANGED", "Earlier selected sources changed")
+                if lifecycle:
+                    validate_promise_transitions(memory["entries"], entries)
                 for row in memory["entries"]:
                     entries.append({**deepcopy(row), "source": {k: source[k] for k in
                                    ("chapter", "asset_version_id", "content_hash", "text_hash")},
@@ -160,6 +190,17 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
                 status = getattr(error, "code", "WORKING_MEMORY_INVALID")
         coverage.append({"chapter": source["chapter"], "asset_version_id": source["asset_version_id"], "status": status,
             **({"memory_source": deepcopy(dict(frozen_sources[source["asset_version_id"]]))} if frozen_sources is not None else {})})
+    closed, resolutions = set(), {}
+    if lifecycle:
+        originals = {row["observation_id"]: row for row in entries}
+        for row in entries:
+            for identity in row.get("supersedes", []):
+                prior = originals.get(identity)
+                if (not prior or row["source"]["chapter"] <= prior["source"]["chapter"]
+                        or any(row[key] != prior[key] for key in ("kind", "subject", "state_key", "perspective", "knowledge_owner"))):
+                    raise KernelError("WORKING_MEMORY_LIFECYCLE_INVALID", "A transition must retain the same attributed promise and an earlier source")
+                closed.add(identity)
+                resolutions.setdefault(identity, []).append(row["observation_id"])
     latest = {}
     for entry in entries:
         if entry["kind"] in {"CHARACTER_STATE", "KNOWLEDGE", "RELATIONSHIP"}:
@@ -170,7 +211,7 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
         -int(row["observation_id"] in current), -row["source"]["chapter"], row["location"]["start"]))
     selected, omitted, remaining = [], [], max_characters
     for entry in ranked:
-        if scope is not None and not _task_memory_entry_selected(entry, current=current, scope=scope, selected_ranges=ranges):
+        if scope is not None and not _task_memory_entry_selected(entry, current=current, scope=scope, selected_ranges=ranges, closed=closed):
             omitted.append(entry["observation_id"])
             continue
         if scope is None and recent_complete_from is not None and not (
@@ -192,7 +233,7 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
         pending = list(selected)
         while pending:
             entry = pending.pop()
-            for cause in entry["causes"]:
+            for cause in [*entry["causes"], *(entry.get("supersedes", []) if lifecycle else []), *(resolutions.get(entry["observation_id"], []) if lifecycle else [])]:
                 if cause not in originals:
                     raise KernelError("WORKING_MEMORY_CAUSE_UNAVAILABLE", "A selected observation needs its original source-bound cause")
                 if cause not in included:
@@ -203,7 +244,7 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
                     included.add(cause)
         omitted = [identity for identity in omitted if identity not in included]
     selected.sort(key=lambda row: (row["source"]["chapter"], row["location"]["start"]))
-    packet = {"version": MEMORY_VERSION, "authority": "UNREVIEWED_WORKING_OBSERVATIONS",
+    packet = {"version": PACKET_V2 if lifecycle else MEMORY_VERSION, "authority": "UNREVIEWED_WORKING_OBSERVATIONS",
               "semantic_support": "NOT_VERIFIED", "entries": selected, "omitted_observation_ids": omitted,
               "source_coverage": coverage, "candidate_count": len(entries)}
     return {**packet, "packet_hash": canonical_hash(packet)}
@@ -211,7 +252,7 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
 
 def project_memory_for_provider(packet: Mapping[str, Any], visible: set[str]) -> dict[str, Any]:
     result = {key: deepcopy(packet[key]) for key in ("authority", "semantic_support", "entries", "candidate_count")}
-    result.update(version=PROVIDER_MEMORY_VERSION, host_packet_hash=packet["packet_hash"],
+    result.update(version=PROVIDER_PACKET_V2 if packet["version"] == PACKET_V2 else PROVIDER_MEMORY_VERSION, host_packet_hash=packet["packet_hash"],
         source_coverage=[deepcopy(row) for row in packet["source_coverage"] if row["asset_version_id"] in visible],
         source_coverage_hash=canonical_hash(packet["source_coverage"]))
     for source, target in (("omitted_observation_ids", "omitted_observation"), ("retrieval_omissions", "retrieval_omission")):
@@ -256,10 +297,10 @@ def bind_packet_coverage(packet: dict[str, Any], sources: list[dict[str, Any]]) 
 
 def validate_memory_packet(packet: Any, sources: list[dict[str, Any]]) -> None:
     failure = KernelError("WORKING_MEMORY_PACKET_INVALID", "Working memory requires source-bound unreviewed observations")
-    provider = isinstance(packet, Mapping) and packet.get("version") == PROVIDER_MEMORY_VERSION
+    provider = isinstance(packet, Mapping) and packet.get("version") in PROVIDER_MEMORY_VERSIONS
     fields = ({"host_packet_hash", "source_coverage_hash", "omitted_observation_count", "omitted_observation_hash",
         "retrieval_omission_count", "retrieval_omission_hash"} if provider else {"omitted_observation_ids", "retrieval_omissions"})
-    if (not isinstance(packet, Mapping) or packet.get("version") not in {MEMORY_VERSION, PROVIDER_MEMORY_VERSION}
+    if (not isinstance(packet, Mapping) or packet.get("version") not in {MEMORY_VERSION, PACKET_V2, *PROVIDER_MEMORY_VERSIONS}
             or packet.get("authority") != "UNREVIEWED_WORKING_OBSERVATIONS"
             or packet.get("semantic_support") != "NOT_VERIFIED"
             or set(packet) != {"version", "authority", "semantic_support", "entries", "source_coverage", "candidate_count", "packet_hash"} | fields
@@ -280,7 +321,7 @@ def validate_memory_packet(packet: Any, sources: list[dict[str, Any]]) -> None:
     by_version = {row["asset_version_id"]: row for row in sources}
     identities = []
     for entry in packet["entries"]:
-        if (not isinstance(entry, Mapping) or set(entry) != ENTRY_KEYS | {"location", "ordinal", "observation_id", "source", "provenance", "state_role"}
+        if (not isinstance(entry, Mapping) or set(entry) != ENTRY_KEYS | (LIFECYCLE_KEYS if "promise_status" in entry else set()) | {"location", "ordinal", "observation_id", "source", "provenance", "state_role"}
                 or not isinstance(entry["source"], Mapping) or entry["source"].get("asset_version_id") not in by_version
                 or entry["kind"] not in KINDS or entry["perspective"] not in PERSPECTIVES
                 or entry["perspective"] == "READER_ONLY" and entry["knowledge_owner"]
@@ -290,7 +331,7 @@ def validate_memory_packet(packet: Any, sources: list[dict[str, Any]]) -> None:
         source = by_version[entry["source"]["asset_version_id"]]
         if dict(entry["source"]) != {k: source[k] for k in ("chapter", "asset_version_id", "content_hash", "text_hash")}:
             raise failure
-        expected = canonical_hash({"text_hash": source["text_hash"], **{k: entry[k] for k in ENTRY_KEYS | {"location", "ordinal"}}})
+        expected = canonical_hash({"text_hash": source["text_hash"], **{k: entry[k] for k in ENTRY_KEYS | (LIFECYCLE_KEYS if "promise_status" in entry else set()) | {"location", "ordinal"}}})
         if entry["observation_id"] != expected:
             raise failure
         location = entry["location"]

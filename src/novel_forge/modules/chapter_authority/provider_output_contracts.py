@@ -968,7 +968,10 @@ def chapter_provider_output_schema(
     character_references: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
 
-    if stage == "memo":
+    if stage == "working_memory_extract":
+        from novel_forge.modules.book_followup_authority.memory_execution import memory_output_schema
+        schema = memory_output_schema()
+    elif stage == "memo":
         from .creative_memo import creative_memo_schema
         schema = creative_memo_schema(legacy=legacy_contract, character_references=character_references)
     elif stage == "draft":

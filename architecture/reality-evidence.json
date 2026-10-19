@@ -7216,6 +7216,26 @@
         {
           "path": "src/novel_forge/modules/chapter_authority/working_regeneration.py",
           "symbol": "prepare_regeneration"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/memory_backfill.py",
+          "symbol": "admit_backfill"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/memory_backfill.py",
+          "symbol": "advance_backfill"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/memory_backfill.py",
+          "symbol": "commit_backfill_sidecar"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/memory_backfill.py",
+          "symbol": "memory_coverage"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/memory_readback.py",
+          "symbol": "request_memory"
         }
       ],
       "domain_symbols": [
@@ -10725,7 +10745,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:de875adaefceb55a5c01984f0fd5d76447a4ef5ba5251654dd997ba3a912cf3d"
+    "implementation_tree_sha": "sha256:460d3788c05a45a90e7437959252909343933972e1ddc6e8ac8931da3d9baf0b"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

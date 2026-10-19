@@ -35,10 +35,10 @@ ChapterExecutionResult = AuthorityExecutionResult
 
 
 def bind_working_context_sources(request: ChapterHandlerRequest, node: ChapterNode) -> ChapterHandlerRequest:
-    from novel_forge.modules.book_authority.working_prose import TASK_POLICY_VERSION, working_auxiliary_source_refs
+    from novel_forge.modules.book_authority.working_prose import TASK_POLICY_VERSIONS, working_auxiliary_source_refs
     working = (request.command.get("preparation_report") or {}).get("working_manuscript")
     if (node not in {ChapterNode.CONTEXT, ChapterNode.EXECUTION_INTENT}
-            or not working or (working.get("projection_policy") or {}).get("version") != TASK_POLICY_VERSION):
+            or not working or (working.get("projection_policy") or {}).get("version") not in TASK_POLICY_VERSIONS):
         return request
     from dataclasses import replace
     references = working_auxiliary_source_refs(working)

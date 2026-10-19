@@ -14,7 +14,9 @@ CAPACITY_POLICY_VERSION = "working-prose-projection.v6"
 SEMANTIC_POLICY_VERSION = "working-prose-projection.v7"
 RETRIEVAL_POLICY_VERSION = "working-prose-projection.v8"
 TASK_POLICY_VERSION = "working-prose-projection.v9"
-RETRIEVAL_POLICY_VERSIONS = {RETRIEVAL_POLICY_VERSION, TASK_POLICY_VERSION}
+STATE_POLICY_VERSION = "working-prose-projection.v10"
+TASK_POLICY_VERSIONS = {TASK_POLICY_VERSION, STATE_POLICY_VERSION}
+RETRIEVAL_POLICY_VERSIONS = {RETRIEVAL_POLICY_VERSION, *TASK_POLICY_VERSIONS}
 CAPACITY_POLICY_VERSIONS = {CAPACITY_POLICY_VERSION, SEMANTIC_POLICY_VERSION, *RETRIEVAL_POLICY_VERSIONS}
 LONGFORM_POLICY_VERSIONS = {LONGFORM_POLICY_VERSION, *CAPACITY_POLICY_VERSIONS}
 MEMORY_POLICY_VERSIONS = {MEMORY_POLICY_VERSION, PROGRESSION_POLICY_VERSION, *LONGFORM_POLICY_VERSIONS}
@@ -124,6 +126,13 @@ def working_instruction(policy: Mapping[str, Any]) -> str:
         "plans into past events or return this metadata inside Scene prose. "
         if policy["version"] in MEMORY_POLICY_VERSIONS else ""
     )
+    if policy["version"] == STATE_POLICY_VERSION:
+        memory += ("This request uses working-observations.v2: every observation also has start and end "
+            "(Unicode code-point offsets, or both null for a unique literal quote), promise_status "
+            "(OPEN, FULFILLED, RELEASED, UNKNOWN; NOT_APPLICABLE for non-promises), and supersedes "
+            "(exact earlier promise observation IDs with the same subject, state_key, perspective and knowledge_owner). "
+            "Keep stable subject/state_key for the same state or promise. Closure requires literal evidence in your new prose "
+            "and explicit earlier promise IDs; otherwise retain uncertainty. Observations never change accepted facts. ")
     return (
         (CONTINUITY_INSTRUCTION.replace("selected working versions", "effective working versions")
             .replace("Discarded or unselected versions", "Discarded or superseded versions")
@@ -153,7 +162,7 @@ def working_prose_policy(content: Mapping[str, Any]) -> dict[str, Any] | None:
         "queries",
         "guidance_mode",
     }
-    task_policy = isinstance(value, Mapping) and value.get("version") == TASK_POLICY_VERSION
+    task_policy = isinstance(value, Mapping) and value.get("version") in TASK_POLICY_VERSIONS
     if task_policy:
         keys.update({"recent_tail_paragraphs", "retrieval_passages", "retrieval_per_chapter", "neighbor_paragraphs", "passage_characters"})
     if (
@@ -202,7 +211,7 @@ def project_working_sources(
     memory: Mapping[str, Any] | None = None, task: Mapping[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     policy = working_prose_policy({"working_prose_policy": policy})
-    if policy["version"] == TASK_POLICY_VERSION:
+    if policy["version"] in TASK_POLICY_VERSIONS:
         from .working_selection import select_working_context
         selection = select_working_context(sources, target_chapter=target_chapter, policy=policy, task=task, memory=memory)
         return _project_ranges(sources, {(row["chapter"], row["start"], row["end"]) for row in selection["passages"]},
@@ -348,7 +357,7 @@ def working_source_rows(snapshot: Mapping[str, Any]) -> list[dict[str, Any]]:
 
 
 def working_auxiliary_source_refs(snapshot: Mapping[str, Any] | None) -> list[dict[str, str]]:
-    if snapshot is None or (snapshot.get("projection_policy") or {}).get("version") != TASK_POLICY_VERSION:
+    if snapshot is None or (snapshot.get("projection_policy") or {}).get("version") not in TASK_POLICY_VERSIONS:
         return []
     from novel_forge.modules.narrative_state.working_memory import validate_frozen_memory_source
     task, memory = snapshot.get("retrieval_task"), snapshot.get("working_memory")
@@ -609,7 +618,7 @@ def validate_working_projection(
                 or not set(range(max(1, snapshot["target_chapter"] - policy["recent_complete_chapters"]), snapshot["target_chapter"])).issubset(numbers)):
             raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Bounded long-form prose must retain every mandatory recent source")
         expected = numbers
-    if policy["version"] == TASK_POLICY_VERSION:
+    if policy["version"] in TASK_POLICY_VERSIONS:
         from .working_task import validate_working_task
         from .working_selection import validate_working_selection
         validate_working_task(snapshot.get("retrieval_task"), book=snapshot,
@@ -621,14 +630,14 @@ def validate_working_projection(
             raise KernelError("WORKING_TASK_STAGE_INVALID", "The task stage must match its frozen Planning or Chapter input")
         validate_working_selection(snapshot)
     if policy["version"] in MEMORY_POLICY_VERSIONS or snapshot.get("working_memory") is not None:
-        from novel_forge.modules.narrative_state.working_memory import PROVIDER_MEMORY_VERSION, validate_memory_packet
-        if isinstance(snapshot["working_memory"], Mapping) and snapshot["working_memory"].get("version") == PROVIDER_MEMORY_VERSION and (
+        from novel_forge.modules.narrative_state.working_memory import PROVIDER_MEMORY_VERSIONS, validate_memory_packet
+        if isinstance(snapshot["working_memory"], Mapping) and snapshot["working_memory"].get("version") in PROVIDER_MEMORY_VERSIONS and (
                 policy["version"] not in LONGFORM_POLICY_VERSIONS
                 or snapshot.get("source_history", {}).get("contract_version") != "working-source-history-reference.v1"
                 or snapshot["working_memory"].get("source_coverage_hash") != snapshot["source_history"]["memory_source_coverage_hash"]):
             raise KernelError("WORKING_MEMORY_PACKET_INVALID", "Provider memory requires the exact complete host history reference")
         validate_memory_packet(snapshot["working_memory"], snapshot["sources"])
-        if policy["version"] == TASK_POLICY_VERSION:
+        if policy["version"] in TASK_POLICY_VERSIONS:
             selected_ids = {entry["observation_id"] for entry in snapshot["working_memory"]["entries"]}
             if any(cause not in selected_ids for entry in snapshot["working_memory"]["entries"] for cause in entry["causes"]):
                 raise KernelError("WORKING_MEMORY_CAUSE_UNAVAILABLE", "Task memory must retain every selected observation's source-bound cause")

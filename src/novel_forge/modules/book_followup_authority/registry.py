@@ -30,8 +30,11 @@ class BookFollowupHandlerRegistry:
         reader_judge_resolver: ReaderJudgeRuntimeResolver | None = None,
         prose_model_port: ReaderOutcomeModelPort | None = None,
         screenplay_model_ports: dict[str, ReaderOutcomeModelPort] | None = None,
+        memory_model_port: ReaderOutcomeModelPort | None = None,
     ) -> None:
+        from novel_forge.modules.book_authority.memory_backfill import MemoryExtractionHandler
         self._handlers = {
+            "working_memory_extract": MemoryExtractionHandler(memory_model_port),
             PROSE_SAMPLE_DEFINITION: ProseReviewSampleHandler(prose_model_port)
             if prose_model_port is not None else _UnavailableReaderOutcomeHandler(),
             PROSE_REVIEW_DEFINITION: LongformProseReviewHandler(prose_model_port)
@@ -63,6 +66,7 @@ class BookFollowupHandlerRegistry:
         from .screenplay import SCREENPLAY_STAGES, CANDIDATE_TYPE, REVIEW_TYPE
         from .screenplay_sampling import sample_definition_name, SCREENPLAY_SAMPLE_TYPE
         asset_type, output_key = {
+            "working_memory_extract": ("working_memory_result", "book.working_memory.result"),
             **{sample_definition_name(stage): (SCREENPLAY_SAMPLE_TYPE, sample_definition_name(stage)) for stage in SCREENPLAY_STAGES},
             **{stage: (REVIEW_TYPE if stage == "screenplay_review" else CANDIDATE_TYPE, stage + ".result") for stage in SCREENPLAY_STAGES},
             PROSE_SAMPLE_DEFINITION: (PROSE_SAMPLE_TYPE, PROSE_SAMPLE_OUTPUT),

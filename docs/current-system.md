@@ -326,6 +326,44 @@ This evidence does not establish full repository `QUALIFIED` status, real Provid
 consumption or literary improvement. The integration adds no new database, LLM role or
 state owner.
 
+`working-prose-projection.v10` is an explicit prospective policy using the same frozen
+Plan/Cast task and source history as v9. It adds `working-observations.v2` identities,
+`working-observations-packet.v2` selection and Provider memory v2. New Creation still
+selects v9 until a Book explicitly selects v10; v2-v9 requests retain their original
+selection and replay. A promise transition must cite an earlier observation with the
+same subject, state key, perspective and knowledge owner. Located fulfilment or release
+removes that earlier promise from current participant seeds; explicit retrieval still
+returns the historical promise, its resolution and their recursive support. Uncertain
+status remains visible. Observations are fallible navigation, not accepted facts.
+
+Book owns native memory backfill through `authority-manuscript memory-backfill` and the
+Editor memory API. A Book mutation freezes the selected manuscript scope and missing
+coverage. The existing Book followup worker admits one extraction at a time, freezing
+the next request only after the preceding receipt succeeds. Thus later extraction can
+reference earlier observation IDs. The separate `working_memory_extract` Pack and route
+use existing Context, Provider, Effect, receipt, accounting, Attempt, fence and cancellation
+mechanics. No Provider I/O holds a Book business lock. Materialization rechecks the exact
+selected prose, lineage and target sidecar under the Book lock. Unfinished or failed
+native results are not adopted as usable sidecars. Located empty native results are
+reported separately from missing Writer metadata. A cancelled or failed extraction
+retains its original history and stops its batch; diagnosed terminal retries require an
+explicit original operation and reject unresolved Effects or held writers. Neither
+backfill nor annotation changes prose, Canon, accepted state or active plans.
+
+The Editor memory read distinguishes `CURRENT_V3_PREVIEW` from
+`FROZEN_CHAPTER_REQUEST`. Supplying a `chapter_request_id` reads that Book's persisted
+Root snapshot, typed inputs, Writer Effects/receipts and Context/materialization artifacts;
+it never substitutes today's preview for an old request. An Effect records an intent;
+its receipt and transport artifacts retain their own execution status. Reading sources
+or a preview does not prove that a model consumed or understood them.
+
+Passage segmentation and tokenization reuse immutable deterministic source results.
+A byte-bounded disposable rank cache keys exact task/source-unit hashes, algorithm and
+selection limits; cached JSON is hash-checked and returned without shared mutable
+objects. Process restart or eviction rebuilds these derivatives. Source/version,
+selection lineage, memory, Plan/Cast and final complete-request checks still run through
+the owning paths. A warm local cache is not evidence of production throughput.
+
 Missing, invalid or empty memory remains explicit coverage evidence, never a
 complete-history claim. Original prose remains available through exact-version manuscript
 read/export and prospective query selection. Neither lexical matching nor observation

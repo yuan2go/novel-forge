@@ -1763,7 +1763,6 @@ class PostgresBookProductionQuery:
             author_working = effective_workflow(uow.cursor, scope[4]) == AUTHOR_WORKFLOW
             task_source_refs = [{"asset_version_id": str(row[0]), "content_hash": str(row[1])} for row in arc_rows]
             if schedule_row is not None and author_working:
-                # WHY: Only Chapter planning consumes a parent Group; Group-generation freshness cannot depend on its own output.
                 uow.cursor.execute("""SELECT binding.asset_version_id, version.content_hash
                     FROM active_story_plan_version active
                     JOIN story_plan_binding binding ON binding.binding_id=active.binding_id

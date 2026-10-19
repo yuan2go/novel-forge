@@ -1,4 +1,5 @@
 from collections import defaultdict
+from functools import lru_cache
 import re
 from typing import Any, Mapping
 
@@ -10,6 +11,11 @@ from .task_retrieval import select_task_passages
 
 
 def task_passage_ranges(text: str, max_characters: int) -> list[tuple[int, int]]:
+    return list(_task_passage_ranges(text, max_characters))
+
+
+@lru_cache(maxsize=64)
+def _task_passage_ranges(text: str, max_characters: int) -> tuple[tuple[int, int], ...]:
     if type(max_characters) is not int or not 64 <= max_characters <= 8000:
         raise KernelError("WORKING_PROSE_POLICY_INVALID", "Source passage granularity requires a positive Unicode length")
     cuts = [0, *(match.end() for match in re.finditer(r"(?:\r\n|\r|\n)(?:[ \t]*(?:\r\n|\r|\n))*[ \t]*", text)), len(text)]
@@ -26,7 +32,7 @@ def task_passage_ranges(text: str, max_characters: int) -> list[tuple[int, int]]
             start = cut
         if start < end:
             ranges.append((start, end))
-    return ranges
+    return tuple(ranges)
 
 
 def select_working_context(sources: list[dict[str, Any]], *, target_chapter: int,

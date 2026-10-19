@@ -238,7 +238,7 @@ class PostgresReaderOutcomeExecutionContractBinder(
             "project_id": project_id,
             "operation_id": operation_id,
             "attempt_id": attempt_id,
-            "source_isolation": "EXACT_ACCEPTED_SOURCE_AND_AUTHORIZED_INELIGIBLE_SAMPLE" if any(item["asset_type"] == "screenplay_provider_sample" for item in selected) else "ACCEPTED_AUTHORITY_ASSETS_ONLY",
+            "source_isolation": "EXACT_ACCEPTED_SOURCE_AND_AUTHORIZED_INELIGIBLE_SAMPLE" if any(item["asset_type"] == "screenplay_provider_sample" for item in selected) else "SELECTED_OWN_WORKING_PROSE_ONLY" if self.execution_binding_domain == "working_memory_extract" else "ACCEPTED_AUTHORITY_ASSETS_ONLY",
             "selected_inputs": selected,
         }
         from novel_forge.modules.chapter_authority.receipt_recovery import retained_owner_context

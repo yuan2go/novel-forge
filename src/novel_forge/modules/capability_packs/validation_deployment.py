@@ -82,6 +82,7 @@ def register_validation_runtime_definitions(
         if item["name"] == "reader_outcome.evaluate"
     )
     current_reader = reader_outcome_definition(application_build_id=application_build_id, commit_sha=commit_sha)
+    memory = next(item for item in book_followup_operation_definitions(application_build_id=application_build_id, commit_sha=commit_sha) if item["name"] == "working_memory_extract")
     prose_review = next(item for item in book_followup_operation_definitions(application_build_id=application_build_id, commit_sha=commit_sha) if item["name"] == "longform.prose_review")
     from novel_forge.modules.book_followup_authority.prose_sampling import prose_sample_definition
 
@@ -105,7 +106,7 @@ def register_validation_runtime_definitions(
     from novel_forge.modules.chapter_quality_authority.model_reference_execution import model_reference_creation_definitions
 
     with AuthorityUnitOfWork(database_url) as uow:
-        for item in (planning, reader, current_reader, prose_review, prose_sample, narrative_evaluation, *chapter, *current_chapter, *chapter_provider_sample_definitions(
+        for item in (planning, reader, current_reader, memory, prose_review, prose_sample, narrative_evaluation, *chapter, *current_chapter, *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha,
         ), *chapter_provider_sample_definitions(
             application_build_id=application_build_id, commit_sha=commit_sha, reference_samples=True,
@@ -122,6 +123,7 @@ def register_validation_runtime_definitions(
         "planning": definition_hash(planning),
         "reader_proxy": definition_hash(reader),
         "reader_proxy_current": definition_hash(current_reader),
+        "working_memory": definition_hash(memory),
         "prose_review": definition_hash(prose_review),
         "prose_sample": definition_hash(prose_sample),
         "narrative_evaluation": definition_hash(narrative_evaluation),

@@ -196,6 +196,7 @@ from novel_forge.modules.production_execution import (
 
 
 _PACK_SKILL_FOR_STAGE = {
+    "working_memory_extract": "context-builder-source-isolation",
     "draft": "prose-generation",
     "revision": "prose-generation",
     "canon_extraction": "canon-continuity-graph",
@@ -578,6 +579,12 @@ def build_production_execution_composition(
             "NOVEL_FORGE_NARRATIVE_EVALUATOR_MODEL",
         ),
     ]
+    memory_provider = str(values.get("NOVEL_FORGE_WORKING_MEMORY_PROVIDER") or "").strip()
+    memory_model = str(values.get("NOVEL_FORGE_WORKING_MEMORY_MODEL") or "").strip()
+    if bool(memory_provider) != bool(memory_model):
+        raise RuntimeError("Memory extraction requires both explicit Provider and model")
+    if memory_provider:
+        stage_routes.append(("working_memory_extract", "NOVEL_FORGE_WORKING_MEMORY_PROVIDER", "NOVEL_FORGE_WORKING_MEMORY_MODEL"))
     model_reference_provider = str(values.get("NOVEL_FORGE_MODEL_REFERENCE_PROVIDER") or "").strip()
     model_reference_model = str(values.get("NOVEL_FORGE_MODEL_REFERENCE_MODEL") or "").strip()
     if bool(model_reference_provider) != bool(model_reference_model):
@@ -1960,6 +1967,7 @@ def build_book_followup_authority_application(
         raise RuntimeError("PostgreSQL database is required for Book Followup")
     values = os.environ if env is None else env
     build_id, commit_sha = authority_release_identity(env=values)
+    from novel_forge.modules.book_followup_authority.memory_execution import build_memory_model_port
     from novel_forge.modules.book_followup_authority.screenplay_execution import build_screenplay_model_ports
     return BookFollowupAuthorityApplication(
         settings.database_url,
@@ -1973,6 +1981,7 @@ def build_book_followup_authority_application(
         ),
         prose_model_port=build_longform_prose_review_model_port(settings, execution=execution, env=values),
         screenplay_model_ports=build_screenplay_model_ports(settings, execution=execution, env=values),
+        memory_model_port=build_memory_model_port(settings, execution=execution, env=values) if values.get("NOVEL_FORGE_WORKING_MEMORY_PROVIDER") else None,
         worker_id=str(
             values.get("NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID")
             or "book-followup-authority-worker"

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
+from functools import lru_cache
 from decimal import Context, Decimal, ROUND_HALF_EVEN, localcontext
 import re
 from typing import Any, Mapping, Sequence
@@ -49,7 +50,8 @@ def _normalized(text: str) -> str:
     return unicodedata.normalize("NFKC", text).casefold()
 
 
-def _tokens(text: str, *, source: bool = False) -> Counter[str]:
+@lru_cache(maxsize=4096)
+def _token_items(text: str, source: bool) -> tuple[tuple[str, int], ...]:
     result: Counter[str] = Counter()
     for match in _LEXEMES.finditer(_normalized(text)):
         word = match.group()
@@ -60,7 +62,11 @@ def _tokens(text: str, *, source: bool = False) -> Counter[str]:
                     result.update(fragment[index:index + size] for index in range(len(fragment) - size + 1))
         elif word not in _STOP_WORDS and not word.isdecimal():
             result[word] += 1
-    return result
+    return tuple(result.items())
+
+
+def _tokens(text: str, *, source: bool = False) -> Counter[str]:
+    return Counter(dict(_token_items(text, source)))
 
 
 def _strings(value: Any, field: str) -> list[str]:
@@ -185,6 +191,13 @@ def select_task_passages(units: Sequence[tuple[int, int, int, str]], *, task: Ma
         raise KernelError("WORKING_TASK_RETRIEVAL_IDENTITY_INVALID", "Task hash differs from its frozen source bindings and fields")
     ordered = _source_units(units, task)
     queries = _query_catalog(task)
+    from .derived_cache import task_selection_cache
+    source_hash = canonical_hash([{"chapter": chapter, "start": start, "end": end, "text_hash": prose_hash(text)}
+        for chapter, start, end, text in ordered])
+    cache_key = (CONTRACT_VERSION, task_hash, source_hash, limit, per_chapter)
+    cached = task_selection_cache.get(cache_key)
+    if cached is not None:
+        return cached
     with localcontext(Context(prec=28, rounding=ROUND_HALF_EVEN)):
         candidates = _rank_candidates(ordered, queries)
     by_query = {query.identity: query for query in queries}
@@ -214,11 +227,12 @@ def select_task_passages(units: Sequence[tuple[int, int, int, str]], *, task: Ma
         chapter_counts[chapter] += 1
         pending.remove(chosen)
     result = {"contract_version": CONTRACT_VERSION, "task_hash": task_hash,
-        "source_units_hash": canonical_hash([{"chapter": chapter, "start": start, "end": end, "text_hash": prose_hash(text)}
-            for chapter, start, end, text in ordered]),
+        "source_units_hash": source_hash,
         "selection_policy": {"limit": limit, "per_chapter": per_chapter, "score_scale": _SCORE_SCALE},
         "input_unit_count": len(ordered), "candidate_count": len(candidates),
         "queries": [{"query_id": query.identity, "scope": query.scope, "kind": query.kind, "text": query.text} for query in queries],
         "selected": sorted(selected, key=lambda row: (row["chapter"], row["start"], row["end"])),
         "omitted_candidate_count": len(candidates) - len(selected), "semantic_completeness": "NOT_ESTABLISHED"}
-    return {**result, "selection_hash": canonical_hash(result)}
+    result = {**result, "selection_hash": canonical_hash(result)}
+    task_selection_cache.put(cache_key, result)
+    return result

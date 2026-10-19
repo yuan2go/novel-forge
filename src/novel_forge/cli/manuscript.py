@@ -17,7 +17,11 @@ def _manuscript_runtime_values(settings, *, project_id, book_run_id):
 
 def add_manuscript_parser(subparsers: Any) -> None:
     parser = subparsers.add_parser("authority-manuscript", help="read, edit, compare, adopt or export the current work")
-    parser.add_argument("action", choices=("read", "export", "edit", "diff", "adopt", "reject", "revise", "continue-revision", "revision-status", "use-working-candidate", "continue-retained-working", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "select-working-policy", "extend-delivery-window", "pause", "resume", "continue"))
+    parser.add_argument("action", choices=("memory-run", "memory-cancel", "memory-coverage", "memory-request", "memory-backfill", "read", "export", "edit", "diff", "adopt", "reject", "revise", "continue-revision", "revision-status", "use-working-candidate", "continue-retained-working", "recover-plan-references", "recover-upstream-plan", "adopt-author-workflow", "select-working-policy", "extend-delivery-window", "pause", "resume", "continue"))
+    parser.add_argument("--retry-operation-id", default="")
+    parser.add_argument("--retry-reason", default="")
+    parser.add_argument("--operation-id", default="")
+    parser.add_argument("--chapter-request-id", default="")
     parser.add_argument("--working-policy-file", type=Path)
     parser.add_argument("--project-id", default="")
     parser.add_argument("--book-run-id", required=True)
@@ -56,6 +60,59 @@ def run_manuscript_command(settings: Any, args: Any) -> dict[str, Any]:
             raise ValueError("Choose an existing work")
         args = SimpleNamespace(**vars(args))
         args.project_id = owned[0]
+
+    if args.action == "memory-cancel":
+        from novel_forge.modules.book_authority.memory_backfill import cancel_backfill
+        if not args.operation_id or args.expected_version is None or not args.idempotency_key or not args.reason:
+            raise ValueError("Memory cancellation requires --operation-id, --expected-version, --idempotency-key and --reason")
+        return cancel_backfill(settings.database_url, project_id=args.project_id, book_run_id=args.book_run_id,
+            operation_id=args.operation_id, expected_version=args.expected_version, idempotency_key=args.idempotency_key,
+            reason=args.reason, principal=principal)
+    if args.action in {"memory-coverage", "memory-request"}:
+        if args.action == "memory-request":
+            if not args.chapter_request_id:
+                raise ValueError("Require --chapter-request-id for an exact historical request")
+            from novel_forge.modules.book_authority.memory_readback import request_memory
+            return request_memory(settings.database_url, project_id=args.project_id, book_run_id=args.book_run_id,
+                chapter_request_id=args.chapter_request_id, principal=principal)
+        from novel_forge.modules.book_authority.memory_backfill import memory_coverage
+        return memory_coverage(settings.database_url, project_id=args.project_id, book_run_id=args.book_run_id, principal=principal)
+    if args.action in {"memory-backfill", "memory-run"}:
+        if args.action == "memory-backfill" and (args.expected_version is None or not args.idempotency_key):
+            raise ValueError("Memory backfill requires --expected-version and --idempotency-key")
+        from novel_forge.api.authority_dependencies import build_book_production_composition, build_production_execution_composition, build_chapter_authority_application
+        from novel_forge.modules.book_authority.memory_backfill import admit_backfill
+        values = _manuscript_runtime_values(settings, project_id=args.project_id, book_run_id=args.book_run_id)
+        execution = build_production_execution_composition(settings, env=values)
+        try:
+            chapter = build_chapter_authority_application(settings, execution=execution, env=values)
+            composition = build_book_production_composition(settings, principal=principal, execution=execution, chapter_application=chapter, env=values)
+            if composition.authority.require(args.book_run_id)["project_id"] != args.project_id:
+                raise PermissionError("Work is outside this Project")
+            if args.action == "memory-run":
+                from novel_forge.modules.book_authority.memory_backfill import require_backfill_operation
+                from novel_forge.modules.book_followup_authority.application import BookFollowupAdmission
+                from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+                from dataclasses import asdict
+                principal.require("book.authority.execute", args.project_id)
+                with AuthorityUnitOfWork(settings.database_url) as uow:
+                    require_backfill_operation(uow, project_id=args.project_id, book_run_id=args.book_run_id, operation_id=args.operation_id)
+                return asdict(composition.authority.followup.run_or_recover(BookFollowupAdmission(args.operation_id, args.project_id, False)))
+            result = admit_backfill(composition.authority, composition.authority.followup, book_run_id=args.book_run_id,
+                expected_version=args.expected_version, idempotency_key=args.idempotency_key,
+                chapters=args.chapters, principal=principal, retry_operation_id=args.retry_operation_id, retry_reason=args.retry_reason)
+            if args.foreground:
+                from novel_forge.modules.book_authority.memory_backfill import advance_backfill
+                from novel_forge.modules.book_followup_authority.application import BookFollowupAdmission
+                pending = result["operations"]
+                while pending:
+                    composition.authority.followup.run_or_recover(BookFollowupAdmission(**pending[0]))
+                    pending = advance_backfill(composition.authority, composition.authority.followup,
+                        batch_operation_id=result["batch_operation_id"], principal=principal)
+                result["status"] = "COMPLETED"
+            return result
+        finally:
+            execution.close()
 
     if args.action in {"revise", "continue-revision", "revision-status"}:
         return _run_working_revision_command(settings, args, principal=principal)

@@ -409,7 +409,7 @@ class ExternalEffectChapterModelPort:
         provider_output_tokens: int | None = None,
         pre_send_assertion: Callable[[], None] | None = None,
     ) -> ModelProviderResult:
-        if stage not in MODEL_CAPABILITY_STAGES | CONTEXT_MODEL_STAGES | {"reader_outcome", "longform_prose_review", "screenplay_generate", "screenplay_review", "screenplay_revision"}:
+        if stage not in MODEL_CAPABILITY_STAGES | CONTEXT_MODEL_STAGES | {"working_memory_extract", "reader_outcome", "longform_prose_review", "screenplay_generate", "screenplay_review", "screenplay_revision"}:
             raise KernelError(
                 "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}"
             )
@@ -1986,7 +1986,7 @@ def _normalize_model_output(
 ) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise KernelError("MODEL_RESPONSE_INVALID", "model response must be an object")
-    if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
+    if stage in {"working_memory_extract", "screenplay_generate", "screenplay_review", "screenplay_revision"}:
         return dict(raw)
     if stage == "draft":
         text = str(raw.get("text") or "")

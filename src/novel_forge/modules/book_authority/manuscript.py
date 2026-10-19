@@ -601,7 +601,7 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
                            projection_policy: Any = "FROM_PROFILE", scheduling_policy: Any = None,
                            task_source_refs: list[dict[str, str]] | None = None,
                            task_stage: str = "CHAPTER") -> dict[str, Any]:
-    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, LONGFORM_POLICY_VERSIONS, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, RESOLVED_POLICY_VERSIONS, RETRIEVAL_POLICY_VERSIONS, TASK_POLICY_VERSION, WORKING_SCHEDULE_POLICY, freeze_source_history, project_working_sources, working_instruction, working_prose_policy
+    from .working_prose import CONTEXT_VERSION, LEGACY_GUIDANCE, LONGFORM_POLICY_VERSIONS, MEMORY_POLICY_VERSIONS, PROGRESSION_POLICY_VERSION, RESOLVED_POLICY_VERSIONS, RETRIEVAL_POLICY_VERSIONS, TASK_POLICY_VERSIONS, WORKING_SCHEDULE_POLICY, freeze_source_history, project_working_sources, working_instruction, working_prose_policy
 
     schedule_policy = scheduling_policy
     if projection_policy == "FROM_PROFILE":
@@ -616,7 +616,7 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
             or projection_policy["version"] not in MEMORY_POLICY_VERSIONS):
         raise KernelError("WORKING_SCHEDULE_POLICY_INVALID", "Working scheduling requires the exact versioned source projection policy")
     task = None
-    if projection_policy and projection_policy["version"] == TASK_POLICY_VERSION:
+    if projection_policy and projection_policy["version"] in TASK_POLICY_VERSIONS:
         from .working_task import build_working_task
         if not task_source_refs:
             raise KernelError("WORKING_TASK_REQUIRED", "Task projection requires the exact current planning input")
@@ -672,7 +672,8 @@ def freeze_working_context(uow: Any, book: dict[str, Any], chapter: int, *,
                                                dependency_closed=projection_policy["version"] in {"working-prose-projection.v7", *RETRIEVAL_POLICY_VERSIONS},
                                                recent_complete_from=chapter - projection_policy["recent_complete_chapters"] if retrieval else None,
                                                **({"task": task, "selected_ranges": selected_memory_ranges(selection),
-                                                   "frozen_sources": frozen_memory_sources} if task is not None else {}))
+                                                   "frozen_sources": frozen_memory_sources,
+                                                   "lifecycle": projection_policy["version"] == "working-prose-projection.v10"} if task is not None else {}))
     source_history = None
     if projection_policy:
         if task is not None:
@@ -867,7 +868,7 @@ def require_prose_propagation(uow: Any, book: dict[str, Any], source: Any, *, li
 
 
 def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, Any], *, require_current: bool = True) -> None:
-    from .working_prose import CONTEXT_VERSION, MEMORY_POLICY_VERSIONS, RESOLVED_POLICY_VERSIONS, TASK_POLICY_VERSION, validate_working_projection, working_source_rows
+    from .working_prose import CONTEXT_VERSION, MEMORY_POLICY_VERSIONS, RESOLVED_POLICY_VERSIONS, TASK_POLICY_VERSIONS, validate_working_projection, working_source_rows
     enhanced = snapshot.get("projection_policy") is not None
     if enhanced:
         validate_working_projection(snapshot, project_id=book["project_id"], book_id=book["book_id"])
@@ -876,7 +877,7 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
             or snapshot.get("snapshot_hash") != canonical_hash(plain)
             or any(snapshot.get(key) != book[key] for key in ("project_id", "book_id", "book_run_id"))):
         raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Working context must bind its exact Book and immutable sources")
-    task = snapshot.get("retrieval_task") if (snapshot.get("projection_policy") or {}).get("version") == TASK_POLICY_VERSION else None
+    task = snapshot.get("retrieval_task") if (snapshot.get("projection_policy") or {}).get("version") in TASK_POLICY_VERSIONS else None
     if task is not None:
         from .working_task import validate_working_task
         validate_working_task(task, book=book, chapter=snapshot["target_chapter"], stage=task["stage"],
@@ -955,7 +956,8 @@ def verify_working_context(uow: Any, book: dict[str, Any], snapshot: dict[str, A
         memory = compile_working_memory(raw_sources, queries=snapshot["projection_policy"]["queries"],
             max_characters=None, dependency_closed=True,
             recent_complete_from=snapshot["target_chapter"] - snapshot["projection_policy"]["recent_complete_chapters"],
-            task=task, selected_ranges=selected_memory_ranges(initial), frozen_sources=frozen_memory_sources)
+            task=task, selected_ranges=selected_memory_ranges(initial), frozen_sources=frozen_memory_sources,
+            lifecycle=snapshot["projection_policy"]["version"] == "working-prose-projection.v10")
         expected = select_working_context(raw_sources, target_chapter=snapshot["target_chapter"],
             policy=snapshot["projection_policy"], task=task, memory=memory)
         ranges = {(row["chapter"], row["start"], row["end"]) for row in expected["passages"]}

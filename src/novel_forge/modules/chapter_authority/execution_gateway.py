@@ -126,7 +126,7 @@ _STAGES = frozenset(
     }
 )
 _OPTIONAL_DOMAIN_STAGES = frozenset(
-    {"agent_session", "retrieval", "retrieval_query_expansion", *CONTEXT_MODEL_STAGES,
+    {"working_memory_extract", "agent_session", "retrieval", "retrieval_query_expansion", *CONTEXT_MODEL_STAGES,
      "model_reference_evaluate", "model_reference_adjudicate"}
 )
 
@@ -143,6 +143,7 @@ _PLANNING_STAGES = frozenset(
 )
 
 _STAGE_CAPABILITIES = {
+    "working_memory_extract": CapabilityId.CANON_EXTRACT,
     "memo": CapabilityId.PLANNING_CHAPTER_MEMO,
     "draft": CapabilityId.PROSE_CHAPTER_DRAFT,
     "review": CapabilityId.REVIEW_CHAPTER_EVALUATE,
@@ -467,6 +468,7 @@ def _provider_effective_context_policy(
         "novelos.narrative_evaluation_context_bundle.v1": (
             "narrative_semantic_evaluation"
         ),
+        "novelos.working_memory_context_bundle.v1": "working_memory_extract",
         "novelos.reader_outcome_context_bundle.v1": "reader_outcome",
         "novelos.reader_outcome_context_bundle.v2": "reader_outcome",
         "novelos.longform_prose_review_context_bundle.v2": "longform_prose_review",
@@ -2998,6 +3000,8 @@ def default_chapter_fixture_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
 
+    if stage == "working_memory_extract":
+        return {"observations": []}
     if stage == "longform_prose_review":
         from novel_forge.modules.book_followup_authority.prose_review import PROSE_DIMENSIONS
         return {"schema_version": "longform-prose-review.v1", "manifest_digest": inputs["manifest_digest"], "window_id": inputs["window_id"], "reviewed_dimensions": list(PROSE_DIMENSIONS), "findings": []}
@@ -4237,6 +4241,8 @@ def _stage_semantic_contract(
             "provider-unavailable identity, summary, or invented fact. Do not retrieve or "
             "mutate Authority state."
         )
+    if stage == "working_memory_extract":
+        return "Extract located working observations from the exact frozen prose. Preserve attribution and uncertainty; grant no Canon, author acceptance or plan mutation."
     if stage == "context_compress":
         return (
             "Select exact unit_id values from this bounded chunk that retain the task relevant "

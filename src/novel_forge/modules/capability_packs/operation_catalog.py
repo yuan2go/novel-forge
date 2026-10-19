@@ -395,6 +395,14 @@ def reader_outcome_workflow_binding_catalog(version: str = BOOK_FOLLOWUP_DEFINIT
     )
 
 
+def working_memory_workflow_binding_catalog() -> WorkflowBindingCatalog:
+    return WorkflowBindingCatalog("book_followup_working_memory_extract", BOOK_FOLLOWUP_DEFINITION_VERSION, (
+        WorkflowBinding(node_id="working_memory_extract", operation_name="working_memory_extract", stage="working_memory_extract",
+            handler_key="novel_forge.book_followup_authority.working_memory_extract", capability_id="canon.extract",
+            depends_on=(), primary_output_asset_type="working_memory_result"),
+    ))
+
+
 def longform_prose_review_workflow_binding_catalog(*, provider_sampling: bool = False) -> WorkflowBindingCatalog:
     from novel_forge.modules.book_followup_authority.prose_sampling import PROSE_SAMPLE_DEFINITION, PROSE_SAMPLE_TYPE, PROSE_SAMPLE_VERSION
 
@@ -490,6 +498,7 @@ def governed_workflow_binding_catalog(
         reader_outcome_workflow_binding_catalog("1.2.0"),
         reader_outcome_workflow_binding_catalog("1.3.0"),
         reader_outcome_workflow_binding_catalog("1.4.0"),
+        working_memory_workflow_binding_catalog(),
         longform_prose_review_workflow_binding_catalog(),
         longform_prose_review_workflow_binding_catalog(provider_sampling=True),
         *(screenplay_workflow_binding_catalog(stage, provider_sampling=sample) for stage in ("screenplay_generate", "screenplay_review", "screenplay_revision") for sample in (False, True)),
