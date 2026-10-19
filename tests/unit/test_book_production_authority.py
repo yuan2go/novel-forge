@@ -127,7 +127,7 @@ class BookProductionAuthorityTests(unittest.TestCase):
 
         self.assertEqual(
             set(definitions),
-            {"reader_outcome.evaluate", "longform.recap", "longform.prose_review", "screenplay_generate", "screenplay_review", "screenplay_revision"},
+            {"reader_outcome.evaluate", "longform.recap", "longform.prose_review", "screenplay_generate", "screenplay_review", "screenplay_revision", "working_memory_extract"},
         )
         self.assertEqual(handlers, {"novel_forge.book_followup_authority." + name for name in {
             *definitions, "longform.prose_review.sample", "book.screenplay.sample.generate", "book.screenplay.sample.review", "book.screenplay.sample.revision"}})
@@ -135,6 +135,12 @@ class BookProductionAuthorityTests(unittest.TestCase):
             self.assertEqual(definitions[stage]["external_capabilities"], ["model." + stage])
             self.assertTrue(definitions[stage]["policy"]["frozen_inputs_required"])
             self.assertFalse(definitions[stage]["policy"]["body_mutation_allowed"])
+        memory = definitions["working_memory_extract"]
+        self.assertEqual(memory["external_capabilities"], ["model.working_memory_extract"])
+        self.assertEqual(memory["output_contract"]["asset_type"], "working_memory_result")
+        self.assertTrue(memory["policy"]["frozen_inputs_required"])
+        self.assertFalse(memory["policy"]["body_mutation_allowed"])
+        self.assertFalse(memory["policy"]["plan_mutation_allowed"])
         reader = definitions["reader_outcome.evaluate"]
         recap = definitions["longform.recap"]
         prose = definitions["longform.prose_review"]

@@ -335,6 +335,12 @@ same subject, state key, perspective and knowledge owner. Located fulfilment or 
 removes that earlier promise from current participant seeds; explicit retrieval still
 returns the historical promise, its resolution and their recursive support. Uncertain
 status remains visible. Observations are fallible navigation, not accepted facts.
+For v10, an actor name alone does not seed every latest state or knowledge item.
+The Host ranks source-bound observation claims and quotes against each frozen task
+query, reuses its best support across queries, and records uncovered queries. Direct
+passage matches and open participant promises remain seeds; recursive causes and promise
+resolutions are restored independently of ranking. The selection has no causal-depth
+cutoff and does not claim that lexical relevance proves semantic completeness.
 
 Book owns native memory backfill through `authority-manuscript memory-backfill` and the
 Editor memory API. A Book mutation freezes the selected manuscript scope and missing

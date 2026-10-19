@@ -41,7 +41,20 @@ def test_native_memory_extraction_keeps_receipts_replays_and_source_guards(tmp_p
             approver=replace(principal, principal_id="memory-test-independent-approver"), agent_admin=principal,
             agent_domain="book_followup", agent_scope_type="BOOK", runtime_environment="development")
         env["NOVEL_FORGE_WORKING_MEMORY_CAPABILITY_PACK_ID"] = profile.pack_id
-        execution = build_production_execution_composition(settings, env=env)
+        race = []
+        def fixture(stage, inputs):
+            from novel_forge.modules.chapter_authority.execution_gateway import default_chapter_fixture_response
+            if stage == "working_memory_extract" and race:
+                import psycopg
+                with psycopg.connect(DATABASE_URL) as independent:
+                    independent.execute("SELECT book_id FROM authority_book WHERE book_id=%s FOR UPDATE NOWAIT", [book["book_id"]])
+                    independent.execute("SELECT book_run_id FROM authority_book_production WHERE book_run_id=%s FOR UPDATE NOWAIT", [book["book_run_id"]])
+                target = race.pop()
+                save_manuscript_memory(app, book["book_run_id"], chapter=2, source_asset_version_id=target["asset_version_id"],
+                    expected_version=app.require(book["book_run_id"])["version"], observations=[],
+                    idempotency_key=book["book_run_id"] + ":during-provider", source_kind="ASSISTANT_ANALYSIS", principal=principal)
+            return default_chapter_fixture_response(stage, inputs)
+        execution = build_production_execution_composition(settings, env=env, chapter_fixture_factory=fixture)
         try:
             followup = build_book_followup_authority_application(settings, execution=execution, env=env)
             app = PostgresBookAuthority(DATABASE_URL, chapter_port=None, followup_application=followup,
@@ -106,6 +119,16 @@ def test_native_memory_extraction_keeps_receipts_replays_and_source_guards(tmp_p
                 "retry_operation_id": stale_operation, "retry_reason": "Rebind the changed sidecar without changing original prose"})
             assert repaired["operations"][0]["operation_id"] != stale_operation
             assert followup.run_or_recover(BookFollowupAdmission(**repaired["operations"][0])).output.asset_version_id
+            raced = admit_backfill(app, followup, **{**options, "expected_version": app.require(book["book_run_id"])["version"],
+                "idempotency_key": options["idempotency_key"] + ":concurrent-source-change", "chapters": [2]})
+            race.append(target)
+            with pytest.raises(KernelError, match="WORKING_MEMORY_SOURCE_STALE"):
+                followup.run_or_recover(BookFollowupAdmission(**raced["operations"][0]))
+            with AuthorityUnitOfWork(DATABASE_URL) as uow:
+                uow.cursor.execute("SELECT status FROM authority_external_effect WHERE operation_id=%s", [raced["operations"][0]["operation_id"]])
+                assert uow.cursor.fetchone()[0] == "SUCCEEDED"
+            latest = memory_coverage(DATABASE_URL, project_id=book["project_id"], book_run_id=book["book_run_id"], principal=principal)
+            assert latest["sources"][1]["provenance"]["kind"] == "ASSISTANT_ANALYSIS"
 
         finally:
             execution.close()

@@ -644,6 +644,10 @@ with the registered `working_memory_extract` definition hash, then use the exist
 register/compile/approve/deploy/activate path. `register_validation_runtime_definitions`
 returns that hash as `working_memory`; the existing validation installer accepts the
 profile. A configured route alone is not a paid grant or an approved Pack.
+When the Router uses an explicit model task catalog or Provider task scope, include
+`working_memory_extract` in that existing authorized model's allowed tasks. Routing
+policy v14 classifies the stage as MEDIUM with domain-gate acceptance. Adding this
+stage does not authorize a different model, paid channel or larger context window.
 
 ```bash
 novel-forge authority-manuscript memory-coverage --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
@@ -680,6 +684,12 @@ byte-bounded and keyed by task, exact source-unit digest, algorithm and rank lim
 segmentation/tokenization cache only immutable source values. Source and final request
 validation remain mandatory. Measure cold and warm runs separately with original history,
 selected prose, full input, token accounting basis and stage timings.
+V10 records `working_memory.task_selection` with query-to-observation support and
+unmatched queries. A matching participant alone does not select every state and
+knowledge record. Selection reuses the best ranked claim/quote support for each task
+query, then restores source passages and recursive causes/resolutions. Open participant
+promises remain visible; neither the rank receipt nor a coverage status asserts that
+the model understood every relevant event.
 
 For changes to this path run `test_context_building_completion.py`,
 `test_memory_backfill_postgres.py`, existing working-memory/projection/history,

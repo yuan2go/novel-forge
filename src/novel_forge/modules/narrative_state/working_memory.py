@@ -127,7 +127,8 @@ def _task_memory_scope(task: Mapping[str, Any], queries: list[str]) -> tuple[set
 
 def _task_memory_entry_selected(entry: Mapping[str, Any], *, current: set[str],
                                 scope: tuple[set[str], set[str], list[re.Pattern[str]]],
-                                selected_ranges: Mapping[str, list[Mapping[str, int]]], closed: set[str]) -> bool:
+                                selected_ranges: Mapping[str, list[Mapping[str, int]]], closed: set[str],
+                                task_related: set[str] | None = None) -> bool:
     subjects, references, patterns = scope
     if entry["observation_id"] in references or any(
             entry["location"]["start"] < selected["end"] and selected["start"] < entry["location"]["end"]
@@ -135,9 +136,11 @@ def _task_memory_entry_selected(entry: Mapping[str, Any], *, current: set[str],
         return True
     related = any(pattern.search(entry[field].casefold()) for pattern in patterns
                   for field in ("claim", "subject", "state_key", "quote"))
+    if task_related is not None:
+        related = related or entry["observation_id"] in task_related
     participant = bool(subjects.intersection({entry["subject"].strip().casefold(), entry["knowledge_owner"].strip().casefold()}))
     if entry["kind"] in {"CHARACTER_STATE", "KNOWLEDGE", "RELATIONSHIP"}:
-        return entry["observation_id"] in current and (participant or related)
+        return entry["observation_id"] in current and (related or participant and task_related is None)
     if entry["kind"] == "PROMISE":
         return related or participant and entry["observation_id"] not in closed and entry.get("promise_status") not in {"FULFILLED", "RELEASED"}
     return related
@@ -206,12 +209,19 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
         if entry["kind"] in {"CHARACTER_STATE", "KNOWLEDGE", "RELATIONSHIP"}:
             latest[(entry["kind"], entry["subject"], entry["state_key"], entry["perspective"], entry["knowledge_owner"])] = entry["observation_id"]
     current = set(latest.values())
+    task_selection, task_related = None, None
+    if lifecycle and task is not None:
+        from novel_forge.modules.book_authority.task_retrieval import select_task_observations
+        task_selection = select_task_observations([entry for entry in entries
+            if entry["kind"] not in {"CHARACTER_STATE", "KNOWLEDGE", "RELATIONSHIP"}
+            or entry["observation_id"] in current], task=task)
+        task_related = set(task_selection["selected_ids"])
     ranked = sorted(entries, key=lambda row: (
         -sum(q.casefold() in (row["claim"] + row["subject"] + row["state_key"]).casefold() for q in queries),
         -int(row["observation_id"] in current), -row["source"]["chapter"], row["location"]["start"]))
     selected, omitted, remaining = [], [], max_characters
     for entry in ranked:
-        if scope is not None and not _task_memory_entry_selected(entry, current=current, scope=scope, selected_ranges=ranges, closed=closed):
+        if scope is not None and not _task_memory_entry_selected(entry, current=current, scope=scope, selected_ranges=ranges, closed=closed, task_related=task_related):
             omitted.append(entry["observation_id"])
             continue
         if scope is None and recent_complete_from is not None and not (
@@ -247,11 +257,15 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
     packet = {"version": PACKET_V2 if lifecycle else MEMORY_VERSION, "authority": "UNREVIEWED_WORKING_OBSERVATIONS",
               "semantic_support": "NOT_VERIFIED", "entries": selected, "omitted_observation_ids": omitted,
               "source_coverage": coverage, "candidate_count": len(entries)}
+    if lifecycle:
+        packet["task_selection"] = task_selection
     return {**packet, "packet_hash": canonical_hash(packet)}
 
 
 def project_memory_for_provider(packet: Mapping[str, Any], visible: set[str]) -> dict[str, Any]:
     result = {key: deepcopy(packet[key]) for key in ("authority", "semantic_support", "entries", "candidate_count")}
+    if packet["version"] == PACKET_V2:
+        result["task_selection"] = deepcopy(packet["task_selection"])
     result.update(version=PROVIDER_PACKET_V2 if packet["version"] == PACKET_V2 else PROVIDER_MEMORY_VERSION, host_packet_hash=packet["packet_hash"],
         source_coverage=[deepcopy(row) for row in packet["source_coverage"] if row["asset_version_id"] in visible],
         source_coverage_hash=canonical_hash(packet["source_coverage"]))
@@ -300,6 +314,12 @@ def validate_memory_packet(packet: Any, sources: list[dict[str, Any]]) -> None:
     provider = isinstance(packet, Mapping) and packet.get("version") in PROVIDER_MEMORY_VERSIONS
     fields = ({"host_packet_hash", "source_coverage_hash", "omitted_observation_count", "omitted_observation_hash",
         "retrieval_omission_count", "retrieval_omission_hash"} if provider else {"omitted_observation_ids", "retrieval_omissions"})
+    if isinstance(packet, Mapping) and packet.get("version") in {PACKET_V2, PROVIDER_PACKET_V2}:
+        fields |= {"task_selection"}
+        selection = packet.get("task_selection")
+        if selection is not None and (not isinstance(selection, Mapping) or selection.get("version") != "working-task-observation-relevance.v1"
+                or selection.get("selection_hash") != canonical_hash({key: value for key, value in selection.items() if key != "selection_hash"})):
+            raise failure
     if (not isinstance(packet, Mapping) or packet.get("version") not in {MEMORY_VERSION, PACKET_V2, *PROVIDER_MEMORY_VERSIONS}
             or packet.get("authority") != "UNREVIEWED_WORKING_OBSERVATIONS"
             or packet.get("semantic_support") != "NOT_VERIFIED"

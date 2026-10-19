@@ -236,3 +236,36 @@ def select_task_passages(units: Sequence[tuple[int, int, int, str]], *, task: Ma
     result = {**result, "selection_hash": canonical_hash(result)}
     task_selection_cache.put(cache_key, result)
     return result
+
+
+def select_task_observations(entries: Sequence[Mapping[str, Any]], *, task: Mapping[str, Any]) -> dict[str, Any]:
+    from .derived_cache import task_selection_cache
+    version = "working-task-observation-relevance.v1"
+    task_hash, input_hash = task.get("task_hash") or canonical_hash(task), canonical_hash(entries)
+    key = (version, task_hash, input_hash)
+    cached = task_selection_cache.get(key)
+    if cached is not None:
+        return cached
+    queries = _query_catalog(task)
+    documents = ["\n".join(entry[field] for field in ("state_key", "claim", "quote")) for entry in entries]
+    ranking_projection_units = [(entry["source"]["chapter"], index, index + len(document), document)
+        for index, (entry, document) in enumerate(zip(entries, documents, strict=True))]
+    with localcontext(Context(prec=28, rounding=ROUND_HALF_EVEN)):
+        candidates = _rank_candidates(ranking_projection_units, queries)
+    selected, covered = set(), []
+    for query in queries:
+        matching = [row for row in candidates if query.identity in row["scores"]]
+        if not matching:
+            continue
+        best = max(matching, key=lambda row: (row["scores"][query.identity], row["unit"][0],
+            -entries[row["unit"][1]]["location"]["start"]))
+        identity = entries[best["unit"][1]]["observation_id"]
+        selected.add(identity)
+        covered.append({"query_id": query.identity, "observation_id": identity, "score": best["scores"][query.identity]})
+    body = {"version": version, "task_hash": task_hash, "input_hash": input_hash,
+        "candidate_count": len(entries), "selected_ids": sorted(selected), "query_support": covered,
+        "unmatched_queries": [query.identity for query in queries if query.identity not in {row["query_id"] for row in covered}],
+        "semantic_completeness": "NOT_ESTABLISHED"}
+    result = {**body, "selection_hash": canonical_hash(body)}
+    task_selection_cache.put(key, result)
+    return result

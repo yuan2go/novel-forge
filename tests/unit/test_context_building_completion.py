@@ -134,3 +134,18 @@ def test_backfill_prior_selection_keeps_latest_attribution_and_unbounded_cause_c
     selected, receipt = select_extraction_prior(entries, "Mira went into the orchard.")
     assert {row["observation_id"] for row in selected} == {str(number) for number in range(15)} | {"new"}
     assert receipt["omitted_count"] == 1
+
+
+def test_v10_selects_task_related_state_instead_of_every_state_of_the_same_character():
+    texts = ["Mira's old boots were wet.", "Mira knows which end of the timber must face the open path."]
+    rows = []
+    for index, text in enumerate(texts):
+        raw = note(kind="KNOWLEDGE", state_key="boots" if index == 0 else "timber handling",
+            claim=text, quote=text, knowledge_owner="Mira")
+        rows.append(source(index + 1, text, normalize_observations([raw], text)))
+    task = {"subjects": ["Mira"], "queries": ["timber handling open path"], "scenes": []}
+    options = dict(queries=[], max_characters=None, dependency_closed=True, recent_complete_from=3, task=task)
+    selected = compile_working_memory(rows, lifecycle=True, **options)
+    assert [entry["state_key"] for entry in selected["entries"]] == ["timber handling"]
+    assert len(compile_working_memory(rows, lifecycle=False, **options)["entries"]) == 2
+    assert selected["task_selection"]["query_support"]

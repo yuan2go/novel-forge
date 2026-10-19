@@ -20,7 +20,9 @@ def request_memory(database_url, *, project_id, book_run_id, chapter_request_id,
                 {key: value for key, value in snapshot.items() if key != "snapshot_hash"}):
             raise KernelError("MANUSCRIPT_CONTEXT_INVALID", "Stored request snapshot failed its digest")
         uow.cursor.execute("""SELECT effect.external_effect_id,effect.operation_id,effect.status,
-                effect.request_payload,COALESCE((SELECT jsonb_agg(to_jsonb(receipt) ORDER BY receipt.receipt_id)
+                effect.request_payload,COALESCE((SELECT jsonb_agg(to_jsonb(dispatch) ORDER BY dispatch.dispatch_id)
+                FROM authority_external_effect_dispatch dispatch WHERE dispatch.external_effect_id=effect.external_effect_id),'[]'::jsonb),
+                COALESCE((SELECT jsonb_agg(to_jsonb(receipt) ORDER BY receipt.receipt_id)
                 FROM authority_external_receipt receipt JOIN authority_external_effect_dispatch dispatch USING(dispatch_id)
                 WHERE dispatch.external_effect_id=effect.external_effect_id),'[]'::jsonb)
             FROM authority_external_effect effect JOIN authority_operation op USING(operation_id)
@@ -28,7 +30,7 @@ def request_memory(database_url, *, project_id, book_run_id, chapter_request_id,
               AND effect.request_payload->>'stage'='draft'
             ORDER BY effect.created_at,effect.external_effect_id""",
             [project_id, request["chapter_root_operation_id"]])
-        effects = [dict(zip(("external_effect_id", "operation_id", "status", "request", "receipts"), item, strict=True))
+        effects = [dict(zip(("external_effect_id", "operation_id", "status", "request", "dispatches", "receipts"), item, strict=True))
             for item in uow.cursor.fetchall()]
         uow.cursor.execute("""SELECT asset.asset_type,version.asset_version_id,version.content_hash,version.content
             FROM authority_operation_output_asset output JOIN authority_operation op USING(operation_id)
@@ -45,5 +47,6 @@ def request_memory(database_url, *, project_id, book_run_id, chapter_request_id,
     return {"version": "working-memory-request-readback.v1", "read_kind": "FROZEN_CHAPTER_REQUEST",
         "project_id": project_id, "book_run_id": book_run_id, "chapter_request": request,
         "working_manuscript": snapshot, "input_assets": inputs, "writer_effects": effects,
-        "request_artifacts": artifacts, "dispatch_observed": bool(effects),
+        "request_artifacts": artifacts, "effect_intent_recorded": bool(effects),
+        "dispatch_observed": any(effect["dispatches"] for effect in effects),
         "attribution_boundary": "INTENT_AND_RECEIPT_STATUS_RETAINED_NOT_PROOF_OF_MODEL_COMPREHENSION"}
