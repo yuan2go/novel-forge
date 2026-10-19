@@ -173,6 +173,13 @@ character. Host reconstruction must equal both complete Provider inputs; it does
 prove semantic preservation or diagnosis resolution. Complete frozen source windows
 remain unchanged. Historical requests without this version keep their original
 representation, including ordinary data containing a later protocol's reserved key.
+At a working-selection checkpoint, registered first-isolation custody can identify its
+exact acknowledged, never-sent preparation intent after the Book advances. Recognition
+reuses the owning cancellation/continuation and pause validators, binds the same BookRun,
+source and child identities, and requires the exact released reservation. Historical
+failure and cancellation remain immutable. A sent main request, new external receipt,
+UNKNOWN, active Attempt/lease or missing proof still blocks. Workflow-policy adoption
+retains its separate settled-effect requirement.
 Requested aesthetic repair of that exact selected source may use its diagnosed structural
 scope; unsolicited advice and stale requests do not authorize whole-chapter changes.
 Located edits of unmapped prose derive the body from the exact source, retain `NOT_MAPPED`

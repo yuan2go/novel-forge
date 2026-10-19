@@ -261,6 +261,57 @@ def retire_paused_reservations(uow, source):
                 raise KernelError('PLANNING_FIRST_PREPARATION_CUSTODY_UNSAFE', 'A started or ambiguous call cannot release its reservation')
 
 
+def retired_paused_intent(uow, *, project_id, book_id, book_run_id, effect_id):
+    from .runtime_continuation import acknowledged_routing_link
+    from novel_forge.modules.worldbuilding.actor_isolation import ACTOR_STAGES
+    stages = ['context_compress', 'context_fidelity', 'world_candidates.generate', 'world_candidates.evaluate', *ACTOR_STAGES]
+    uow.cursor.execute('''SELECT to_jsonb(effect),budget.status,link.continuation_id,link.successor_operation_id,
+        link.target_runtime,link.source_command
+        FROM authority_external_effect effect JOIN authority_operation source USING(operation_id)
+        JOIN authority_budget_reservation budget USING(external_effect_id)
+        JOIN authority_story_planning_runtime_continuation link ON link.source_operation_id=source.operation_id
+        JOIN authority_operation child ON child.operation_id=link.successor_operation_id
+        WHERE effect.external_effect_id=%s AND effect.project_id=%s AND link.project_id=effect.project_id
+          AND source.project_id=link.project_id AND source.workspace_id=link.workspace_id AND link.book_id=%s
+          AND source.definition_name='story_planning.generate' AND source.definition_version='1.21.0'
+          AND source.actor_id=link.source_command->>'actor_id' AND effect.effect_type='model.invoke'
+          AND effect.status='FAILED_RETRYABLE' AND budget.status='RELEASED'
+          AND budget.project_id=effect.project_id AND budget.operation_id=source.operation_id
+          AND source.command_payload->'payload'=link.source_command
+          AND child.project_id=source.project_id AND child.workspace_id=source.workspace_id AND child.actor_id=source.actor_id
+          AND child.definition_name='story_planning.generate'
+          AND child.causation_operation_id=source.operation_id AND child.command_payload->'payload'=link.successor_command
+          AND NOT EXISTS(SELECT 1 FROM authority_external_effect risk WHERE risk.operation_id=source.operation_id
+              AND (risk.effect_type<>'model.invoke' OR COALESCE(risk.request_payload->>'stage','')<>ALL(%s)))''',
+        [effect_id, project_id, book_id, stages])
+    rows = uow.cursor.fetchall()
+    if len(rows) != 1:
+        return False
+    effect, budget, continuation, successor, target, source = rows[0]
+    proof = target.get('preparation_handoff', {})
+    payload = effect['request_payload']
+    if (proof.get('contract_version') not in SUPPORTED_CONTRACTS or proof.get('book_run_id') != book_run_id
+            or proof.get('source_submission_rights') != 'REVOKED_OR_TERMINALLY_RELEASED' or proof.get('main_dispatch_count') != 0
+            or (source.get('project_id'), source.get('book_id')) != (project_id, book_id)
+            or payload.get('stage') not in {'context_compress', 'context_fidelity'}
+            or payload.get('_production_execution', {}).get('book_id') != book_id
+            or payload.get('_production_execution', {}).get('operation_id') != effect['operation_id']
+            or canonical_hash(payload) != effect['request_hash']
+            or not any(member.get('operation_id') == effect['operation_id'] and member.get('kind') == 'ACKNOWLEDGED_CANCELLATION'
+                and effect_id in member.get('paused_intent_ids', []) for member in proof.get('stopped_ancestry', []))):
+        return False
+    link = acknowledged_routing_link(uow.cursor, continuation_id=continuation,
+        successor_operation_id=successor, project_id=project_id, book_id=book_id)
+    if not link or link[0] != effect['operation_id']:
+        return False
+    try:
+        _require_paused_intent(uow, effect, budget,
+            KernelError('PLANNING_FIRST_PREPARATION_CUSTODY_UNSAFE', 'Retirement requires its original exact never-sent pause evidence'))
+    except KernelError:
+        return False
+    return True
+
+
 def target_runtime(application, source, target):
     proof = source['fresh_preparation']
     original, selected = proof['original_pack_snapshot'], target['pack_snapshot']

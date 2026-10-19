@@ -127,8 +127,11 @@ def _require_workflow_checkpoint(uow: Any, book: dict[str, Any], expected_versio
     blockers = [dict(external_effect_id=row[0],operation_id=row[1]) for row in uow.cursor.fetchall()]
     if working_selection:
         from novel_forge.modules.story_planning_runtime.preparation_recovery import retired_pre_submit_main
+        from novel_forge.modules.story_planning_runtime.fresh_preparation_custody import retired_paused_intent
         blockers = [item for item in blockers if not retired_pre_submit_main(uow,
-            project_id=book['project_id'],book_id=book['book_id'],effect_id=item['external_effect_id'])]
+            project_id=book['project_id'],book_id=book['book_id'],effect_id=item['external_effect_id'])
+            and not retired_paused_intent(uow, project_id=book['project_id'],book_id=book['book_id'],
+                book_run_id=book['book_run_id'],effect_id=item['external_effect_id'])]
         blockers = blocking_working_cli_outcomes(uow.cursor, project_id=book['project_id'],book_id=book['book_id'],
             book_run_id=book['book_run_id'],outcomes=blockers)
     if blockers:
