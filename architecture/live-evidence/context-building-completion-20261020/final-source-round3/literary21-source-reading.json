@@ -1,0 +1,96 @@
+{
+  "record_type": "FINAL_SOURCE_NATIVE_PROSE_READING_JUDGMENT",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "database": "nf_context_f799_acceptance",
+  "reviewer": "CODEX_ARTIFACT_READING_NOT_AUTHOR_ACCEPTANCE",
+  "skill": "quality-review",
+  "scope": "Actual selected21 compared with original20 and frozen task; complete text read, no Writer self-rating used",
+  "status": "BOUNDED_CONTINUITY_SUPPORTED_NOT_LITERARY_OR_LONGFORM_QUALIFICATION",
+  "model_scores_used": false,
+  "judgments": [
+    {
+      "id": "prior-labour-experience",
+      "chapter": 21,
+      "source_asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+      "source_content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+      "source_text_sha256": "8ed7a4fc9445617aade3ae209bdd3c5ffc12a4bf7bc0a8bcdca0702c73812442",
+      "start_codepoint": 1805,
+      "end_codepoint": 1819,
+      "quote_sha256": "57756ab96a1f3802599ba2fc1d143d3b26e60b1927e0695ed9c80792369d4e1f",
+      "assessment": "人物把实际托料经历带入新动作，老师指出旧用力习惯造成当前压掌和腰背收紧。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "specific-action-consequence",
+      "chapter": 21,
+      "source_asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+      "source_content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+      "source_text_sha256": "8ed7a4fc9445617aade3ae209bdd3c5ffc12a4bf7bc0a8bcdca0702c73812442",
+      "start_codepoint": 1688,
+      "end_codepoint": 1732,
+      "quote_sha256": "cf79afc778260f310eb06ddf73799b220be2d04be7a26b864767ef2b515abe2f",
+      "assessment": "偏差被定位到动作发生顺序，纠正后发生变化；未把劳动酸痛当修炼成功。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "guided-not-independent",
+      "chapter": 21,
+      "source_asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+      "source_content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+      "source_text_sha256": "8ed7a4fc9445617aade3ae209bdd3c5ffc12a4bf7bc0a8bcdca0702c73812442",
+      "start_codepoint": 3780,
+      "end_codepoint": 3827,
+      "quote_sha256": "b02dfa8f2db95829b331367a51aeee8b209049b2fdd33f6ecb33fc182a41469d",
+      "assessment": "受指导完成与独立掌握分开，明确保留人物尚未能自行察觉的知识边界。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "class-promise-realized",
+      "chapter": 21,
+      "source_asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+      "source_content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+      "source_text_sha256": "8ed7a4fc9445617aade3ae209bdd3c5ffc12a4bf7bc0a8bcdca0702c73812442",
+      "start_codepoint": 4499,
+      "end_codepoint": 4514,
+      "quote_sha256": "33b7af800f6e69006abe10efe5d1dabfd275e4073e860ec939ca74e92f58bb02",
+      "assessment": "第三课已经在本章正文中实际完成，后续不能继续把它当尚未履行的课。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "unknown-use-retained",
+      "chapter": 21,
+      "source_asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+      "source_content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+      "source_text_sha256": "8ed7a4fc9445617aade3ae209bdd3c5ffc12a4bf7bc0a8bcdca0702c73812442",
+      "start_codepoint": 4356,
+      "end_codepoint": 4384,
+      "quote_sha256": "738a82c553471156187301ea1c4581d6489e467bffd33a3cb51e15bb46480cfb",
+      "assessment": "身体练习的进展没有补全材料用途或细粒配用的未知。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "persistent-rest-consequence",
+      "chapter": 21,
+      "source_asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+      "source_content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+      "source_text_sha256": "8ed7a4fc9445617aade3ae209bdd3c5ffc12a4bf7bc0a8bcdca0702c73812442",
+      "start_codepoint": 4690,
+      "end_codepoint": 4715,
+      "quote_sha256": "a060683b5932673e4d4c26f2e66a1775dc8577888c88d402470230b25b9986d1",
+      "assessment": "学习带来后续时间安排和身体恢复的实际限制，不只是复述动作。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    }
+  ],
+  "aesthetic_observations": [
+    {
+      "kind": "DISCRETIONARY_AESTHETIC_SUGGESTION",
+      "observation": "课堂对照、示范、纠正和记录占据主要篇幅，叙述较程序化；本章不能证明后续长篇节奏、外部冲突或人物关系持续发展。",
+      "repair_boundary": "未改稿；需在更长实际窗口和作者目标下判断，不能把建议当作作者接纳或新的事件指令。"
+    }
+  ],
+  "limitations": [
+    "Only21 is read here; unseen22-100 are not assessed.",
+    "4001 Han meets author bounds but is not a quality score.",
+    "No manual prose edit or accepted Canon mutation."
+  ]
+}

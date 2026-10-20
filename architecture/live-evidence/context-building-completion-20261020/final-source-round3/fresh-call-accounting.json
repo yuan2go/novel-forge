@@ -1,0 +1,23 @@
+{
+  "record_type": "FINAL_SOURCE_FRESH_NATIVE_CALLS_ONLY",
+  "source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "database": "nf_context_f799_acceptance",
+  "actual_local_processes": 35,
+  "stages": {
+    "chapter_group_plan.generate": 6,
+    "chapter_plan.generate": 6,
+    "draft": 6,
+    "working_memory_extract": 5,
+    "review": 4,
+    "revision": 4,
+    "rereview": 4
+  },
+  "process_status": {
+    "SUCCEEDED": 34,
+    "FAILED": 1
+  },
+  "capacity_auxiliary_calls": 0,
+  "capacity_batch_provider_branch": "NOT_TRIGGERED_BY_THIS_NATIVE21_25_SAMPLE",
+  "monetary_cost": "UNKNOWN",
+  "boundary": "35 fresh local process invocations, including original25 failed stream and its successful native successor, five memory extractions and native length revision. Inherited20-chapter memory receipts are excluded from fresh counts. No per-source shared trace is counted as a separate call."
+}

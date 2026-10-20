@@ -1,0 +1,269 @@
+{
+  "record_type": "ACTUAL_NATIVE_SAVED_SELECTED_MANUSCRIPT_FINAL_SOURCE_READBACK_AND_EXACT_EXPORT",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "generation_release_boundary": "All five selected new chapters were generated on earlier releases; per-unit producer commit is retained. This is not final-source fresh creative acceptance.",
+  "database": "nf_context_final_acceptance",
+  "target_chapters": 100,
+  "accepted_through_chapter": 0,
+  "writing_state": "PAUSED",
+  "book_version": 212,
+  "unchanged_original_chapters": 20,
+  "unchanged_original_unicode_codepoints": 100106,
+  "unchanged_original_utf8_bytes": 296612,
+  "new_units": [
+    {
+      "chapter": 21,
+      "selected_source_asset_version_id": "authority-output:f4cdff0b-a8d6-4208-bf18-0590bc40b71b:chapter.best_candidate:v1",
+      "selected_source_content_hash": "sha256:68633c333ecf9e8404e626d47637f62a9b367408003df4e9dc27e89f1fdb5138",
+      "selected_text_sha256": "5d51435d4e419dd67977fe0454ad052f6fc191ec568ba95711523199a96e7e4e",
+      "selected_source_producer": {
+        "operation_id": "f4cdff0b-a8d6-4208-bf18-0590bc40b71b",
+        "root_operation_id": "bed57436-8d31-4279-9d4a-aee22ad7a464",
+        "definition_name": "chapter.candidate.select_best",
+        "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68"
+      },
+      "original_generation_request_id": "chapter-request:1b828ed508bacaeb1202bf85d044187b526ee6af5f3e51f7cc44364972d69f9a",
+      "original_generation_root": "9e3d6569-2c9e-4048-9484-b4fe1d4a138c",
+      "chapter_plan_version": "authority-output:8d7dba19-2673-4656-83d3-4405883c5ca8:story_planning.candidate:v1",
+      "parent_group_version_id": "authority-output:f5853a40-6b21-4f02-83a2-ec52f8c0737f:story_planning.candidate:v1",
+      "selected_source_effects": [
+        {
+          "external_effect_id": "e7795f72-09bd-4053-aad7-2c50a60c0153",
+          "status": "SUCCEEDED",
+          "stage": "review",
+          "admission_asset_version_id": "fab47939-7b9a-49b1-a066-209c9ad10e79"
+        },
+        {
+          "external_effect_id": "2d0bea7d-8fc3-4483-ad21-bbcee0c56ab6",
+          "status": "SUCCEEDED",
+          "stage": "revision",
+          "admission_asset_version_id": "c973f946-437b-4c67-97ed-ac8e2b408826"
+        },
+        {
+          "external_effect_id": "0da5c2d4-5f99-4229-b93c-fbfd55bcdb7d",
+          "status": "SUCCEEDED",
+          "stage": "rereview",
+          "admission_asset_version_id": "a108ef5b-2c5c-4e99-89e9-996ae0d38f4a"
+        }
+      ],
+      "unicode_codepoints": 5060,
+      "utf8_bytes": 14970,
+      "author_length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4289,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      }
+    },
+    {
+      "chapter": 22,
+      "selected_source_asset_version_id": "authority-output:7e6ae5ce-72b2-4127-ae43-8d9b8ed7b532:chapter.best_candidate:v1",
+      "selected_source_content_hash": "sha256:2f4772aef04579a1763c42a8acef1a8689d77f2aa4a1598f2208750a542b1562",
+      "selected_text_sha256": "6cb3619aee605c288fa9e914a200b45f3f1a29c5b3941fdacd5b17f98239f042",
+      "selected_source_producer": {
+        "operation_id": "7e6ae5ce-72b2-4127-ae43-8d9b8ed7b532",
+        "root_operation_id": "22d9a35c-0537-4af8-a04c-d550d058ca65",
+        "definition_name": "chapter.candidate.select_best",
+        "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68"
+      },
+      "original_generation_request_id": "chapter-request:4d0ae8a9927a0676a2ba3a6fc01f1924ce3a374408d0e2a99caa2788c88c07eb",
+      "original_generation_root": "fdffd705-56aa-43ec-91ff-5b93bcf71686",
+      "chapter_plan_version": "authority-output:7805ee80-9d75-4932-a689-97fc1f856821:story_planning.candidate:v1",
+      "parent_group_version_id": "authority-output:f5853a40-6b21-4f02-83a2-ec52f8c0737f:story_planning.candidate:v1",
+      "selected_source_effects": [
+        {
+          "external_effect_id": "7c11c4f1-c629-44f6-8c5b-216da8a3c568",
+          "status": "SUCCEEDED",
+          "stage": "review",
+          "admission_asset_version_id": "1a3b0cbe-07f8-4e4e-987f-5a933653e3a6"
+        },
+        {
+          "external_effect_id": "6b73f8f7-052a-4668-9940-a87fbd0ec77a",
+          "status": "SUCCEEDED",
+          "stage": "revision",
+          "admission_asset_version_id": "b661b10c-2c3e-4bae-a101-af616d579b6c"
+        },
+        {
+          "external_effect_id": "4b5dce78-2bc0-47a1-9e43-c4d8e7c869f7",
+          "status": "SUCCEEDED",
+          "stage": "rereview",
+          "admission_asset_version_id": "3ece3f65-ace4-4206-a795-a34d62d10150"
+        }
+      ],
+      "unicode_codepoints": 4908,
+      "utf8_bytes": 14556,
+      "author_length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4207,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      }
+    },
+    {
+      "chapter": 23,
+      "selected_source_asset_version_id": "authority-output:6b6f83a6-14ec-4ecb-b203-120574fbb1bb:chapter.best_candidate:v1",
+      "selected_source_content_hash": "sha256:80d6e8026ee0d74e6f3dffa77ed3aec3b075ed53d318f1141572b313dd20184e",
+      "selected_text_sha256": "130586d6bc524bbad89b8cc3d5e497fea29d8824ded7efbf44b4d1b64e239c59",
+      "selected_source_producer": {
+        "operation_id": "6b6f83a6-14ec-4ecb-b203-120574fbb1bb",
+        "root_operation_id": "c38381e6-2355-4b17-a357-47705c0a948d",
+        "definition_name": "chapter.candidate.select_best",
+        "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68"
+      },
+      "original_generation_request_id": "chapter-request:ac69b4c4f64d944dd53b6da8f9e1f977fd885c071a0faf6c23eb15c39edad365",
+      "original_generation_root": "703e51ab-b1a9-440a-9f12-037a4d86a1b1",
+      "chapter_plan_version": "authority-output:915ec498-77fc-4ca1-80ec-9ec2444b7888:story_planning.candidate:v1",
+      "parent_group_version_id": "authority-output:f5853a40-6b21-4f02-83a2-ec52f8c0737f:story_planning.candidate:v1",
+      "selected_source_effects": [
+        {
+          "external_effect_id": "b4880953-980d-4803-9417-8d21c83efa7e",
+          "status": "SUCCEEDED",
+          "stage": "review",
+          "admission_asset_version_id": "7f9122c8-5096-47d7-9e79-c73cd4990ba3"
+        },
+        {
+          "external_effect_id": "8fb2913b-f4be-4ad4-b2a4-1340a5e0d3f6",
+          "status": "SUCCEEDED",
+          "stage": "revision",
+          "admission_asset_version_id": "45bc608d-1ca6-4d13-bc6f-aa4c037cc70a"
+        },
+        {
+          "external_effect_id": "b6c21dd7-e1b1-41c1-96bf-2b7b61b842a7",
+          "status": "SUCCEEDED",
+          "stage": "rereview",
+          "admission_asset_version_id": "55eabd66-6cdb-4218-b9e2-ab45e86bf169"
+        }
+      ],
+      "unicode_codepoints": 5029,
+      "utf8_bytes": 14891,
+      "author_length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4298,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      }
+    },
+    {
+      "chapter": 24,
+      "selected_source_asset_version_id": "authority-output:17e93b2c-2ff8-4483-bfc1-e4c884763266:chapter.best_candidate:v1",
+      "selected_source_content_hash": "sha256:3f7de52d20e27e939f01defe351d091fdca22e0e5720a143c7f3f6d7cd722319",
+      "selected_text_sha256": "da96b9e80db0c3ffed912a2caf9bd1f71501f4ebef4f6719407e6c5b40238164",
+      "selected_source_producer": {
+        "operation_id": "17e93b2c-2ff8-4483-bfc1-e4c884763266",
+        "root_operation_id": "25da74cb-117c-478d-b5d5-0d6b05cd5eea",
+        "definition_name": "chapter.candidate.select_best",
+        "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f"
+      },
+      "original_generation_request_id": "chapter-request:1efdde5b549aa3e299d2d22cd7b0978e2f9dafb301fa8f649bb2a5e2887926f0",
+      "original_generation_root": "b85c3b74-2a32-4188-bf9f-3074ec1ec02a",
+      "chapter_plan_version": "authority-output:00a5be32-4730-4152-b85f-15dacd3fa635:story_planning.candidate:v1",
+      "parent_group_version_id": "authority-output:f5853a40-6b21-4f02-83a2-ec52f8c0737f:story_planning.candidate:v1",
+      "selected_source_effects": [
+        {
+          "external_effect_id": "ebb6b978-4519-4dc8-be7d-83fec0f2e91e",
+          "status": "SUCCEEDED",
+          "stage": "review",
+          "admission_asset_version_id": "cca03cc0-0c9b-41a3-8d42-6f34c4c8a8b0"
+        },
+        {
+          "external_effect_id": "6f80fc91-d3d1-4e9d-9325-ae99ffc09799",
+          "status": "SUCCEEDED",
+          "stage": "revision",
+          "admission_asset_version_id": "ac92ce46-1017-4193-a22c-f885f5985ae2"
+        },
+        {
+          "external_effect_id": "dff92521-a0ca-4962-83ae-ee44dc1ae58a",
+          "status": "SUCCEEDED",
+          "stage": "rereview",
+          "admission_asset_version_id": "20166e7c-c9a9-4982-9ba6-5f21c2e91bcc"
+        }
+      ],
+      "unicode_codepoints": 4882,
+      "utf8_bytes": 14522,
+      "author_length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4291,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      }
+    },
+    {
+      "chapter": 25,
+      "selected_source_asset_version_id": "authority-output:bc77b749-e321-4b19-94f4-24f21bbcf06f:chapter.best_candidate:v1",
+      "selected_source_content_hash": "sha256:d2f2a61f3544c2707bf7b4218a368edc6bc32352a95b336274991c977bf8a7ac",
+      "selected_text_sha256": "fad6d5d81300fadd0784f2591c141588bedd2bce081062ba01afc8a408866d46",
+      "selected_source_producer": {
+        "operation_id": "bc77b749-e321-4b19-94f4-24f21bbcf06f",
+        "root_operation_id": "40753e17-2032-4893-8f79-0889ac4f5090",
+        "definition_name": "chapter.candidate.select_best",
+        "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f"
+      },
+      "original_generation_request_id": "chapter-request:8f4a2a7c2f6191f19fef4b34c5c30800c4a671982acf2da9a377609c2972f0ca",
+      "original_generation_root": "a4d8979a-8061-4f53-891a-5a226f01bb7a",
+      "chapter_plan_version": "authority-output:958932e4-2bbb-4fe1-b00e-8976c9e9d70f:story_planning.candidate:v1",
+      "parent_group_version_id": "authority-output:51f0ae09-4721-4f38-a865-ffdce9d45ebe:story_planning.candidate:v1",
+      "selected_source_effects": [
+        {
+          "external_effect_id": "98ac5a94-5a63-43a7-9d2e-6a3eda69d7d6",
+          "status": "SUCCEEDED",
+          "stage": "review",
+          "admission_asset_version_id": "c3396660-fc40-41d7-85bd-6073ff05fec7"
+        },
+        {
+          "external_effect_id": "391d5dd8-9b93-4f17-89ca-744aaa9881dd",
+          "status": "SUCCEEDED",
+          "stage": "revision",
+          "admission_asset_version_id": "0a4a5055-46b3-44e0-bacb-259ec22d8ed5"
+        },
+        {
+          "external_effect_id": "f9bc073a-fbec-4a0b-8dc7-ef1cb0d33a28",
+          "status": "SUCCEEDED",
+          "stage": "rereview",
+          "admission_asset_version_id": "c4e6a7e3-4031-466e-bcaa-8ad722c175a5"
+        }
+      ],
+      "unicode_codepoints": 5121,
+      "utf8_bytes": 14975,
+      "author_length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4263,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      }
+    }
+  ],
+  "exports": [
+    {
+      "private_filename": "final-source-f799c192-chapters-1-25-exact.md",
+      "utf8_bytes": 380441,
+      "sha256": "19c9ccc02950aa1ea8d415956715c8f91f0c1312f775168046b1754fbb64c971"
+    },
+    {
+      "private_filename": "final-source-f799c192-chapters-21-25-exact.md",
+      "utf8_bytes": 75976,
+      "sha256": "4d4638bd6234c51731fbee0ae41655c3c97504a7159d4efe08557217a6e1e8fa"
+    }
+  ],
+  "chapter_group_boundary": {
+    "from_chapter": 24,
+    "through_chapter": 25,
+    "different_group_versions": true
+  },
+  "status": "EXECUTABLE_SAVED_READ_BACK_EXPORTED_EARLIER_RELEASE_SAMPLES",
+  "final_source_native_26_29_creation": "NOT_COMPLETED_BLOCKED_BY_TWO_UNKNOWN_WRITER_STREAMS_AT_26",
+  "limitations": [
+    "Exact selection/export is not author acceptance or Canon.",
+    "No chapter26 prose is claimed, and no manual rewrite was used.",
+    "The unchanged 100-chapter target and long-form literary qualification are not complete."
+  ]
+}

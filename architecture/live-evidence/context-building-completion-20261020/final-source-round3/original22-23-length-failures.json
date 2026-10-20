@@ -1,0 +1,42 @@
+{
+  "record_type": "FINAL_SOURCE_NATIVE_INITIAL_DRAFT_LENGTH_FAILURES_RETAINED",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "database": "nf_context_f799_acceptance",
+  "units": [
+    {
+      "chapter": 22,
+      "asset_version_id": "authority-output:8e4ccc28-69c3-46a2-b5b7-b7a846d80a8b:chapter.draft:v1",
+      "content_hash": "sha256:02167eeeab1a936adc8430bf0027b9cd130a1a70342818e5e4f095bea2406cc3",
+      "body_sha256": "32fa9fc910a804fe86332f72cb4bdaefa6539814eb2f63868551fbd883919eed",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 3703,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "original_length_status": "FAIL",
+      "original_was_saved_and_read_back_before_revision": true,
+      "private_manuscript_sha256": "a398697de60a687e583c110acca05a31c689e896712cf0e1d97fd53ea28b649a"
+    },
+    {
+      "chapter": 23,
+      "asset_version_id": "authority-output:2deda8c8-6196-4315-933d-023f4f57ffd1:chapter.draft:v1",
+      "content_hash": "sha256:9f8d6e20c891270c6822758cdba7527a187a5275bb1adde15e89b7468902b20e",
+      "body_sha256": "7a58b2b68e59eae9f083869646adf7b13db3841f6a59d1d93c38d94cfd11fb89",
+      "length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 3847,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "original_length_status": "FAIL",
+      "original_was_saved_and_read_back_before_revision": true,
+      "private_manuscript_sha256": "f3510c6acae1797da416e53d435ae2b8cc6dd9588debcda73100c22734aa8292"
+    }
+  ],
+  "boundary": "These first drafts were not compliant with the frozen author length range. Native Review/Revision/ReReview has a separate producer lineage; these original failures remain, and no old1-20 text was edited."
+}

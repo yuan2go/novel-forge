@@ -1,0 +1,28 @@
+{
+  "record_type": "EVIDENCE_VERIFIER_CROSS_PARAGRAPH_FALSE_NEGATIVE_CORRECTION",
+  "source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "product_code_changed": false,
+  "product_tests_or_assertions_changed": false,
+  "chapter": 23,
+  "case_id": "new-payment-closed",
+  "source_asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+  "source_codepoint_range": [
+    4107,
+    4137
+  ],
+  "delivered_adjacent_ranges": [
+    [
+      4107,
+      4121
+    ],
+    [
+      4121,
+      4138
+    ]
+  ],
+  "original_substring_result_sha256": "89c835c29d0abcae564108edf6ec1da952d16ffed78486a930e0fea98dd5e46f",
+  "original_verifier_sha256": "251aa1f9abfd3a7151fae71424d7dbcfb39490f6cf519f2b748a603c376d6792",
+  "original_result_preserved": true,
+  "corrected_evidence": "native23-actual-delivery-source-runs.json",
+  "boundary": "The same exact quote crosses two contiguous source-bound JSON passage fields. Literal substring search over serialized JSON was insufficient; contiguous start/end source runs establish the delivered span. This is not a repaired omission or a changed Writer request."
+}

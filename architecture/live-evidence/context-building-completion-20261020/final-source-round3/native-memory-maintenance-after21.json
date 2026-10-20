@@ -1,0 +1,63 @@
+{
+  "record_type": "FINAL_SOURCE_ACTUAL_NATIVE_MEMORY_MAINTENANCE_AND_SOURCE_BINDINGS",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "database": "nf_context_f799_acceptance",
+  "operations": [
+    {
+      "operation_id": "4695b059-e395-4fee-ada1-784eae00b756",
+      "external_effect_id": "8566123b-2e62-4727-a7a7-4bffb00671b6",
+      "status": "SUCCEEDED",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "task_asset_version_id": "1f6c3e11-6f0f-4416-b4ed-e01ee4f92f8d",
+      "task_content_hash": "sha256:7433f92e02fccff7514d7a19feee1f368af86e754021dd076343aae55548d757",
+      "task_version": "working-memory-extraction-task.v2",
+      "task_hash": "sha256:0d67ccc324c9f6d6f4e8c6658395d01aedaa0a236e6cf125e77e6437c91ef61a",
+      "chapter": 21,
+      "full_current_prose_codepoints": 4744,
+      "current_source": {
+        "chapter": 21,
+        "coverage": "MISSING",
+        "provenance": {
+          "kind": "WRITER_SELF_OBSERVATION",
+          "status": "NOT_REQUESTED",
+          "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1"
+        },
+        "content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+        "sidecar_head": null,
+        "memory_source": {
+          "kind": "WRITER_SELF_OBSERVATION",
+          "version": "working-memory-source.v1",
+          "content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+          "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "observations_hash": "sha256:74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+        },
+        "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+        "source_resolution": {
+          "overrides": [],
+          "native_basis": "NATIVE_DELIVERY",
+          "native_source": {
+            "content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+            "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1"
+          },
+          "effective_source": {
+            "content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+            "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1"
+          }
+        }
+      },
+      "prior_policy": "working-memory-prior-state.v2",
+      "candidate_prior_observations": 570,
+      "selected_prior_observations": 67,
+      "prior_selection_hash": "sha256:cc93edfc91b91d44d854801603c2b58fb46ff7d7a2c57bec4138f5f6e0c5da1e",
+      "query_unit_policy": {
+        "policy": "working-source-passage-units.v1",
+        "source_text_coverage": "COMPLETE_NO_INPUT_TRUNCATION",
+        "maximum_index_unit_codepoints": 512
+      },
+      "sidecar_asset_version_id": "3f6eed6b-77a1-4b58-8790-689821672db9",
+      "formal_acceptance": "NOT_GRANTED",
+      "semantic_support": "NOT_VERIFIED"
+    }
+  ],
+  "boundary": "Real native working-memory task/Effect/output bindings. Located observations remain unreviewed; no accepted Canon or author selection is inferred. Candidate/selected prior counts are not a claim that all omitted history is irrelevant."
+}

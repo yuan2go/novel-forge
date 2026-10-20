@@ -1,0 +1,12 @@
+{
+  "admitted": {
+    "operation_id": "ab8cbb9b-2b37-4eda-a3b7-c842d0ca5717",
+    "status": "READY"
+  },
+  "checkpoint": {
+    "code": "RUNTIME_DISPATCH_PAUSED",
+    "message": "RUNTIME_DISPATCH_PAUSED: Cooperative author pause at the durable native admission checkpoint before scheduler execution"
+  },
+  "new_effects": 0,
+  "new_attempts": 0
+}

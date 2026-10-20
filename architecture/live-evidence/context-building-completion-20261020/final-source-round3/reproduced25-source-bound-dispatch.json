@@ -1,0 +1,125 @@
+{
+  "record_type": "READ_ONLY_SOURCE_BOUND_ACTUAL_APPLICATION_INPUT_VERIFICATION",
+  "chapter_request_id": "chapter-request:b081c2cc6a8bf6087762e23d3ff3e22b47450827e3920a64a1768f382936c7a4",
+  "external_effect_id": "8459825a-2d82-40da-8206-79b7abfe51c6",
+  "effect_status": "DISPATCHING",
+  "envelope_hash": "sha256:772643f618f062e1ca2c0a9bbd14fa989ff97117d7eab1b93b654979dac5df3c",
+  "application_input_sha256": "c7cf35b8954873691c2cf41ed06edee253d7b737f4cc91e650a015cc999128ad",
+  "application_input_utf8_bytes": 404976,
+  "protocol_schema_utf8_bytes": 3309,
+  "critical_evidence_sha256": "927235bf1797719cd6a4a3df699d9fcadd73b8b484c7d55c3ae1651db72f8053",
+  "cases": [
+    {
+      "id": "own-practice-actual",
+      "alternatives": [
+        {
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "quote_sha256": "6025281b105039fb3e6965f34c29256a848d3b3aaa3b29922f4e5cdb8c3f0340",
+          "source_bound_exact_passage": true,
+          "source_bound_exact_memory_quote": false
+        }
+      ]
+    },
+    {
+      "id": "onset-unknown-retained",
+      "alternatives": [
+        {
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "quote_sha256": "dfbdd5f7bd3277df83c09dd01c48b3be4e9e05a8249aedabc1db87360b81b799",
+          "source_bound_exact_passage": true,
+          "source_bound_exact_memory_quote": false
+        }
+      ]
+    },
+    {
+      "id": "labour-and-practice-separated",
+      "alternatives": [
+        {
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "quote_sha256": "b932bc348a8c1175cb0f32898eed1a9f551230600b1531c581277e0ab3d26b4e",
+          "source_bound_exact_passage": true,
+          "source_bound_exact_memory_quote": false
+        }
+      ]
+    },
+    {
+      "id": "specific-question-pending",
+      "alternatives": [
+        {
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "quote_sha256": "f9d2240a11b3fd18d4d788df962ee02e026e208c34678df62c570cec7e4988c1",
+          "source_bound_exact_passage": true,
+          "source_bound_exact_memory_quote": false
+        }
+      ]
+    },
+    {
+      "id": "no-extra-round-to-polish-record",
+      "alternatives": [
+        {
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "quote_sha256": "d7ea30506d80c38881c11ddc35a29458cb4bd88cf0398f4cbcfe7f316b984294",
+          "source_bound_exact_passage": true,
+          "source_bound_exact_memory_quote": false
+        }
+      ]
+    },
+    {
+      "id": "sensation-not-success-proof",
+      "alternatives": [
+        {
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "quote_sha256": "33166b82db9b1e8ddacb3ec2dca76e3ec5579c50d95d58709839a3ee253778af",
+          "source_bound_exact_passage": true,
+          "source_bound_exact_memory_quote": false
+        }
+      ]
+    },
+    {
+      "id": "protected-time-realized",
+      "alternatives": [
+        {
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "quote_sha256": "473dd7b9d11252144c80d1231857929508649c21b52e8ad267d0b12196bf427c",
+          "source_bound_exact_passage": true,
+          "source_bound_exact_memory_quote": false
+        }
+      ]
+    },
+    {
+      "id": "prior-three-lessons-already-completed",
+      "alternatives": [
+        {
+          "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "quote_sha256": "481d4083547576b9e52370db139700deb1fe3c8f1899d73968deb066e33da979",
+          "source_bound_exact_passage": true,
+          "source_bound_exact_memory_quote": true
+        }
+      ]
+    },
+    {
+      "id": "old-course-labour-settled",
+      "alternatives": [
+        {
+          "asset_version_id": "authority-output:76df75db-9b43-4660-998a-59870d3e2266:chapter.best_candidate:v1",
+          "quote_sha256": "61c5144ad4299873818530118e216724dfd4bda22aa9a80021a2a68f58dbca2f",
+          "source_bound_exact_passage": true,
+          "source_bound_exact_memory_quote": true
+        }
+      ]
+    },
+    {
+      "id": "old-course-cash-paid",
+      "alternatives": [
+        {
+          "asset_version_id": "authority-output:76df75db-9b43-4660-998a-59870d3e2266:chapter.best_candidate:v1",
+          "quote_sha256": "e2d9fd8c595cba7174bb1df91a401a59f058a21d576f9f55e267083dfde79b87",
+          "source_bound_exact_passage": true,
+          "source_bound_exact_memory_quote": true
+        }
+      ]
+    }
+  ],
+  "provider_calls": 0,
+  "boundary": "Presence facts only: apply the preregistered conditional rules separately. No model comprehension, prose success, acceptance or literary qualification is inferred."
+}

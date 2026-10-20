@@ -1,0 +1,1968 @@
+{
+  "record_type": "FINAL_RETAINED_NATIVE26_DOUBLE_UNKNOWN_AND_CANCELLED_PENDING_SUCCESSOR",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "database": "nf_context_final_acceptance",
+  "book": {
+    "state": "PAUSED",
+    "current_chapter": 25,
+    "version": 212,
+    "accepted_through_chapter": 0,
+    "target_chapter_count": 100
+  },
+  "pause_operation": {
+    "operation_id": "8f588303-b1f0-4dc2-969c-32e7d604ec71",
+    "created_at": "2026-10-20 01:13:10.787316+00:00"
+  },
+  "operations": [
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "status": "FAILED_FINAL",
+      "version": 4
+    },
+    {
+      "operation_id": "740ebc7b-0c01-4142-9b60-6850fc488204",
+      "status": "FAILED_FINAL",
+      "version": 4
+    },
+    {
+      "operation_id": "4a064a1e-ef70-4f3d-b5f2-101f7ac3055a",
+      "status": "RECONCILIATION_REQUIRED",
+      "version": 4
+    }
+  ],
+  "attempts": [
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "attempt_id": "2eee286a-b555-4c28-857e-17318cf8706e",
+      "status": "CANCELLED"
+    },
+    {
+      "operation_id": "740ebc7b-0c01-4142-9b60-6850fc488204",
+      "attempt_id": "222d9f2c-4d45-435a-9f26-f4fbf77d4ae3",
+      "status": "CANCELLED"
+    },
+    {
+      "operation_id": "4a064a1e-ef70-4f3d-b5f2-101f7ac3055a",
+      "attempt_id": "9e53c8c4-f6b4-4ca7-8b72-eb2b2a35a7dc",
+      "status": "CANCELLED"
+    }
+  ],
+  "effects": [
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "63b40016-36c5-492b-813c-0b097c7f2a44",
+      "stage": "context_compress",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:18:26.252667+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 60172,
+        "utf8_bytes": 92284
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 260,
+        "utf8_bytes": 260
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:0fb8abb7a4b3ef99ca900813",
+          "input_sha256": "43a96514087bb6a452c35d9d510c4913a8bf342bf8eb834ec05aa0fe610300c3",
+          "request_digest": "0fb8abb7a4b3ef99ca900813b9c3a0c4c67a628cf8c92ec04dd512c1d1bc2a4b",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:18:27.116284Z",
+          "completed_at": "2026-10-20T00:18:42.084691Z",
+          "elapsed_ms": 14967,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35962,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 145,
+              "reasoning_output_tokens": 103
+            }
+          ],
+          "process_receipt_file_sha256": "4c67c1511008051fa141737afe17e255ad401b5888d4c3cef2e3f4da96b5cdff",
+          "stdout_file_sha256": "98164b0cb486f1c2c4ea6095c64a1b17968f5f0ceba19b5704d4dcb5615ddce9"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 991,
+          "receipt_id": "process-receipt:0fb8abb7a4b3ef99ca900813",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:c07165c7f825dc8439dc738334fb4d834f7ac24d8e45d5a05e1c7a43aa507b91",
+          "received_at": "2026-10-20T00:18:42.290463+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:e72f2aaf94b02da080d2111f465376c0931af91e37d0370752b79d0c6f9f5009",
+          "reported_prompt_hash": "sha256:43a96514087bb6a452c35d9d510c4913a8bf342bf8eb834ec05aa0fe610300c3"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "9582dee1-6553-4e3c-b07a-31be535353e8",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:18:46.362359+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 60552,
+        "utf8_bytes": 92664
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:6031d19474fa58ba6fc2cb4c",
+          "input_sha256": "5ec37d2b7f3318a67f4f7c08032cc67ef125961261dae8ce645789f1444c18f1",
+          "request_digest": "6031d19474fa58ba6fc2cb4cfaf8e1ce47b14f71ecc297eb97799810c15c071e",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:18:47.136175Z",
+          "completed_at": "2026-10-20T00:19:02.708678Z",
+          "elapsed_ms": 15571,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 36102,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 230,
+              "reasoning_output_tokens": 73
+            }
+          ],
+          "process_receipt_file_sha256": "3354003bfaf7adc39e02bb2bba5257fe3f685ae4a199b22a807a7b060df500d6",
+          "stdout_file_sha256": "f31fe72c1b3a5fba6295efff6cb8571136c342a2488652da19f49f917964f5e6"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 992,
+          "receipt_id": "process-receipt:6031d19474fa58ba6fc2cb4c",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:b50214996ce57ea2d7df64d4ed5b6acf00f45510fa0343a53331eb51ad5f87d2",
+          "received_at": "2026-10-20T00:19:02.921483+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:5c85cf8ba86e340d3fdfeca373333d854c4e141c8436be723591f7aa3e798a05",
+          "reported_prompt_hash": "sha256:5ec37d2b7f3318a67f4f7c08032cc67ef125961261dae8ce645789f1444c18f1"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "d06059ba-ae8b-4468-a342-fe6764150990",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:19:30.623714+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 60991,
+        "utf8_bytes": 93103
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:7f205bff67061749ee25d21f",
+          "input_sha256": "cab9ab32b8f39e016bfaf091b5d3026765e368f22b2f0aa280923a15b9722aba",
+          "request_digest": "7f205bff67061749ee25d21f0e1adb0d9fc995646d96b5ab9f7971a1cb3df106",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:19:31.533532Z",
+          "completed_at": "2026-10-20T00:19:48.886267Z",
+          "elapsed_ms": 17350,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 36233,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 244,
+              "reasoning_output_tokens": 101
+            }
+          ],
+          "process_receipt_file_sha256": "d845e8536392b8d18077481baf535079d63605ee0b6838dcf7273a2aa8c45102",
+          "stdout_file_sha256": "4e40bb64bbc1dc18a772bb72a9594ab839d26a3453030cd6fb7b7b3e15c112c0"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 993,
+          "receipt_id": "process-receipt:7f205bff67061749ee25d21f",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:46078690c5df790c6b9c95e4226aba2e257ed4631693f56a34d0757d81db5cc8",
+          "received_at": "2026-10-20T00:19:49.107655+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:b13707c5436a5d6f45c6229a02794f8190eb2a4acb4350f23ee5ae0d5856bf2e",
+          "reported_prompt_hash": "sha256:cab9ab32b8f39e016bfaf091b5d3026765e368f22b2f0aa280923a15b9722aba"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "db9bff87-cdb6-4e7a-9611-1c75f6139eba",
+      "stage": "context_compress",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:20:12.164968+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 57152,
+        "utf8_bytes": 88636
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 260,
+        "utf8_bytes": 260
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:654784d07d73ce2caf371319",
+          "input_sha256": "a9307a70d20a0c59ab1501386adec74425b1fd045b159860c47120a506bc5f68",
+          "request_digest": "654784d07d73ce2caf371319d49f345e14df0f61928b279e0a7403898ccc5644",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:20:12.947249Z",
+          "completed_at": "2026-10-20T00:20:27.067589Z",
+          "elapsed_ms": 14117,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 34795,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 96,
+              "reasoning_output_tokens": 70
+            }
+          ],
+          "process_receipt_file_sha256": "ef076ee488aaef1ae77d8d6a2bde296ee5cb1a1923b3c0af576ff35ef0dd9742",
+          "stdout_file_sha256": "5b6225531a49b517fa28713cfc5c38de0c0ed48ef836b04cf8b3ca84b552c887"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 994,
+          "receipt_id": "process-receipt:654784d07d73ce2caf371319",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:b6c3d3f35558bba212c2509bb16a0d0b513189fe5461d2c16b89b69f6f8f3a19",
+          "received_at": "2026-10-20T00:20:27.286954+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:3254fbff6f6a1daae343281e5ce417f8c187ecea3a5a0848bb8024f0f86afeef",
+          "reported_prompt_hash": "sha256:a9307a70d20a0c59ab1501386adec74425b1fd045b159860c47120a506bc5f68"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "2ef0f6b7-9d60-4932-8d95-a9566d5d4bd4",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:20:50.715468+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 57500,
+        "utf8_bytes": 88984
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:43286f812122087e66329b83",
+          "input_sha256": "9e7d708350671067aed02cebcc8dea6a22eb171007364b010a1f2c931948979e",
+          "request_digest": "43286f812122087e66329b83db0d0bcab74090679c822e674b9af131524b45b1",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:20:51.460775Z",
+          "completed_at": "2026-10-20T00:21:04.999592Z",
+          "elapsed_ms": 13536,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 34919,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 248,
+              "reasoning_output_tokens": 131
+            }
+          ],
+          "process_receipt_file_sha256": "6d0749e2f826baa4e2534a77e3eb433ad803f62aa89cf1a95180ebf26b774aa7",
+          "stdout_file_sha256": "94cb3a1fdcc28604f855390258c147c43c0ae10ea89b93792650fc4e7d81d54c"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 995,
+          "receipt_id": "process-receipt:43286f812122087e66329b83",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:00f44dedaf8c44cda80416d07d6ee8aafe1e62540bdfcdcbf65feeb681aef59e",
+          "received_at": "2026-10-20T00:21:05.214811+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:828feeadcb9df60b98eadfd3b2772f8fb343192e326eb14b5c984e947a3416a3",
+          "reported_prompt_hash": "sha256:9e7d708350671067aed02cebcc8dea6a22eb171007364b010a1f2c931948979e"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "a058caed-c503-47f2-bac8-842dc1ab76f3",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:21:28.967292+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 57939,
+        "utf8_bytes": 89423
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:2092695b5abd4bfa4b1beebc",
+          "input_sha256": "161c5b9b102c441b2e344b1f565c225015f4f2d5a6f60ed587454406f361e9a2",
+          "request_digest": "2092695b5abd4bfa4b1beebca0df514e28d3b278085f51fe3496ca5fb0938ecc",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:21:29.741053Z",
+          "completed_at": "2026-10-20T00:21:41.702231Z",
+          "elapsed_ms": 11957,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35054,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 169,
+              "reasoning_output_tokens": 47
+            }
+          ],
+          "process_receipt_file_sha256": "72e62cc5ed192361f4b4d9730989851d5fe5408c365cf20e03c35e3eafe47bb0",
+          "stdout_file_sha256": "78d99be80aae9407ca8effa5b574a3c1da438361101182e1baf0df28f677eb84"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 996,
+          "receipt_id": "process-receipt:2092695b5abd4bfa4b1beebc",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:481910e0011b150e75e0f27b0307205eb63612ce023b496866c1c3bb6c7d6e50",
+          "received_at": "2026-10-20T00:21:41.918775+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:1d79b6110273b25b3c7358e00470e5c6b82151d4a2e1a8c239aec1983519439e",
+          "reported_prompt_hash": "sha256:161c5b9b102c441b2e344b1f565c225015f4f2d5a6f60ed587454406f361e9a2"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "a1d38b88-7d19-4922-ae5e-d25dae8b450a",
+      "stage": "context_compress",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:22:05.522189+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 60495,
+        "utf8_bytes": 92643
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 260,
+        "utf8_bytes": 260
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:18338d7bab56e93f7af132b7",
+          "input_sha256": "c8a0c2fe3555901250b8b5e0c73c588e477b17ada4041afed6d762887830e860",
+          "request_digest": "18338d7bab56e93f7af132b7227dfc57be9787ca7b37c2737e48713c6220146c",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:22:06.307519Z",
+          "completed_at": "2026-10-20T00:22:21.310163Z",
+          "elapsed_ms": 14999,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 36033,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 211,
+              "reasoning_output_tokens": 157
+            }
+          ],
+          "process_receipt_file_sha256": "f28e04495915480be5d7849f00c27a1baa6295994bcd89f1596b89fa9905b962",
+          "stdout_file_sha256": "395902a4a49d7e97a445d971f99861b582f1fd2dbae5ad7da9638601c40d5578"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 997,
+          "receipt_id": "process-receipt:18338d7bab56e93f7af132b7",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:14db7ed6b82e8245ad9d5302cc91d3e57b15c0b5ea4bab69f09b37d6feefed6d",
+          "received_at": "2026-10-20T00:22:21.536194+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:4dad09be2b8725d6377e91ed18a3a89f3f5e45299ac5bd4c0da1697b81e2b3c8",
+          "reported_prompt_hash": "sha256:c8a0c2fe3555901250b8b5e0c73c588e477b17ada4041afed6d762887830e860"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "1aba3e87-7f25-4383-9875-822dd83a17e3",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:22:44.816282+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 60892,
+        "utf8_bytes": 93040
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:3f9f72c4adf3cc36dbf27bed",
+          "input_sha256": "bc256a27274eb32018fa117503b70d7d107d66a580f78e73862baeef70f1a728",
+          "request_digest": "3f9f72c4adf3cc36dbf27beddceb94e4bb9e923ddedf813f336a86085009e095",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:22:45.650616Z",
+          "completed_at": "2026-10-20T00:22:59.234511Z",
+          "elapsed_ms": 13581,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 36181,
+              "cached_input_tokens": 8320,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 192,
+              "reasoning_output_tokens": 60
+            }
+          ],
+          "process_receipt_file_sha256": "2c5ca16007d7d782571938fb0952337b44715743bfae5cc09cc01b57a3299a11",
+          "stdout_file_sha256": "10e7285e5f3acbe646a33fe1a10eb6ea38a6f7a59da3b3f05f1a807f35a3e096"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 998,
+          "receipt_id": "process-receipt:3f9f72c4adf3cc36dbf27bed",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:bef85661fd5477fef165b7a4bb1ccec2bf2bd0673404a33beb1c6ccaabe33eba",
+          "received_at": "2026-10-20T00:22:59.438734+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:af394cad42b781d4807ac4c044fad842460e8d6d7f2ac5d1629faf53419f381a",
+          "reported_prompt_hash": "sha256:bc256a27274eb32018fa117503b70d7d107d66a580f78e73862baeef70f1a728"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "3557410f-51b9-4472-a305-9aabbfd86850",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:23:23.624285+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 59917,
+        "utf8_bytes": 91805
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:396063d18c1c0a306c5efbf5",
+          "input_sha256": "bd314b08b9ab78a96f5ca9a2f854bbeb5ff5355c40595333fc09e3777d097ae6",
+          "request_digest": "396063d18c1c0a306c5efbf53d322e32c317e3577d8d6fcd54dedbc4f4f1788d",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:23:24.458181Z",
+          "completed_at": "2026-10-20T00:23:39.207837Z",
+          "elapsed_ms": 14747,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35801,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 241,
+              "reasoning_output_tokens": 98
+            }
+          ],
+          "process_receipt_file_sha256": "1d86a4c1436cc54614237316d803d826bfcb6fb40f26ff3e4bb656377efa5436",
+          "stdout_file_sha256": "43d788a917f089ab0181c4085ed6e5d183d0a014875d827d3fe0791d5e00084d"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 999,
+          "receipt_id": "process-receipt:396063d18c1c0a306c5efbf5",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:2beea247a78aae9118cec291ebacce577bb3acff443f6fada1a11b6d7f520304",
+          "received_at": "2026-10-20T00:23:39.446936+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:6cfb9fe0342a49b65eb5327b378409c06f483b1491d916259b41a242ffbd6ef8",
+          "reported_prompt_hash": "sha256:bd314b08b9ab78a96f5ca9a2f854bbeb5ff5355c40595333fc09e3777d097ae6"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "1dd34312-ed14-49a0-b10b-73e29e4f3001",
+      "stage": "context_compress",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:24:04.176141+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 58679,
+        "utf8_bytes": 90645
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 260,
+        "utf8_bytes": 260
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:30dc65899a0a416a846060cc",
+          "input_sha256": "1ed30fc2799edcad50df60d511a7c52889509bef592875a3531616e7ee303d5d",
+          "request_digest": "30dc65899a0a416a846060cc594c81f4c34d25c4277df46d46df994567c62e27",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:24:04.958300Z",
+          "completed_at": "2026-10-20T00:24:22.500906Z",
+          "elapsed_ms": 17536,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35414,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 180,
+              "reasoning_output_tokens": 130
+            }
+          ],
+          "process_receipt_file_sha256": "ef256af3e432c6f5ccbe51406512bde061402905391e0ec9fb4e87d9d9641143",
+          "stdout_file_sha256": "8ebc4b9d1ee930638ba4ccebd9a9b90eebea5d44b30fcea1714fbc26960a3ce9"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1000,
+          "receipt_id": "process-receipt:30dc65899a0a416a846060cc",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:e92276540814a599a266ba8ed5ba4e9a67b28f04d8e95601898a98aec353f189",
+          "received_at": "2026-10-20T00:24:22.717319+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:d7a583f0c337b7dead062a2dc9b58a3d12fd75cc1bc026b8023879d3426b6fb5",
+          "reported_prompt_hash": "sha256:1ed30fc2799edcad50df60d511a7c52889509bef592875a3531616e7ee303d5d"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "be24e326-64a2-4189-84a6-f8a778103af6",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:24:46.447782+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 59042,
+        "utf8_bytes": 91008
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:8b843522e6c5831f8eaf153f",
+          "input_sha256": "08644d1f455c5d4f66c336a28959aa91c144eeb68fa534b1be0542a0bed59557",
+          "request_digest": "8b843522e6c5831f8eaf153f80db88361008c082af428b3b464ba8ff1eebc2d4",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:24:47.191489Z",
+          "completed_at": "2026-10-20T00:25:08.062164Z",
+          "elapsed_ms": 20866,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35546,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 420,
+              "reasoning_output_tokens": 265
+            }
+          ],
+          "process_receipt_file_sha256": "1f1e29e93b1944e65464b46e09e064545f7a9d22c8e7f079639bf2b49804d440",
+          "stdout_file_sha256": "bda9098d518aa65cd9b3d3d36076d94d1a1409c846908edbeff3f8b05cae9851"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1001,
+          "receipt_id": "process-receipt:8b843522e6c5831f8eaf153f",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:3a5a36c8def1c08aad3561bd3aff85ef4a76bd0b931b5719a64142bbb015a863",
+          "received_at": "2026-10-20T00:25:08.264675+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:1f593a5f918e23bd83b5df876d70f302da60ca2545bfb0aa60056c435ad4aea1",
+          "reported_prompt_hash": "sha256:08644d1f455c5d4f66c336a28959aa91c144eeb68fa534b1be0542a0bed59557"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "043fadfd-c43e-4fb9-9bda-ae59e275690a",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:25:32.185927+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 59056,
+        "utf8_bytes": 91022
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:4100abb56fe732de0456cfc5",
+          "input_sha256": "4a9aed586fac1e18fddb0105508b50fa1060f1d449d2d6090b111e772fe7161d",
+          "request_digest": "4100abb56fe732de0456cfc5e91fc0ec623c1cc53634ae7aef33e3a7d65910a8",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:25:32.993620Z",
+          "completed_at": "2026-10-20T00:25:58.486178Z",
+          "elapsed_ms": 25490,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35554,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 210,
+              "reasoning_output_tokens": 65
+            }
+          ],
+          "process_receipt_file_sha256": "03891cce74fd2cc0dad9c93415bf747448ddd825c8a523ae85200968d34895f1",
+          "stdout_file_sha256": "44004c41596d2b99f14e065a2c10bdfce44d2a330181974328a2015c112c87e9"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1002,
+          "receipt_id": "process-receipt:4100abb56fe732de0456cfc5",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:3f326c9a30f2ec72e34f11327d0dce8ff4e55eac53e91f7d8afbd802d0981d32",
+          "received_at": "2026-10-20T00:25:58.686986+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:a8833f0476b337891ef20fcae4a285f7f0dd4dfe3d14a65da38d272b3174145e",
+          "reported_prompt_hash": "sha256:4a9aed586fac1e18fddb0105508b50fa1060f1d449d2d6090b111e772fe7161d"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "cd2bcf76-3bf3-4b66-8986-8bf4c6173242",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:26:22.689592+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 59495,
+        "utf8_bytes": 91461
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:3fc269423c89ad4c9fb773b4",
+          "input_sha256": "6ae1c4448a9d47a18eba6406efff46165c6c9ac2a7bf53bcb42b51ce2c16b638",
+          "request_digest": "3fc269423c89ad4c9fb773b40a2e4cd2714a00e5f7d9c0a193ae11ac1a842d7c",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:26:23.505660Z",
+          "completed_at": "2026-10-20T00:26:39.814547Z",
+          "elapsed_ms": 16306,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35692,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 276,
+              "reasoning_output_tokens": 125
+            }
+          ],
+          "process_receipt_file_sha256": "002b713392ac4fbd51b3edc01ba04077a1fea4b6a4a012be956c3349814114d0",
+          "stdout_file_sha256": "cd73e1935bd14b5ef3e00156ba5028b0d2b2a90737db7c7ece49a5da5a92b54a"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1003,
+          "receipt_id": "process-receipt:3fc269423c89ad4c9fb773b4",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:27b0c39bbbd191db8f8274a8bcf68e6ceac3a407eb8c1bedbe33190c07824d30",
+          "received_at": "2026-10-20T00:26:40.022317+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:9975d4e319e0a2c7fae9980d6bb5b0f36df0e2740bd40fa6bc7c81205cb6cacb",
+          "reported_prompt_hash": "sha256:6ae1c4448a9d47a18eba6406efff46165c6c9ac2a7bf53bcb42b51ce2c16b638"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "7bc79677-c757-47ed-9c90-83bc1ab0f20b",
+      "stage": "context_compress",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:27:03.617206+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 58327,
+        "utf8_bytes": 90309
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 260,
+        "utf8_bytes": 260
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:8c64e652ebe2b85b3ca183c0",
+          "input_sha256": "d55842dccca6664b427f7ab29207f1c5edd54704acb725b1ebec005a5d85d5fa",
+          "request_digest": "8c64e652ebe2b85b3ca183c0ca9005c13ab60c68e2d00b70046c998dded9cc3e",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:27:04.393457Z",
+          "completed_at": "2026-10-20T00:27:14.865673Z",
+          "elapsed_ms": 10469,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35311,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 124,
+              "reasoning_output_tokens": 82
+            }
+          ],
+          "process_receipt_file_sha256": "865fd7555ed174447c4cfc3f192b4eea33584ec1ebd7ba4c7aec17fa496ccbd1",
+          "stdout_file_sha256": "b2de6f9fc633f2b2b0b918405c7a221bd4cfd89e9fa099b09c87400030e84259"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1004,
+          "receipt_id": "process-receipt:8c64e652ebe2b85b3ca183c0",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:6f61b115622337f554867bb887ee219413e486c607ed9795458a514240ff6011",
+          "received_at": "2026-10-20T00:27:15.071636+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:a91b49cfdb822b708a77e56b2c1dcf1281c939e56aff5014c22905afd4390f46",
+          "reported_prompt_hash": "sha256:d55842dccca6664b427f7ab29207f1c5edd54704acb725b1ebec005a5d85d5fa"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "a2d0b2f2-1c6f-4bd6-ba92-a89471aa7c4c",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:27:38.870903+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 58689,
+        "utf8_bytes": 90671
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:f059f623ea602971629c3384",
+          "input_sha256": "ba5e03e0caf5a144f7615bbd86f1c87273ff929fc460ca161dae9ae81f48f718",
+          "request_digest": "f059f623ea602971629c3384ed81d52faa21843415bbf2c55282a9974b9bcf33",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:27:39.632056Z",
+          "completed_at": "2026-10-20T00:27:52.336790Z",
+          "elapsed_ms": 12701,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35443,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 200,
+              "reasoning_output_tokens": 61
+            }
+          ],
+          "process_receipt_file_sha256": "fb040e06cefd5a639eacbf332508bafad53269f44399e12bf0a6045c3c4d01d1",
+          "stdout_file_sha256": "d898872345e7b2c51c09966d32f82aeac44d039243f7738789a47bdac33e5fca"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1005,
+          "receipt_id": "process-receipt:f059f623ea602971629c3384",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:f23473b6d5d055e69175b8fab8ca11b6b018974700cf32d98e1f1b24dc114c68",
+          "received_at": "2026-10-20T00:27:52.562244+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:5918742f0349d571eaf2035a919450e614a61e3988b9c51f2495b280fef9bb55",
+          "reported_prompt_hash": "sha256:ba5e03e0caf5a144f7615bbd86f1c87273ff929fc460ca161dae9ae81f48f718"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "257aac79-5eb8-4c74-a87c-26d1d20c564e",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:28:16.599373+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 59128,
+        "utf8_bytes": 91110
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:a1d5b2867edb70806e19aac7",
+          "input_sha256": "ae05df41f92c52c17bc51e3fabfd61ad0148245c8d975a24ebc051392a8def41",
+          "request_digest": "a1d5b2867edb70806e19aac7da0bc04b2db389295dfb146831d6d48e111290a5",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:28:17.369461Z",
+          "completed_at": "2026-10-20T00:28:31.952143Z",
+          "elapsed_ms": 14578,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35577,
+              "cached_input_tokens": 8320,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 190,
+              "reasoning_output_tokens": 61
+            }
+          ],
+          "process_receipt_file_sha256": "b5a37dcecc142f4b371b330749a8b1b1fb51a474f70cf22919d1cf1d82e79a1b",
+          "stdout_file_sha256": "c0da1df0dbc898615c0bbaf7068b3b5ec2361956bf4115fa54b300ce45f76871"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1006,
+          "receipt_id": "process-receipt:a1d5b2867edb70806e19aac7",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:774383ac5b684990075ce61ebbb2d963f9bc8c292c8dba19053c91bc96aac896",
+          "received_at": "2026-10-20T00:28:32.176196+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:9111b7c84cc0576b6ef65e74af1bbc530391907b28ec3c26a4a00615acfc0e58",
+          "reported_prompt_hash": "sha256:ae05df41f92c52c17bc51e3fabfd61ad0148245c8d975a24ebc051392a8def41"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "2e4ecd2d-7091-478d-b222-34cc53810fcb",
+      "stage": "context_compress",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:28:56.060795+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 59082,
+        "utf8_bytes": 90778
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 260,
+        "utf8_bytes": 260
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:c4ef14f5ec423af2a1d364e5",
+          "input_sha256": "b2d385cc2024824d11c1f344d8a122dfbd958febc7d65dd9a5a7443dc13eefbc",
+          "request_digest": "c4ef14f5ec423af2a1d364e523ef705669872174dfcd624e4cd6873ba24788b7",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:28:56.862235Z",
+          "completed_at": "2026-10-20T00:29:05.590254Z",
+          "elapsed_ms": 8727,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35401,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 123,
+              "reasoning_output_tokens": 89
+            }
+          ],
+          "process_receipt_file_sha256": "1fce8b177046f3c9d87dc5b82ef4203eac82cdbc3e5ff309805002f5c7a367ef",
+          "stdout_file_sha256": "e23a8adf2519e58e5adaf2fe17e55f96ac213fd09d9d20a413b6164e1da44bca"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1007,
+          "receipt_id": "process-receipt:c4ef14f5ec423af2a1d364e5",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:979723572d6ac0797085cd7363015d6677538e317e8dc5ab53137927eddf4c90",
+          "received_at": "2026-10-20T00:29:05.806615+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:52d46b41e7a0aa0e4550a5e0f936706a665fb2615c733bd793696ed68dc9df6b",
+          "reported_prompt_hash": "sha256:b2d385cc2024824d11c1f344d8a122dfbd958febc7d65dd9a5a7443dc13eefbc"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "5437c594-093e-4ebd-9c1d-0924de9b2b03",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:29:30.653200+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 59434,
+        "utf8_bytes": 91130
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:52308f2c225fdb16c9e512a1",
+          "input_sha256": "486277731aaf818862421d604051914a9fb322143a88c21e5a1ee82cf2e12bce",
+          "request_digest": "52308f2c225fdb16c9e512a11c70a99a081a0958076b8e0ef978d73fd1bed0e2",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:29:31.443774Z",
+          "completed_at": "2026-10-20T00:29:51.297315Z",
+          "elapsed_ms": 19850,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35525,
+              "cached_input_tokens": 8320,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 261,
+              "reasoning_output_tokens": 96
+            }
+          ],
+          "process_receipt_file_sha256": "ac9dd8a393632dea2e83490e4bcd21bac84c830d4c377efe72991e6e58173362",
+          "stdout_file_sha256": "569a7c6653f035e6b62bce3bb79f8341e47648f06fb73d4deda1e62369f3568d"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1008,
+          "receipt_id": "process-receipt:52308f2c225fdb16c9e512a1",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:2314e443dba567c6f6e6a9abd8ed99c333d562bc008f3ed0aaa010ab464e0ec6",
+          "received_at": "2026-10-20T00:29:51.515751+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:9a4e851c79678fe66ed9578c2769a922a2ffde88df6cad09a76e8185d4b8421a",
+          "reported_prompt_hash": "sha256:486277731aaf818862421d604051914a9fb322143a88c21e5a1ee82cf2e12bce"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "5242db29-1d9f-4226-aa66-4c1afe3a4b75",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:30:16.050069+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 59873,
+        "utf8_bytes": 91569
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:12c754bbb62fe6c67a35e438",
+          "input_sha256": "77fa3adcadbe1375707ac4b62238e52708bd3cf55fea48ff6703c5bd0371254b",
+          "request_digest": "12c754bbb62fe6c67a35e4382bb398fbb16a3f65c2cb4c995694eaebb1911b0d",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:30:16.815527Z",
+          "completed_at": "2026-10-20T00:30:39.427863Z",
+          "elapsed_ms": 22609,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35652,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 357,
+              "reasoning_output_tokens": 201
+            }
+          ],
+          "process_receipt_file_sha256": "db8e664a3aa29434e4ccac2b94f2252dcb7f583a8a5ad619aabc745300ebbf53",
+          "stdout_file_sha256": "dd536fcff0657016d03162eb421854a6db845402e944e4fd22a6a7a17f6d2e28"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1009,
+          "receipt_id": "process-receipt:12c754bbb62fe6c67a35e438",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:991fb2f7e0f38d382a0aaf4b19465ccdf7de0242e00dcc4b02e5163a2827632a",
+          "received_at": "2026-10-20T00:30:39.651547+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:9e29f5c4cc10b4e5dfa09cf4b4d1321ecc4f0321c40fac9711f250cc34d28526",
+          "reported_prompt_hash": "sha256:77fa3adcadbe1375707ac4b62238e52708bd3cf55fea48ff6703c5bd0371254b"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "af7b942c-3c82-4fc8-9eb0-1e9b4f4ecbce",
+      "stage": "context_compress",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:31:03.752491+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 61372,
+        "utf8_bytes": 93688
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 260,
+        "utf8_bytes": 260
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:8cc3fd0869d03ddc83d24d65",
+          "input_sha256": "896e797bce086c5cc8b4b2c4981ef98b9212e3e91874359deda2149a24b3d690",
+          "request_digest": "8cc3fd0869d03ddc83d24d652d29be68701ca8a4782d18aa03b009aae2d3f3c5",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:31:04.534932Z",
+          "completed_at": "2026-10-20T00:31:16.943270Z",
+          "elapsed_ms": 12406,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 36266,
+              "cached_input_tokens": 8192,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 223,
+              "reasoning_output_tokens": 185
+            }
+          ],
+          "process_receipt_file_sha256": "bff32d103fbf3ba5dd7d3fdeb67ff61fec1c4e20aed94bf383e11bddde2ef099",
+          "stdout_file_sha256": "0de50af4120c36874df246ea1eb6f5c62f636df5e4ec1f5a9a4777039e6682b8"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1010,
+          "receipt_id": "process-receipt:8cc3fd0869d03ddc83d24d65",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:101cc5ea84cef766554efd82c85e04dd4459f810131290b3048475d9dfdae449",
+          "received_at": "2026-10-20T00:31:17.140938+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:e0c37da128de085212d78eab5242f7b8f8daea21012b9188e15d2574cf26394e",
+          "reported_prompt_hash": "sha256:896e797bce086c5cc8b4b2c4981ef98b9212e3e91874359deda2149a24b3d690"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "b43f830f-0982-4958-954f-6a0314ac11bd",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:31:41.400632+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 61738,
+        "utf8_bytes": 94054
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:1274e613fb30ad5fad32235e",
+          "input_sha256": "e8bedd7309e7846027dfe853d4e8bb77e6353517250ede43a760dad01f7112a6",
+          "request_digest": "1274e613fb30ad5fad32235ebc2a397b346b47efaa4d82104752ad2fc5c3e1db",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:31:42.188308Z",
+          "completed_at": "2026-10-20T00:31:58.506745Z",
+          "elapsed_ms": 16312,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 36398,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 224,
+              "reasoning_output_tokens": 105
+            }
+          ],
+          "process_receipt_file_sha256": "95aa0fda6291e7a79cb26a942baf06e8250703120bb17e735f61b9f6dff23d5c",
+          "stdout_file_sha256": "b738f1010fba73e5cd0bba7cb60dd31caddb3bfb20c096245e4aba06f8423513"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1011,
+          "receipt_id": "process-receipt:1274e613fb30ad5fad32235e",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:27dceb36e573b0315b9d0bdd82e1a94cb551ece6d2fcf3bada216d69e4d01c02",
+          "received_at": "2026-10-20T00:31:58.726728+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:1db4482ce159b999f0b0d311b1e1f4f83218f1a4329c797cd6a2d4007bd08010",
+          "reported_prompt_hash": "sha256:e8bedd7309e7846027dfe853d4e8bb77e6353517250ede43a760dad01f7112a6"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "481a4494-3241-472b-a295-997392acfd8e",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:32:24.146878+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 62177,
+        "utf8_bytes": 94493
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:741295c5d15299d6afd62156",
+          "input_sha256": "5f8ff9ac4f335c21bd010ee6f21c09703d4a8a2cd9d54fcade123e070e16dd3a",
+          "request_digest": "741295c5d15299d6afd62156c657385749cf1cda823b49fbdaa3c80c4ccb0eba",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:32:24.979201Z",
+          "completed_at": "2026-10-20T00:32:40.889571Z",
+          "elapsed_ms": 15907,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 36540,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 278,
+              "reasoning_output_tokens": 120
+            }
+          ],
+          "process_receipt_file_sha256": "b2da2e97859016383c5e9e8e8ce38173e5ef7cc21dac38c36ac2cb5b495fa89d",
+          "stdout_file_sha256": "7344bbd20ad3b561e4764c185ce6e041721ebba0000eaca336452834bb51dbe0"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1012,
+          "receipt_id": "process-receipt:741295c5d15299d6afd62156",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:9779e70965a6d8f4f72c03da1b39ad4e4b6bc93759b8181fc943e13bdc66c6eb",
+          "received_at": "2026-10-20T00:32:41.099795+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:a521f827986b57f769b163f8f845ca5027a5ac69347d2c5d4548cd488583e788",
+          "reported_prompt_hash": "sha256:5f8ff9ac4f335c21bd010ee6f21c09703d4a8a2cd9d54fcade123e070e16dd3a"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "73d8d96e-7720-4200-acb4-86d600229e95",
+      "stage": "context_compress",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:33:05.028125+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 69370,
+        "utf8_bytes": 103312
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 260,
+        "utf8_bytes": 260
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:5aae8fdea8a6ec3daa3969f4",
+          "input_sha256": "0bd14af387550c1a9ccd8bdff29bf3955aa2604fee3836d79885ad270fb8e728",
+          "request_digest": "5aae8fdea8a6ec3daa3969f4cbade7eec0638e4aca9432614990a629282ee0ec",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:33:05.850891Z",
+          "completed_at": "2026-10-20T00:33:22.354611Z",
+          "elapsed_ms": 16502,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 39323,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 321,
+              "reasoning_output_tokens": 207
+            }
+          ],
+          "process_receipt_file_sha256": "f6dce854496b5fd3a678d666aed06b60d2fafa036f7a907e376596dcd1876240",
+          "stdout_file_sha256": "4ca4cbbd8db4e100b79d78844aaa6a67d7ee8993eb1ea946eac123e090c6bcba"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1013,
+          "receipt_id": "process-receipt:5aae8fdea8a6ec3daa3969f4",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:6eb46f1a407ac5e7dc164691994ec0332741204648b7d3746c92b95d735e25fd",
+          "received_at": "2026-10-20T00:33:22.553143+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:3156de1217273087026fcb55ab402a340092d8c0d12e215a6f42d816e49ab3a1",
+          "reported_prompt_hash": "sha256:0bd14af387550c1a9ccd8bdff29bf3955aa2604fee3836d79885ad270fb8e728"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "b355c565-e53d-4d28-949d-e800bb24848c",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:33:47.899697+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 69812,
+        "utf8_bytes": 103754
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:6f5f778d4c0770cb6cfbd0e2",
+          "input_sha256": "f7a52a3701d40a727e223cda7e9ffcc14d73629001c1b1f899d435269965988d",
+          "request_digest": "6f5f778d4c0770cb6cfbd0e2ba0403f4373d60b89463828247d1d2dd6ee952ce",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:33:48.728081Z",
+          "completed_at": "2026-10-20T00:34:06.300016Z",
+          "elapsed_ms": 17569,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 39491,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 254,
+              "reasoning_output_tokens": 105
+            }
+          ],
+          "process_receipt_file_sha256": "21cd5a68e4c94700bfe4a33ebbd8f4380c8a751ca2be17ec4928624947bc37bb",
+          "stdout_file_sha256": "13b48dc565f10a87db8ddd07180bceb77dbfea6772c2fbdb5156aa4669c3ce72"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1014,
+          "receipt_id": "process-receipt:6f5f778d4c0770cb6cfbd0e2",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:286714e300785dc9fd06b20a7823e6406cc00b3dc0c4492fd47d10e312f2d179",
+          "received_at": "2026-10-20T00:34:06.510016+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:a6ebff43781779f38be42c13a08ebdf7e209ebec601221d8d9a0d00d03c378b0",
+          "reported_prompt_hash": "sha256:f7a52a3701d40a727e223cda7e9ffcc14d73629001c1b1f899d435269965988d"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "d645e633-6a80-4f7e-bd0e-f69c79882aba",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:34:32.449324+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 70251,
+        "utf8_bytes": 104193
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:c718fe2ca45633555de655c7",
+          "input_sha256": "b18229450e317278d23d24e8de51602e4b0e3479d57b6441fdb734fe76e114f9",
+          "request_digest": "c718fe2ca45633555de655c7e290a2cfff6a60a6e1a27475a9130bc0d7ca89a9",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:34:33.311251Z",
+          "completed_at": "2026-10-20T00:34:49.611573Z",
+          "elapsed_ms": 16297,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 39619,
+              "cached_input_tokens": 8320,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 304,
+              "reasoning_output_tokens": 143
+            }
+          ],
+          "process_receipt_file_sha256": "9a36125505d1f2fa3832e697c6ab0a8abb9bad3a88655a4351099bfebbd22298",
+          "stdout_file_sha256": "447642a6dc5080e2e3a316fb46df82455a4e620a0b8f834dc4b059e8669d2753"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1015,
+          "receipt_id": "process-receipt:c718fe2ca45633555de655c7",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:9af36fece51341a5caef6c96bb5993cfe90637db37f77d6965f3cc65aa64465d",
+          "received_at": "2026-10-20T00:34:49.826257+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:c14c133a88fb4f7da1c02b51e388a8bf63c815616c72d27e6699c17fc041d3e2",
+          "reported_prompt_hash": "sha256:b18229450e317278d23d24e8de51602e4b0e3479d57b6441fdb734fe76e114f9"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "4166760c-6518-4ac4-9dee-e13fbf7becab",
+      "stage": "context_compress",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:35:14.005306+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 57240,
+        "utf8_bytes": 88902
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 260,
+        "utf8_bytes": 260
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:2309e913179c9a657835f24a",
+          "input_sha256": "f40709608646945b958e057a45f48210dc285caa47b636194ede4afdbe525fb5",
+          "request_digest": "2309e913179c9a657835f24ab382da3c968415327d7adff682fa6a009c26ec79",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:35:14.813837Z",
+          "completed_at": "2026-10-20T00:35:26.320950Z",
+          "elapsed_ms": 11504,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 34833,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 90,
+              "reasoning_output_tokens": 64
+            }
+          ],
+          "process_receipt_file_sha256": "534455dc889dcfb0b4ad69f7e98f2cc8a504f306687f5342c231cea843bcdaf6",
+          "stdout_file_sha256": "4d36ad4f2e94167c36a69830e68f77663b246fbcc3dc3581b9aedeadc4c99ca2"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1016,
+          "receipt_id": "process-receipt:2309e913179c9a657835f24a",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:1b8c9c3cdbe722f463026faa216650b485691c4b7c78794a8f8124b354b466ac",
+          "received_at": "2026-10-20T00:35:26.529481+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:c13ffc00e4e9864b3a62e1964fe16cbfc29fdfe4b4edc7ac84728e38d17b35de",
+          "reported_prompt_hash": "sha256:f40709608646945b958e057a45f48210dc285caa47b636194ede4afdbe525fb5"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "439e4968-c968-40cf-a484-3638b62073fc",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:35:52.056830+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 57588,
+        "utf8_bytes": 89250
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:02206b203bddfdc4ce14f87e",
+          "input_sha256": "289ee815496e44d404f5f8d758ef142a845d3186c75cd277290a157d6e6eeb9e",
+          "request_digest": "02206b203bddfdc4ce14f87e613f60193c50209f6bf65a19fbe8669884a4e680",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:35:52.855412Z",
+          "completed_at": "2026-10-20T00:36:08.661664Z",
+          "elapsed_ms": 15804,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 34957,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 181,
+              "reasoning_output_tokens": 55
+            }
+          ],
+          "process_receipt_file_sha256": "283a6958035893197683f43b9cdf7e59223e622d6afcdcf3902acb088e2f9fa9",
+          "stdout_file_sha256": "b3a20bb6419e01789fb51ccd5f6bae42088025c830a22c7954571138577430cd"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1017,
+          "receipt_id": "process-receipt:02206b203bddfdc4ce14f87e",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:00a5eec1699b4a1db9991f759c447f54f323faf609125ab93c9b5f7267037868",
+          "received_at": "2026-10-20T00:36:08.873187+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:c0e2bc73a0c6f037c3ad3797aed68c44227fba8502a137752088f6bc3d88a3d9",
+          "reported_prompt_hash": "sha256:289ee815496e44d404f5f8d758ef142a845d3186c75cd277290a157d6e6eeb9e"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "a1567b90-9280-4063-935e-bf3c9426bb77",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:36:34.994741+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 58027,
+        "utf8_bytes": 89689
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:1242f55028b0374665189037",
+          "input_sha256": "21c3eab94a3e5d799b7d31180b671a891fe5107ac4469be70fe8d21a890bc4e9",
+          "request_digest": "1242f55028b037466518903767e055ca7ddbb61a13bc8b3f0554144cb415705a",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:36:35.799209Z",
+          "completed_at": "2026-10-20T00:36:50.238416Z",
+          "elapsed_ms": 14436,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35089,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 203,
+              "reasoning_output_tokens": 72
+            }
+          ],
+          "process_receipt_file_sha256": "406ba0db9b784f101434cb619214ca556d2146652938bdb295a6acf87fd99cad",
+          "stdout_file_sha256": "afc3ba0fb409aaa8c4023fcf4908966b0f42b1c974a400cc616be7da6f5d35f7"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1018,
+          "receipt_id": "process-receipt:1242f55028b0374665189037",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:0b61e6786542f6cc08110b2751bedeab61482b6a85933a0e768c1cf336b45c0f",
+          "received_at": "2026-10-20T00:36:50.455676+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:f7b38cde94fe51f23e03c9ca2fe6876e04e35e165d1b716e5dba8d983125453b",
+          "reported_prompt_hash": "sha256:21c3eab94a3e5d799b7d31180b671a891fe5107ac4469be70fe8d21a890bc4e9"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "bd4fdfdc-8bda-419d-9d37-295f49ea5e7a",
+      "stage": "context_compress",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:37:14.866523+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 66611,
+        "utf8_bytes": 99719
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 260,
+        "utf8_bytes": 260
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:2f3c2490cdacbc0e68163851",
+          "input_sha256": "b5446ae5344548b98a9459bd37f4a906f4f9309c15fc0f58b7243132dcc54079",
+          "request_digest": "2f3c2490cdacbc0e681638517f4b8ba42ea71748c5bb94e6e3ca45694d3ec3a0",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:37:15.669618Z",
+          "completed_at": "2026-10-20T00:37:33.705478Z",
+          "elapsed_ms": 18034,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 37994,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 309,
+              "reasoning_output_tokens": 247
+            }
+          ],
+          "process_receipt_file_sha256": "2f67e0df9032301e27099a59238cc6e16b4dc356f7be775742f3e6805fb2da6a",
+          "stdout_file_sha256": "d2525e99292556fbf7bd0a2aad31b3e02edeefcc3f62096cde313b0e1bc364ca"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1019,
+          "receipt_id": "process-receipt:2f3c2490cdacbc0e68163851",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:668475701b5abf3cfb724d5f2611a7382bbdb064fa56ce7818bf343b400f88c0",
+          "received_at": "2026-10-20T00:37:33.956859+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:f53636397410d04963e6cb6488020d13f6502f684980f3b97590b4576e2d4192",
+          "reported_prompt_hash": "sha256:b5446ae5344548b98a9459bd37f4a906f4f9309c15fc0f58b7243132dcc54079"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "2be4f0cc-4c2a-4cf9-aad1-7f57798e0c2e",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:38:06.698089+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 67048,
+        "utf8_bytes": 100156
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:9bdb339ce7421f63d707090d",
+          "input_sha256": "53bcf207f1aaf8b449767327cbb167ea49cbcc456f805969908fb45d65211daf",
+          "request_digest": "9bdb339ce7421f63d707090da41801397c5356c8e892ed51e5dc94d1f7a21bec",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:38:07.600527Z",
+          "completed_at": "2026-10-20T00:38:24.120303Z",
+          "elapsed_ms": 16516,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 38154,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 252,
+              "reasoning_output_tokens": 90
+            }
+          ],
+          "process_receipt_file_sha256": "b82a35e0753f4e1aca65772b5797fe38d1a224c1ff3e7386352cdd47f67324ca",
+          "stdout_file_sha256": "f03bcd523a2e00ef9ac4868515cfe36701338b90525a744a364ca8043734f3f9"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1020,
+          "receipt_id": "process-receipt:9bdb339ce7421f63d707090d",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:2dc934979528d99eb46f9c38e38dfa24410bd3887f97b2656eae8b15c7792753",
+          "received_at": "2026-10-20T00:38:24.357558+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:bd5977b26c7336c2976abd51365a671d6d42928b31691be1f268d8b351afe2bb",
+          "reported_prompt_hash": "sha256:53bcf207f1aaf8b449767327cbb167ea49cbcc456f805969908fb45d65211daf"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "30750ceb-ef74-40a1-86a0-15ec0cfe78f0",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:38:51.714957+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 65954,
+        "utf8_bytes": 98712
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:a01bbb52b330e2a703172cee",
+          "input_sha256": "ab177aca3af92bf0015a09ced33ff82abe2c1fd18b01eb6c08078d1cd2837c8d",
+          "request_digest": "a01bbb52b330e2a703172cee742780e9f02f376168dd803e129fab4c16b9105b",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:38:52.550414Z",
+          "completed_at": "2026-10-20T00:39:07.039392Z",
+          "elapsed_ms": 14485,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 37760,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 242,
+              "reasoning_output_tokens": 121
+            }
+          ],
+          "process_receipt_file_sha256": "a7072af52fe4dba81d2e30dc1b50923377b03af0327aebfae30d9c71c2358e65",
+          "stdout_file_sha256": "e24ffb20a6a8c54d824a96b3b323d3e392b615bcde52c70c4fb48c927835ed1d"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1021,
+          "receipt_id": "process-receipt:a01bbb52b330e2a703172cee",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:a71bc0f3ae7f78ce4b1c15b76176191e5350762b7d9abd1f00516cfc651e6085",
+          "received_at": "2026-10-20T00:39:07.277263+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:72a46f527b690e3b53b140838e82645d70fd98015819a50033dad780f8785714",
+          "reported_prompt_hash": "sha256:ab177aca3af92bf0015a09ced33ff82abe2c1fd18b01eb6c08078d1cd2837c8d"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "4bed646b-3053-497c-8f86-2ca24f651bbd",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 00:39:34.053107+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 128913,
+        "utf8_bytes": 171429
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:2c020265543facf9517aa6d7",
+          "input_sha256": "1cd769cecdce3cb83b9d48a0c0bb9d609edcfa8eff4bf9d86a09bb511a3eeafb",
+          "request_digest": "2c020265543facf9517aa6d77df5e58f00ab27f5745e19a9d51693abee9398be",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T00:39:35.065046Z",
+          "completed_at": "2026-10-20T00:39:55.679875Z",
+          "elapsed_ms": 20611,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 62335,
+              "cached_input_tokens": 8320,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 294,
+              "reasoning_output_tokens": 172
+            }
+          ],
+          "process_receipt_file_sha256": "42ef2d0682fa180870061b9ef7ace3c05d6d6f4a2b1c14874dfd7c9b40e31c1b",
+          "stdout_file_sha256": "893207cbf3889565a185aed4b2fb81c1b43678a9a2dadbfb6f3c19c1f616612e"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1022,
+          "receipt_id": "process-receipt:2c020265543facf9517aa6d7",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:e447ed4021e26e9051297cf42dbbb4515982989a6545742e7e00b73d30a5e28a",
+          "received_at": "2026-10-20T00:39:55.895261+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:05a3a1d1786226b92bc56fb93ba01559d2612e5ed83fb897b444cd0bdae155e4",
+          "reported_prompt_hash": "sha256:1cd769cecdce3cb83b9d48a0c0bb9d609edcfa8eff4bf9d86a09bb511a3eeafb"
+        }
+      ]
+    },
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "bbd7d382-6d19-446c-b3a5-30599c63bd48",
+      "stage": "draft",
+      "effect_status": "UNKNOWN",
+      "created_at": "2026-10-20 00:40:09.234977+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 368707,
+        "utf8_bytes": 468963
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 3776,
+        "utf8_bytes": 3776
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:9d72c80e23b46d0106a3150e",
+          "input_sha256": "1c39ce0136657114159b88ac8c0dbcab77f3d23e0f79d8c6acbf1e0f9b9de11c",
+          "request_digest": "9d72c80e23b46d0106a3150e83d6b5db91021435d86d9a4eb7e27df32298af26",
+          "status": "FAILED",
+          "process_started_at": "2026-10-20T00:40:17.240303Z",
+          "completed_at": "2026-10-20T00:55:27.011758Z",
+          "elapsed_ms": 909761,
+          "actual_turn_usage": [],
+          "process_receipt_file_sha256": "ad11986e4e24f7c43b51f83dfec09dbbec61c22fec6d7be398ebb7dd2f9b7f34",
+          "stdout_file_sha256": "80bda1c0c17f6e897ac30ad19d4b7528383109710f4a32b49ab1786a2cf72135"
+        }
+      ],
+      "native_receipts": []
+    },
+    {
+      "operation_id": "740ebc7b-0c01-4142-9b60-6850fc488204",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "02203730-754f-4050-9a58-e23e19ebd2ae",
+      "stage": "draft",
+      "effect_status": "UNKNOWN",
+      "created_at": "2026-10-20 00:57:18.860684+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 368707,
+        "utf8_bytes": 468963
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 3776,
+        "utf8_bytes": 3776
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:e98c74c5adf08c11ea087017",
+          "input_sha256": "1c39ce0136657114159b88ac8c0dbcab77f3d23e0f79d8c6acbf1e0f9b9de11c",
+          "request_digest": "e98c74c5adf08c11ea087017dbf77574dc38ac70bf7bf3e35b41b33a54e16373",
+          "status": "FAILED",
+          "process_started_at": "2026-10-20T00:57:27.300601Z",
+          "completed_at": "2026-10-20T01:12:38.206416Z",
+          "elapsed_ms": 910903,
+          "actual_turn_usage": [],
+          "process_receipt_file_sha256": "653448b7d95e06986ecda3c08d7547cf3868619b239e3535acf37dada60acf81",
+          "stdout_file_sha256": "2393fbe6be2afa4d0dd6c9416f960d96857b0278dca18a9152b2fd11f84ea913"
+        }
+      ],
+      "native_receipts": []
+    },
+    {
+      "operation_id": "4a064a1e-ef70-4f3d-b5f2-101f7ac3055a",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "95615745-4f6c-493b-b2b8-158671f227c1",
+      "stage": "context_compress",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 01:14:24.328408+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 60172,
+        "utf8_bytes": 92284
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 260,
+        "utf8_bytes": 260
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:73375930e6a3ad51c5cb0b18",
+          "input_sha256": "43a96514087bb6a452c35d9d510c4913a8bf342bf8eb834ec05aa0fe610300c3",
+          "request_digest": "73375930e6a3ad51c5cb0b1836b363e4ec652cc212ee1ac0bf619d479ab9033a",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T01:14:25.259433Z",
+          "completed_at": "2026-10-20T01:14:46.520845Z",
+          "elapsed_ms": 21258,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 35962,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 162,
+              "reasoning_output_tokens": 112
+            }
+          ],
+          "process_receipt_file_sha256": "9b5d1935af65cd244dab16bce257542c01ae83485e3aa6451bcae376c8dbecc1",
+          "stdout_file_sha256": "e40e54c8b9af53826224d372d9a8a21039ff86495b19bdd9e6b1b9b6ca52e7c4"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1023,
+          "receipt_id": "process-receipt:73375930e6a3ad51c5cb0b18",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:ccd47387e21dda320615c0877c895076278d110757373b6cde5b5e620a5e323f",
+          "received_at": "2026-10-20T01:14:46.741263+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:2c89b78107c195d1f3ebb2ee6b43a428a8344adbf787f3652b1f13a2e8f22578",
+          "reported_prompt_hash": "sha256:43a96514087bb6a452c35d9d510c4913a8bf342bf8eb834ec05aa0fe610300c3"
+        }
+      ]
+    },
+    {
+      "operation_id": "4a064a1e-ef70-4f3d-b5f2-101f7ac3055a",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "external_effect_id": "d47c9a52-a931-41f3-a48d-eef05a04c6bb",
+      "stage": "context_fidelity",
+      "effect_status": "SUCCEEDED",
+      "created_at": "2026-10-20 01:15:12.732974+00:00",
+      "updated_at": null,
+      "application_input": {
+        "unicode_codepoints": 60552,
+        "utf8_bytes": 92664
+      },
+      "application_protocol_schema": {
+        "unicode_codepoints": 557,
+        "utf8_bytes": 557
+      },
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "local_process_receipts": [
+        {
+          "receipt_id": "process-receipt:0d17cb1dc2f3cd760c2c9d9e",
+          "input_sha256": "5ec37d2b7f3318a67f4f7c08032cc67ef125961261dae8ce645789f1444c18f1",
+          "request_digest": "0d17cb1dc2f3cd760c2c9d9eb7953621c975ac22040edc424ea760a4c28bc662",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T01:15:13.691026Z",
+          "completed_at": "2026-10-20T01:15:27.349974Z",
+          "elapsed_ms": 13655,
+          "actual_turn_usage": [
+            {
+              "input_tokens": 36102,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 241,
+              "reasoning_output_tokens": 102
+            }
+          ],
+          "process_receipt_file_sha256": "f893c85e4759e61d3aab7ff533473be65759d63ad73212b2b29e5a5e067ce491",
+          "stdout_file_sha256": "043485afc8cd174d84976f9d10a9a87412171918c5e73eb2dd9eed68c7382768"
+        }
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1024,
+          "receipt_id": "process-receipt:0d17cb1dc2f3cd760c2c9d9e",
+          "status": "VERIFIED",
+          "payload_hash": "sha256:3edd7b28f1327f3eb6cd54a5c65f05a042470260b4ecb94dd2bd4cfae1bbb021",
+          "received_at": "2026-10-20T01:15:27.586591+00:00",
+          "real_model_call": true,
+          "model_id": "gpt-6.1-sol",
+          "provider_id": "codex-cli",
+          "reported_envelope_hash": "sha256:ceee8947c27ef29d3ae193bd907feeb8d6e7bfb39fdf7fc1c71ec5e0e57e4591",
+          "reported_prompt_hash": "sha256:5ec37d2b7f3318a67f4f7c08032cc67ef125961261dae8ce645789f1444c18f1"
+        }
+      ]
+    }
+  ],
+  "main_writer_successes": 0,
+  "new_chapter26_selected": false,
+  "cancellation_acknowledgement": {
+    "cancel_command_id": "8a7c7019-449f-485a-8e2e-501de18a32ed",
+    "replayed": false,
+    "status": "CANCELLATION_REQUESTED",
+    "version": 3
+  },
+  "boundaries": [
+    "Original two main Writer Effects remain UNKNOWN; native isolation revokes stale commit rights without claiming remote success or zero usage.",
+    "Third successor has a cancelled Attempt, two successful auxiliary Effects and zero main draft Effects. Its Operation remains RECONCILIATION_REQUIRED, not CANCELLED.",
+    "The two auxiliary calls after author pause are preserved negative evidence that triggered the final Book-owned dispatch guard.",
+    "Final-source read-only pause guard rejects RUNTIME_DISPATCH_PAUSED with zero new Effects; unit/native PostgreSQL checks are separate from this retained runtime history."
+  ]
+}

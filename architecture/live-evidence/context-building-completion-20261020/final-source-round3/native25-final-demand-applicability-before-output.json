@@ -1,0 +1,31 @@
+{
+  "record_type": "NATIVE25_FROZEN_CHAPTER_DEMAND_APPLICABILITY_BEFORE_OUTPUT",
+  "created_at": "2026-10-20T03:36:13.898199+00:00",
+  "source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "preregistration_git_commit": "222a6715",
+  "chapter_request_id": "chapter-request:b081c2cc6a8bf6087762e23d3ff3e22b47450827e3920a64a1768f382936c7a4",
+  "snapshot_hash": "sha256:be01b28dcd57389f2e3f08e939d48c48a94d4d03565d9c3660c9f6e048761528",
+  "task_hash": "sha256:db6f4608b3c848c81d71def25b5e8dd6a3c4d9359b051ef0653dbf4cde62ca1f",
+  "task_contract": "working-retrieval-task.v6",
+  "all_ten_registered_positive_cases": "APPLICABLE",
+  "fee_scope": "Frozen Chapter demand explicitly retains completed initial courses and settled payment/labour; this does not mandate a new fee.",
+  "demand_field_refs": [
+    {
+      "asset_version_id": "6f506d14-b2b6-46e8-b57a-f6c08aefb733",
+      "pointer": "/exit_state_spec/summary",
+      "text_sha256": "fa977711c54fc6d7c1e03e9d9da2de286df69e144d8e003f889df37e1803e704"
+    },
+    {
+      "asset_version_id": "6f506d14-b2b6-46e8-b57a-f6c08aefb733",
+      "pointer": "/narrative_realization_slice/events/0/motivation",
+      "text_sha256": "d550374329cc0242f607f01376e683f018aa37520e529ce01dc75aaeeb7db088"
+    },
+    {
+      "asset_version_id": "6f506d14-b2b6-46e8-b57a-f6c08aefb733",
+      "pointer": "/exit_state_spec/summary",
+      "text_sha256": "fa977711c54fc6d7c1e03e9d9da2de286df69e144d8e003f889df37e1803e704"
+    }
+  ],
+  "old_quarry_tool_current_state_exclusion": "APPLICABLE_TO_TEACHING_NOT_QUARRY_TASK",
+  "output25_read": false
+}

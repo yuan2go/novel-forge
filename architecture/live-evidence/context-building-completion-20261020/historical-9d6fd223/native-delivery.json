@@ -1,0 +1,188 @@
+{
+  "record_type": "ACTUAL_NATIVE_CONTINUOUS_CREATIVE_DELIVERY",
+  "source_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+  "database": "nf_context_final_acceptance",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "status": "EXECUTABLE_SAVED_READ_BACK_EXPORTED",
+  "target_chapters": 100,
+  "accepted_through_chapter": 0,
+  "writing_state": "PAUSED",
+  "book_version": 203,
+  "unchanged_original_chapters": 20,
+  "original_text_bytes": 296612,
+  "new_units": [
+    {
+      "chapter": 21,
+      "asset_version_id": "authority-output:f4cdff0b-a8d6-4208-bf18-0590bc40b71b:chapter.best_candidate:v1",
+      "content_hash": "sha256:68633c333ecf9e8404e626d47637f62a9b367408003df4e9dc27e89f1fdb5138",
+      "text_sha256": "5d51435d4e419dd67977fe0454ad052f6fc191ec568ba95711523199a96e7e4e",
+      "unicode_codepoints": 5060,
+      "utf8_bytes": 14970,
+      "author_length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4289,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "original_generation_request_id": "chapter-request:1b828ed508bacaeb1202bf85d044187b526ee6af5f3e51f7cc44364972d69f9a",
+      "original_generation_root": "9e3d6569-2c9e-4048-9484-b4fe1d4a138c",
+      "parent_group_version_id": "authority-output:f5853a40-6b21-4f02-83a2-ec52f8c0737f:story_planning.candidate:v1",
+      "working_selection": {
+        "status": "SELECTED",
+        "asset_version_id": "24949273-cca7-46c7-a589-8d3d43164b0f",
+        "content_hash": "sha256:02fd847da154be3379aa624f0cfd239da971d0e59fd3917c9c40662d62f9c624",
+        "selected_asset_version_id": "authority-output:f4cdff0b-a8d6-4208-bf18-0590bc40b71b:chapter.best_candidate:v1",
+        "selected_content_hash": "sha256:68633c333ecf9e8404e626d47637f62a9b367408003df4e9dc27e89f1fdb5138",
+        "authority": "AUTHORIZED_WORK_VERSION_USAGE",
+        "author_selection": "NOT_GRANTED",
+        "formal_acceptance": "NOT_GRANTED"
+      },
+      "author_selection": "NOT_GRANTED"
+    },
+    {
+      "chapter": 22,
+      "asset_version_id": "authority-output:7e6ae5ce-72b2-4127-ae43-8d9b8ed7b532:chapter.best_candidate:v1",
+      "content_hash": "sha256:2f4772aef04579a1763c42a8acef1a8689d77f2aa4a1598f2208750a542b1562",
+      "text_sha256": "6cb3619aee605c288fa9e914a200b45f3f1a29c5b3941fdacd5b17f98239f042",
+      "unicode_codepoints": 4908,
+      "utf8_bytes": 14556,
+      "author_length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4207,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "original_generation_request_id": "chapter-request:4d0ae8a9927a0676a2ba3a6fc01f1924ce3a374408d0e2a99caa2788c88c07eb",
+      "original_generation_root": "fdffd705-56aa-43ec-91ff-5b93bcf71686",
+      "parent_group_version_id": "authority-output:f5853a40-6b21-4f02-83a2-ec52f8c0737f:story_planning.candidate:v1",
+      "working_selection": {
+        "status": "SELECTED",
+        "asset_version_id": "5fef07bb-a91b-48a6-9d06-9344dc0c350b",
+        "content_hash": "sha256:b52b302ae21d66ae2981fe4c385bc4fbabda47ea92a07554ff71526600ae0548",
+        "selected_asset_version_id": "authority-output:7e6ae5ce-72b2-4127-ae43-8d9b8ed7b532:chapter.best_candidate:v1",
+        "selected_content_hash": "sha256:2f4772aef04579a1763c42a8acef1a8689d77f2aa4a1598f2208750a542b1562",
+        "authority": "AUTHORIZED_WORK_VERSION_USAGE",
+        "author_selection": "NOT_GRANTED",
+        "formal_acceptance": "NOT_GRANTED"
+      },
+      "author_selection": "NOT_GRANTED"
+    },
+    {
+      "chapter": 23,
+      "asset_version_id": "authority-output:6b6f83a6-14ec-4ecb-b203-120574fbb1bb:chapter.best_candidate:v1",
+      "content_hash": "sha256:80d6e8026ee0d74e6f3dffa77ed3aec3b075ed53d318f1141572b313dd20184e",
+      "text_sha256": "130586d6bc524bbad89b8cc3d5e497fea29d8824ded7efbf44b4d1b64e239c59",
+      "unicode_codepoints": 5029,
+      "utf8_bytes": 14891,
+      "author_length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4298,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "original_generation_request_id": "chapter-request:ac69b4c4f64d944dd53b6da8f9e1f977fd885c071a0faf6c23eb15c39edad365",
+      "original_generation_root": "703e51ab-b1a9-440a-9f12-037a4d86a1b1",
+      "parent_group_version_id": "authority-output:f5853a40-6b21-4f02-83a2-ec52f8c0737f:story_planning.candidate:v1",
+      "working_selection": {
+        "status": "SELECTED",
+        "asset_version_id": "c0ed7923-da22-4cc9-b3f2-317c3abceacd",
+        "content_hash": "sha256:cc3c0b2b3837523f83cf970d8215d55c338579af1d3584d239af30a82d252a9f",
+        "selected_asset_version_id": "authority-output:6b6f83a6-14ec-4ecb-b203-120574fbb1bb:chapter.best_candidate:v1",
+        "selected_content_hash": "sha256:80d6e8026ee0d74e6f3dffa77ed3aec3b075ed53d318f1141572b313dd20184e",
+        "authority": "AUTHORIZED_WORK_VERSION_USAGE",
+        "author_selection": "NOT_GRANTED",
+        "formal_acceptance": "NOT_GRANTED"
+      },
+      "author_selection": "NOT_GRANTED"
+    },
+    {
+      "chapter": 24,
+      "asset_version_id": "authority-output:17e93b2c-2ff8-4483-bfc1-e4c884763266:chapter.best_candidate:v1",
+      "content_hash": "sha256:3f7de52d20e27e939f01defe351d091fdca22e0e5720a143c7f3f6d7cd722319",
+      "text_sha256": "da96b9e80db0c3ffed912a2caf9bd1f71501f4ebef4f6719407e6c5b40238164",
+      "unicode_codepoints": 4882,
+      "utf8_bytes": 14522,
+      "author_length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4291,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "original_generation_request_id": "chapter-request:1efdde5b549aa3e299d2d22cd7b0978e2f9dafb301fa8f649bb2a5e2887926f0",
+      "original_generation_root": "b85c3b74-2a32-4188-bf9f-3074ec1ec02a",
+      "parent_group_version_id": "authority-output:f5853a40-6b21-4f02-83a2-ec52f8c0737f:story_planning.candidate:v1",
+      "working_selection": {
+        "status": "SELECTED",
+        "asset_version_id": "4df17947-649f-4ad5-981a-7a7ea3c9da40",
+        "content_hash": "sha256:1f57ca5f07ee703df6172f788fd28c8e2485582cfdfd0e05d31cc4b602bcea50",
+        "selected_asset_version_id": "authority-output:17e93b2c-2ff8-4483-bfc1-e4c884763266:chapter.best_candidate:v1",
+        "selected_content_hash": "sha256:3f7de52d20e27e939f01defe351d091fdca22e0e5720a143c7f3f6d7cd722319",
+        "authority": "AUTHORIZED_WORK_VERSION_USAGE",
+        "author_selection": "NOT_GRANTED",
+        "formal_acceptance": "NOT_GRANTED"
+      },
+      "author_selection": "NOT_GRANTED"
+    },
+    {
+      "chapter": 25,
+      "asset_version_id": "authority-output:bc77b749-e321-4b19-94f4-24f21bbcf06f:chapter.best_candidate:v1",
+      "content_hash": "sha256:d2f2a61f3544c2707bf7b4218a368edc6bc32352a95b336274991c977bf8a7ac",
+      "text_sha256": "fad6d5d81300fadd0784f2591c141588bedd2bce081062ba01afc8a408866d46",
+      "unicode_codepoints": 5121,
+      "utf8_bytes": 14975,
+      "author_length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 4263,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "original_generation_request_id": "chapter-request:8f4a2a7c2f6191f19fef4b34c5c30800c4a671982acf2da9a377609c2972f0ca",
+      "original_generation_root": "a4d8979a-8061-4f53-891a-5a226f01bb7a",
+      "parent_group_version_id": "authority-output:51f0ae09-4721-4f38-a865-ffdce9d45ebe:story_planning.candidate:v1",
+      "working_selection": {
+        "status": "SELECTED",
+        "asset_version_id": "1d62ef2c-990a-48bb-a4bc-77531a794486",
+        "content_hash": "sha256:680d96e3dedd6f6076b98cf5997ad0040c26de9805585c38facd59d2fcc603ca",
+        "selected_asset_version_id": "authority-output:bc77b749-e321-4b19-94f4-24f21bbcf06f:chapter.best_candidate:v1",
+        "selected_content_hash": "sha256:d2f2a61f3544c2707bf7b4218a368edc6bc32352a95b336274991c977bf8a7ac",
+        "authority": "AUTHORIZED_WORK_VERSION_USAGE",
+        "author_selection": "NOT_GRANTED",
+        "formal_acceptance": "NOT_GRANTED"
+      },
+      "author_selection": "NOT_GRANTED"
+    }
+  ],
+  "chapter_group_boundary": {
+    "from_chapter": 24,
+    "through_chapter": 25,
+    "different_group_versions": true
+  },
+  "exports": [
+    {
+      "private_filename": "native-final-new21-25-exact.md",
+      "utf8_bytes": 75976,
+      "sha256": "4d4638bd6234c51731fbee0ae41655c3c97504a7159d4efe08557217a6e1e8fa"
+    },
+    {
+      "private_filename": "native-final-21-25-whole-manuscript-exact.md",
+      "utf8_bytes": 380441,
+      "sha256": "19c9ccc02950aa1ea8d415956715c8f91f0c1312f775168046b1754fbb64c971"
+    }
+  ],
+  "author_length_method": "Existing native ensure-chapter-length review/revision/re-review before next chapter; original drafts and real receipts retained. No manual prose edits.",
+  "limitations": [
+    "Working selection is not author acceptance or Canon.",
+    "Five new chapters do not establish the unchanged 100-chapter target or long-form literary qualification.",
+    "The separate initial-round UNKNOWN Provider outcome remains unresolved."
+  ]
+}

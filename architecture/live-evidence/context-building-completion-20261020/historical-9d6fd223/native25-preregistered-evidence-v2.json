@@ -1,0 +1,135 @@
+{
+  "record_type": "PROSPECTIVE_NATIVE_CHAPTER25_SOURCE_EVIDENCE_CHECKLIST",
+  "created_at": "2026-10-19T23:27:07.858715+00:00",
+  "source_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+  "database": "nf_context_final_acceptance",
+  "checkpoint": "PAUSED_AFTER_SELECTED_CHAPTER24_BEFORE_CHAPTER25_PLANNING",
+  "target_chapters": 100,
+  "method": "Source-span evaluation only; this file and its case IDs are never production task inputs or a prose template. Conditional cases retain their declared applicability; actual task and delivered input will be assessed after admission.",
+  "cases": [
+    {
+      "id": "native25-actual-first-self-practice",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "meaning": "The bounded independent practice has actually happened; it is not merely a future plan.",
+      "alternatives": [
+        {
+          "chapter": 24,
+          "asset_version_id": "authority-output:17e93b2c-2ff8-4483-bfc1-e4c884763266:chapter.best_candidate:v1",
+          "content_hash": "sha256:3f7de52d20e27e939f01defe351d091fdca22e0e5720a143c7f3f6d7cd722319",
+          "text_sha256": "da96b9e80db0c3ffed912a2caf9bd1f71501f4ebef4f6719407e6c5b40238164",
+          "start_codepoint": 3559,
+          "end_codepoint": 3586,
+          "quote_sha256": "1508f5719cb90e0db382f424342955e1dde87d39cc31904c47386e66325d0a2a"
+        }
+      ]
+    },
+    {
+      "id": "native25-left-elbow-unresolved",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "meaning": "Left elbow tightness remains unexplained and awaits guidance; rest or right-arm adjustment is not evidence of its resolution.",
+      "alternatives": [
+        {
+          "chapter": 24,
+          "asset_version_id": "authority-output:17e93b2c-2ff8-4483-bfc1-e4c884763266:chapter.best_candidate:v1",
+          "content_hash": "sha256:3f7de52d20e27e939f01defe351d091fdca22e0e5720a143c7f3f6d7cd722319",
+          "text_sha256": "da96b9e80db0c3ffed912a2caf9bd1f71501f4ebef4f6719407e6c5b40238164",
+          "start_codepoint": 4028,
+          "end_codepoint": 4076,
+          "quote_sha256": "c7156b962921ee592ff0846cdb614c86cf145fed86fd77111ebe495a336d27cf"
+        }
+      ]
+    },
+    {
+      "id": "native25-two-forms-of-tightness",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "meaning": "Recognized right-arm tension improved; labour soreness and the unresolved left-elbow problem remain distinct.",
+      "alternatives": [
+        {
+          "chapter": 24,
+          "asset_version_id": "authority-output:17e93b2c-2ff8-4483-bfc1-e4c884763266:chapter.best_candidate:v1",
+          "content_hash": "sha256:3f7de52d20e27e939f01defe351d091fdca22e0e5720a143c7f3f6d7cd722319",
+          "text_sha256": "da96b9e80db0c3ffed912a2caf9bd1f71501f4ebef4f6719407e6c5b40238164",
+          "start_codepoint": 3640,
+          "end_codepoint": 3687,
+          "quote_sha256": "62b7cdac98c20d74bc6141c1fecaacac5b8c8ae4c31f6bc8c6b49f6c3e0a6d83"
+        }
+      ]
+    },
+    {
+      "id": "native25-knowledge-boundary",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "meaning": "The protagonist cannot infer the left problem from the known right one or invent a new taught method.",
+      "alternatives": [
+        {
+          "chapter": 24,
+          "asset_version_id": "authority-output:17e93b2c-2ff8-4483-bfc1-e4c884763266:chapter.best_candidate:v1",
+          "content_hash": "sha256:3f7de52d20e27e939f01defe351d091fdca22e0e5720a143c7f3f6d7cd722319",
+          "text_sha256": "da96b9e80db0c3ffed912a2caf9bd1f71501f4ebef4f6719407e6c5b40238164",
+          "start_codepoint": 3179,
+          "end_codepoint": 3214,
+          "quote_sha256": "e6f0837a01489f87de98db6859ef3b7c99274f1346f729aa990b57d6bc2e29c9"
+        }
+      ]
+    },
+    {
+      "id": "native25-three-classes-complete",
+      "requirement": "REQUIRED_IF_NEW_TASK_CONCERNS_COURSE_PROGRESS_OR_TEACHER_GUIDANCE",
+      "meaning": "All three initial classes have finished; a new consultation must not reset the course to pending third class.",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "asset_version_id": "authority-output:f4cdff0b-a8d6-4208-bf18-0590bc40b71b:chapter.best_candidate:v1",
+          "content_hash": "sha256:68633c333ecf9e8404e626d47637f62a9b367408003df4e9dc27e89f1fdb5138",
+          "text_sha256": "5d51435d4e419dd67977fe0454ad052f6fc191ec568ba95711523199a96e7e4e",
+          "start_codepoint": 4774,
+          "end_codepoint": 4784,
+          "quote_sha256": "3a532c478e43fcbb4b696d14c88458c9052a495624b6ffedb10f361561289120"
+        },
+        {
+          "chapter": 22,
+          "asset_version_id": "authority-output:7e6ae5ce-72b2-4127-ae43-8d9b8ed7b532:chapter.best_candidate:v1",
+          "content_hash": "sha256:2f4772aef04579a1763c42a8acef1a8689d77f2aa4a1598f2208750a542b1562",
+          "text_sha256": "6cb3619aee605c288fa9e914a200b45f3f1a29c5b3941fdacd5b17f98239f042",
+          "start_codepoint": 126,
+          "end_codepoint": 136,
+          "quote_sha256": "0b0d55f938a825d73d594d8ce1669e15ec1251a634ba3721b26083464a83db3f"
+        }
+      ]
+    },
+    {
+      "id": "native25-unrelated-same-actor-old-tool-position",
+      "requirement": "EXCLUDE_AS_CURRENT_STATE_UNLESS_TASK_EXPLICITLY_REVISITS_OLD_QUARRY_ROUTE",
+      "meaning": "The same cast names do not make the chapter1 old quarry tool arrangement current practice material.",
+      "alternatives": [
+        {
+          "chapter": 1,
+          "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1",
+          "content_hash": "sha256:6046882e4624f55ecbc2ac4794d0a7263e0c9d3bc651ef90dad6ea506fa42f3f",
+          "text_sha256": "41996c6154ec775c23fdbded5338909cd2638d9a672d299cf79c6c24d141344e",
+          "start_codepoint": 4388,
+          "end_codepoint": 4469,
+          "quote_sha256": "691cd96b2549a0f41eab4bd74b89f0ab661023b06200e4ad0bb54193bae02e33"
+        }
+      ]
+    },
+    {
+      "id": "native25-unexecuted-thought-is-not-event",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "meaning": "Waiting longer and retrying was a temptation he rejected, not an executed cure or independently learned method.",
+      "alternatives": [
+        {
+          "chapter": 24,
+          "asset_version_id": "authority-output:17e93b2c-2ff8-4483-bfc1-e4c884763266:chapter.best_candidate:v1",
+          "content_hash": "sha256:3f7de52d20e27e939f01defe351d091fdca22e0e5720a143c7f3f6d7cd722319",
+          "text_sha256": "da96b9e80db0c3ffed912a2caf9bd1f71501f4ebef4f6719407e6c5b40238164",
+          "start_codepoint": 3267,
+          "end_codepoint": 3310,
+          "quote_sha256": "af4e7d213e8f3c7de476e3370d8bce6bae72436d36ad5aadd010630002efe2c1"
+        }
+      ]
+    }
+  ],
+  "record_version": 2,
+  "supersedes_checklist_sha256": "2c1c7935fb5904db3e47bc52fe9bf22289a383c795e69124add350d5d7efe8ea",
+  "private_checklist_sha256": "0b0a4ae61c3529608b0eaa4d42629c35f8000776ba8803de0162e23a08fea124"
+}

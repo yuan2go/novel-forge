@@ -1,0 +1,117 @@
+{
+  "record_type": "FINAL_SOURCE_NATIVE_PROSE_READING_JUDGMENT",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "database": "nf_context_f799_acceptance",
+  "reviewer": "CODEX_ARTIFACT_READING_NOT_AUTHOR_ACCEPTANCE",
+  "skill": "quality-review",
+  "scope": "Complete selected22 native revision compared with selected21 and frozen work task",
+  "status": "BOUNDED_CONTINUITY_SUPPORTED_NOT_LITERARY_OR_LONGFORM_QUALIFICATION",
+  "model_scores_used": false,
+  "judgments": [
+    {
+      "id": "bounded-work-commitment",
+      "chapter": 22,
+      "source_asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+      "source_text_sha256": "a2a94c4bfd5956b34fa1772955e1bcf946022000075f50b08696c8250a1cf066",
+      "start_codepoint": 905,
+      "end_codepoint": 957,
+      "quote_sha256": "79f8ecd473e5a873d52e08b7d2eb19cc18582ed1319950ff83a7e4328735b186",
+      "assessment": "新工作有明确范围和当天边界，未把过去的课程劳务或师徒身份变为永久接活义务。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "prior-learning-affects-action",
+      "chapter": 22,
+      "source_asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+      "source_text_sha256": "a2a94c4bfd5956b34fa1772955e1bcf946022000075f50b08696c8250a1cf066",
+      "start_codepoint": 1360,
+      "end_codepoint": 1418,
+      "quote_sha256": "ca81747bf63a0fc0856e5eca2d820a59bb5de01f260f76d4773a002dc27ac989",
+      "assessment": "前课未独立掌握的事实直接影响限工和休息安排，没有被收面熟练抹去。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "expertise-stays-attributed",
+      "chapter": 22,
+      "source_asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+      "source_text_sha256": "a2a94c4bfd5956b34fa1772955e1bcf946022000075f50b08696c8250a1cf066",
+      "start_codepoint": 3030,
+      "end_codepoint": 3077,
+      "quote_sha256": "5e1a760e50320a4d8313adfa8c076313a229e67ae5c52a474ab5725847b71c3e",
+      "assessment": "师父的底座与承接判断仍归师父；主人公承担外面收面，不越权替底座作结论。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "real-external-use",
+      "chapter": 22,
+      "source_asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+      "source_text_sha256": "a2a94c4bfd5956b34fa1772955e1bcf946022000075f50b08696c8250a1cf066",
+      "start_codepoint": 3810,
+      "end_codepoint": 3845,
+      "quote_sha256": "452f14207e18a037763734dc727be474bc4f27460d7d6e59378076e69bd0839f",
+      "assessment": "劳动后果由院主真实使用显现，不是人物口头宣布任务完成。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "new-payment-closed",
+      "chapter": 22,
+      "source_asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+      "source_text_sha256": "a2a94c4bfd5956b34fa1772955e1bcf946022000075f50b08696c8250a1cf066",
+      "start_codepoint": 4107,
+      "end_codepoint": 4137,
+      "quote_sha256": "db11e80c5188a301c4dea30477fd5c8d48f9a27349046a0d423cb4285b8d4ee7",
+      "assessment": "新任务已收28钱，独立于师父48钱和既有课费账；后续不应重复追收。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "relationship-consequence",
+      "chapter": 22,
+      "source_asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+      "source_text_sha256": "a2a94c4bfd5956b34fa1772955e1bcf946022000075f50b08696c8250a1cf066",
+      "start_codepoint": 4524,
+      "end_codepoint": 4556,
+      "quote_sha256": "159230299d528ed5f48f17be34a535e13f1eecf7287b0181ca302427bbb8f7a3",
+      "assessment": "师父接受有限交接并独自去下个工点，边界在行动中产生关系后果。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "fatigue-and-practice-remain-distinct",
+      "chapter": 22,
+      "source_asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+      "source_text_sha256": "a2a94c4bfd5956b34fa1772955e1bcf946022000075f50b08696c8250a1cf066",
+      "start_codepoint": 4708,
+      "end_codepoint": 4743,
+      "quote_sha256": "805b5af5fea42746906785600853e28aa6c00e7f164c83c07508b2788e6c03a5",
+      "assessment": "石工经验与修炼练习、劳作后疲劳与已恢复分开；当前没有把将来复练写成已发生。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    }
+  ],
+  "author_length": {
+    "unit": "HAN_CHARACTERS_V1",
+    "actual": 4320,
+    "target": {
+      "maximum": 5000,
+      "minimum": 4000
+    }
+  },
+  "original_draft_length_failure": {
+    "han": 3703,
+    "status": "FAIL_RETAINED",
+    "source_asset_version_id": "authority-output:8e4ccc28-69c3-46a2-b5b7-b7a846d80a8b:chapter.draft:v1"
+  },
+  "native_revision_used": true,
+  "manual_prose_edit": false,
+  "aesthetic_observations": [
+    {
+      "kind": "DISCRETIONARY_AESTHETIC_SUGGESTION",
+      "observation": "本章以石槽实际使用和师父独自离开使劳动与边界产生可见后果；较多逐步工序仍可能减慢更长窗口的节奏，未据两章样本判断整体长篇效果。"
+    }
+  ]
+}

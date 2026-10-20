@@ -1,0 +1,21 @@
+{
+  "kind": "ACTUAL_FROZEN_CONTEXT_REVIEW_WINDOW_RECONSTRUCTION_NOT_PROVIDER_DELIVERY",
+  "source_context_version": "authority-output:9bb6fbad-d8a6-4478-8461-03b43a60e58b:chapter.context:v1",
+  "source_context_hash": "sha256:4dc2abcd90faf75b191c28ad3ee2477218e0af85524e79b846fa63523e42cdee",
+  "old_contract": "cross-chapter-working-review-window.v1",
+  "old_selected_codepoints": 110074,
+  "new_contract": "cross-chapter-working-review-window.v2",
+  "new_selected_codepoints": 12325,
+  "retained_source_identity_count": 22,
+  "source_coverage_counts": {
+    "FULL": 1,
+    "EXCERPT": 17,
+    "NOT_INCLUDED": 4
+  },
+  "frozen_prior_window_replayed_exactly": true,
+  "task_selection": {
+    "snapshot_hash": "sha256:871af50ef5e72d4a94398f0dac74cd78030159061082902494184b0b8e229efa",
+    "task_hash": "sha256:978bc22323af121b176e82b29a6ad7ad3b1f4d9bca6c2e38de0abda04faa439f",
+    "policy_version": "working-prose-projection.v10"
+  }
+}

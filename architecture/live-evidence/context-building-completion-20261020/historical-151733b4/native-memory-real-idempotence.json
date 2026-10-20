@@ -1,0 +1,12 @@
+{
+  "record_type": "ACTUAL_NATIVE_MEMORY_ORIGINAL_COMMAND_IDEMPOTENCE",
+  "verification_source_commit": "151733b4c3af62586d1900c5c9e11156abc1915a",
+  "original_batch_operation_id": "cb38b1c0-0efb-4992-a075-b332a1701bee",
+  "original_expected_book_version": 203,
+  "original_idempotency_key_sha256": "79a10710b461baeb7afae57fff86d91ea0f2f1d7373e9d793930f08fcb06015b",
+  "native_cli_exit_code": 0,
+  "provider_effect_delta": 0,
+  "operation_delta": 0,
+  "private_cli_log_sha256": "cac1323d1ce33385fd45f2c8b4a2ba4d7fef633a31638cfee89738132504cd6e",
+  "boundary": "Same original command and key after the Book advanced; no re-extraction and no fabricated Provider receipt."
+}

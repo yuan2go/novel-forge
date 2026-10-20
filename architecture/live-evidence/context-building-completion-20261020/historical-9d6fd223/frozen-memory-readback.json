@@ -1,0 +1,72 @@
+{
+  "record_type": "ACTUAL_REQUEST_READBACK_AFTER_NATIVE_MEMORY_MAINTENANCE",
+  "source_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+  "database": "nf_context_acceptance",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "old_requests": [
+    {
+      "chapter": 21,
+      "chapter_request_id": "chapter-request:6a9c56e8370c1c5e8f8c516ff8e84752838e295b7a3970078e6874cdd3b3a514",
+      "snapshot_hash": "sha256:22406625070c99930bf96a0a3222af49f8b143f0496ac57a85cb618925bfc6b9",
+      "before_file_sha256": "b4e11dccf0ca1efd9fa29e6aa250c1474ace6f5f723768178f45a9ef83e39b55",
+      "after_file_sha256": "62ac2ee2d77038af510ada6120f315a6aade83a86b91c012a93d8b05708e4cb9",
+      "input_snapshot_unchanged": true,
+      "historical_new_chapter_coverage": []
+    },
+    {
+      "chapter": 22,
+      "chapter_request_id": "chapter-request:6d55455fcd5f2985437faf7f90389a2f4dec8a162257a0bf98c7aa62e725ede6",
+      "snapshot_hash": "sha256:f6deccfa57bcab1e4d19f8ab772af9c85334eca82e8ca50d35305368696568ac",
+      "before_file_sha256": "d721d9dba5481badcbfb70ab0f9d21adbfa10b685a7c341057c3bd00558ff917",
+      "after_file_sha256": "d721d9dba5481badcbfb70ab0f9d21adbfa10b685a7c341057c3bd00558ff917",
+      "input_snapshot_unchanged": true,
+      "historical_new_chapter_coverage": [
+        {
+          "chapter": 21,
+          "status": "NOT_REQUESTED",
+          "asset_version_id": "authority-output:d40f6443-d01e-4615-a70f-e89ff1f44171:chapter.draft:v1",
+          "memory_source": {
+            "kind": "WRITER_SELF_OBSERVATION",
+            "version": "working-memory-source.v1",
+            "content_hash": "sha256:a9b74f501cec93f1be98243a3b042c10ed5cf5ef0876eca4e81345210e8c9c8d",
+            "asset_version_id": "authority-output:d40f6443-d01e-4615-a70f-e89ff1f44171:chapter.draft:v1",
+            "observations_hash": "sha256:74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+          }
+        }
+      ]
+    }
+  ],
+  "new_request": {
+    "chapter": 23,
+    "chapter_request_id": "chapter-request:26600307e9b70935778579c71e2131f98bea71db92965ec82049ac8313af5ddc",
+    "snapshot_hash": "sha256:ac7e47c4a0990c033b520ae6632d47c075363f0b96912175ebc126d207ded44f",
+    "new_chapter_coverage": [
+      {
+        "chapter": 21,
+        "status": "LOCATED_UNREVIEWED",
+        "asset_version_id": "authority-output:d40f6443-d01e-4615-a70f-e89ff1f44171:chapter.draft:v1",
+        "memory_source": {
+          "kind": "MANUSCRIPT_MEMORY",
+          "version": "working-memory-source.v1",
+          "content_hash": "sha256:1e5417bf9a72b3d3d9198ef03df1723e71490a9f52ba636f01b00cc08c7266bf",
+          "asset_version_id": "3e68b66d-073d-427d-ba45-426e4e751081",
+          "observations_hash": "sha256:c8340bc8c705f7c2fd08699b130c1ab162ab49d28612a6ed319c8543c4c8f14e"
+        }
+      },
+      {
+        "chapter": 22,
+        "status": "LOCATED_UNREVIEWED",
+        "asset_version_id": "authority-output:d1fc21f0-6c2d-40f1-95b1-3bfd4008a657:chapter.draft:v1",
+        "memory_source": {
+          "kind": "MANUSCRIPT_MEMORY",
+          "version": "working-memory-source.v1",
+          "content_hash": "sha256:a46d3b5acf11e8dfc09b400ef24537c3dd769d8215eaeeb4c6f1c4ffe645f2c4",
+          "asset_version_id": "524e8665-7dea-4cbf-874f-495d12203b55",
+          "observations_hash": "sha256:d28875c44d04a08610097c0a3da6e8caacce84fd2744cfb722dba5d606b726b9"
+        }
+      }
+    ]
+  },
+  "status": "PASS_FROZEN_INPUTS_RETAINED_NEW_MEMORY_ONLY_IN_LATER_REQUEST",
+  "boundary": "Current coverage and a current preview do not replace old requests; dispatch and receipt status may advance while inputs remain frozen."
+}

@@ -1,0 +1,25 @@
+{
+  "source_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+  "record_type": "ACTUAL_CONCRETE_CHAPTER26_PLANNING_INPUT",
+  "external_effect_id": "3cf8e55c-802b-4919-8f8c-c7f560ce2fa1",
+  "operation_id": "3dc7b53a-f3b0-4c53-8e47-32bc1571ceef",
+  "effect_status": "SUCCEEDED",
+  "task_contract": "working-retrieval-task.v5",
+  "task_hash": "sha256:a0def9ddad4d937a9e89df9b9b69d3eb0c0066034154c06c1af169c574fcc92e",
+  "working_snapshot_hash": "sha256:a6b309b51cd5772049c62ea492df1b8a4292bce64bd2c1fcaa1867738cd72dc4",
+  "admission_contract": "novelos.provider_request_admission.v2",
+  "envelope_hash": "sha256:7793e4f6c8f03a3415aa0c1cf4edca070c85c69cc244901f599d8cadf29a6d40",
+  "application_input_codepoints": 315831,
+  "application_input_utf8_bytes": 394835,
+  "selected_prose_codepoints": 13839,
+  "memory_entries": 68,
+  "operation_effect_stage_counts": [
+    [
+      "chapter_plan.generate",
+      "SUCCEEDED",
+      1
+    ]
+  ],
+  "private_input_evidence_sha256": "2c78b6030f035d77c39ce735a449935606222c3f5f7f458c49462e6e7832f910",
+  "boundary": "Exact admitted application input; receipt status is retained separately. No current preview is substituted."
+}

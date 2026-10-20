@@ -1,0 +1,117 @@
+{
+  "record_type": "ACTUAL_NATIVE25_ORIGINAL_UNKNOWN_AND_VERSIONED_KERNEL_SUCCESSOR",
+  "captured_at": "2026-10-20T04:11:37.044306+00:00",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "database": "nf_context_f799_acceptance",
+  "postgresql_system_identifier": "7698565467505611090",
+  "book": {
+    "state": "PAUSED",
+    "current_chapter": 25,
+    "version": 199
+  },
+  "chapter_request_id": "chapter-request:b081c2cc6a8bf6087762e23d3ff3e22b47450827e3920a64a1768f382936c7a4",
+  "frozen_working_snapshot_hash": "sha256:be01b28dcd57389f2e3f08e939d48c48a94d4d03565d9c3660c9f6e048761528",
+  "writer_effects": [
+    {
+      "external_effect_id": "8459825a-2d82-40da-8206-79b7abfe51c6",
+      "operation_id": "c86c31bd-e2ae-4749-a8d8-2e41f2d5883e",
+      "effect_status": "UNKNOWN",
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "input_utf8_bytes": 404976,
+      "input_sha256": "c7cf35b8954873691c2cf41ed06edee253d7b737f4cc91e650a015cc999128ad",
+      "envelope_hash": "sha256:772643f618f062e1ca2c0a9bbd14fa989ff97117d7eab1b93b654979dac5df3c",
+      "receipt_input_bindings": [],
+      "local_processes": [
+        {
+          "receipt_id": "process-receipt:82d7dbca03ef64da801e68e1",
+          "status": "FAILED",
+          "process_started_at": "2026-10-20T03:35:18.087885Z",
+          "completed_at": "2026-10-20T03:50:30.639265Z",
+          "measured_completed_process_elapsed_ms": 912584,
+          "returncode": 1,
+          "local_termination_only": false,
+          "termination_reason": null,
+          "termination_signal": null,
+          "result_integrity": "MISSING",
+          "input_sha256": "c7cf35b8954873691c2cf41ed06edee253d7b737f4cc91e650a015cc999128ad",
+          "receipt_file_sha256": "fa04a6d222b5d8fbebc26d752cf13ec83110ac24b8b806cddfdc8ce30c31bc49",
+          "stdout_sha256": "082a43273deca82898173529d757703d5898521bb7a2079688b0235d9eb572fd",
+          "errors": [
+            {
+              "type": "error",
+              "message": "stream disconnected before completion: Transport error: network error: error decoding response body"
+            },
+            {
+              "type": "turn.failed",
+              "error": {
+                "message": "stream disconnected before completion: Transport error: network error: error decoding response body"
+              }
+            }
+          ],
+          "measured_usage": null
+        }
+      ]
+    },
+    {
+      "external_effect_id": "9c9f7422-e673-4a83-9663-9b924db2fff4",
+      "operation_id": "35e70c49-2832-4d70-8c1e-bb080e1641a7",
+      "effect_status": "SUCCEEDED",
+      "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+      "input_utf8_bytes": 404976,
+      "input_sha256": "c7cf35b8954873691c2cf41ed06edee253d7b737f4cc91e650a015cc999128ad",
+      "envelope_hash": "sha256:8750267d933fc65421c27f20a4e9800207689ac72cff99a869f1a3bc3af62efa",
+      "receipt_input_bindings": [
+        {
+          "external_receipt_id": 968,
+          "envelope_hash": "sha256:8750267d933fc65421c27f20a4e9800207689ac72cff99a869f1a3bc3af62efa",
+          "status": "VERIFIED"
+        }
+      ],
+      "local_processes": [
+        {
+          "receipt_id": "process-receipt:c3ce1be949adec65d2fb6d7e",
+          "status": "SUCCEEDED",
+          "process_started_at": "2026-10-20T03:51:18.306758Z",
+          "completed_at": "2026-10-20T03:53:19.741881Z",
+          "measured_completed_process_elapsed_ms": 121417,
+          "returncode": 0,
+          "local_termination_only": false,
+          "termination_reason": null,
+          "termination_signal": null,
+          "result_integrity": "VALID",
+          "input_sha256": "c7cf35b8954873691c2cf41ed06edee253d7b737f4cc91e650a015cc999128ad",
+          "receipt_file_sha256": "00f9a3cf43d2253804c79da83fd3bc45f7353ac29a0ff7e826c55127586ca0f9",
+          "stdout_sha256": "077c5e4e8c3d028925eea34f2369d3de7259bccbf80b2509a4ffe0acd88af33c",
+          "errors": [],
+          "measured_usage": [
+            {
+              "input_tokens": 142763,
+              "cached_input_tokens": 0,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 4465,
+              "reasoning_output_tokens": 150
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "all_application_inputs_identical": true,
+  "native_successors": [
+    {
+      "successor_operation_id": "35e70c49-2832-4d70-8c1e-bb080e1641a7",
+      "contract_version": "kernel-failed-step-successor.v2",
+      "policy_contract_version": "chapter-pure-generation-successor.v1",
+      "generation_isolation_effect_ids": [
+        "8459825a-2d82-40da-8206-79b7abfe51c6"
+      ],
+      "source_failure_snapshot_hash": "sha256:52baabca81302f2978898a203fc79ee511ab260ece2c18d43a9f9bb5b753d0fa"
+    }
+  ],
+  "private_kernel_journal_sha256": "1af91aab97f49bcf624b77a9f087cd951afa15146c66ba6a90a853c8ffc563e4",
+  "boundaries": [
+    "Original UNKNOWN remains unchanged; missing failed-stream usage is not zero.",
+    "Native isolation and successor append evidence and revoke stale commit rights; they do not declare the original remote outcome successful or settle it.",
+    "Frozen input equality and source-span coverage are separate from Provider completion and prose delivery."
+  ]
+}

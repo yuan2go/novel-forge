@@ -1,0 +1,232 @@
+{
+  "source_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+  "comparison_scope": "SAME_FROZEN_119_OBSERVATIONS_TASK_RELEVANCE_ABLATION_NOT_FULL_CURRENT_FREEZE",
+  "evidence_class": "REAL_FROZEN_INPUT_RECONSTRUCTION_NOT_PROVIDER_CONSUMPTION",
+  "source_snapshot_hash": "sha256:04f091121196f448f1f1f16cd9474eb22c03223b18e239e1b2ba03ebcd6e0ac2",
+  "task_hash": "sha256:1898a67c34c56c99aa65b795a2c59679f5fa7dfff003f7531f04e0950facba57",
+  "frozen_memory_sources_sha256": "ab7db68522b4613a7f65a18f16ae368926926047181a49702f8c1143f705c87e",
+  "candidate_count_before": 119,
+  "candidate_count_after": 119,
+  "memory_before": 47,
+  "memory_after": 16,
+  "selected_codepoints_before": 10333,
+  "selected_codepoints_after": 5269,
+  "elapsed_seconds_after": 0.42063279199646786,
+  "algorithm_after": "working-task-observation-relevance.v1",
+  "selected_state_keys_after": [
+    [
+      1,
+      "后续作业待查看"
+    ],
+    [
+      2,
+      "首段清障后结构显露"
+    ],
+    [
+      2,
+      "饭歇时湿冷与指根酸痛"
+    ],
+    [
+      2,
+      "饭后工具清理与凿锤未用"
+    ],
+    [
+      3,
+      "麻绳磨损检查"
+    ],
+    [
+      3,
+      "应急浇水范围与人手限额"
+    ],
+    [
+      3,
+      "应急送水结束后的未浇范围"
+    ],
+    [
+      4,
+      "撑木现场定尺贴座"
+    ],
+    [
+      4,
+      "背料返渠后的负重疲劳"
+    ],
+    [
+      4,
+      "支护试压与后续使用检查要求"
+    ],
+    [
+      4,
+      "旧缝外口可见与深部认知边界"
+    ],
+    [
+      4,
+      "垫石在本次作业中的承托表现"
+    ],
+    [
+      4,
+      "首段补强与接缝未完成"
+    ],
+    [
+      4,
+      "保留旧石条件下完成局部作业"
+    ],
+    [
+      4,
+      "收工后手指僵紧"
+    ],
+    [
+      4,
+      "后续补实收缝工作方向"
+    ]
+  ],
+  "selection_receipt": {
+    "version": "working-task-observation-relevance.v1",
+    "task_hash": "sha256:1898a67c34c56c99aa65b795a2c59679f5fa7dfff003f7531f04e0950facba57",
+    "input_hash": "sha256:fbcb06fd5d7c392fd830dce35c2731d7e0fe434f8350b0fca90d7ea9f6a16d32",
+    "candidate_count": 108,
+    "selected_ids": [
+      "sha256:067b4249540b23d46c35cd4b0e8f55549f01ecd1366863b5e8458a0b05ae692f",
+      "sha256:0cd4e47c5fb4185acd4ab85ffe55a2a71c84c2abdaa5140b329f3c28b2991b32",
+      "sha256:2046a57b4448125bebc1444e2b19def3124f1722ba43025dc4cf1cbe3a82d532",
+      "sha256:5827623a4225ea12f515e7f7d2248703bcfa29fb8e44de64ad7b0dcb479c92e1",
+      "sha256:6bc4068a83a5bb6d58e34c68abbaa005c637c5669c2c8ba5720b9eccf0e776ea",
+      "sha256:6eb7993fdb303b37867acce2b334689718a92c0d515ca2836728269b9329f28d",
+      "sha256:7781d867daabe301edd5c3837dc84ccf26879e72d21f917f7e86fb5b5b38b52c",
+      "sha256:85703c408a02abceb888833f2c5fdcc38388017368596987aa2c59a9b632d9fa",
+      "sha256:88784c6ac7e1694cd64abe931086622febbfbad76758bbb29ab425d05bdf2738",
+      "sha256:90438139d3ccc48ce65859564debca3548e8d541290304684f6094428c84db92",
+      "sha256:bb4e3ea33f2f5b311f38c5d62a2ed736f23f1efcbd1273d42ba2b1c6019a16be",
+      "sha256:ce50884a4b24856b3256b7d44bece4e0850f2f0feb3f500d8083f11584646d4e",
+      "sha256:cfbaa2ad248c9f4cdf1a69e11aa450f140a912d97d4f3a0c9d61bc1d954f28e3",
+      "sha256:dede65f5c5758ac65a4586dfd63a55fc590a80bc0feff252280de019706f2a74",
+      "sha256:e9ccdc1eaddbee13888595fd9007627d3be6e274e14e52a128e77684067822f9",
+      "sha256:f208793eba76a7671e0dfcda868ec7dfd99614229d77b03c570cba4f3d3587de"
+    ],
+    "query_support": [
+      {
+        "query_id": "goal",
+        "observation_id": "sha256:cfbaa2ad248c9f4cdf1a69e11aa450f140a912d97d4f3a0c9d61bc1d954f28e3",
+        "score": 11178
+      },
+      {
+        "query_id": "queries/0",
+        "observation_id": "sha256:7781d867daabe301edd5c3837dc84ccf26879e72d21f917f7e86fb5b5b38b52c",
+        "score": 58071
+      },
+      {
+        "query_id": "queries/1",
+        "observation_id": "sha256:bb4e3ea33f2f5b311f38c5d62a2ed736f23f1efcbd1273d42ba2b1c6019a16be",
+        "score": 91432
+      },
+      {
+        "query_id": "queries/2",
+        "observation_id": "sha256:0cd4e47c5fb4185acd4ab85ffe55a2a71c84c2abdaa5140b329f3c28b2991b32",
+        "score": 22916
+      },
+      {
+        "query_id": "queries/3",
+        "observation_id": "sha256:e9ccdc1eaddbee13888595fd9007627d3be6e274e14e52a128e77684067822f9",
+        "score": 41547
+      },
+      {
+        "query_id": "queries/4",
+        "observation_id": "sha256:88784c6ac7e1694cd64abe931086622febbfbad76758bbb29ab425d05bdf2738",
+        "score": 44246
+      },
+      {
+        "query_id": "queries/5",
+        "observation_id": "sha256:90438139d3ccc48ce65859564debca3548e8d541290304684f6094428c84db92",
+        "score": 43768
+      },
+      {
+        "query_id": "queries/6",
+        "observation_id": "sha256:067b4249540b23d46c35cd4b0e8f55549f01ecd1366863b5e8458a0b05ae692f",
+        "score": 46738
+      },
+      {
+        "query_id": "queries/7",
+        "observation_id": "sha256:2046a57b4448125bebc1444e2b19def3124f1722ba43025dc4cf1cbe3a82d532",
+        "score": 60647
+      },
+      {
+        "query_id": "queries/8",
+        "observation_id": "sha256:f208793eba76a7671e0dfcda868ec7dfd99614229d77b03c570cba4f3d3587de",
+        "score": 136295
+      },
+      {
+        "query_id": "queries/9",
+        "observation_id": "sha256:e9ccdc1eaddbee13888595fd9007627d3be6e274e14e52a128e77684067822f9",
+        "score": 55250
+      },
+      {
+        "query_id": "queries/10",
+        "observation_id": "sha256:85703c408a02abceb888833f2c5fdcc38388017368596987aa2c59a9b632d9fa",
+        "score": 81028
+      },
+      {
+        "query_id": "queries/11",
+        "observation_id": "sha256:cfbaa2ad248c9f4cdf1a69e11aa450f140a912d97d4f3a0c9d61bc1d954f28e3",
+        "score": 54346
+      },
+      {
+        "query_id": "scenes/0/goal",
+        "observation_id": "sha256:067b4249540b23d46c35cd4b0e8f55549f01ecd1366863b5e8458a0b05ae692f",
+        "score": 24239
+      },
+      {
+        "query_id": "scenes/0/queries/0",
+        "observation_id": "sha256:dede65f5c5758ac65a4586dfd63a55fc590a80bc0feff252280de019706f2a74",
+        "score": 33807
+      },
+      {
+        "query_id": "scenes/0/queries/1",
+        "observation_id": "sha256:6bc4068a83a5bb6d58e34c68abbaa005c637c5669c2c8ba5720b9eccf0e776ea",
+        "score": 45741
+      },
+      {
+        "query_id": "scenes/1/goal",
+        "observation_id": "sha256:5827623a4225ea12f515e7f7d2248703bcfa29fb8e44de64ad7b0dcb479c92e1",
+        "score": 33569
+      },
+      {
+        "query_id": "scenes/1/queries/0",
+        "observation_id": "sha256:6bc4068a83a5bb6d58e34c68abbaa005c637c5669c2c8ba5720b9eccf0e776ea",
+        "score": 45741
+      },
+      {
+        "query_id": "scenes/1/queries/1",
+        "observation_id": "sha256:6eb7993fdb303b37867acce2b334689718a92c0d515ca2836728269b9329f28d",
+        "score": 28272
+      },
+      {
+        "query_id": "scenes/2/goal",
+        "observation_id": "sha256:ce50884a4b24856b3256b7d44bece4e0850f2f0feb3f500d8083f11584646d4e",
+        "score": 32193
+      },
+      {
+        "query_id": "scenes/2/queries/0",
+        "observation_id": "sha256:6eb7993fdb303b37867acce2b334689718a92c0d515ca2836728269b9329f28d",
+        "score": 28272
+      },
+      {
+        "query_id": "scenes/2/queries/1",
+        "observation_id": "sha256:6bc4068a83a5bb6d58e34c68abbaa005c637c5669c2c8ba5720b9eccf0e776ea",
+        "score": 58514
+      }
+    ],
+    "unmatched_queries": [
+      "event_refs/0",
+      "event_refs/1",
+      "event_refs/2",
+      "scenes/0/event_refs/0",
+      "scenes/0/place_refs/0",
+      "scenes/1/event_refs/0",
+      "scenes/1/place_refs/0",
+      "scenes/2/event_refs/0",
+      "scenes/2/place_refs/0"
+    ],
+    "semantic_completeness": "NOT_ESTABLISHED",
+    "selection_hash": "sha256:2ec0fc5f3ca128992092ae06885b285e092d747d6db19c603bfccbad1e8fe58f"
+  },
+  "semantic_completeness": "NOT_ESTABLISHED"
+}

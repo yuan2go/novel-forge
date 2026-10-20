@@ -1,0 +1,82 @@
+{
+  "record_type": "PREREGISTERED_PREDECESSOR_SUPPORT_FOR_NATIVE22",
+  "created_at": "2026-10-20T02:39:56.087602+00:00",
+  "before_native22_prose": true,
+  "frozen_task_goal": "完成一项新的短时石工，以实际分项交付推进师徒有限交接。",
+  "boundary": "Prior21 state and consequences; evaluation only and never passed to Writer. Material/classroom details have conditional relevance to the22 work task, not universal required exposition.",
+  "cases": [
+    {
+      "id": "prior-labour-experience",
+      "requirement": "人物把实际托料经历带入新动作，老师指出旧用力习惯造成当前压掌和腰背收紧。",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+          "quote_sha256": "57756ab96a1f3802599ba2fc1d143d3b26e60b1927e0695ed9c80792369d4e1f"
+        }
+      ]
+    },
+    {
+      "id": "specific-action-consequence",
+      "requirement": "偏差被定位到动作发生顺序，纠正后发生变化；未把劳动酸痛当修炼成功。",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+          "quote_sha256": "cf79afc778260f310eb06ddf73799b220be2d04be7a26b864767ef2b515abe2f"
+        }
+      ]
+    },
+    {
+      "id": "guided-not-independent",
+      "requirement": "受指导完成与独立掌握分开，明确保留人物尚未能自行察觉的知识边界。",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+          "quote_sha256": "b02dfa8f2db95829b331367a51aeee8b209049b2fdd33f6ecb33fc182a41469d"
+        }
+      ]
+    },
+    {
+      "id": "class-promise-realized",
+      "requirement": "第三课已经在本章正文中实际完成，后续不能继续把它当尚未履行的课。",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+          "quote_sha256": "33b7af800f6e69006abe10efe5d1dabfd275e4073e860ec939ca74e92f58bb02"
+        }
+      ]
+    },
+    {
+      "id": "unknown-use-retained",
+      "requirement": "身体练习的进展没有补全材料用途或细粒配用的未知。",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+          "quote_sha256": "738a82c553471156187301ea1c4581d6489e467bffd33a3cb51e15bb46480cfb"
+        }
+      ]
+    },
+    {
+      "id": "persistent-rest-consequence",
+      "requirement": "学习带来后续时间安排和身体恢复的实际限制，不只是复述动作。",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+          "quote_sha256": "a060683b5932673e4d4c26f2e66a1775dc8577888c88d402470230b25b9986d1"
+        }
+      ]
+    }
+  ],
+  "private_raw_sha256": "0287ba8dce8dc671e20f8ddb1d40cab9010f1da9462c8814e2c37a0a894c327f"
+}

@@ -1,0 +1,210 @@
+{
+  "record_type": "RETRIEVAL_LAYER_LOCALIZATION_ON_REAL_FROZEN_TASK_AND_PROSE",
+  "computed_by_source_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+  "boundary": "RECONSTRUCTION_AND_LAYER_ABLATION_NOT_HISTORICAL_PROVIDER_DELIVERY",
+  "checklist_sha256": "eee65d75ce30eb6e211408f7d5a327daa0794a99fb88ee2b8b11173e71b36d4b",
+  "checklist_used_as_writer_input": false,
+  "layers": [
+    {
+      "kind": "V9_ORIGINAL_MEMORY_BASELINE",
+      "snapshot_hash": "sha256:315f3ed62683e4dd6ad55d1ec20a0a69838499de41d0ffecb9400cb414c6a6e2",
+      "source_file_sha256": "f47e35bd1c7dd577e4e19fa06dc6e427b5d7931541671da5886b9b4f3d9a90cc",
+      "task_hash": "sha256:1898a67c34c56c99aa65b795a2c59679f5fa7dfff003f7531f04e0950facba57",
+      "selected_prose_codepoints": 1609,
+      "selected_memory_entries": 0,
+      "past_critical_span_count": 9,
+      "past_critical_spans_included": 3,
+      "cases": [
+        {
+          "id": "fee-original-choice",
+          "chapter": 14,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "scope-not-permanent",
+          "chapter": 14,
+          "status": "EXACT_SPAN_MISSING"
+        },
+        {
+          "id": "cash-already-paid",
+          "chapter": 16,
+          "status": "EXACT_SPAN_MISSING"
+        },
+        {
+          "id": "first-morning-paid",
+          "chapter": 17,
+          "status": "EXACT_SPAN_MISSING"
+        },
+        {
+          "id": "carry-forward-practice",
+          "chapter": 17,
+          "status": "EXACT_SPAN_MISSING"
+        },
+        {
+          "id": "work-is-separate",
+          "chapter": 18,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "classroom-misbelief",
+          "chapter": 19,
+          "status": "EXACT_SPAN_MISSING"
+        },
+        {
+          "id": "knowledge-correction",
+          "chapter": 19,
+          "status": "EXACT_SPAN_MISSING"
+        },
+        {
+          "id": "knowledge-not-generalization",
+          "chapter": 19,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "labor-closed-after20",
+          "chapter": 20,
+          "status": "SOURCE_EXCLUDED"
+        },
+        {
+          "id": "third-lesson-pending",
+          "chapter": 20,
+          "status": "SOURCE_EXCLUDED"
+        }
+      ]
+    },
+    {
+      "kind": "NATIVE_MEMORY_PLUS_TASK_RELEVANCE_BEFORE_SOURCE_LOCATORS",
+      "snapshot_hash": "sha256:bfbf85b492f05595e90739b5db3e5f35d3c238340bae48d79b1c12c898663834",
+      "source_file_sha256": "72a9a3f7c86677f763a61b3a87ddd0a16a9bd76feb961c47649d0daa0d4101be",
+      "task_hash": "sha256:1898a67c34c56c99aa65b795a2c59679f5fa7dfff003f7531f04e0950facba57",
+      "selected_prose_codepoints": 5728,
+      "selected_memory_entries": 33,
+      "past_critical_span_count": 9,
+      "past_critical_spans_included": 5,
+      "cases": [
+        {
+          "id": "fee-original-choice",
+          "chapter": 14,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "scope-not-permanent",
+          "chapter": 14,
+          "status": "EXACT_SPAN_MISSING"
+        },
+        {
+          "id": "cash-already-paid",
+          "chapter": 16,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "first-morning-paid",
+          "chapter": 17,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "carry-forward-practice",
+          "chapter": 17,
+          "status": "EXACT_SPAN_MISSING"
+        },
+        {
+          "id": "work-is-separate",
+          "chapter": 18,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "classroom-misbelief",
+          "chapter": 19,
+          "status": "EXACT_SPAN_MISSING"
+        },
+        {
+          "id": "knowledge-correction",
+          "chapter": 19,
+          "status": "EXACT_SPAN_MISSING"
+        },
+        {
+          "id": "knowledge-not-generalization",
+          "chapter": 19,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "labor-closed-after20",
+          "chapter": 20,
+          "status": "SOURCE_EXCLUDED"
+        },
+        {
+          "id": "third-lesson-pending",
+          "chapter": 20,
+          "status": "SOURCE_EXCLUDED"
+        }
+      ]
+    },
+    {
+      "kind": "EXACT_NATIVE_EVENT_AND_CHAPTER_LOCATORS",
+      "snapshot_hash": "sha256:9887d31a5479d6ea0bdca5892e157676028c9009409d13f4e8b474405a8d959c",
+      "source_file_sha256": "c1a65a5183a76ba9b37a75a2197f72f59bf74d81ce0a9dee62bc6ec8686ae014",
+      "task_hash": "sha256:1898a67c34c56c99aa65b795a2c59679f5fa7dfff003f7531f04e0950facba57",
+      "selected_prose_codepoints": 24064,
+      "selected_memory_entries": 136,
+      "past_critical_span_count": 9,
+      "past_critical_spans_included": 9,
+      "cases": [
+        {
+          "id": "fee-original-choice",
+          "chapter": 14,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "scope-not-permanent",
+          "chapter": 14,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "cash-already-paid",
+          "chapter": 16,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "first-morning-paid",
+          "chapter": 17,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "carry-forward-practice",
+          "chapter": 17,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "work-is-separate",
+          "chapter": 18,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "classroom-misbelief",
+          "chapter": 19,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "knowledge-correction",
+          "chapter": 19,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "knowledge-not-generalization",
+          "chapter": 19,
+          "status": "EXACT_SPAN_INCLUDED"
+        },
+        {
+          "id": "labor-closed-after20",
+          "chapter": 20,
+          "status": "SOURCE_EXCLUDED"
+        },
+        {
+          "id": "third-lesson-pending",
+          "chapter": 20,
+          "status": "SOURCE_EXCLUDED"
+        }
+      ]
+    }
+  ]
+}

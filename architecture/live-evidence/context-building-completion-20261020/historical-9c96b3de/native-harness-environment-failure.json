@@ -1,0 +1,24 @@
+{
+  "record_type": "RETAINED_TEST_HARNESS_ENVIRONMENT_FAILURE",
+  "source_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+  "passed": 13,
+  "failed": 3,
+  "reason": "Harness incorrectly inherited the isolated real-Book runtime environment: fixed Project scope rejected newly created fixture Projects and production dispatch policy blocked fixture legacy adapters. No test assertion or gate was changed. Rerun uses the same test node IDs and disposable PostgreSQL database with only its database URL, without the unrelated Book runtime environment.",
+  "raw_private_files": [
+    {
+      "private_filename": "native-final-9c96b3de-configuration-contamination.log",
+      "sha256": "80d1a6e76ee856d38156102c3be9315227e445cde3ab685b4cab41716b9b3b8a",
+      "bytes": 1633893
+    },
+    {
+      "private_filename": "native-final-9c96b3de-configuration-contamination.xml",
+      "sha256": "373a2e4e71003c00d51248876a3af289c773b7122bae88cba577f8e025ab34e3",
+      "bytes": 43932
+    },
+    {
+      "private_filename": "native-final-9c96b3de-configuration-contamination.process.json",
+      "sha256": "3c6efed7b56057614a99a7b99772ae2ab013d277d773f79746d9f6a7692d201a",
+      "bytes": 3027
+    }
+  ]
+}

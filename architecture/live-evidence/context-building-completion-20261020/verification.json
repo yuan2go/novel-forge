@@ -1,0 +1,230 @@
+{
+  "schema_version": "context-building-completion-verification.v1",
+  "work_package": "WP-NF-CONTEXT-BUILDING-COMPLETION-01",
+  "generated_at": "2026-10-20T04:24:00.318046+00:00",
+  "evidence_state": "EXECUTABLE",
+  "implementation_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "implementation_tree_sha": "sha256:987215298f22299086844e42006dbab289dcc7847c2a457806b51afc65522779",
+  "baseline_main": "215abd7d0abf4a158d7454ed72237486d201b040",
+  "original_pr186_head": "faefb3f2845802d40adc253b2ab89d55060b961d",
+  "pr_url": "https://github.com/yuan2go/novel-forge/pull/186",
+  "preregistration_commit": "222a6715b92938034a1fa7c4bb773dac768e0eee",
+  "four_axes": {
+    "engineering": {
+      "evidence_state": "EXECUTABLE",
+      "repository_governance_checks": "PASS",
+      "focused_backend_subset": 618,
+      "backend_junit": {
+        "tests": 8763,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "native_postgresql": {
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "formal_pr_governance": "FAIL_CANONICAL_EXACT_SHA_P0",
+      "p0": "FAIL_POSTGRESQL_START",
+      "dependency_gates": "NOT_RUN",
+      "qualification_granted": false
+    },
+    "strategy_actual_adoption": {
+      "evidence_state": "EXECUTABLE",
+      "prospective_policy": "working-prose-projection.v10",
+      "native_task": "working-retrieval-task.v6",
+      "effective_after_chapter": 20,
+      "new_actual_writer_requests": [
+        21,
+        22,
+        23,
+        24,
+        25
+      ],
+      "positive_source_bound_cases": 36,
+      "registered_positive_cases": 36,
+      "chapter25_old_quarry_observation_selected": false,
+      "current_default_new_creation_policy": "working-prose-projection.v9",
+      "historical_preview_substitution": false
+    },
+    "real_provider_creation": {
+      "evidence_state": "EXECUTABLE",
+      "database": "nf_context_f799_acceptance",
+      "postgresql_system_identifier": "7698565467505611090",
+      "state": "PAUSED",
+      "book_version": 199,
+      "selected_through": 25,
+      "accepted_through": 0,
+      "target_chapters": 100,
+      "original1_20_exact": true,
+      "new_final_source_chapters": [
+        21,
+        22,
+        23,
+        24,
+        25
+      ],
+      "final_han": [
+        4001,
+        4320,
+        4326,
+        4316,
+        4275
+      ],
+      "actual_group_boundary": {
+        "from_chapter": 24,
+        "through_chapter": 25,
+        "different_group_versions": true
+      },
+      "fresh_local_processes": 35,
+      "fresh_process_successes": 34,
+      "fresh_stream_failure": 1,
+      "native_memory_extractions": 5,
+      "memory_coverage": {
+        "LOCATED_UNREVIEWED": 25
+      },
+      "default_memo_model_calls": 0,
+      "lease_count_after_pause": 0,
+      "exports": [
+        {
+          "private_filename": "final-source-f799c192-chapters-1-25-exact.md",
+          "utf8_bytes": 379868,
+          "sha256": "7bd3693d558b037c80a57352167d377788d59f7e1e1002f460cc4b6fc7dae295"
+        },
+        {
+          "private_filename": "final-source-f799c192-chapters-21-25-exact.md",
+          "utf8_bytes": 75403,
+          "sha256": "8aa14f86416d59591d038835ed3c0a975966c2eed6c6c335b02440ccecb439d8"
+        }
+      ]
+    },
+    "literary_effect": {
+      "status": "BOUNDED_21_25_SOURCE_READING",
+      "reviewer": "CODEX_ARTIFACT_READING_NOT_AUTHOR_ACCEPTANCE",
+      "writer_self_scores_used": false,
+      "manual_prose_edits": false,
+      "full_window_read": true,
+      "judgment_files": [
+        "final-source-round3/literary21-source-reading.json",
+        "final-source-round3/literary22-source-reading.json",
+        "final-source-round3/literary23-source-reading.json",
+        "final-source-round3/literary24-source-reading.json",
+        "final-source-round3/literary25-source-reading.json"
+      ],
+      "supported": "Actual lesson completion, attributed knowledge limits, paid finite work, real handoff/opportunity cost, independent delayed detection and bounded teacher correction are traceable in selected prose.",
+      "limitations": [
+        "No controlled causal literary A/B is claimed.",
+        "Procedural explanation and repeated quiet endings remain a pacing risk.",
+        "No whole100 delivery, author acceptance, long-form qualification or production proof."
+      ]
+    }
+  },
+  "performance": {
+    "fixed_real_input_retrieval": {
+      "cold_seconds": 0.538331207993906,
+      "warm_seconds": [
+        0.008855708001647145,
+        0.008732957998290658
+      ],
+      "selection_sha256": "7e897a591e3e02a30f40f89bd1494ddb343e3d4bcae3dd93c3e7375b7545376d",
+      "tokenization_calls": [
+        1775,
+        36,
+        36
+      ]
+    },
+    "source_verification_retained": true,
+    "native21_extraction_prior": {
+      "candidates": 570,
+      "selected": 67,
+      "current_prose_codepoints": 4744,
+      "input_truncation": false
+    },
+    "current_native_capacity_auxiliary_calls": 0,
+    "current_batch_provider_savings": "NOT_MEASURED_BRANCH_NOT_TRIGGERED",
+    "real_concurrent_memory_cost": "One additional22 Planning after sidecar21 changed the frozen working input; conflict and original Plan/receipts retained.",
+    "frozen_task20_host_freeze_seconds": [
+      2.561063292028848,
+      1.2761956250178628,
+      1.2348072500317357
+    ],
+    "timing_scope": "Read-only reconstruction of identical real frozen task input, not end-to-end Provider latency"
+  },
+  "compatibility": {
+    "frozen_prose_policies": "v2-v9 retained",
+    "frozen_task_contracts": "v1-v5 retained",
+    "append_only_migration_head": "20261020_0237_preparation_cli_version_identity",
+    "original20_readback": "LEGACY_HASH_ONLY",
+    "new_memory_changes_future_requests_only": true,
+    "actual_prompt_replays": {
+      "total": 32,
+      "produced_current_source": 22,
+      "inherited_earlier_source": 10,
+      "new_provider_calls": 0
+    }
+  },
+  "regression_evidence": {
+    "task20_reconstruction": "final-critical-evidence-comparison.json",
+    "task25_same_frozen_plan_cast_reconstruction": "native25-relevance-reconstruction-final-f799c192.json",
+    "task25_old_actual_delivery_failure": "historical-9d6fd223/native25-original-delivery-missing-course-evidence.json",
+    "fresh25_actual_input": "final-source-round3/native25-final-actual-delivery.json",
+    "warning": "Frozen-task reconstruction is not historical delivery; the fresh final-source round has different new21-24 prose and its own actual requests."
+  },
+  "aggregate_actual_calls": {
+    "distinct_effects": 161,
+    "local_processes": 158,
+    "unknown_failed_stream_usage_processes": 4,
+    "monetary_cost": "UNKNOWN",
+    "evidence": "actual-call-accounting.json"
+  },
+  "remaining_issues": [
+    "P0 and formal PR governance remain FAIL at Docker PostgreSQL start; dependent full migration/PostgreSQL/query-plan/Compose qualification did not run.",
+    "Four task-local failed streams retain UNKNOWN remote outcome and usage; a successful native successor does not settle its original. Pre-existing legacy UNKNOWNs are separate.",
+    "Older round2 pending26 successor retains a CANCELLED Attempt but RECONCILIATION_REQUIRED Operation, two successful post-pause auxiliary calls and zero main draft Effects; no forced settlement is claimed. Final code guards Book pause before each auxiliary and main dispatch.",
+    "Final native21-25 did not trigger capacity batching; no real Provider batch call saving is claimed.",
+    "Original live production instance is not currently verified; this is isolated native acceptance using retained original20 source and existing authorization.",
+    "The target100 and formal literary/production qualifications remain open."
+  ],
+  "constraint_classes": [
+    {
+      "classification": "CURRENT_PROVEN_INVARIANT",
+      "fact": "Native memory commit rechecks exact source/lineage/prior memory/sidecar under the Book-owned fenced callback; Provider I/O occurs outside its business transaction."
+    },
+    {
+      "classification": "CURRENT_RUNTIME_FACT",
+      "fact": "Final isolated Book paused25/version199, target100, accepted0, memory25 located-unreviewed; P0 failed."
+    },
+    {
+      "classification": "CONFIGURABLE_POLICY",
+      "fact": "v10 is prospective opt-in and the existing configured route capacity remains475000; the admission method is UTF-8 byte upper-bound accounting, not measured tokens."
+    },
+    {
+      "classification": "HISTORICAL_COMPATIBILITY",
+      "fact": "Old frozen policies, Task versions, sources, sidecars, failures and results retain their original meaning."
+    },
+    {
+      "classification": "UNRESOLVED_DESIGN_CONSTRAINT",
+      "fact": "Lexical relevance and located observation support do not prove semantic completeness or long-form literary quality."
+    }
+  ],
+  "evidence_navigation": {
+    "final_delivery": "native-delivery.json",
+    "writer_inputs": "final-source-round3/complete-writer-request-measurements.json",
+    "native_memory": "final-source-round3/native-memory-maintenance.json",
+    "historical_readback": "final-source-round3/actual-historical-memory-not-retrofilled.json",
+    "native_recovery": "final-source-round3/native25-recovery-final.json",
+    "stage_accounting": "final-source-round3/fresh-stage-usage-and-time.json",
+    "host_profiles": "native-host-phase-profiles.json",
+    "privacy": "public-evidence-privacy.json",
+    "private_custody": "private-artifact-custody.json"
+  },
+  "reproduction": {
+    "frozen_task_script": "reproduce_context_evidence.py",
+    "actual_request_script": "reproduce_native_request_delivery.py",
+    "private_inputs_required": true,
+    "provider_calls_for_both_verifiers": 0,
+    "actual_request_example": "PYTHONPATH=src python reproduce_native_request_delivery.py --runtime-config \"$PRIVATE/runtime.final.private.json\" --project-id \"$PROJECT\" --book-run-id \"$BOOK_RUN\" --chapter-request-id \"$CHAPTER_REQUEST\" --external-effect-id \"$EFFECT\" --critical-evidence \"$CHECKLIST\" --output \"$OUTPUT\""
+  }
+}

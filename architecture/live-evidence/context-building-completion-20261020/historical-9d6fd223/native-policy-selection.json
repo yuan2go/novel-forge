@@ -1,0 +1,28 @@
+{
+  "record_type": "ACTUAL_NATIVE_SELECT_WORKING_POLICY_RECEIPT",
+  "execution_source_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+  "database": "nf_context_final_acceptance",
+  "receipt": {
+    "operation_id": "a5e16c0b-6ab8-4bc0-8b5e-6d98fcae95dd",
+    "status": "SUCCEEDED",
+    "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+    "policy_asset_version_id": "a1a62f48-3bc2-44cd-b013-872d0b9e21c6",
+    "working_prose_policy": {
+      "version": "working-prose-projection.v10",
+      "history_chapters": 10000,
+      "recent_complete_chapters": 0,
+      "recent_tail_paragraphs": 4,
+      "retrieval_passages": 12,
+      "retrieval_per_chapter": 3,
+      "neighbor_paragraphs": 1,
+      "passage_characters": 512,
+      "max_characters": null,
+      "queries": [],
+      "guidance_mode": "COMBINED"
+    },
+    "effective_after_chapter": 20,
+    "state": "PAUSED",
+    "replayed": false
+  },
+  "boundary": "Prospective selection at original20 checkpoint; later final9d requests independently retain actual frozen policy and input. Historical20 remains v3."
+}

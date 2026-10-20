@@ -1,0 +1,70 @@
+{
+  "record_type": "ACTUAL_CONCURRENT_MEMORY_CHECKPOINT_CONFLICT_AND_NATIVE_SOURCE_INVALIDATION",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "database": "nf_context_f799_acceptance",
+  "preserved_selected_chapter": 21,
+  "preserved_chapter21_han": 4001,
+  "observed_driver_failure": "BOOK_MUTATION_CONFLICT",
+  "original_run_log_sha256": "eb11225710fa3de1e1e6348046e4cb6612add02b9ed45eb479b7a1db4bc3980b",
+  "original_source_prose_and_versions_unchanged": true,
+  "planning_requests": [
+    {
+      "operation_id": "37158ddb-cf17-41e9-ac16-a5c077b91b6d",
+      "status": "SUCCEEDED",
+      "created_at": "2026-10-20 02:37:01.128268+00:00",
+      "snapshot_hash": "sha256:a24ba3643f03fdd2aafe503e0d55fb1fc01164a6a717466febc378cfbaebbdf3",
+      "task_hash": "sha256:373c10318badca3ef84f5a20ab8e5abfea8f50f58c7ec945bff4a3844b5bd969",
+      "task_contract": "working-retrieval-task.v6",
+      "source21_memory_coverage": {
+        "status": "NOT_REQUESTED",
+        "chapter": 21,
+        "memory_source": {
+          "kind": "WRITER_SELF_OBSERVATION",
+          "version": "working-memory-source.v1",
+          "content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+          "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "observations_hash": "sha256:74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+        },
+        "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1"
+      },
+      "effects": [
+        {
+          "external_effect_id": "e1afaade-0a71-4313-9b89-e01512840dfe",
+          "status": "SUCCEEDED"
+        }
+      ]
+    },
+    {
+      "operation_id": "34ff32da-4693-4166-8e05-26e986a4e314",
+      "status": "SUCCEEDED",
+      "created_at": "2026-10-20 02:42:39.073439+00:00",
+      "snapshot_hash": "sha256:51664c734d44106a2cfb466b20900b60f0794b5f6e73e9bc2d901022a2d09b03",
+      "task_hash": "sha256:373c10318badca3ef84f5a20ab8e5abfea8f50f58c7ec945bff4a3844b5bd969",
+      "task_contract": "working-retrieval-task.v6",
+      "source21_memory_coverage": {
+        "status": "LOCATED_UNREVIEWED",
+        "chapter": 21,
+        "memory_source": {
+          "kind": "MANUSCRIPT_MEMORY",
+          "version": "working-memory-source.v1",
+          "content_hash": "sha256:5ccc1f5a4c40ae911b8e6bd0d44d3947a9bfb30598782672a182e38533d3dcab",
+          "asset_version_id": "3f6eed6b-77a1-4b58-8790-689821672db9",
+          "observations_hash": "sha256:1bc615081791295621de4da7709c98039fcf905c608d043dd268c5c844fad947"
+        },
+        "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1"
+      },
+      "effects": [
+        {
+          "external_effect_id": "05dea5da-8016-4dcb-9dbd-09fcb1e0d3d9",
+          "status": "SUCCEEDED"
+        }
+      ]
+    }
+  ],
+  "boundaries": [
+    "Memory21 committed through native Provider and Book sidecar owner while Chapter22 Planning was in flight.",
+    "Book version conflict returned the saved manuscript; native continuation resumed from current checkpoint.",
+    "The old22 Plan and receipt remain. Its frozen working input had no usable memory21 (NOT_REQUESTED); the new22 request binds the now available sidecar and legitimately rebuilds rather than reuse a different source snapshot.",
+    "This records a real additional Planning call and concurrent-maintenance cost; it is not an unchanged-input cache miss or literary success."
+  ]
+}

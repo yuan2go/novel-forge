@@ -1,0 +1,49 @@
+{
+  "record_type": "ACTUAL_NATIVE_MEMORY_V2_REQUEST_AND_RECEIPT",
+  "source_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+  "database": "nf_context_final_acceptance",
+  "operation_id": "34d53418-6083-469a-814c-0cdf1bf94ca7",
+  "external_effect_id": "23bca711-71f2-4617-95cb-679ab64ff858",
+  "effect_status": "SUCCEEDED",
+  "source_text_unchanged": true,
+  "text_sha256": "130586d6bc524bbad89b8cc3d5e497fea29d8824ded7efbf44b4d1b64e239c59",
+  "old_unsent_task_hash": "sha256:2bd7a75c881f4898fb6ad08b43d63070495aa5757f84e7f220301cd7ecaa3589",
+  "old_candidate_count": 623,
+  "old_selected_count": 293,
+  "new_task_hash": "sha256:55838eabae051f4f56fd73e07b703340ae95a703ed17e18c156d09fd6e257c9e",
+  "new_candidate_count": 623,
+  "new_selected_count": 75,
+  "task_version": "working-memory-extraction-task.v2",
+  "selection_version": "working-memory-prior-state.v2",
+  "provider_view_version": "working-memory-source-provider.v2",
+  "admission_version": "novelos.provider_request_admission.v2",
+  "snapshot_hash": "sha256:75cca823f4a1c08723fc75e226374f939b69dbfeb31aa5cac597a74eabc7f87b",
+  "envelope_hash": "sha256:319c72a7d288168c082681821cf9c7c171f0cadd89ebe24c649a3a7170f0d676",
+  "application_input": {
+    "unicode_codepoints": 80411,
+    "utf8_bytes": 113157
+  },
+  "protocol_schema_utf8_bytes": 1239,
+  "complete_current_prose_and_all_selected_claims_quotes_and_ids_present": true,
+  "native_receipt_envelope_hash_matches": true,
+  "actual_provider_usage": {
+    "model": "gpt-6.1-sol",
+    "measurement": "MEASURED",
+    "availability": "AVAILABLE",
+    "input_tokens": 47636,
+    "total_tokens": 53279,
+    "output_tokens": 5643,
+    "cached_input_tokens": 0,
+    "uncached_input_tokens": 47636,
+    "reasoning_output_tokens": 59
+  },
+  "cost_status": "UNKNOWN_NO_VERIFIED_UNIT_PRICE",
+  "selection_semantic_completeness": "NOT_ESTABLISHED",
+  "old_capacity_failure": {
+    "reserved_conservative_tokens": 482804,
+    "limit": 475000,
+    "measurement": "APPLICATION_VISIBLE_UTF8_BYTE_UPPER_BOUND_NOT_ACTUAL_PROVIDER_TOKENS",
+    "old_effect_count": 0
+  },
+  "boundary": "This new admitted request is distinct from the cancelled unsent v1 request; no old request, failed Attempt or prose was rewritten."
+}

@@ -1,0 +1,378 @@
+{
+  "source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "checklist_sha256": "0287ba8dce8dc671e20f8ddb1d40cab9010f1da9462c8814e2c37a0a894c327f",
+  "external_effect_id": "bf0c851b-7752-4abe-86cb-7fdf932f0fab",
+  "effect_status": "DISPATCHING",
+  "chapter_request_id": "chapter-request:9b0cbe8b44a7f27d3c8e2483ea6008afd05d5b0e900018e9c2ee2bcd22f67ce3",
+  "snapshot_hash": "sha256:17fbce402469b6f7b8231672a94ca05c30347a213def1787b6a0b440b5763916",
+  "task_hash": "sha256:e3873ca2458064053e16bcce04859d666709c0dff24ead86d94925128910479a",
+  "application_input": {
+    "unicode_codepoints": 328246,
+    "utf8_bytes": 422098,
+    "sha256": "bbf1570b5054a5913ea4c5e3a035f6880daecd27ee7e5fa20f818c3b179dc2c2"
+  },
+  "envelope_hash": "sha256:262a73c0797bd3c4a91eba08fab6ecc3c73c3dbbe6c6919545a35c94ae16a0fa",
+  "raw_selected_history": {
+    "chapters": 21,
+    "unicode_codepoints": 104850,
+    "utf8_bytes": 310656,
+    "han_characters": 89907
+  },
+  "application_protocol_schema_utf8_bytes": 2921,
+  "actual_post_capacity_material": {
+    "post_capacity_source_passage_codepoints": 14728,
+    "post_capacity_source_passage_utf8_bytes": 43628,
+    "decoded_memory_material_codepoints": 116131,
+    "decoded_memory_material_utf8_bytes": 151195,
+    "basis": "DECODED_ACTUAL_APPLICATION_DATA_BEFORE_GLOBAL_LOSSLESS_REFERENCE_ENCODING; NOT_ADDITIVE_WIRE_BYTE_ALLOCATIONS"
+  },
+  "memory_provider_material": {
+    "unicode_codepoints": 116131,
+    "utf8_bytes": 151195
+  },
+  "selected_prose_codepoints": 14728,
+  "selected_prose_utf8_bytes": 43628,
+  "memory_entries": 73,
+  "memory_candidates": 593,
+  "memory_coverage": [
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 1,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:d49908441ab6153e2b1611e693d755c82bcc2383d5fc465cb65cbe5b9db6d29f",
+        "asset_version_id": "fe73a129-8450-444d-9635-3fc0f0a8f0ef",
+        "observations_hash": "sha256:2fd1b43d569667f524c0548acf0d2655212e05252fcfc6e224eed95fe3032a3c"
+      },
+      "asset_version_id": "authority-output:ce0999a9-a3f6-472f-8a47-d63dfe85a4a9:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 2,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:6e57d4402359fd3ef620f86b63d3afbc05ecf97fac82d0924f6db52243e870da",
+        "asset_version_id": "944817cd-451d-4cea-9cd0-c07394855bfd",
+        "observations_hash": "sha256:71b2bef325fa2a22c27f05fa99d2e3944ccba594cef3bd87883b43d0a6880052"
+      },
+      "asset_version_id": "authority-output:c2590a78-6a60-4a0a-a53a-d91a577e978b:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 3,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:165e5f37f10dae5e97908929a04d6a48c6fdfcd2ecee1ab3f020c7f77c648117",
+        "asset_version_id": "f84e2d6a-71e6-4637-8dda-2e6ab74131df",
+        "observations_hash": "sha256:04c046af97b89f0ea05897cb93ebc979701f104f42adf8b3d6e041e9db210549"
+      },
+      "asset_version_id": "authority-output:2c9bae61-b96d-4a62-befa-9445ce3b424c:chapter.draft:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 4,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:d9443f7def592b52ac8ed6c55851d1310f7bcb60c509d499236259894db78f4f",
+        "asset_version_id": "b9689b5a-e0dd-412a-966b-86a1c6cbd582",
+        "observations_hash": "sha256:9d800a05f97a38feb5de8bef088ce57f5960f22eac595fa564e8e459eff4c81c"
+      },
+      "asset_version_id": "authority-output:cc458f7d-f5c7-4e5c-914c-454c76a3be2e:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 5,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:160b95f6c9d3b280775b07e020d82bbb9de3355cbeaa8db85691dcb1990f9c04",
+        "asset_version_id": "040463c1-c71f-41d9-85e6-a1ecee80b400",
+        "observations_hash": "sha256:0c071e152c9d4e774434a178d9c74abcd01090c0f1a5f3be177fb8cf074078f1"
+      },
+      "asset_version_id": "authority-output:fa8caa0f-61ca-40ab-b15c-4648b70d2027:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 6,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:650f9be0d0e25e992be30acede230f8bcb6eef38b955f9bf9d44f8a9653048f5",
+        "asset_version_id": "37fc74de-219b-4ee3-a24a-0ed11efa26e1",
+        "observations_hash": "sha256:fc98ee74d2462f77af0701dcd5e72481d0f36a3383071e2ff30357a12e4ad87f"
+      },
+      "asset_version_id": "authority-output:1b67e98b-9d26-4c1e-b4c4-5f84a8f33eb4:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 7,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:f2a18716b843b01baacccdac87af8e91266cac2b929075ac56618c8245850ae9",
+        "asset_version_id": "701826d0-4317-4dc5-b84a-b959384e51ee",
+        "observations_hash": "sha256:dc3dfca590ebea39994ca5b82c6b87e44d2ece798a7b50c4408ed3af55d3a41c"
+      },
+      "asset_version_id": "authority-output:50d8eeee-dedf-47bd-b606-5b1ba8c9c9d2:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 8,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:200eefb6e136be0808308a00445eca7e3834ee8b953b92e81980d11878c6971e",
+        "asset_version_id": "420540ef-e1fb-4e6e-9637-5aa336907e8f",
+        "observations_hash": "sha256:e6d60f449ca4b32fb93c55b6e2f6b30ce8e75916b6922328b3347ca976bac4fb"
+      },
+      "asset_version_id": "authority-output:f8e98e0a-304e-4880-86f2-7905acf55d14:chapter.revision:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 9,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:48e5613bbe39ddfbfb03579560bc39c2a8067d9be4fc012b5f0f85b23db1e193",
+        "asset_version_id": "5fcf9ec6-bb16-48bb-b004-f7e44746dd6a",
+        "observations_hash": "sha256:fd80f2bb10cafaacc7885e0da828ee6f1f0526685ec5190cbe9130127ee35503"
+      },
+      "asset_version_id": "authority-output:99c16c1a-0083-419e-97d6-8317380cf045:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 10,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:30fd8114419133bf2f0796acdcf4d5141087f5baaf5514f751ba1bd4894b1365",
+        "asset_version_id": "fdf40a4e-51b8-4c04-aa4e-7f49b29032ae",
+        "observations_hash": "sha256:45b729bf086270abd16b59f28138838f0f4544e99c1044d0b3470484410c91b5"
+      },
+      "asset_version_id": "authority-output:14148c65-aa11-4fd0-a6d6-8f512611a062:chapter.draft:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 11,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:a085a6ba3d80231992310fec1db543c1a2f63b848d403f7ccebcad024bce0f71",
+        "asset_version_id": "3f83db48-ebca-4ee3-a817-cf76fb1d96ff",
+        "observations_hash": "sha256:a6beb0d187dc7ab824cb3d0ce69ec9adf91281893a7894c7f8fcfbce64f7f424"
+      },
+      "asset_version_id": "authority-output:15e6a150-b87d-4f81-95c7-5f7e57edceb1:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 12,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:6b3190615001856853176768ffea48230ba60af837f5335a4d9d84eccbea9a11",
+        "asset_version_id": "d321f131-577f-443b-bbdd-1e9de941b04d",
+        "observations_hash": "sha256:9125b22e3f977081d23880a18fdeae6fcebc8622de000101530919a7da4af135"
+      },
+      "asset_version_id": "authority-output:55e3b156-19e0-4d46-b949-6c58000027d4:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 13,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:d7d74a5c96c65860b5fa111d533e62a0d93edd8fe7304795772d52c709602f56",
+        "asset_version_id": "74b2816a-ebe7-4786-bbef-0d108d90766d",
+        "observations_hash": "sha256:47c9246227dc043bc5a02da47f7228227216ddbfc09722fa134c1b691077203f"
+      },
+      "asset_version_id": "authority-output:0c725b33-5e71-4571-86e8-b08650db2841:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 14,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:0d0db6fae557b73732e2d8fee993dae5919deb451a2592e26e075ae01be04bcf",
+        "asset_version_id": "6fe5d645-0804-4fce-87cf-19488e3f9c02",
+        "observations_hash": "sha256:82438392bf36eecc524a2bf11fd37aa2049d52b2ceffeea1119979c7e96aa006"
+      },
+      "asset_version_id": "authority-output:c09cc5a0-1b0c-4c2b-a755-e43fd1f17d8c:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 15,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:644aedb299750b701a4bbd058e75ff9d0a70060249ad9eeeaed203ea9574eb3c",
+        "asset_version_id": "177865e1-4b5a-40bc-81c1-43d21994e022",
+        "observations_hash": "sha256:3db31fc295156131c4ef312a6f146b13a46755a3ec43b4e24cda994334625bb0"
+      },
+      "asset_version_id": "authority-output:5c30ca31-41f3-4ccf-ba30-ead3b70681af:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 16,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:40b0875c9378c190fa8df572a6588c8e2609dc0b47364ec3bbca9e1448f3c2ba",
+        "asset_version_id": "cd2036cc-a9f5-4a43-812a-49cfe21b56ee",
+        "observations_hash": "sha256:b1df2ab4e723fe1ca515e8849ab620a893dc72b1dc80678e257a99e402712280"
+      },
+      "asset_version_id": "authority-output:82900a6d-f40a-49cd-a7cb-a4db0343f09b:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 17,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:3353488db386756f2d48642881d9eb3708bc9ed3643dba6dfb77852a66364714",
+        "asset_version_id": "15ebd7fb-bc39-4b6b-8af8-845707b10532",
+        "observations_hash": "sha256:7718c8adca415431f6f18ef240ca23b1add40f03995e66311e03795119ab8b7e"
+      },
+      "asset_version_id": "authority-output:153d9a88-034a-44b0-a479-f5aaa18ade4e:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 18,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:070be21026c1f92a69fd7e9fe9fa27751290fd48a74605b2d9cdb26790aaaa1b",
+        "asset_version_id": "a72da289-e825-4fcd-8c0a-6e1ec3a841f0",
+        "observations_hash": "sha256:a9e1d162a766e9c8b4da9370e70d4cafaebf1cd68b302b768fb394b2878a2c7b"
+      },
+      "asset_version_id": "authority-output:a6d3b10a-9c23-4d33-b6bf-dc0dc4f68516:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 19,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:0bef6c487e4099f31d36296b5581b61e90e5be68482253c3743c1ceb637582e4",
+        "asset_version_id": "46ecd52f-73c3-478b-af7a-54810b3e60bc",
+        "observations_hash": "sha256:6ed046da924426387196c7751c1bbe63d65af921648ec2868f0854946465dd26"
+      },
+      "asset_version_id": "authority-output:90250101-c3db-423f-9305-b74ce4ad98ef:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 20,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:2517c3a217f4ff80968ac8f128c8e6ac158089ba3ba6c98d789d8f28afba141e",
+        "asset_version_id": "7bc4e174-0335-4ede-83c5-2c144ba0def4",
+        "observations_hash": "sha256:35bfca4c751471801cb7ef875118266f172c5883c658b37d127c97348602ccf2"
+      },
+      "asset_version_id": "authority-output:76df75db-9b43-4660-998a-59870d3e2266:chapter.best_candidate:v1"
+    },
+    {
+      "status": "LOCATED_UNREVIEWED",
+      "chapter": 21,
+      "memory_source": {
+        "kind": "MANUSCRIPT_MEMORY",
+        "version": "working-memory-source.v1",
+        "content_hash": "sha256:5ccc1f5a4c40ae911b8e6bd0d44d3947a9bfb30598782672a182e38533d3dcab",
+        "asset_version_id": "3f6eed6b-77a1-4b58-8790-689821672db9",
+        "observations_hash": "sha256:1bc615081791295621de4da7709c98039fcf905c608d043dd268c5c844fad947"
+      },
+      "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1"
+    }
+  ],
+  "irrelevant_old_tool_observation_selected": false,
+  "evaluation_case_ids_absent_from_actual_input": true,
+  "prompt_replay_identical": true,
+  "actual_data_decoded_from_frozen_transport": true,
+  "capacity_projection_applied": false,
+  "cases": [
+    {
+      "id": "prior-labour-experience",
+      "requirement": "人物把实际托料经历带入新动作，老师指出旧用力习惯造成当前压掌和腰背收紧。",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "source_asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "quote_sha256": "57756ab96a1f3802599ba2fc1d143d3b26e60b1927e0695ed9c80792369d4e1f",
+          "selected_original_span": true,
+          "present_in_replayed_actual_data": true
+        }
+      ]
+    },
+    {
+      "id": "specific-action-consequence",
+      "requirement": "偏差被定位到动作发生顺序，纠正后发生变化；未把劳动酸痛当修炼成功。",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "source_asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "quote_sha256": "cf79afc778260f310eb06ddf73799b220be2d04be7a26b864767ef2b515abe2f",
+          "selected_original_span": true,
+          "present_in_replayed_actual_data": true
+        }
+      ]
+    },
+    {
+      "id": "guided-not-independent",
+      "requirement": "受指导完成与独立掌握分开，明确保留人物尚未能自行察觉的知识边界。",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "source_asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "quote_sha256": "b02dfa8f2db95829b331367a51aeee8b209049b2fdd33f6ecb33fc182a41469d",
+          "selected_original_span": true,
+          "present_in_replayed_actual_data": true
+        }
+      ]
+    },
+    {
+      "id": "class-promise-realized",
+      "requirement": "第三课已经在本章正文中实际完成，后续不能继续把它当尚未履行的课。",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "source_asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "quote_sha256": "33b7af800f6e69006abe10efe5d1dabfd275e4073e860ec939ca74e92f58bb02",
+          "selected_original_span": true,
+          "present_in_replayed_actual_data": true
+        }
+      ]
+    },
+    {
+      "id": "unknown-use-retained",
+      "requirement": "身体练习的进展没有补全材料用途或细粒配用的未知。",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "source_asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "quote_sha256": "738a82c553471156187301ea1c4581d6489e467bffd33a3cb51e15bb46480cfb",
+          "selected_original_span": true,
+          "present_in_replayed_actual_data": true
+        }
+      ]
+    },
+    {
+      "id": "persistent-rest-consequence",
+      "requirement": "学习带来后续时间安排和身体恢复的实际限制，不只是复述动作。",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "source_asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "quote_sha256": "a060683b5932673e4d4c26f2e66a1775dc8577888c88d402470230b25b9986d1",
+          "selected_original_span": true,
+          "present_in_replayed_actual_data": true
+        }
+      ]
+    }
+  ],
+  "boundary": "Presence in exact delivered application data is not proof of model comprehension; conditional applicability and selected prose are assessed separately."
+}

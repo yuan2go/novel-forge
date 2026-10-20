@@ -1,0 +1,103 @@
+{
+  "source_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+  "checklist_sha256": "ed480977f7e49ceb6673073df0bb6b997b2e66a3984df4081b50c3020e08fddc",
+  "external_effect_id": "bbd7d382-6d19-446c-b3a5-30599c63bd48",
+  "effect_status": "DISPATCHING",
+  "chapter_request_id": "chapter-request:e56009cd5857511ec25db92915c77234abced0526707aab12155a2744d046a89",
+  "snapshot_hash": "sha256:41887030595ca96e33c1cb2c242d1c35a09a69d73f3cecf6b9feea92a69159cc",
+  "task_hash": "sha256:ceb82540b8e7dccf4df046a180052bbf882b9572610953876931a9ca07455f97",
+  "application_input": {
+    "unicode_codepoints": 368707,
+    "utf8_bytes": 468963,
+    "sha256": "1c39ce0136657114159b88ac8c0dbcab77f3d23e0f79d8c6acbf1e0f9b9de11c"
+  },
+  "envelope_hash": "sha256:ea6b26cce30f36992eaef4a0317397f00cc4c4da40976ccc294c6b1aebfb52c2",
+  "raw_selected_history": {
+    "chapters": 25,
+    "unicode_codepoints": 125106,
+    "utf8_bytes": 370526,
+    "han_characters": 107254
+  },
+  "application_protocol_schema_utf8_bytes": 3776,
+  "memory_provider_material": {
+    "unicode_codepoints": 133015,
+    "utf8_bytes": 174041
+  },
+  "selected_prose_codepoints": 17548,
+  "selected_prose_utf8_bytes": 51812,
+  "memory_entries": 82,
+  "memory_candidates": 693,
+  "irrelevant_old_tool_observation_selected": false,
+  "evaluation_case_ids_absent_from_actual_input": true,
+  "prompt_replay_identical": true,
+  "actual_data_decoded_from_frozen_transport": true,
+  "capacity_projection_applied": true,
+  "cases": [
+    {
+      "id": "native26-actual-guided-short-practice",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "alternatives": [
+        {
+          "chapter": 25,
+          "source_asset_version_id": "authority-output:bc77b749-e321-4b19-94f4-24f21bbcf06f:chapter.best_candidate:v1",
+          "quote_sha256": "3c7f8e65c3498b03ebb83d38def31f9f24c78f1fe45b3e7d3dc5d094f54bdcd4",
+          "selected_original_span": true,
+          "present_in_replayed_actual_data": true
+        }
+      ]
+    },
+    {
+      "id": "native26-specific-next-practice-scope",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "alternatives": [
+        {
+          "chapter": 25,
+          "source_asset_version_id": "authority-output:bc77b749-e321-4b19-94f4-24f21bbcf06f:chapter.best_candidate:v1",
+          "quote_sha256": "53ce5c58bc6cfad58d679fb7e9b551cffce38b0b3ed7b1eb9e5ff03b3f132eae",
+          "selected_original_span": true,
+          "present_in_replayed_actual_data": true
+        }
+      ]
+    },
+    {
+      "id": "native26-unresolved-onset-preserved",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "alternatives": [
+        {
+          "chapter": 25,
+          "source_asset_version_id": "authority-output:bc77b749-e321-4b19-94f4-24f21bbcf06f:chapter.best_candidate:v1",
+          "quote_sha256": "c13efa9bbc48b502609d804690b4689d9fa5660b61be5eddf9737fff71f3c750",
+          "selected_original_span": true,
+          "present_in_replayed_actual_data": true
+        }
+      ]
+    },
+    {
+      "id": "native26-guidance-versus-independent-knowledge",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "alternatives": [
+        {
+          "chapter": 25,
+          "source_asset_version_id": "authority-output:bc77b749-e321-4b19-94f4-24f21bbcf06f:chapter.best_candidate:v1",
+          "quote_sha256": "126d0fb0a70e99e29c91d26bfe4b9c6bc5c8d8f4538c9d47bc3380d63e6ba815",
+          "selected_original_span": true,
+          "present_in_replayed_actual_data": true
+        }
+      ]
+    },
+    {
+      "id": "native26-new-fee-closed-not-old-course-debt",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "alternatives": [
+        {
+          "chapter": 25,
+          "source_asset_version_id": "authority-output:bc77b749-e321-4b19-94f4-24f21bbcf06f:chapter.best_candidate:v1",
+          "quote_sha256": "0af9d78900fdbfbaea80fe03c34f4448636c37e25432d718f4b8feea01a8c6fe",
+          "selected_original_span": true,
+          "present_in_replayed_actual_data": true
+        }
+      ]
+    }
+  ],
+  "boundary": "Presence in exact delivered application data is not proof of model comprehension; conditional applicability and selected prose are assessed separately."
+}
