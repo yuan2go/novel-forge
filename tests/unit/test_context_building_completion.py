@@ -512,7 +512,7 @@ def test_new_task_versions_observation_selection_without_reinterpreting_task3():
     sources = [dict(asset_type="chapter_plan", asset_version_id="plan", content_hash=canonical_hash(content), content=content)]
     old = build_working_task(sources=sources, book=book, chapter=3, stage="CHAPTER", version="working-retrieval-task.v3")
     current = build_working_task(sources=sources, book=book, chapter=3, stage="CHAPTER", version=CURRENT_WORKING_TASK_VERSION)
-    assert CURRENT_WORKING_TASK_VERSION == "working-retrieval-task.v5"
+    assert CURRENT_WORKING_TASK_VERSION == "working-retrieval-task.v6"
     assert current["delivery_contract"] == old["delivery_contract"]
     assert {k: v for k, v in current.items() if k not in {"contract_version", "task_hash"}} == {
         k: v for k, v in old.items() if k not in {"contract_version", "task_hash"}}

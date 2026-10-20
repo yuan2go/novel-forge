@@ -372,7 +372,18 @@ def compile_task_context(
         remaining = token_budget - untouched_tokens
         replacements = {}
         call_count = 0
+        if semantic and stage_sources and task.get("capacity_policy") == "complete-request-capacity.v1" and task.get("source_batching_version"):
+            from .source_batches import BATCH_VERSION, compress_source_batches
+            if task["source_batching_version"] != BATCH_VERSION or chunk_fits is None:
+                raise KernelError("CONTEXT_BATCH_POLICY_INVALID", "Batching requires its frozen version and complete request capacity checks")
+            replacements, batch_traces = compress_source_batches(eligible=eligible, normalized=normalized,
+                catalogs=catalogs, mandatory_amounts=mandatory_amounts, token_budget=token_budget,
+                task=task, boundary=boundary, model_call=model_call, chunk_fits=chunk_fits,
+                token_counter=token_counter, external_refs=external_refs)
+            traces.extend(batch_traces)
         for candidate in eligible:
+            if candidate.asset_version_id in replacements:
+                continue
             if sum(replacements.get(item.asset_version_id, item).estimated_tokens for item in normalized) <= token_budget:
                 break
             units = eligible_units[candidate.asset_version_id]

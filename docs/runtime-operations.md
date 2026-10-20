@@ -705,7 +705,7 @@ For new retrieval task v5 (and frozen v4), inspect the frozen memory packet's
 `working-task-observation-relevance.v2` query support. It retains non-dominated
 lexical-score/source-chapter evidence, with observation identity reuse. Compare actual
 selected original ranges and the full request receipt; a correct draft or a matching
-source list does not close an omitted historical-support case. For new task v5 Chapter Planning, verify that the frozen Group row supplies the
+source list does not close an omitted historical-support case. For new task v5/v6 Chapter Planning, verify that the frozen Group row supplies the
 primary/secondary functions and that regional goals are retained as source bindings
 without competing as Chapter retrieval demand. Frozen task v1-v4 extraction remains
 unchanged. Frozen task v3 keeps relevance v1. Do not replace a historical request with the current preview.
@@ -745,7 +745,18 @@ that admission artifact with `FROZEN_APPLICATION_REQUEST`, validates its hash an
 binding, and retains separate dispatches and receipt input bindings. Historical requests
 with only original hashes return `LEGACY_HASH_ONLY`, never a newly rendered preview.
 
+For new task v6 complete-request preparation, inspect
+`compression_trace[].source_batch`: `source-bound-capacity-batching.v1` binds every
+member to the same original Context custodian and labels shared Effect receipts as
+`SHARED_BATCH_NOT_PER_SOURCE_CALL`. Count distinct Effect IDs, not per-source trace
+copies. Check the actual final transport after capacity projection, its independent
+final composition evidence, and the final admission; initial selection is insufficient.
+A singleton or oversized source uses its existing per-expression route. Task v1-v5
+replay cannot enable batching from a nested historical producer's packet. Preserve any
+uncertain invocation for the original Kernel reconciliation before a new send.
+
 For changes to this path run `test_context_building_completion.py`,
+`test_source_batch_capacity.py`,
 `test_memory_backfill_postgres.py`, existing working-memory/projection/history,
 Planning/World continuity and capacity/replay suites, plus the default-author-first and
 working-memory-interruption native cases. Run PostgreSQL suites serially per disposable

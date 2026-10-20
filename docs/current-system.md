@@ -367,7 +367,7 @@ historical Plan bindings are navigation hints, never proof that a planned event 
 or that a character knows it. Missing Plan bindings remain visible. Replay validates the
 original Plan versions and source digests before reusing a disposable locator index.
 Previously frozen selection v1-v2 requests retain their original algorithms.
-New v10 freezes use retrieval task v5 with observation relevance v2 and the explicit
+New v10 freezes use retrieval task v6 with observation relevance v2 and the explicit
 full-request delivery contract. Frozen task v3 retains relevance v1 and its original
 delivery contract; task v2 retains its original demand and handoff rules. Native
 Task v5 uses the most specific available current planning demand: ChapterPlan, then
@@ -1846,6 +1846,19 @@ task-context-compression v1–v3 protocols limit each request to 256 source unit
 their output identity arrays (`HISTORICAL_COMPATIBILITY`). Both initial and final
 batching must honor that wire contract as well as complete request capacity. This is
 not a limit on total source units or the number of batches; coverage is preserved.
+New retrieval task v6 retains task v5 demand and relevance semantics and enables
+`source-bound-capacity-batching.v1` for new complete-request preparations. Only current
+working packets at explicit Provider task/context locations enable it; historical
+producer packets cannot upgrade an old request. Whole historical expressions sharing
+the same frozen Context custodian may share a bounded compressor and independent
+fidelity request. Every unit carries its original expression identity, hash, location
+and attribution; host reconstruction still uses each original catalog. Shared Effect
+receipts are batch evidence, never invented per-source invocations. Complete rendered
+request capacity and the 256-unit wire contract determine each batch. An expression
+that cannot join a batch retains the existing source path. Located missing units are restored and independently checked again; invalid or uncertain
+fidelity restores the batch's original source. Dependency closure and the
+independent final Provider composition check remain mandatory. Task v1–v5 and frozen
+preparations retain the earlier per-expression algorithm.
 Each checker task keeps
 its exact identity, and missing or uncertain meaning retains the existing restoration
 rules. Final Planning dispatch, including preparation calls, checks the

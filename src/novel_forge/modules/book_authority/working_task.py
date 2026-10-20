@@ -10,8 +10,8 @@ from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 
 
 WORKING_TASK_VERSION = "working-retrieval-task.v1"
-CURRENT_WORKING_TASK_VERSION = "working-retrieval-task.v5"
-DELIVERY_WORKING_TASK_VERSIONS = frozenset({"working-retrieval-task.v3", "working-retrieval-task.v4", CURRENT_WORKING_TASK_VERSION})
+CURRENT_WORKING_TASK_VERSION = "working-retrieval-task.v6"
+DELIVERY_WORKING_TASK_VERSIONS = frozenset({"working-retrieval-task.v3", "working-retrieval-task.v4", "working-retrieval-task.v5", CURRENT_WORKING_TASK_VERSION})
 STATEFUL_WORKING_TASK_VERSIONS = frozenset({"working-retrieval-task.v2", *DELIVERY_WORKING_TASK_VERSIONS})
 TASK_DELIVERY_CONTRACT = "source-bound-full-provider-request.v1"
 WORKING_TASK_AUTHORITY = "FROZEN_PLAN_RETRIEVAL_ONLY"
@@ -278,7 +278,7 @@ def build_working_task(*, sources: Sequence[Mapping[str, Any]], book: Mapping[st
     segment_refs.update((binding["asset_version_id"], row.get("segment_id"))
         for binding, _, _, rows in current if binding["plan_kind"] == "volume_plan" for row, _ in rows if row.get("segment_id"))
     demand_kinds = None
-    if version == CURRENT_WORKING_TASK_VERSION:
+    if version in {"working-retrieval-task.v5", "working-retrieval-task.v6"}:
         demand_kinds = next(({kind} for kind in ("chapter_plan", "chapter_group_plan")
             if any(binding["plan_kind"] == kind and rows for binding, _, _, rows in current)), None)
     goals: list[str] = []
@@ -299,7 +299,7 @@ def build_working_task(*, sources: Sequence[Mapping[str, Any]], book: Mapping[st
                 if not rows and in_window is True:
                     selected.extract(content, pointer, goals=("objective",), texts=())
         for row, row_pointer in rows:
-            if version == CURRENT_WORKING_TASK_VERSION and binding["plan_kind"] == "chapter_group_plan":
+            if version in {"working-retrieval-task.v5", "working-retrieval-task.v6"} and binding["plan_kind"] == "chapter_group_plan":
                 selected.extract(row, row_pointer, goals=("chapter_intent", "objective", "goal", "primary_function"))
                 for index, function in enumerate(row.get("secondary_functions") or ()):
                     selected.add("queries", function, f"{row_pointer}/secondary_functions/{index}")

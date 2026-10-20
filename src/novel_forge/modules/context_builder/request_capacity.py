@@ -474,8 +474,11 @@ def prepare_request_capacity(
     candidates = list(candidates_by_hash.values())
     dependency_bindings = semantic_units.protected_dependency_bindings(original, excluded_scopes=set(grouped)) if semantic else []
     eligible_quotes = [quote for quote in preserve_quotes if any(quote.replace("\r\n", "\n") in item.safe_summary.replace("\r\n", "\n") for item in candidates)] if semantic else list(preserve_quotes)
+    from .source_batches import current_batching_version
+    batching_version = current_batching_version(original) if semantic else ""
     task = {"stage": stage, "frozen_input_boundary": source_boundary, "source_projection_hash": narrative_hash(original),
             "preserve_quotes": eligible_quotes, "task_context": compression_task_context(original.get("input_manifest") or {}), "capacity_policy": CAPACITY_POLICY,
+            **({"source_batching_version": batching_version} if batching_version else {}),
             **({"capacity_bindings": capacity_bindings} if capacity_bindings else {}),
             **({"semantic_contract": semantic_contract} if semantic else {}),
             **({"capacity_history_exact_chapters": history_exact_chapters} if history_exact_chapters is not None else {}),
