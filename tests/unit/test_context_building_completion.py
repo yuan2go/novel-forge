@@ -512,9 +512,38 @@ def test_new_task_versions_observation_selection_without_reinterpreting_task3():
     sources = [dict(asset_type="chapter_plan", asset_version_id="plan", content_hash=canonical_hash(content), content=content)]
     old = build_working_task(sources=sources, book=book, chapter=3, stage="CHAPTER", version="working-retrieval-task.v3")
     current = build_working_task(sources=sources, book=book, chapter=3, stage="CHAPTER", version=CURRENT_WORKING_TASK_VERSION)
-    assert CURRENT_WORKING_TASK_VERSION == "working-retrieval-task.v4"
+    assert CURRENT_WORKING_TASK_VERSION == "working-retrieval-task.v5"
     assert current["delivery_contract"] == old["delivery_contract"]
     assert {k: v for k, v in current.items() if k not in {"contract_version", "task_hash"}} == {
         k: v for k, v in old.items() if k not in {"contract_version", "task_hash"}}
     for task in [old, current]:
         validate_working_task(task, book=book, chapter=3, stage="CHAPTER", sources=sources)
+
+
+def test_concrete_group_row_controls_planning_retrieval_without_losing_regional_bindings():
+    from novel_forge.modules.book_authority.working_task import build_working_task, validate_working_task
+    from novel_forge.modules.story_planning_runtime.domain import canonical_hash
+    book = dict(project_id="project", book_id="book", book_run_id="run")
+    def binding(kind, identity, content):
+        content = {"project_id": "project", "book_id": "book", **content}
+        return dict(asset_type=kind, asset_version_id=identity, content_hash=canonical_hash(content), content=content)
+    group = binding("chapter_group_plan", "group", {"chapter_range": [3, 4], "chapter_function_matrix": [
+        {"chapter_number": 3, "primary_function": "Deliver the agreed tool repair.",
+         "secondary_functions": ["Preserve the master's quality judgement."],
+         "required_state_delta": {"summary": "The repair is complete and the ordinary fee is paid."}},
+        {"chapter_number": 4, "primary_function": "A future journey to the orchard."}]})
+    regional = binding("volume_plan", "volume", {"chapter_range": [1, 10], "objective": "Begin initial lessons."})
+    sources = [group, regional]
+    old = build_working_task(sources=sources, book=book, chapter=3, stage="PLANNING", version="working-retrieval-task.v4")
+    current = build_working_task(sources=sources, book=book, chapter=3, stage="PLANNING", version="working-retrieval-task.v5")
+    assert old["goal"] == "Begin initial lessons."
+    assert current["goal"] == "Deliver the agreed tool repair."
+    assert current["sources"] == old["sources"]
+    assert "Preserve the master's quality judgement." in current["queries"]
+    assert "The repair is complete and the ordinary fee is paid." in current["queries"]
+    assert all(field["asset_version_id"] == "group" for field in current["field_sources"])
+    assert all("orchard" not in value for value in [current["goal"], *current["queries"]])
+    for task in [old, current]:
+        validate_working_task(task, book=book, chapter=3, stage="PLANNING", sources=sources)
+    regional_task = build_working_task(sources=[regional], book=book, chapter=3, stage="PLANNING", version="working-retrieval-task.v5")
+    assert regional_task["goal"] == old["goal"]

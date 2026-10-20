@@ -215,7 +215,7 @@ def compile_working_memory(sources: list[dict[str, Any]], *, queries: list[str],
         task_selection = select_task_observations([entry for entry in entries
             if entry["kind"] not in {"CHARACTER_STATE", "KNOWLEDGE", "RELATIONSHIP"}
             or entry["observation_id"] in current], task=task,
-            version="working-task-observation-relevance.v2" if task.get("contract_version") == "working-retrieval-task.v4"
+            version="working-task-observation-relevance.v2" if task.get("contract_version") in {"working-retrieval-task.v4", "working-retrieval-task.v5"}
                 else "working-task-observation-relevance.v1")
         task_related = set(task_selection["selected_ids"])
     ranked = sorted(entries, key=lambda row: (

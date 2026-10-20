@@ -701,12 +701,14 @@ history, and rejects an unresolved Effect or held writer. Reconcile UNKNOWN firs
 Missing/failed memory does not erase or reject a complete Draft. Observation location
 and receipt validity do not establish semantic completeness or literary quality.
 
-For new retrieval task v4, inspect the frozen memory packet's
+For new retrieval task v5 (and frozen v4), inspect the frozen memory packet's
 `working-task-observation-relevance.v2` query support. It retains non-dominated
 lexical-score/source-chapter evidence, with observation identity reuse. Compare actual
 selected original ranges and the full request receipt; a correct draft or a matching
-source list does not close an omitted historical-support case. Frozen task v3 keeps
-relevance v1. Do not replace a historical request with the current preview.
+source list does not close an omitted historical-support case. For new task v5 Chapter Planning, verify that the frozen Group row supplies the
+primary/secondary functions and that regional goals are retained as source bindings
+without competing as Chapter retrieval demand. Frozen task v1-v4 extraction remains
+unchanged. Frozen task v3 keeps relevance v1. Do not replace a historical request with the current preview.
 
 Select v10 only prospectively using the existing `select-working-policy` command below.
 If a first native Planning preparation still owns an unsent Book-pause intent, request

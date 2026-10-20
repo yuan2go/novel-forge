@@ -10,8 +10,8 @@ from novel_forge.modules.story_planning_runtime.domain import canonical_hash
 
 
 WORKING_TASK_VERSION = "working-retrieval-task.v1"
-CURRENT_WORKING_TASK_VERSION = "working-retrieval-task.v4"
-DELIVERY_WORKING_TASK_VERSIONS = frozenset({"working-retrieval-task.v3", CURRENT_WORKING_TASK_VERSION})
+CURRENT_WORKING_TASK_VERSION = "working-retrieval-task.v5"
+DELIVERY_WORKING_TASK_VERSIONS = frozenset({"working-retrieval-task.v3", "working-retrieval-task.v4", CURRENT_WORKING_TASK_VERSION})
 STATEFUL_WORKING_TASK_VERSIONS = frozenset({"working-retrieval-task.v2", *DELIVERY_WORKING_TASK_VERSIONS})
 TASK_DELIVERY_CONTRACT = "source-bound-full-provider-request.v1"
 WORKING_TASK_AUTHORITY = "FROZEN_PLAN_RETRIEVAL_ONLY"
@@ -277,8 +277,14 @@ def build_working_task(*, sources: Sequence[Mapping[str, Any]], book: Mapping[st
                     and isinstance(ref.get("volume_plan_version_id"), str) and isinstance(ref.get("segment_id"), str)}
     segment_refs.update((binding["asset_version_id"], row.get("segment_id"))
         for binding, _, _, rows in current if binding["plan_kind"] == "volume_plan" for row, _ in rows if row.get("segment_id"))
+    demand_kinds = None
+    if version == CURRENT_WORKING_TASK_VERSION:
+        demand_kinds = next(({kind} for kind in ("chapter_plan", "chapter_group_plan")
+            if any(binding["plan_kind"] == kind and rows for binding, _, _, rows in current)), None)
     goals: list[str] = []
     for binding, content, pointer, rows in current:
+        if demand_kinds is not None and binding["plan_kind"] not in demand_kinds:
+            continue
         selected = _TaskFields(fields, binding["asset_version_id"])
         if binding["plan_kind"] == "arc_plan":
             in_window = _in_window(content, chapter)
@@ -293,7 +299,12 @@ def build_working_task(*, sources: Sequence[Mapping[str, Any]], book: Mapping[st
                 if not rows and in_window is True:
                     selected.extract(content, pointer, goals=("objective",), texts=())
         for row, row_pointer in rows:
-            selected.extract(row, row_pointer)
+            if version == CURRENT_WORKING_TASK_VERSION and binding["plan_kind"] == "chapter_group_plan":
+                selected.extract(row, row_pointer, goals=("chapter_intent", "objective", "goal", "primary_function"))
+                for index, function in enumerate(row.get("secondary_functions") or ()):
+                    selected.add("queries", function, f"{row_pointer}/secondary_functions/{index}")
+            else:
+                selected.extract(row, row_pointer)
             for key in ("required_state_delta", "exit_state_spec"):
                 if isinstance(row.get(key), Mapping):
                     selected.add("queries", row[key].get("summary"), f"{row_pointer}/{key}/summary")

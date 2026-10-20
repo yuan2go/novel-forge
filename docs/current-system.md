@@ -347,7 +347,7 @@ status remains visible. Observations are fallible navigation, not accepted facts
 For v10, an actor name alone does not seed every latest state or knowledge item.
 The Host ranks source-bound observation claims and quotes against each frozen task
 query and records uncovered queries. Task v1-v3 retain their best-support selection.
-New task v4 freezes observation relevance v2: for each query, keep the non-dominated
+Task v4 and new task v5 freeze observation relevance v2: for each query, keep the non-dominated
 frontier of lexical score and source chapter, reusing observation identities across
 queries. A more literal old registration must not by itself discard later completion
 evidence. Equal-score later sources dominate earlier ones; an equal chapter/score uses
@@ -367,9 +367,15 @@ historical Plan bindings are navigation hints, never proof that a planned event 
 or that a character knows it. Missing Plan bindings remain visible. Replay validates the
 original Plan versions and source digests before reusing a disposable locator index.
 Previously frozen selection v1-v2 requests retain their original algorithms.
-New v10 freezes use retrieval task v4 with observation relevance v2 and the explicit
+New v10 freezes use retrieval task v5 with observation relevance v2 and the explicit
 full-request delivery contract. Frozen task v3 retains relevance v1 and its original
 delivery contract; task v2 retains its original demand and handoff rules. Native
+Task v5 uses the most specific available current planning demand: ChapterPlan, then
+its current ChapterGroup function row, then regional Arc/Volume segments. It retains
+all supplied source version bindings, but broader regional goals do not become extra
+retrieval queries when the concrete Chapter row is already present. Group-row primary
+and secondary functions are literal demand with exact field provenance. Broader Plans
+remain governed inputs to Planning itself. Frozen task v1-v4 retain their extraction.
 Planning binds the exact current VolumePlan as well as Arc/Group inputs, selects its
 current narrative segment and the corresponding Arc segments, and resolves literal
 participant mentions against the frozen cast. The delivered predecessor is an explicit
