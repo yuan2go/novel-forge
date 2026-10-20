@@ -1861,8 +1861,21 @@ independent final Provider composition check remain mandatory. Task v1–v5 and 
 preparations retain the earlier per-expression algorithm.
 Each checker task keeps
 its exact identity, and missing or uncertain meaning retains the existing restoration
-rules. Final Planning dispatch, including preparation calls, checks the
-owning Book pause and Book/Creation cancellation before entering the Provider.
+rules. Final Planning and Book-coordinated Chapter dispatch, including preparation
+calls, check the owning Book pause and Book/Creation cancellation before entering the
+Provider. Chapter capacity preparation also checks before invoking the binder and each
+auxiliary call; final dispatch rechecks after preparation. Retired Book request roots
+cannot borrow the current request's execution rights. Standalone Chapter and explicit
+working-revision roots retain their separate existing authorization, including author
+revision while ordinary Book continuation is paused. Reading retained complete output
+is not a new Provider dispatch. `chapter-complete-request-preparation-reuse.v1` may
+reuse a direct native successor's already admitted capacity projection even when that
+parent's main Writer outcome is UNKNOWN: the reused object is pre-dispatch Context,
+never the unknown prose. The original native successor, actor, command, input versions,
+Pack snapshot, admitted request digest and source projection must verify. Current route,
+source boundary, algorithm-bearing input and complete request capacity are rechecked;
+changed bindings rebuild the derived preparation. The source projection and its real
+receipts remain immutable; reuse records a separate host proof and no model invocation.
 Independent Book prose-review recovery can consume a retained completed result.
 Planning saved-result scans select its generation definition; Chapter scans select the
 exact active Chapter or working-revision Root. Optional prose review selects its admitted

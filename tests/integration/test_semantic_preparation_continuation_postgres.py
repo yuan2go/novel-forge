@@ -692,3 +692,34 @@ def test_settled_capacity_upgrade_preserves_prior_functions_and_restored_busines
                 assert 'working-plan-regeneration.v1' in isolated_after
                 assert 'source-generation-isolation.v1' in isolated_after
             assert run_migrations(restored)['ok']
+
+
+def test_chapter_dispatch_checks_native_book_pause_retirement_and_cancellation():
+    from novel_forge.modules.book_authority.production_policy import require_chapter_provider_dispatch
+    from novel_forge.modules.command_kernel.errors import KernelError
+    with psycopg.connect(DATABASE_URL) as connection:
+        try:
+            for table in ('operation', 'book_chapter_request', 'book_production', 'cancellation_command',
+                          'story_creation_cancellation', 'story_formation_run'):
+                connection.execute(f'CREATE TEMP TABLE authority_{table} AS SELECT * FROM public.authority_{table} WITH NO DATA')
+            connection.execute("INSERT INTO authority_operation(operation_id,root_operation_id,project_id) VALUES('aux','chapter-root','project'),('revision','revision-root','project')")
+            connection.execute("INSERT INTO authority_book_chapter_request(chapter_request_id,chapter_root_operation_id,book_run_id,project_id) VALUES('request','chapter-root','run','project')")
+            connection.execute("INSERT INTO authority_book_production(book_run_id,project_id,book_id,state,root_operation_id,active_chapter_request_id) VALUES('run','project','book','READY','book-root','request')")
+            def check(operation='aux'):
+                require_chapter_provider_dispatch(connection.cursor(), project_id='project', operation_id=operation)
+            check()
+            for statement in (
+                "UPDATE authority_book_production SET state='PAUSED'",
+                "UPDATE authority_book_production SET active_chapter_request_id=NULL",
+                "UPDATE authority_book_production SET project_id='foreign'",
+                "INSERT INTO authority_cancellation_command(operation_id) VALUES('book-root')",
+                "UPDATE authority_book_production SET state='COMPLETED'",
+            ):
+                connection.execute('SAVEPOINT chapter_negative')
+                connection.execute(statement)
+                with pytest.raises(KernelError, match='RUNTIME_DISPATCH_PAUSED|BOOK_GENERATION_EXECUTION_NOT_LIVE'):
+                    check()
+                check('revision')
+                connection.execute('ROLLBACK TO SAVEPOINT chapter_negative')
+        finally:
+            connection.rollback()

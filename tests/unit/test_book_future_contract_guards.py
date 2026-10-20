@@ -371,3 +371,24 @@ def test_active_planchange_cancellation_rejection_cannot_append_impact_or_event(
     uow.repositories.plan_change.reconcile_replaced_target_impact.assert_not_called()
     uow.repositories.operation_graph.record_event.assert_not_called()
     uow.commit.assert_not_called()
+
+
+@pytest.mark.parametrize("rows,code", [
+    ([], ""), ([("READY", False, False, True)], ""),
+    ([("PAUSED", False, False, True)], "RUNTIME_DISPATCH_PAUSED"),
+    ([(None, False, False, None)], "BOOK_GENERATION_EXECUTION_NOT_LIVE"),
+    ([("READY", True, False, True)], "BOOK_GENERATION_EXECUTION_NOT_LIVE"),
+    ([("READY", False, True, True)], "BOOK_GENERATION_EXECUTION_NOT_LIVE"),
+    ([("READY", False, False, False)], "BOOK_GENERATION_EXECUTION_NOT_LIVE"),
+    ([("COMPLETED", False, False, True)], "BOOK_GENERATION_EXECUTION_NOT_LIVE"),
+    ([("READY", False, False, True)] * 2, "BOOK_GENERATION_EXECUTION_NOT_LIVE"),
+])
+def test_chapter_preparation_and_dispatch_require_current_native_book(rows, code):
+    from novel_forge.modules.book_authority.production_policy import require_chapter_provider_dispatch
+    cursor = MagicMock()
+    cursor.fetchall.return_value = rows
+    if code:
+        with pytest.raises(KernelError, match=code):
+            require_chapter_provider_dispatch(cursor, project_id="p", operation_id="chapter")
+    else:
+        require_chapter_provider_dispatch(cursor, project_id="p", operation_id="chapter")

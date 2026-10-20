@@ -839,6 +839,11 @@ class PostgresChapterExecutionContractBinder:
                 "CHAPTER_CAPABILITY_METADATA_MISSING",
                 "Capability preflight requires Attempt metadata",
             )
+        retained_projection = metadata.get("_retained_capacity_preparation")
+        if retained_projection is not None:
+            metadata = dict(metadata)
+            metadata.pop("_retained_capacity_preparation")
+            request_payload["_production_execution"] = metadata
         operation_id = str(metadata.get("operation_id") or "")
         attempt_id = str(metadata.get("attempt_id") or "")
         project_id = str(metadata.get("project_id") or "")
@@ -1237,7 +1242,14 @@ class PostgresChapterExecutionContractBinder:
                         return False
                 return True
 
-            projection = prepare_request_capacity(original=provider_data, stage=stage, source_boundary=source_boundary,
+            reuse_proof = metadata.get("capacity_preparation_reuse")
+            reuse_applied = False
+            if retained_projection is not None and reuse_proof:
+                from .capacity_reuse import reusable_preparation
+                reuse_applied = reusable_preparation(retained_projection, reuse_proof, source_boundary=source_boundary,
+                    original=provider_data, route_contract=capacity_route_contract(route), measure=measure)
+                reuse_proof["status"] = "APPLIED_WITH_CURRENT_ADMISSION" if reuse_applied else "INVALIDATED_CURRENT_BINDINGS_OR_CAPACITY"
+            projection = retained_projection if reuse_applied else prepare_request_capacity(original=provider_data, stage=stage, source_boundary=source_boundary,
                 route=route, measure=measure, model_call=context_model_call, chunk_fits=chunk_fits,
                 capacity_bindings=capacity_bindings, preserve_quotes=protected_expression_quotes(provider_data, include_working_observations=frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4"),
                 semantic_contract=frozen_context_policy_payload.get("context_substage_method", "") if frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "",
@@ -1247,6 +1259,8 @@ class PostgresChapterExecutionContractBinder:
                 request_payload["input"] = provider_inputs
                 prompt, prompt_evidence = _materialize_production_codex_prompt(target_scope=target_scope,
                     stage=stage, inputs=provider_inputs, materialization=contract)
+        if metadata.get("capacity_preparation_reuse"):
+            prompt_evidence["capacity_preparation_reuse"] = dict(metadata["capacity_preparation_reuse"])
         output_policy = str(metadata.get("output_reservation_policy") or "")
         complete_input_reserve = route_input_tokens(route, prompt, protocol_schema_json=route_protocol_schema(route, provider_schema, provider_schema_ref) if frozen_context_policy_payload.get("capacity_policy") else "")
         system_limit = 512_000 if frozen_context_policy_payload.get("capacity_policy") == "complete-request-capacity.v1" else None

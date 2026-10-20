@@ -48,6 +48,30 @@ def require_planning_provider_dispatch(cursor, *, project_id: str, operation_id:
         raise KernelError("RUNTIME_DISPATCH_PAUSED", "Planning preparation waits at the native Book pause checkpoint")
 
 
+
+def require_chapter_provider_dispatch(cursor, *, project_id: str, operation_id: str) -> None:
+    cursor.execute("""SELECT book.state,
+            EXISTS(SELECT 1 FROM authority_cancellation_command WHERE operation_id=book.root_operation_id),
+            EXISTS(SELECT 1 FROM authority_story_creation_cancellation cancellation
+                JOIN authority_story_formation_run formation USING(formation_run_id)
+                WHERE formation.project_id=book.project_id AND formation.book_id=book.book_id
+                  AND book.stable_idempotency_key=formation.formation_run_id||':production'),
+            book.active_chapter_request_id=request.chapter_request_id
+        FROM authority_operation operation JOIN authority_book_chapter_request request
+          ON request.chapter_root_operation_id=operation.root_operation_id
+        LEFT JOIN authority_book_production book ON book.book_run_id=request.book_run_id
+          AND book.project_id=operation.project_id AND book.project_id=request.project_id
+        WHERE operation.operation_id=%s AND operation.project_id=%s""", [operation_id, project_id])
+    books = cursor.fetchall()
+    if not books:
+        return
+    if (len(books) != 1 or any(row[0] is None or row[1] or row[2] or row[3] is not True
+            or row[0] in {'ABORTED', 'CANCELLED', 'COMPLETED'} for row in books)):
+        raise KernelError("BOOK_GENERATION_EXECUTION_NOT_LIVE", "Chapter dispatch requires its current uncancelled owning Book request")
+    if books[0][0] == 'PAUSED':
+        raise KernelError("RUNTIME_DISPATCH_PAUSED", "Chapter preparation waits at the native Book pause checkpoint")
+
+
 def chapter_context_policy(content: dict[str, Any]) -> dict[str, Any] | None:
     value = content.get("chapter_context_policy")
     if value is None:

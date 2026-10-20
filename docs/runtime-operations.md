@@ -751,6 +751,17 @@ member to the same original Context custodian and labels shared Effect receipts 
 `SHARED_BATCH_NOT_PER_SOURCE_CALL`. Count distinct Effect IDs, not per-source trace
 copies. Check the actual final transport after capacity projection, its independent
 final composition evidence, and the final admission; initial selection is insufficient.
+A native Book pause must prevent new Book-coordinated Chapter preparation calls and
+final dispatch, including a successor admitted before the pause. Check Effect creation
+and dispatch clocks against the persisted pause, and retain any observed post-pause
+failure evidence. Retained complete results remain readable; standalone author working
+revision retains its separate authorization. A pure-generation successor may record
+`capacity_preparation_reuse` / `chapter-complete-request-preparation-reuse.v1` in its
+admission. Verify the original admitted Context projection, current Pack/source/route
+bindings and final complete-request admission. `APPLIED_WITH_CURRENT_ADMISSION` means
+preparation was reused without another model call; it never settles the original main
+Writer UNKNOWN. `INVALIDATED_CURRENT_BINDINGS_OR_CAPACITY` rebuilds from the original
+verified inputs. Missing legacy full-request evidence cannot qualify this reuse.
 A singleton or oversized source uses its existing per-expression route. Task v1-v5
 replay cannot enable batching from a nested historical producer's packet. Preserve any
 uncertain invocation for the original Kernel reconciliation before a new send.
