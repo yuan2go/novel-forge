@@ -1,0 +1,35 @@
+{
+  "record_type": "ACTUAL_NATIVE_FROZEN_PREPARATION_CACHE_SOURCE_VALIDATION",
+  "verification_source_commit": "151733b4c3af62586d1900c5c9e11156abc1915a",
+  "working_tree_modified": true,
+  "projection_hash": "4dbbf9c929b5f3d2e4fbecf08f99d7d8a85b268608ee0558eb172796f7e25ca3",
+  "proof": {
+    "contract_version": "chapter-complete-request-preparation-reuse.v1",
+    "source_operation_id": "740ebc7b-0c01-4142-9b60-6850fc488204",
+    "source_external_effect_id": "02203730-754f-4050-9a58-e23e19ebd2ae",
+    "source_request_hash": "sha256:9d7345427798708ee2d5b3a36d64b039661d51ab1f12669e38443ed0f98b268d",
+    "source_admission_asset_version_id": "b438958d-022f-4fca-a051-c54eeb51eb69",
+    "source_admission_content_hash": "sha256:cdeb2d077d2520f10f3dd9c0bd7de354a869eaeb4b2ab38b8b4f255a800b950f",
+    "pack_snapshot_hash": "sha256:c26f9f4c0623825fa150ca3641100dcc7c0b7968e3368992ff6bade22292bc0b",
+    "projection_hash": "sha256:4dbbf9c929b5f3d2e4fbecf08f99d7d8a85b268608ee0558eb172796f7e25ca3",
+    "prepared_route": {
+      "model": "gpt-6.1-sol",
+      "method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+      "safety": 256,
+      "backend": "codex-cli",
+      "framing": 16,
+      "evidence": "sha256:6c3cbf4306c7fa7f36a9530005c92bf1152b92ad58104ee4e65425315aea5021",
+      "protocol": "codex-cli-application-stdin-v1",
+      "provider": "codex-cli",
+      "reasoning": "medium",
+      "output_limit": 475000,
+      "context_limit": 475000,
+      "output_policy": "codex-cli-context-headroom.v1"
+    },
+    "provider_invoked_for_preparation_reuse": false,
+    "remote_main_outcome": "UNCHANGED_NOT_RECONCILED",
+    "status": "CANDIDATE_REQUIRES_CURRENT_ADMISSION"
+  },
+  "provider_calls": 0,
+  "boundary": "Read-only actual native successor and previously admitted preparation validation. This is not a new Writer request or creative delivery; Book pause/cancellation remain in force."
+}

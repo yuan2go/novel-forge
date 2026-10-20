@@ -1,0 +1,76 @@
+{
+  "record_type": "PREREGISTERED_ACTUAL_SOURCE_CONTINUITY_CHECKLIST",
+  "created_at": "2026-10-20T02:12:21.693900+00:00",
+  "source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "scope": "Independent final-source round from stable20, before native21 Planning or Writer execution",
+  "boundary": "Evaluation evidence only; never passed as prose instructions or manufactured observations",
+  "cases": [
+    {
+      "id": "labor-closed",
+      "chapter": 20,
+      "asset_version_id": "authority-output:76df75db-9b43-4660-998a-59870d3e2266:chapter.best_candidate:v1",
+      "content_hash": "sha256:867d0c2fcc8021580de12628d5c0043cb1adfad9027e7af59092d0e92128fb6f",
+      "start_codepoint": 2583,
+      "end_codepoint": 2616,
+      "meaning": "两次劳务已结清，不继续作为欠账或永久工组义务。",
+      "applicability": "NECESSARY_PREDECESSOR_STATE_FOR_TASK21",
+      "quote_sha256": "61c5144ad4299873818530118e216724dfd4bda22aa9a80021a2a68f58dbca2f"
+    },
+    {
+      "id": "cash-closed",
+      "chapter": 20,
+      "asset_version_id": "authority-output:76df75db-9b43-4660-998a-59870d3e2266:chapter.best_candidate:v1",
+      "content_hash": "sha256:867d0c2fcc8021580de12628d5c0043cb1adfad9027e7af59092d0e92128fb6f",
+      "start_codepoint": 4585,
+      "end_codepoint": 4608,
+      "meaning": "现金已付；后续新费用不得混入旧欠账。",
+      "applicability": "NECESSARY_PREDECESSOR_STATE_FOR_TASK21",
+      "quote_sha256": "e2d9fd8c595cba7174bb1df91a401a59f058a21d576f9f55e267083dfde79b87"
+    },
+    {
+      "id": "third-class-pending",
+      "chapter": 20,
+      "asset_version_id": "authority-output:76df75db-9b43-4660-998a-59870d3e2266:chapter.best_candidate:v1",
+      "content_hash": "sha256:867d0c2fcc8021580de12628d5c0043cb1adfad9027e7af59092d0e92128fb6f",
+      "start_codepoint": 4609,
+      "end_codepoint": 4638,
+      "meaning": "第三课尚未发生；在后文实际完成前不可当作已完成。",
+      "applicability": "NECESSARY_PREDECESSOR_STATE_FOR_TASK21",
+      "quote_sha256": "2071b38f79992eb13a24ad4b593fd0bb6554c5a285a4267bf4a680407606f862"
+    },
+    {
+      "id": "fatigue-physical",
+      "chapter": 20,
+      "asset_version_id": "authority-output:76df75db-9b43-4660-998a-59870d3e2266:chapter.best_candidate:v1",
+      "content_hash": "sha256:867d0c2fcc8021580de12628d5c0043cb1adfad9027e7af59092d0e92128fb6f",
+      "start_codepoint": 2965,
+      "end_codepoint": 3003,
+      "meaning": "劳动后的身体反应不能变成修炼证据。",
+      "applicability": "NECESSARY_PREDECESSOR_STATE_FOR_TASK21",
+      "quote_sha256": "4c1c1a3f9ae0e647dbbf0a5ce0e49275a6ee834d49d01ad5667bce52ffdcd514"
+    },
+    {
+      "id": "unknown-use",
+      "chapter": 20,
+      "asset_version_id": "authority-output:76df75db-9b43-4660-998a-59870d3e2266:chapter.best_candidate:v1",
+      "content_hash": "sha256:867d0c2fcc8021580de12628d5c0043cb1adfad9027e7af59092d0e92128fb6f",
+      "start_codepoint": 4192,
+      "end_codepoint": 4212,
+      "meaning": "此前垫片猜断已撤回，材料用途仍不明。",
+      "applicability": "NECESSARY_PREDECESSOR_STATE_FOR_TASK21",
+      "quote_sha256": "a326e9f593ee7a55c7558b0061b0b247bcec3ef0935862647b4fe0413518dfee"
+    },
+    {
+      "id": "supervised-knowledge",
+      "chapter": 20,
+      "asset_version_id": "authority-output:76df75db-9b43-4660-998a-59870d3e2266:chapter.best_candidate:v1",
+      "content_hash": "sha256:867d0c2fcc8021580de12628d5c0043cb1adfad9027e7af59092d0e92128fb6f",
+      "start_codepoint": 4353,
+      "end_codepoint": 4381,
+      "meaning": "课堂知识有教师和对照条件，不提升为独立鉴别能力。",
+      "applicability": "NECESSARY_PREDECESSOR_STATE_FOR_TASK21",
+      "quote_sha256": "5ff45d2f72e7163e721291c037ecacd9a0e9978855b8b7e4e1b89f5ec952a162"
+    }
+  ],
+  "private_raw_sha256": "9bea311520e9e9185c73fa9cd4dd9ee85fe23ff70286e4843fc2683fdd012bb4"
+}

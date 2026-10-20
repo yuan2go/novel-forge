@@ -1,0 +1,4497 @@
+{
+  "source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "record_type": "RETAINED_NATIVE_AND_RECONSTRUCTION_HOST_PHASE_PROFILES",
+  "profiles": [
+    {
+      "private_profile_filename": "context-final-0.prof",
+      "instrumented_source_commit": null,
+      "instrumented_source_boundary": "UNLABELLED_HISTORICAL_PROFILE_NOT_FINAL_SOURCE_EVIDENCE",
+      "profile_sha256": "d170321536276d099af62aa4f7bbbba2894f01109daf34721eee5f60cbe554bf",
+      "profile_bytes": 270786,
+      "process_total_profile_seconds": 3.254393834000004,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 19,
+          "calls": 19,
+          "self_seconds": 1.8629e-05,
+          "inclusive_seconds": 0.104754043
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 114,
+          "calls": 114,
+          "self_seconds": 0.000241625,
+          "inclusive_seconds": 0.002031586
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2597,
+          "calls": 2597,
+          "self_seconds": 0.014133139000000001,
+          "inclusive_seconds": 0.259143132
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.004703243,
+          "inclusive_seconds": 0.504348417
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 258,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.001459618,
+          "inclusive_seconds": 0.292417874
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 314,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.002547817,
+          "inclusive_seconds": 0.08949333400000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 19,
+          "calls": 19,
+          "self_seconds": 0.00046004700000000005,
+          "inclusive_seconds": 0.001789961
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.006581133,
+          "inclusive_seconds": 0.5763617080000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2254,
+          "calls": 2254,
+          "self_seconds": 0.06773238200000001,
+          "inclusive_seconds": 0.24005757600000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.003312845,
+          "inclusive_seconds": 0.162498416
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 64,
+          "calls": 64,
+          "self_seconds": 0.002761461,
+          "inclusive_seconds": 0.40474017
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.006529872000000001,
+          "inclusive_seconds": 2.559304
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.000116625,
+          "inclusive_seconds": 0.11314233400000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 38,
+          "calls": 38,
+          "self_seconds": 0.00043384900000000004,
+          "inclusive_seconds": 0.092077586
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.0028893670000000003,
+          "inclusive_seconds": 0.490521417
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "context-final-1.prof",
+      "instrumented_source_commit": null,
+      "instrumented_source_boundary": "UNLABELLED_HISTORICAL_PROFILE_NOT_FINAL_SOURCE_EVIDENCE",
+      "profile_sha256": "13476c58de999f1506a8c1a32b4c3ccf38d87146aa6644a24da58cf533db3ad4",
+      "profile_bytes": 74989,
+      "process_total_profile_seconds": 1.9335450840000006,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 19,
+          "calls": 19,
+          "self_seconds": 1.5915000000000003e-05,
+          "inclusive_seconds": 0.100169583
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 114,
+          "calls": 114,
+          "self_seconds": 0.00028120200000000004,
+          "inclusive_seconds": 0.00028120200000000004
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 336,
+          "calls": 336,
+          "self_seconds": 0.001241107,
+          "inclusive_seconds": 0.001840789
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.0018392170000000002,
+          "inclusive_seconds": 0.031247459
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 258,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 7.831e-06,
+          "inclusive_seconds": 0.0075667090000000005
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 314,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.002405982,
+          "inclusive_seconds": 0.088384
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.006473907,
+          "inclusive_seconds": 0.496177876
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.003153481,
+          "inclusive_seconds": 0.160909917
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 64,
+          "calls": 64,
+          "self_seconds": 0.00259266,
+          "inclusive_seconds": 0.32586478700000004
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.007033132,
+          "inclusive_seconds": 1.2738948330000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 9.479e-05,
+          "inclusive_seconds": 0.10815508400000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 38,
+          "calls": 38,
+          "self_seconds": 0.000403794,
+          "inclusive_seconds": 0.08774949400000001
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.002711455,
+          "inclusive_seconds": 0.20523258300000002
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "context-final-2.prof",
+      "instrumented_source_commit": null,
+      "instrumented_source_boundary": "UNLABELLED_HISTORICAL_PROFILE_NOT_FINAL_SOURCE_EVIDENCE",
+      "profile_sha256": "2f3e1beaf70c190b4131c7a09905dffc22f7ccd292e8103b29e5eeb6451639ac",
+      "profile_bytes": 74989,
+      "process_total_profile_seconds": 1.857459831000001,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 19,
+          "calls": 19,
+          "self_seconds": 1.5957e-05,
+          "inclusive_seconds": 0.09969862500000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 114,
+          "calls": 114,
+          "self_seconds": 0.000238294,
+          "inclusive_seconds": 0.000238294
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 336,
+          "calls": 336,
+          "self_seconds": 0.001035419,
+          "inclusive_seconds": 0.0015802140000000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.001629622,
+          "inclusive_seconds": 0.029319875000000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 258,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 4.667e-06,
+          "inclusive_seconds": 0.007244209000000001
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 314,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.0022720830000000003,
+          "inclusive_seconds": 0.08417704100000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.006563012,
+          "inclusive_seconds": 0.497560667
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.0030196760000000002,
+          "inclusive_seconds": 0.152342166
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 64,
+          "calls": 64,
+          "self_seconds": 0.002557822,
+          "inclusive_seconds": 0.307375666
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.006851085000000001,
+          "inclusive_seconds": 1.232541625
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 5.7377e-05,
+          "inclusive_seconds": 0.10244312500000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 38,
+          "calls": 38,
+          "self_seconds": 0.00040593000000000004,
+          "inclusive_seconds": 0.087933627
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.0024607220000000003,
+          "inclusive_seconds": 0.193019708
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "native-final-21-24-9d6fd223.prof",
+      "instrumented_source_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "e162a8accb11388e69af0a429fa44483783143bb69558f9d2c26177eb5fd4c34",
+      "profile_bytes": 1103459,
+      "process_total_profile_seconds": 571.0771563159973,
+      "functions": [
+        {
+          "file": "novel_forge/modules/context_builder/retrieval.py",
+          "line": 39,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 3.165e-06,
+          "inclusive_seconds": 6.041e-06
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 161,
+          "calls": 161,
+          "self_seconds": 0.000142669,
+          "inclusive_seconds": 0.882453663
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 1587,
+          "calls": 1587,
+          "self_seconds": 0.003884039,
+          "inclusive_seconds": 0.005983623
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 10350,
+          "calls": 10350,
+          "self_seconds": 0.087554514,
+          "inclusive_seconds": 0.395776024
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 5,
+          "calls": 5,
+          "self_seconds": 0.005049418,
+          "inclusive_seconds": 6.900338541
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 241,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 23,
+          "calls": 23,
+          "self_seconds": 0.00340016,
+          "inclusive_seconds": 0.6782635020000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 23,
+          "calls": 23,
+          "self_seconds": 0.000568144,
+          "inclusive_seconds": 0.0020995840000000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 46,
+          "calls": 46,
+          "self_seconds": 0.03176749,
+          "inclusive_seconds": 1.51809158
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 23,
+          "calls": 23,
+          "self_seconds": 0.036682633,
+          "inclusive_seconds": 3.298012001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 7,
+          "calls": 7,
+          "self_seconds": 0.05480004,
+          "inclusive_seconds": 12.287
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 94,
+          "calls": 94,
+          "self_seconds": 0.057209114000000005,
+          "inclusive_seconds": 2.709988543
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.000363629,
+          "inclusive_seconds": 9.744068500000001
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4696,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 17,
+          "calls": 17,
+          "self_seconds": 0.0072245550000000006,
+          "inclusive_seconds": 37.060394791
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 3277,
+          "calls": 3277,
+          "self_seconds": 0.13995495600000002,
+          "inclusive_seconds": 17.506580088
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 14,
+          "calls": 14,
+          "self_seconds": 0.0029382930000000002,
+          "inclusive_seconds": 1.194190665
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 312,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 94,
+          "calls": 94,
+          "self_seconds": 0.036810603000000004,
+          "inclusive_seconds": 1.312113169
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2703,
+          "calls": 2703,
+          "self_seconds": 0.06582804,
+          "inclusive_seconds": 0.279452974
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 529,
+          "calls": 529,
+          "self_seconds": 0.01031541,
+          "inclusive_seconds": 2.4155051920000004
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 23,
+          "calls": 23,
+          "self_seconds": 0.114177285,
+          "inclusive_seconds": 8.010331957
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "native-final-21-25-9be655c8.prof",
+      "instrumented_source_commit": "9be655c8b0180576fca20550d8415ac84630a9cd",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "34989c4d8b963bec9a7937903bff08cf624f0ed3dafe15e4d8bd523aa47ef6ce",
+      "profile_bytes": 963057,
+      "process_total_profile_seconds": 250.47519990600065,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 23,
+          "calls": 23,
+          "self_seconds": 2.7168e-05,
+          "inclusive_seconds": 0.120504208
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.0030494320000000004,
+          "inclusive_seconds": 1.734763459
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 4887,
+          "calls": 4887,
+          "self_seconds": 0.02661244,
+          "inclusive_seconds": 0.30354152500000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 621,
+          "calls": 621,
+          "self_seconds": 0.0018404690000000002,
+          "inclusive_seconds": 0.0039236340000000005
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 180,
+          "calls": 180,
+          "self_seconds": 0.004920888,
+          "inclusive_seconds": 0.96894705
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 241,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 0.0013196170000000001,
+          "inclusive_seconds": 0.33609725100000004
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 51,
+          "calls": 51,
+          "self_seconds": 0.032863511000000005,
+          "inclusive_seconds": 0.9318302930000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 10,
+          "calls": 10,
+          "self_seconds": 0.0006967080000000001,
+          "inclusive_seconds": 0.6121598730000001
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4696,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 8,
+          "calls": 8,
+          "self_seconds": 0.00468025,
+          "inclusive_seconds": 19.038860916
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.000113707,
+          "inclusive_seconds": 0.080210083
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 1318,
+          "calls": 1318,
+          "self_seconds": 0.066563198,
+          "inclusive_seconds": 7.69804258
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.007642058,
+          "inclusive_seconds": 2.496713583
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 0.013405043,
+          "inclusive_seconds": 1.281132959
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 312,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 51,
+          "calls": 51,
+          "self_seconds": 0.010912836,
+          "inclusive_seconds": 0.27239958400000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2617,
+          "calls": 2617,
+          "self_seconds": 0.063339428,
+          "inclusive_seconds": 0.266443872
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 18,
+          "calls": 18,
+          "self_seconds": 0.014348171000000002,
+          "inclusive_seconds": 0.8850930840000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 23,
+          "calls": 23,
+          "self_seconds": 0.0005619280000000001,
+          "inclusive_seconds": 0.002083165
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 0.056944132,
+          "inclusive_seconds": 3.725241001
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "native-final-21-25-9d6fd223.prof",
+      "instrumented_source_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "b1f1b94a2f8f71c934fd114922cd10366b06e6166fedd397d722724a89f08b39",
+      "profile_bytes": 1163623,
+      "process_total_profile_seconds": 1365.794670595008,
+      "functions": [
+        {
+          "file": "novel_forge/modules/context_builder/retrieval.py",
+          "line": 39,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 3.085e-06,
+          "inclusive_seconds": 6e-06
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 216,
+          "calls": 216,
+          "self_seconds": 0.000181485,
+          "inclusive_seconds": 1.094057509
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 2736,
+          "calls": 2736,
+          "self_seconds": 0.006333162000000001,
+          "inclusive_seconds": 0.008294496
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 16486,
+          "calls": 16486,
+          "self_seconds": 0.10528026,
+          "inclusive_seconds": 0.409317286
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 8,
+          "calls": 8,
+          "self_seconds": 0.006744781,
+          "inclusive_seconds": 11.146451292
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 241,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 38,
+          "calls": 38,
+          "self_seconds": 0.0039055870000000003,
+          "inclusive_seconds": 0.72813658
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 76,
+          "calls": 76,
+          "self_seconds": 0.05064851,
+          "inclusive_seconds": 2.112105409
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 38,
+          "calls": 38,
+          "self_seconds": 0.18706755,
+          "inclusive_seconds": 13.736255332
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 24,
+          "calls": 24,
+          "self_seconds": 0.000518367,
+          "inclusive_seconds": 0.001961334
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 312,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 205,
+          "calls": 205,
+          "self_seconds": 0.068260846,
+          "inclusive_seconds": 2.162962303
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2783,
+          "calls": 2783,
+          "self_seconds": 0.063186411,
+          "inclusive_seconds": 0.27107245900000004
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 205,
+          "calls": 205,
+          "self_seconds": 0.09559780000000001,
+          "inclusive_seconds": 4.259740787
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 4960,
+          "calls": 4960,
+          "self_seconds": 0.203611656,
+          "inclusive_seconds": 25.588326674
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4696,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 32,
+          "calls": 32,
+          "self_seconds": 0.012955763,
+          "inclusive_seconds": 79.977355
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.000273674,
+          "inclusive_seconds": 0.17443191600000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 0.071228452,
+          "inclusive_seconds": 16.025186709
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 44,
+          "calls": 44,
+          "self_seconds": 0.00195173,
+          "inclusive_seconds": 2.679676832
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 38,
+          "calls": 38,
+          "self_seconds": 0.056003289000000005,
+          "inclusive_seconds": 4.725394498
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 912,
+          "calls": 912,
+          "self_seconds": 0.016096095,
+          "inclusive_seconds": 3.6051729170000004
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "native-final-21-25-e0e359be.prof",
+      "instrumented_source_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "23ae6942b6af276d8914478263eee8c8d6190663865e77f77ffc07fb6e83c0ec",
+      "profile_bytes": 1169935,
+      "process_total_profile_seconds": 2364.6860022610144,
+      "functions": [
+        {
+          "file": "novel_forge/modules/context_builder/retrieval.py",
+          "line": 39,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 8.788000000000001e-06,
+          "inclusive_seconds": 1.7708e-05
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 438,
+          "calls": 438,
+          "self_seconds": 0.000367745,
+          "inclusive_seconds": 2.162375082
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 31894,
+          "calls": 31894,
+          "self_seconds": 0.184521016,
+          "inclusive_seconds": 0.510664915
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 5118,
+          "calls": 5118,
+          "self_seconds": 0.011960630000000002,
+          "inclusive_seconds": 0.013817171000000001
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 18,
+          "calls": 18,
+          "self_seconds": 0.01243781,
+          "inclusive_seconds": 9.85930188
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 82,
+          "calls": 82,
+          "self_seconds": 0.10112551800000001,
+          "inclusive_seconds": 8.51456763
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 22,
+          "calls": 22,
+          "self_seconds": 0.000492886,
+          "inclusive_seconds": 0.0018565410000000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 241,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 82,
+          "calls": 82,
+          "self_seconds": 0.008249834000000001,
+          "inclusive_seconds": 1.419896752
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 164,
+          "calls": 164,
+          "self_seconds": 0.092633269,
+          "inclusive_seconds": 3.2430403410000004
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 21,
+          "calls": 21,
+          "self_seconds": 0.15262803500000002,
+          "inclusive_seconds": 28.789688584
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 384,
+          "calls": 384,
+          "self_seconds": 0.14294584700000001,
+          "inclusive_seconds": 5.235556743
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 12,
+          "calls": 12,
+          "self_seconds": 0.000719539,
+          "inclusive_seconds": 0.939936834
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4696,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 65,
+          "calls": 65,
+          "self_seconds": 0.02028056,
+          "inclusive_seconds": 95.29932249900001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 8891,
+          "calls": 8891,
+          "self_seconds": 0.35817886600000004,
+          "inclusive_seconds": 43.545799867
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 72,
+          "calls": 72,
+          "self_seconds": 0.002595618,
+          "inclusive_seconds": 2.8702051240000004
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 312,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 384,
+          "calls": 384,
+          "self_seconds": 0.076816223,
+          "inclusive_seconds": 2.2135456230000004
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2597,
+          "calls": 2597,
+          "self_seconds": 0.058793639,
+          "inclusive_seconds": 0.243845408
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 1640,
+          "calls": 1640,
+          "self_seconds": 0.030233600000000003,
+          "inclusive_seconds": 6.728252241000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 82,
+          "calls": 82,
+          "self_seconds": 0.28568997,
+          "inclusive_seconds": 22.410294247000003
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "native-final-21-26-7126dfe5.prof",
+      "instrumented_source_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "5e7dc1898972609b195845a2f0392db85bc14f7cb61a09446a2c89216d42f7ab",
+      "profile_bytes": 1134846,
+      "process_total_profile_seconds": 3740.566930209036,
+      "functions": [
+        {
+          "file": "novel_forge/modules/context_builder/retrieval.py",
+          "line": 39,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 4.792e-06,
+          "inclusive_seconds": 9.250000000000001e-06
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 150,
+          "calls": 150,
+          "self_seconds": 0.00015554500000000002,
+          "inclusive_seconds": 1.1011107100000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 1575,
+          "calls": 1575,
+          "self_seconds": 0.0046641270000000006,
+          "inclusive_seconds": 0.006918541
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 12231,
+          "calls": 12231,
+          "self_seconds": 0.067920589,
+          "inclusive_seconds": 0.405620548
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.007792682,
+          "inclusive_seconds": 7.264500084000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 21,
+          "calls": 21,
+          "self_seconds": 0.151005148,
+          "inclusive_seconds": 9.499270084
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 42,
+          "calls": 42,
+          "self_seconds": 0.037514229,
+          "inclusive_seconds": 1.275173294
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2901,
+          "calls": 2901,
+          "self_seconds": 0.07317773100000001,
+          "inclusive_seconds": 0.31074128500000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 258,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 21,
+          "calls": 21,
+          "self_seconds": 0.004187546,
+          "inclusive_seconds": 0.62349025
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 25,
+          "calls": 25,
+          "self_seconds": 0.000592979,
+          "inclusive_seconds": 0.002254414
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 314,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 125,
+          "calls": 125,
+          "self_seconds": 0.047337808,
+          "inclusive_seconds": 1.3968553300000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 125,
+          "calls": 125,
+          "self_seconds": 0.074936865,
+          "inclusive_seconds": 2.9272696220000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 2284,
+          "calls": 2284,
+          "self_seconds": 0.111338087,
+          "inclusive_seconds": 14.231174480000002
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4696,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 182,
+          "calls": 182,
+          "self_seconds": 0.037459468,
+          "inclusive_seconds": 122.50265736700001
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 3,
+          "calls": 37,
+          "self_seconds": 0.003579132,
+          "inclusive_seconds": 151.91619100100002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 6,
+          "calls": 6,
+          "self_seconds": 0.057978907,
+          "inclusive_seconds": 12.982045043000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 26,
+          "calls": 26,
+          "self_seconds": 0.002329535,
+          "inclusive_seconds": 1.871830625
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 21,
+          "calls": 21,
+          "self_seconds": 0.039259687,
+          "inclusive_seconds": 3.313017003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 525,
+          "calls": 525,
+          "self_seconds": 0.01171024,
+          "inclusive_seconds": 2.996557165
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "native-final-21-26-9c96b3de.prof",
+      "instrumented_source_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "6fc02f014940cc1a71e04b3d3ea0d0a05c24cea7d4a0f375dba838aaf998f34f",
+      "profile_bytes": 911072,
+      "process_total_profile_seconds": 520.9585039249993,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 25,
+          "calls": 25,
+          "self_seconds": 2.8534e-05,
+          "inclusive_seconds": 0.131378291
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 525,
+          "calls": 525,
+          "self_seconds": 0.001342385,
+          "inclusive_seconds": 0.003593213
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 4509,
+          "calls": 4509,
+          "self_seconds": 0.025918338000000003,
+          "inclusive_seconds": 0.34800445100000005
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.002435417,
+          "inclusive_seconds": 4.6376585420000005
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 7,
+          "calls": 7,
+          "self_seconds": 0.049404562000000006,
+          "inclusive_seconds": 3.049694208
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2889,
+          "calls": 2889,
+          "self_seconds": 0.07458877300000001,
+          "inclusive_seconds": 0.312596764
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 258,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 7,
+          "calls": 7,
+          "self_seconds": 0.0015985510000000001,
+          "inclusive_seconds": 0.44977595800000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 25,
+          "calls": 25,
+          "self_seconds": 0.00060128,
+          "inclusive_seconds": 0.0022508280000000003
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 314,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 33,
+          "calls": 33,
+          "self_seconds": 0.021585783,
+          "inclusive_seconds": 0.677922255
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 33,
+          "calls": 33,
+          "self_seconds": 0.029017973000000002,
+          "inclusive_seconds": 1.258118085
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 831,
+          "calls": 831,
+          "self_seconds": 0.039220575,
+          "inclusive_seconds": 4.685517215
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 14,
+          "calls": 14,
+          "self_seconds": 0.014066556000000001,
+          "inclusive_seconds": 0.835420292
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4696,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 66,
+          "calls": 66,
+          "self_seconds": 0.014985880000000002,
+          "inclusive_seconds": 37.747884248000005
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.008412286,
+          "inclusive_seconds": 3.0988944170000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 6,
+          "calls": 6,
+          "self_seconds": 0.000790297,
+          "inclusive_seconds": 0.7115592070000001
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 7,
+          "calls": 7,
+          "self_seconds": 0.013256202000000002,
+          "inclusive_seconds": 1.2902821260000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 175,
+          "calls": 175,
+          "self_seconds": 0.003600521,
+          "inclusive_seconds": 0.73165058
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "native21-22-concurrent-checkpoint-conflict-e0e359be.prof",
+      "instrumented_source_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "7c8e17aa44cf774db3a99e49a49b9c4c89affade66209ee2880e73b7294f5b3a",
+      "profile_bytes": 1128318,
+      "process_total_profile_seconds": 1677.8062709880044,
+      "functions": [
+        {
+          "file": "novel_forge/modules/context_builder/retrieval.py",
+          "line": 39,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 6,
+          "calls": 6,
+          "self_seconds": 6.082e-06,
+          "inclusive_seconds": 1.2250000000000001e-05
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 328,
+          "calls": 328,
+          "self_seconds": 0.000286823,
+          "inclusive_seconds": 1.856040477
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 27148,
+          "calls": 27148,
+          "self_seconds": 0.148624572,
+          "inclusive_seconds": 0.47979482100000004
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 4260,
+          "calls": 4260,
+          "self_seconds": 0.009948002000000001,
+          "inclusive_seconds": 0.012094169
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 8,
+          "calls": 8,
+          "self_seconds": 0.014563632000000002,
+          "inclusive_seconds": 9.681787958000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 138,
+          "calls": 138,
+          "self_seconds": 0.077693304,
+          "inclusive_seconds": 2.7384666340000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 22,
+          "calls": 22,
+          "self_seconds": 0.00058829,
+          "inclusive_seconds": 0.002146167
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 241,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 69,
+          "calls": 69,
+          "self_seconds": 0.007342617,
+          "inclusive_seconds": 1.197657667
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 69,
+          "calls": 69,
+          "self_seconds": 0.23290673,
+          "inclusive_seconds": 18.792812083
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2531,
+          "calls": 2531,
+          "self_seconds": 0.060904603,
+          "inclusive_seconds": 0.252961172
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 312,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 345,
+          "calls": 345,
+          "self_seconds": 0.069944143,
+          "inclusive_seconds": 2.005176804
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 345,
+          "calls": 345,
+          "self_seconds": 0.12335251900000001,
+          "inclusive_seconds": 4.674347702
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 5048,
+          "calls": 5048,
+          "self_seconds": 0.19099147600000002,
+          "inclusive_seconds": 24.203747057
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4696,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 36,
+          "calls": 36,
+          "self_seconds": 0.017001676,
+          "inclusive_seconds": 72.16378525100001
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.000139585,
+          "inclusive_seconds": 0.065962959
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 16,
+          "calls": 16,
+          "self_seconds": 0.102111118,
+          "inclusive_seconds": 22.520366207000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 68,
+          "calls": 68,
+          "self_seconds": 0.0028023740000000003,
+          "inclusive_seconds": 2.8124958710000003
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 69,
+          "calls": 69,
+          "self_seconds": 0.088631994,
+          "inclusive_seconds": 7.2112348740000005
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 1380,
+          "calls": 1380,
+          "self_seconds": 0.025583925,
+          "inclusive_seconds": 6.382196069000001
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "native21-25-3c151fc9.prof",
+      "instrumented_source_commit": "3c151fc95bddf9fda1223a46a90ff1942cb2dc01",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "f63d679bd8b32558b3a9f5819cac1e1eb77dc7347d6ec7a353e63d28f97b3018",
+      "profile_bytes": 642125,
+      "process_total_profile_seconds": 8.621112564999995,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 20,
+          "calls": 20,
+          "self_seconds": 1.9625000000000003e-05,
+          "inclusive_seconds": 0.18722912600000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 180,
+          "calls": 180,
+          "self_seconds": 0.000378037,
+          "inclusive_seconds": 0.0021242870000000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2408,
+          "calls": 2408,
+          "self_seconds": 0.013095019000000001,
+          "inclusive_seconds": 0.24148618000000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 241,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 0.000663533,
+          "inclusive_seconds": 0.15838670800000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 60,
+          "calls": 60,
+          "self_seconds": 0.00119274,
+          "inclusive_seconds": 0.34122457900000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.0013383940000000001,
+          "inclusive_seconds": 0.054095624
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 296,
+          "calls": 296,
+          "self_seconds": 0.011721395,
+          "inclusive_seconds": 1.5137314270000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.006534870000000001,
+          "inclusive_seconds": 1.9243426670000001
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 0.0037789850000000003,
+          "inclusive_seconds": 0.370761208
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 312,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.0009207320000000001,
+          "inclusive_seconds": 0.029411458
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 20,
+          "calls": 20,
+          "self_seconds": 0.00048218800000000004,
+          "inclusive_seconds": 0.0017462500000000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2318,
+          "calls": 2318,
+          "self_seconds": 0.052359403000000006,
+          "inclusive_seconds": 0.22378910400000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 6,
+          "calls": 6,
+          "self_seconds": 0.004237824,
+          "inclusive_seconds": 0.26166337300000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 0.010047217,
+          "inclusive_seconds": 0.839493251
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "native21-25-ae81e2d8.prof",
+      "instrumented_source_commit": "ae81e2d8606966ef18d502c1146274e89192f166",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "99d5421cd30e0c5d80ddf5fe9a2593e68cd717180707968376112e90add712c0",
+      "profile_bytes": 857720,
+      "process_total_profile_seconds": 285.350715376,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 20,
+          "calls": 20,
+          "self_seconds": 2.0207e-05,
+          "inclusive_seconds": 0.185148002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 540,
+          "calls": 540,
+          "self_seconds": 0.001274188,
+          "inclusive_seconds": 0.0030510660000000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 3448,
+          "calls": 3448,
+          "self_seconds": 0.018698843,
+          "inclusive_seconds": 0.25181291100000003
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.002518226,
+          "inclusive_seconds": 2.36921125
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 18,
+          "calls": 18,
+          "self_seconds": 0.00888741,
+          "inclusive_seconds": 0.339267666
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 20,
+          "calls": 20,
+          "self_seconds": 0.000490264,
+          "inclusive_seconds": 0.0017768780000000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 241,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 0.000699608,
+          "inclusive_seconds": 0.18102025000000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 0.024558461,
+          "inclusive_seconds": 2.0806468330000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2318,
+          "calls": 2318,
+          "self_seconds": 0.052553714,
+          "inclusive_seconds": 0.226218731
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 312,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 66,
+          "calls": 66,
+          "self_seconds": 0.014677237000000001,
+          "inclusive_seconds": 0.448179288
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 66,
+          "calls": 66,
+          "self_seconds": 0.021644198,
+          "inclusive_seconds": 0.873913456
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 710,
+          "calls": 710,
+          "self_seconds": 0.027760677,
+          "inclusive_seconds": 3.4664407940000004
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4697,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 0.004006259,
+          "inclusive_seconds": 16.302399043
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.006167410000000001,
+          "inclusive_seconds": 1.904949666
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 18,
+          "calls": 18,
+          "self_seconds": 0.0006634060000000001,
+          "inclusive_seconds": 0.711327127
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 0.011732982000000001,
+          "inclusive_seconds": 0.8451090830000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 180,
+          "calls": 180,
+          "self_seconds": 0.002876946,
+          "inclusive_seconds": 0.769400203
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "native21-25-context-stages.prof",
+      "instrumented_source_commit": null,
+      "instrumented_source_boundary": "UNLABELLED_HISTORICAL_PROFILE_NOT_FINAL_SOURCE_EVIDENCE",
+      "profile_sha256": "94d59edd477b80e7d3b6fc6bd4a76ebe52de2dace5d22c353ee488c2f45d909f",
+      "profile_bytes": 745946,
+      "process_total_profile_seconds": 242.25717593700062,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 20,
+          "calls": 20,
+          "self_seconds": 1.9211e-05,
+          "inclusive_seconds": 0.10493162700000001
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.001209116,
+          "inclusive_seconds": 0.250569792
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 540,
+          "calls": 540,
+          "self_seconds": 0.001231997,
+          "inclusive_seconds": 0.023242956000000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 20,
+          "calls": 20,
+          "self_seconds": 0.020709212,
+          "inclusive_seconds": 0.022010959
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 27,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 0.028666719,
+          "inclusive_seconds": 2.322074998
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 241,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 0.000208977,
+          "inclusive_seconds": 0.034851833
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 18,
+          "calls": 18,
+          "self_seconds": 0.007151872,
+          "inclusive_seconds": 0.11545079400000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 66,
+          "calls": 66,
+          "self_seconds": 0.0025254500000000003,
+          "inclusive_seconds": 0.166987461
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 710,
+          "calls": 710,
+          "self_seconds": 0.027719234000000002,
+          "inclusive_seconds": 3.418592792
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 312,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 66,
+          "calls": 66,
+          "self_seconds": 0.0023194400000000003,
+          "inclusive_seconds": 0.099477456
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4697,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 0.002301172,
+          "inclusive_seconds": 2.158914373
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.004949716000000001,
+          "inclusive_seconds": 1.12593
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 0.010910683000000001,
+          "inclusive_seconds": 0.679666999
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 180,
+          "calls": 180,
+          "self_seconds": 0.002913571,
+          "inclusive_seconds": 0.659152289
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 18,
+          "calls": 18,
+          "self_seconds": 0.000264083,
+          "inclusive_seconds": 0.129507001
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "native21-25-e0e359be.prof",
+      "instrumented_source_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "89edc7971655433ed633acbafef0583d00d47a9bfcf3c4c1b0988dbf1e298f26",
+      "profile_bytes": 1081672,
+      "process_total_profile_seconds": 1540.8140929169938,
+      "functions": [
+        {
+          "file": "novel_forge/modules/context_builder/retrieval.py",
+          "line": 39,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 6,
+          "calls": 6,
+          "self_seconds": 6.001000000000001e-06,
+          "inclusive_seconds": 1.1959e-05
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 292,
+          "calls": 292,
+          "self_seconds": 0.00028568500000000004,
+          "inclusive_seconds": 1.631331459
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 20140,
+          "calls": 20140,
+          "self_seconds": 0.10638628500000001,
+          "inclusive_seconds": 0.423088297
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 2967,
+          "calls": 2967,
+          "self_seconds": 0.007050138,
+          "inclusive_seconds": 0.009073848
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.006453155,
+          "inclusive_seconds": 5.613441833
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 88,
+          "calls": 88,
+          "self_seconds": 0.058803053,
+          "inclusive_seconds": 2.646462998
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 23,
+          "calls": 23,
+          "self_seconds": 0.000557245,
+          "inclusive_seconds": 0.00202371
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 44,
+          "calls": 44,
+          "self_seconds": 0.18735729,
+          "inclusive_seconds": 13.613426584
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2665,
+          "calls": 2665,
+          "self_seconds": 0.082795695,
+          "inclusive_seconds": 0.277689204
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 241,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 44,
+          "calls": 44,
+          "self_seconds": 0.006026468,
+          "inclusive_seconds": 1.202174121
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 312,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 182,
+          "calls": 182,
+          "self_seconds": 0.039535751,
+          "inclusive_seconds": 1.153097509
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 182,
+          "calls": 182,
+          "self_seconds": 0.07423094300000001,
+          "inclusive_seconds": 2.7699497880000004
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 3759,
+          "calls": 3759,
+          "self_seconds": 0.141834488,
+          "inclusive_seconds": 17.700428567
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4696,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 16,
+          "calls": 16,
+          "self_seconds": 0.007298268,
+          "inclusive_seconds": 34.716147416000005
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.000163954,
+          "inclusive_seconds": 0.75455525
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 13,
+          "calls": 13,
+          "self_seconds": 0.097145349,
+          "inclusive_seconds": 20.400612375
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 28,
+          "calls": 28,
+          "self_seconds": 0.001183678,
+          "inclusive_seconds": 1.260742164
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 44,
+          "calls": 44,
+          "self_seconds": 0.06533862,
+          "inclusive_seconds": 5.826977166000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 968,
+          "calls": 968,
+          "self_seconds": 0.020114821,
+          "inclusive_seconds": 4.741594761
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "new-memory-selected21-23-b4b5efaa.prof",
+      "instrumented_source_commit": "b4b5efaa4511fc8a64a7cb043d06566386b48117",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "aaf31bea9a8b92bc85e3147d305bf1b1587c0daf0166ad5c0b64f531123b6ae4",
+      "profile_bytes": 745727,
+      "process_total_profile_seconds": 250.76845919700173,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 353,
+          "calls": 353,
+          "self_seconds": 0.000488967,
+          "inclusive_seconds": 1.927957957
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 7.49e-07,
+          "inclusive_seconds": 7.49e-07
+        },
+        {
+          "file": "novel_forge/modules/book_followup_authority/execution.py",
+          "line": 48,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 0.0016441670000000002,
+          "inclusive_seconds": 77.830715916
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 0.0005965030000000001,
+          "inclusive_seconds": 77.829066792
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4696,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 8,
+          "calls": 8,
+          "self_seconds": 0.001717287,
+          "inclusive_seconds": 0.6248331260000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 865,
+          "calls": 865,
+          "self_seconds": 0.043199549000000004,
+          "inclusive_seconds": 5.143017737
+        },
+        {
+          "file": "novel_forge/modules/book_authority/memory_backfill.py",
+          "line": 28,
+          "function": "_sources",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 16,
+          "calls": 16,
+          "self_seconds": 0.072771134,
+          "inclusive_seconds": 10.378329585000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 332,
+          "calls": 332,
+          "self_seconds": 0.009945039000000001,
+          "inclusive_seconds": 1.6830215430000002
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "new-memory-selected23-prior-v2-9d6fd223.prof",
+      "instrumented_source_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "c1c4dfa9f17862b7a70af956c9a83e173ff48f1d8adc78957603d90926e9d2e5",
+      "profile_bytes": 748419,
+      "process_total_profile_seconds": 127.96956828099998,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 6.708000000000001e-06,
+          "inclusive_seconds": 0.000298167
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 184,
+          "calls": 184,
+          "self_seconds": 0.00024222500000000002,
+          "inclusive_seconds": 1.0949077870000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 651,
+          "calls": 651,
+          "self_seconds": 0.006141614,
+          "inclusive_seconds": 0.127540963
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 2.09e-07,
+          "inclusive_seconds": 2.09e-07
+        },
+        {
+          "file": "novel_forge/modules/book_authority/memory_backfill.py",
+          "line": 28,
+          "function": "_sources",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 8,
+          "calls": 8,
+          "self_seconds": 0.037120666000000004,
+          "inclusive_seconds": 5.567372875
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 241,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.005137613,
+          "inclusive_seconds": 0.903749334
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 177,
+          "calls": 177,
+          "self_seconds": 0.004700456,
+          "inclusive_seconds": 0.9573006700000001
+        },
+        {
+          "file": "novel_forge/modules/book_followup_authority/execution.py",
+          "line": 48,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.000287877,
+          "inclusive_seconds": 30.160046500000004
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4696,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 0.0005642900000000001,
+          "inclusive_seconds": 0.073750666
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 9.6209e-05,
+          "inclusive_seconds": 12.267706166
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 440,
+          "calls": 440,
+          "self_seconds": 0.021479278,
+          "inclusive_seconds": 2.63752217
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 2.7373e-05,
+          "inclusive_seconds": 0.00029145900000000004
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 651,
+          "calls": 651,
+          "self_seconds": 0.027733068000000003,
+          "inclusive_seconds": 0.11941294200000001
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "new-memory-selected24-v2-9d6fd223.prof",
+      "instrumented_source_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "5c12300715c1e3de9b1e2b8ff15c103a7a51198e6b9cc6e46a1e56bdb0869967",
+      "profile_bytes": 747392,
+      "process_total_profile_seconds": 114.92131765300022,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 7.374e-06,
+          "inclusive_seconds": 0.000256166
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 192,
+          "calls": 192,
+          "self_seconds": 0.00017253800000000002,
+          "inclusive_seconds": 1.014068503
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 634,
+          "calls": 634,
+          "self_seconds": 0.005583815000000001,
+          "inclusive_seconds": 0.116746921
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 1.67e-07,
+          "inclusive_seconds": 1.67e-07
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 241,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.0032669640000000002,
+          "inclusive_seconds": 0.9655065410000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/memory_backfill.py",
+          "line": 28,
+          "function": "_sources",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 8,
+          "calls": 8,
+          "self_seconds": 0.029612246000000002,
+          "inclusive_seconds": 4.968034417
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 185,
+          "calls": 185,
+          "self_seconds": 0.003694459,
+          "inclusive_seconds": 0.8663389690000001
+        },
+        {
+          "file": "novel_forge/modules/book_followup_authority/execution.py",
+          "line": 48,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.00023120600000000002,
+          "inclusive_seconds": 26.591291291
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4696,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 0.000357465,
+          "inclusive_seconds": 0.048878333
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.000190124,
+          "inclusive_seconds": 26.591059334
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 456,
+          "calls": 456,
+          "self_seconds": 0.017974394,
+          "inclusive_seconds": 2.380810008
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 1.9834e-05,
+          "inclusive_seconds": 0.000248792
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 634,
+          "calls": 634,
+          "self_seconds": 0.024523709,
+          "inclusive_seconds": 0.109652178
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "new-memory-selected25-v2-9c96b3de.prof",
+      "instrumented_source_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "91d0391d8c70b511caf6e0abdc80bd8d97244d79591eaa596834e021d18b27f4",
+      "profile_bytes": 746802,
+      "process_total_profile_seconds": 114.63838360099996,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 6.584000000000001e-06,
+          "inclusive_seconds": 0.000291
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 200,
+          "calls": 200,
+          "self_seconds": 0.000214557,
+          "inclusive_seconds": 1.219370843
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 693,
+          "calls": 693,
+          "self_seconds": 0.006150392,
+          "inclusive_seconds": 0.127569878
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 1.2500000000000002e-07,
+          "inclusive_seconds": 1.2500000000000002e-07
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 258,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.0050939340000000005,
+          "inclusive_seconds": 0.943543875
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 2.5373000000000003e-05,
+          "inclusive_seconds": 0.000284416
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 693,
+          "calls": 693,
+          "self_seconds": 0.026906032000000003,
+          "inclusive_seconds": 0.11974920100000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 472,
+          "calls": 472,
+          "self_seconds": 0.021663851,
+          "inclusive_seconds": 2.789624664
+        },
+        {
+          "file": "novel_forge/modules/book_followup_authority/execution.py",
+          "line": 48,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.000308999,
+          "inclusive_seconds": 30.775274791
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4696,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 0.000548237,
+          "inclusive_seconds": 0.07262025000000001
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.00018599800000000002,
+          "inclusive_seconds": 30.774965
+        },
+        {
+          "file": "novel_forge/modules/book_authority/memory_backfill.py",
+          "line": 28,
+          "function": "_sources",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 8,
+          "calls": 8,
+          "self_seconds": 0.037154415,
+          "inclusive_seconds": 6.003606166
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 193,
+          "calls": 193,
+          "self_seconds": 0.004604118,
+          "inclusive_seconds": 1.0690117110000001
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "new-memory-through22.prof",
+      "instrumented_source_commit": null,
+      "instrumented_source_boundary": "UNLABELLED_HISTORICAL_PROFILE_NOT_FINAL_SOURCE_EVIDENCE",
+      "profile_sha256": "9a2d52a8557e20c9e48e800f3ffde6a0a8bcedcae978eae4ecbe367848b596a6",
+      "profile_bytes": 741813,
+      "process_total_profile_seconds": 209.15104538000085,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 303,
+          "calls": 303,
+          "self_seconds": 0.00026519900000000003,
+          "inclusive_seconds": 1.5959816370000002
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 2.5000000000000004e-07,
+          "inclusive_seconds": 2.5000000000000004e-07
+        },
+        {
+          "file": "novel_forge/modules/book_authority/memory_backfill.py",
+          "line": 28,
+          "function": "_sources",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 14,
+          "calls": 14,
+          "self_seconds": 0.057584934000000004,
+          "inclusive_seconds": 8.009787292
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 288,
+          "calls": 288,
+          "self_seconds": 0.0060371700000000006,
+          "inclusive_seconds": 1.4143255490000002
+        },
+        {
+          "file": "novel_forge/modules/book_followup_authority/execution.py",
+          "line": 48,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.001437375,
+          "inclusive_seconds": 25.200432209000002
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4696,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 6,
+          "calls": 6,
+          "self_seconds": 0.000876915,
+          "inclusive_seconds": 0.387356376
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.00034720400000000005,
+          "inclusive_seconds": 25.198994000000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 905,
+          "calls": 905,
+          "self_seconds": 0.032926633000000004,
+          "inclusive_seconds": 4.270059283
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "final-source-round3/native-final-21-25-f799c192.prof",
+      "instrumented_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "46bb37264638a703b245ae9daea98fed7dc5c0e2df777c8114e028dfc8c744c0",
+      "profile_bytes": 1113071,
+      "process_total_profile_seconds": 1560.4449824949977,
+      "functions": [
+        {
+          "file": "novel_forge/modules/context_builder/retrieval.py",
+          "line": 39,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 3.417e-06,
+          "inclusive_seconds": 6.458000000000001e-06
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 201,
+          "calls": 201,
+          "self_seconds": 0.000180678,
+          "inclusive_seconds": 0.9058451700000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 2847,
+          "calls": 2847,
+          "self_seconds": 0.006135655,
+          "inclusive_seconds": 0.007921614
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 17309,
+          "calls": 17309,
+          "self_seconds": 0.088326845,
+          "inclusive_seconds": 0.35102592200000005
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 6,
+          "calls": 6,
+          "self_seconds": 0.009155533,
+          "inclusive_seconds": 7.584275874
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 940,
+          "calls": 940,
+          "self_seconds": 0.016109374000000003,
+          "inclusive_seconds": 3.341491596
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 258,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 47,
+          "calls": 47,
+          "self_seconds": 0.003485198,
+          "inclusive_seconds": 0.63042787
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 255,
+          "calls": 255,
+          "self_seconds": 0.09655171200000001,
+          "inclusive_seconds": 3.7472808790000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 54,
+          "calls": 54,
+          "self_seconds": 0.001885914,
+          "inclusive_seconds": 2.2771466680000003
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4710,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 28,
+          "calls": 28,
+          "self_seconds": 0.011086033,
+          "inclusive_seconds": 64.244367706
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 6.4245e-05,
+          "inclusive_seconds": 0.033396291
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 4206,
+          "calls": 4206,
+          "self_seconds": 0.166003262,
+          "inclusive_seconds": 19.566564221
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 10,
+          "calls": 10,
+          "self_seconds": 0.06373408500000001,
+          "inclusive_seconds": 12.490972001000001
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 47,
+          "calls": 47,
+          "self_seconds": 0.05825136400000001,
+          "inclusive_seconds": 4.540175082
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 314,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 255,
+          "calls": 255,
+          "self_seconds": 0.060271926,
+          "inclusive_seconds": 1.78570438
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2455,
+          "calls": 2455,
+          "self_seconds": 0.053797428,
+          "inclusive_seconds": 0.23016672900000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 21,
+          "calls": 21,
+          "self_seconds": 0.000475184,
+          "inclusive_seconds": 0.0017859590000000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 94,
+          "calls": 94,
+          "self_seconds": 0.048479019000000005,
+          "inclusive_seconds": 1.520829121
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 47,
+          "calls": 47,
+          "self_seconds": 0.143975186,
+          "inclusive_seconds": 12.110820004
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "final-source-round3/native-resume-after-memory21-checkpoint-through25-f799c192.prof",
+      "instrumented_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "9f7cfb353e20e131ff979dd7962600f20407c7b995baa69f120e17f89bb03867",
+      "profile_bytes": 1209179,
+      "process_total_profile_seconds": 4482.219542059057,
+      "functions": [
+        {
+          "file": "novel_forge/modules/context_builder/retrieval.py",
+          "line": 39,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 12,
+          "calls": 12,
+          "self_seconds": 1.0211000000000001e-05,
+          "inclusive_seconds": 2.1583e-05
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 633,
+          "calls": 633,
+          "self_seconds": 0.0005018620000000001,
+          "inclusive_seconds": 2.633184839
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 7155,
+          "calls": 7155,
+          "self_seconds": 0.015683095,
+          "inclusive_seconds": 0.01777639
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 44128,
+          "calls": 44128,
+          "self_seconds": 0.22717314100000002,
+          "inclusive_seconds": 0.617619217
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 24,
+          "calls": 24,
+          "self_seconds": 0.023861817,
+          "inclusive_seconds": 19.445440581
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 24,
+          "calls": 24,
+          "self_seconds": 0.00055754,
+          "inclusive_seconds": 0.0020932950000000002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 258,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 105,
+          "calls": 105,
+          "self_seconds": 0.010003817,
+          "inclusive_seconds": 1.76048329
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 210,
+          "calls": 210,
+          "self_seconds": 0.12613697000000001,
+          "inclusive_seconds": 4.48376721
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 149,
+          "function": "compile_working_memory",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 105,
+          "calls": 105,
+          "self_seconds": 0.13181055,
+          "inclusive_seconds": 11.451467711000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 600,
+          "function": "freeze_working_context",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 28,
+          "calls": 28,
+          "self_seconds": 0.209746327,
+          "inclusive_seconds": 40.692042625
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 455,
+          "function": "validate_working_projection",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 490,
+          "calls": 490,
+          "self_seconds": 0.226821499,
+          "inclusive_seconds": 7.7263238890000006
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 17,
+          "calls": 17,
+          "self_seconds": 0.0010022990000000001,
+          "inclusive_seconds": 8.281909876
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4710,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 86,
+          "calls": 86,
+          "self_seconds": 0.025584499,
+          "inclusive_seconds": 160.96784254300002
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 14128,
+          "calls": 14128,
+          "self_seconds": 0.5251834320000001,
+          "inclusive_seconds": 65.268352203
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_prose.py",
+          "line": 389,
+          "function": "project_working_history_for_provider",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 89,
+          "calls": 89,
+          "self_seconds": 0.0033827460000000003,
+          "inclusive_seconds": 4.2600472510000005
+        },
+        {
+          "file": "novel_forge/modules/narrative_state/working_memory.py",
+          "line": 314,
+          "function": "validate_memory_packet",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 490,
+          "calls": 490,
+          "self_seconds": 0.106593984,
+          "inclusive_seconds": 3.0990786260000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2804,
+          "calls": 2804,
+          "self_seconds": 0.109581226,
+          "inclusive_seconds": 0.30635418600000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 2205,
+          "calls": 2205,
+          "self_seconds": 0.038490133,
+          "inclusive_seconds": 7.639515788000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 105,
+          "calls": 105,
+          "self_seconds": 0.413391702,
+          "inclusive_seconds": 33.023808628000005
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "final-source-round3/new-memory-final-source21-f799c192.prof",
+      "instrumented_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "b5f3e630623dfd1ed2f5857ef9b9ad576cf99afe896cd77e35037260b255f11c",
+      "profile_bytes": 748754,
+      "process_total_profile_seconds": 111.89848851099994,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 189,
+          "calls": 189,
+          "self_seconds": 0.000199952,
+          "inclusive_seconds": 0.8269326680000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 598,
+          "calls": 598,
+          "self_seconds": 0.004999777,
+          "inclusive_seconds": 0.105151384
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 6.125000000000001e-06,
+          "inclusive_seconds": 0.00027025000000000004
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 2.5000000000000004e-07,
+          "inclusive_seconds": 2.5000000000000004e-07
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 258,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.0035433910000000003,
+          "inclusive_seconds": 0.8202178750000001
+        },
+        {
+          "file": "novel_forge/modules/book_followup_authority/execution.py",
+          "line": 48,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.00023612400000000002,
+          "inclusive_seconds": 22.955036875
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.00014891400000000002,
+          "inclusive_seconds": 22.954799917000003
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4710,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 0.000378808,
+          "inclusive_seconds": 0.058907626000000005
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 558,
+          "calls": 558,
+          "self_seconds": 0.019701922,
+          "inclusive_seconds": 2.672350299
+        },
+        {
+          "file": "novel_forge/modules/book_authority/memory_backfill.py",
+          "line": 28,
+          "function": "_sources",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_seconds": 0.032008699,
+          "inclusive_seconds": 4.828017
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 181,
+          "calls": 181,
+          "self_seconds": 0.0036973970000000003,
+          "inclusive_seconds": 0.709237494
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 2.4500000000000003e-05,
+          "inclusive_seconds": 0.00026412500000000004
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 598,
+          "calls": 598,
+          "self_seconds": 0.022599981,
+          "inclusive_seconds": 0.09864192000000001
+        }
+      ]
+    },
+    {
+      "private_profile_filename": "final-source-round3/new-memory-final-source25-stable-f799c192.prof",
+      "instrumented_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "instrumented_source_boundary": "FILENAME_BOUND_RELEASE",
+      "profile_sha256": "c1062e9a2ec889ec3690b0f735c5e659e1408d68ff913bf29593b54853bf37db",
+      "profile_bytes": 756702,
+      "process_total_profile_seconds": 527.7410719039991,
+      "functions": [
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 13,
+          "function": "task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 2.0583000000000003e-05,
+          "inclusive_seconds": 0.0005381240000000001
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 62,
+          "function": "freeze_source_memory",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 714,
+          "calls": 714,
+          "self_seconds": 0.000563351,
+          "inclusive_seconds": 2.8418105070000004
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 2582,
+          "calls": 2582,
+          "self_seconds": 0.026104991,
+          "inclusive_seconds": 0.162780485
+        },
+        {
+          "file": "novel_forge/modules/context_builder/request_capacity.py",
+          "line": 23,
+          "function": "validate_projection_quotes",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 4.59e-07,
+          "inclusive_seconds": 4.59e-07
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 258,
+          "function": "select_task_observations",
+          "categories": [
+            "selection"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.014518360000000001,
+          "inclusive_seconds": 3.2990982090000003
+        },
+        {
+          "file": "novel_forge/modules/book_authority/working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "categories": [
+            "segmentation"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 9.3974e-05,
+          "inclusive_seconds": 0.000517541
+        },
+        {
+          "file": "novel_forge/modules/book_authority/task_retrieval.py",
+          "line": 53,
+          "function": "_token_items",
+          "categories": [
+            "tokenization"
+          ],
+          "primitive_calls": 941,
+          "calls": 941,
+          "self_seconds": 0.031730395,
+          "inclusive_seconds": 0.129476919
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript.py",
+          "line": 331,
+          "function": "resolve_working_source",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 2064,
+          "calls": 2064,
+          "self_seconds": 0.080164618,
+          "inclusive_seconds": 9.612582866
+        },
+        {
+          "file": "novel_forge/modules/book_followup_authority/execution.py",
+          "line": 48,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.00103896,
+          "inclusive_seconds": 98.84898991700001
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 4710,
+          "function": "_materialize_production_codex_prompt",
+          "categories": [
+            "rendering"
+          ],
+          "primitive_calls": 12,
+          "calls": 12,
+          "self_seconds": 0.001296564,
+          "inclusive_seconds": 0.23509696000000002
+        },
+        {
+          "file": "novel_forge/modules/chapter_authority/execution_gateway.py",
+          "line": 819,
+          "function": "freeze_before_external_effect",
+          "categories": [
+            "freeze"
+          ],
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.000472705,
+          "inclusive_seconds": 86.443573709
+        },
+        {
+          "file": "novel_forge/modules/book_authority/memory_backfill.py",
+          "line": 28,
+          "function": "_sources",
+          "categories": [
+            "source_read"
+          ],
+          "primitive_calls": 30,
+          "calls": 30,
+          "self_seconds": 0.138393511,
+          "inclusive_seconds": 18.2550735
+        },
+        {
+          "file": "novel_forge/modules/book_authority/manuscript_memory.py",
+          "line": 284,
+          "function": "validate_native_memory",
+          "categories": [
+            "verification"
+          ],
+          "primitive_calls": 676,
+          "calls": 676,
+          "self_seconds": 0.013012942000000001,
+          "inclusive_seconds": 2.441814559
+        }
+      ]
+    }
+  ],
+  "boundary": "Instrumented Python process timings; inclusive calls overlap and must not be summed. Provider/process latency includes network and startup and is separately recorded in durable process receipts. A function invocation is not automatically a cache miss or duplicate database read. These profiles supplement the same-frozen-input cache comparison, not a claim that all repeated work is eliminated."
+}

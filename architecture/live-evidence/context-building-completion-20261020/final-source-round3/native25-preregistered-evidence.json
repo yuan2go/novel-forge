@@ -1,0 +1,144 @@
+{
+  "record_type": "PREREGISTERED_GROUP_BOUNDARY_NATIVE25_EVIDENCE",
+  "created_at": "2026-10-20T03:18:33.937229+00:00",
+  "before_native25_writer": true,
+  "source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "boundary": "Evaluation only, never a prose template. Conditional applicability will be decided from frozen25 task before reading25 output. Original20 and native21 sources are retained exactly.",
+  "negative_control": {
+    "observation_id": "sha256:fd0a619a10660dd8e0e787ecf86bc7f877e349f175d72c3dee716d7909d6ec1d",
+    "rule": "Old tool observation is irrelevant only if25 demand is teacher/practice; do not apply that exclusion to a stonework task."
+  },
+  "cases": [
+    {
+      "id": "own-practice-actual",
+      "requirement": "独自短段已在正文里实际完成；不是只计划练习，也不是新增一轮反复刷记录。",
+      "applicability": "MANDATORY_PREDECESSOR_CONTINUITY",
+      "alternatives": [
+        {
+          "chapter": 24,
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "content_hash": "sha256:3d752cbd41039669bbe2151ba9c9c6747693c0d9a0251de010c465ef5350f7df",
+          "quote_sha256": "6025281b105039fb3e6965f34c29256a848d3b3aaa3b29922f4e5cdb8c3f0340"
+        }
+      ]
+    },
+    {
+      "id": "onset-unknown-retained",
+      "requirement": "发现前已经添力，持续多久不清楚；后文不能补成他一开始便准确发现。",
+      "applicability": "MANDATORY_PREDECESSOR_CONTINUITY",
+      "alternatives": [
+        {
+          "chapter": 24,
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "content_hash": "sha256:3d752cbd41039669bbe2151ba9c9c6747693c0d9a0251de010c465ef5350f7df",
+          "quote_sha256": "dfbdd5f7bd3277df83c09dd01c48b3be4e9e05a8249aedabc1db87360b81b799"
+        }
+      ]
+    },
+    {
+      "id": "labour-and-practice-separated",
+      "requirement": "昨日劳动与今日练习所见分开，不自行诊断原因或宣布休息已经足够。",
+      "applicability": "MANDATORY_PREDECESSOR_CONTINUITY",
+      "alternatives": [
+        {
+          "chapter": 24,
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "content_hash": "sha256:3d752cbd41039669bbe2151ba9c9c6747693c0d9a0251de010c465ef5350f7df",
+          "quote_sha256": "b932bc348a8c1175cb0f32898eed1a9f551230600b1531c581277e0ab3d26b4e"
+        }
+      ]
+    },
+    {
+      "id": "specific-question-pending",
+      "requirement": "问题留给后续教习，不提前把未获回答的处理办法当作已知。",
+      "applicability": "MANDATORY_PREDECESSOR_CONTINUITY",
+      "alternatives": [
+        {
+          "chapter": 24,
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "content_hash": "sha256:3d752cbd41039669bbe2151ba9c9c6747693c0d9a0251de010c465ef5350f7df",
+          "quote_sha256": "f9d2240a11b3fd18d4d788df962ee02e026e208c34678df62c570cec7e4988c1"
+        }
+      ]
+    },
+    {
+      "id": "no-extra-round-to-polish-record",
+      "requirement": "人物主动不加练改写经历，保留真实失败和未知；不是试到成功才把一轮记上。",
+      "applicability": "MANDATORY_PREDECESSOR_CONTINUITY",
+      "alternatives": [
+        {
+          "chapter": 24,
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "content_hash": "sha256:3d752cbd41039669bbe2151ba9c9c6747693c0d9a0251de010c465ef5350f7df",
+          "quote_sha256": "d7ea30506d80c38881c11ddc35a29458cb4bd88cf0398f4cbcfe7f316b984294"
+        }
+      ]
+    },
+    {
+      "id": "sensation-not-success-proof",
+      "requirement": "掌温、余酸或没有新感受都不授予练对和修为的结论。",
+      "applicability": "MANDATORY_PREDECESSOR_CONTINUITY",
+      "alternatives": [
+        {
+          "chapter": 24,
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "content_hash": "sha256:3d752cbd41039669bbe2151ba9c9c6747693c0d9a0251de010c465ef5350f7df",
+          "quote_sha256": "33166b82db9b1e8ddacb3ec2dca76e3ec5579c50d95d58709839a3ee253778af"
+        }
+      ]
+    },
+    {
+      "id": "protected-time-realized",
+      "requirement": "前章保留的午前实际用于练习并能休息，没有重新承担未许出的田务。",
+      "applicability": "MANDATORY_PREDECESSOR_CONTINUITY",
+      "alternatives": [
+        {
+          "chapter": 24,
+          "asset_version_id": "authority-output:dc6df898-b0bd-4923-8f57-947649fe11c1:chapter.best_candidate:v1",
+          "content_hash": "sha256:3d752cbd41039669bbe2151ba9c9c6747693c0d9a0251de010c465ef5350f7df",
+          "quote_sha256": "473dd7b9d11252144c80d1231857929508649c21b52e8ad267d0b12196bf427c"
+        }
+      ]
+    },
+    {
+      "id": "prior-three-lessons-already-completed",
+      "requirement": "前三课已经完成；课后问询不能重置为仍待上第三课。",
+      "applicability": "REQUIRED_IF_FROZEN25_DEMAND_RETURNS_TO_TEACHER_OR_COURSE_STATUS",
+      "alternatives": [
+        {
+          "chapter": 21,
+          "asset_version_id": "authority-output:93c02f8d-2e07-405f-b9af-98b9a66dc754:chapter.draft:v1",
+          "content_hash": "sha256:2973f208a56751dcbeac61c2b41f7432ab4806d61c7f9898686be53b794faf10",
+          "quote_sha256": "481d4083547576b9e52370db139700deb1fe3c8f1899d73968deb066e33da979"
+        }
+      ]
+    },
+    {
+      "id": "old-course-labour-settled",
+      "requirement": "旧劳务已清，新学习或工作不能重开此欠账。",
+      "applicability": "REQUIRED_IF_FROZEN25_DEMAND_INVOLVES_COURSE_FEES_OR_NEW_PAID_TEACHING",
+      "alternatives": [
+        {
+          "chapter": 20,
+          "asset_version_id": "authority-output:76df75db-9b43-4660-998a-59870d3e2266:chapter.best_candidate:v1",
+          "content_hash": "sha256:867d0c2fcc8021580de12628d5c0043cb1adfad9027e7af59092d0e92128fb6f",
+          "quote_sha256": "61c5144ad4299873818530118e216724dfd4bda22aa9a80021a2a68f58dbca2f"
+        }
+      ]
+    },
+    {
+      "id": "old-course-cash-paid",
+      "requirement": "旧现金已付；新的问询收费必须与旧款区分。",
+      "applicability": "REQUIRED_IF_FROZEN25_DEMAND_INVOLVES_COURSE_FEES_OR_NEW_PAID_TEACHING",
+      "alternatives": [
+        {
+          "chapter": 20,
+          "asset_version_id": "authority-output:76df75db-9b43-4660-998a-59870d3e2266:chapter.best_candidate:v1",
+          "content_hash": "sha256:867d0c2fcc8021580de12628d5c0043cb1adfad9027e7af59092d0e92128fb6f",
+          "quote_sha256": "e2d9fd8c595cba7174bb1df91a401a59f058a21d576f9f55e267083dfde79b87"
+        }
+      ]
+    }
+  ],
+  "private_raw_sha256": "927235bf1797719cd6a4a3df699d9fcadd73b8b484c7d55c3ae1651db72f8053"
+}

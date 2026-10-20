@@ -1,0 +1,182 @@
+{
+  "source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "record_type": "FINAL_SOURCE_ACTUAL_COMPLETE_WRITER_REQUEST_MEASUREMENTS",
+  "requests": [
+    {
+      "chapter": 21,
+      "external_effect_id": "d9d0314e-4ad7-40ff-b4d9-ab7cf1397179",
+      "task_hash": "sha256:bfbf33665be0397f91460c4a80c814f6d7810a1cffd9fccc640cf1026e2ee9d2",
+      "raw_history": {
+        "chapters": 20,
+        "unicode_codepoints": 100106,
+        "utf8_bytes": 296612,
+        "han_characters": 85906
+      },
+      "pre_capacity_selected_prose_codepoints": 11465,
+      "pre_capacity_selected_prose_utf8_bytes": 33989,
+      "memory_entries": 62,
+      "memory_candidates": 570,
+      "memory_provider_material": {
+        "unicode_codepoints": 94555,
+        "utf8_bytes": 123883
+      },
+      "actual_post_capacity_material": {
+        "post_capacity_source_passage_codepoints": 11465,
+        "post_capacity_source_passage_utf8_bytes": 33989,
+        "decoded_memory_material_codepoints": 94555,
+        "decoded_memory_material_utf8_bytes": 123883,
+        "basis": "DECODED_ACTUAL_APPLICATION_DATA_BEFORE_GLOBAL_LOSSLESS_REFERENCE_ENCODING; NOT_ADDITIVE_WIRE_BYTE_ALLOCATIONS"
+      },
+      "application_input": {
+        "unicode_codepoints": 279608,
+        "utf8_bytes": 362940,
+        "sha256": "4a56ae89e0056627f4c6f43f724ce8a4daf36918dcc45ee3d53e0560d7e9bc37"
+      },
+      "protocol_schema_utf8_bytes": 3001,
+      "positive_registered_cases": 6,
+      "exact_source_bound_cases": 6,
+      "capacity_projection_applied": false
+    },
+    {
+      "chapter": 22,
+      "external_effect_id": "bf0c851b-7752-4abe-86cb-7fdf932f0fab",
+      "task_hash": "sha256:e3873ca2458064053e16bcce04859d666709c0dff24ead86d94925128910479a",
+      "raw_history": {
+        "chapters": 21,
+        "unicode_codepoints": 104850,
+        "utf8_bytes": 310656,
+        "han_characters": 89907
+      },
+      "pre_capacity_selected_prose_codepoints": 14728,
+      "pre_capacity_selected_prose_utf8_bytes": 43628,
+      "memory_entries": 73,
+      "memory_candidates": 593,
+      "memory_provider_material": {
+        "unicode_codepoints": 116131,
+        "utf8_bytes": 151195
+      },
+      "actual_post_capacity_material": {
+        "post_capacity_source_passage_codepoints": 14728,
+        "post_capacity_source_passage_utf8_bytes": 43628,
+        "decoded_memory_material_codepoints": 116131,
+        "decoded_memory_material_utf8_bytes": 151195,
+        "basis": "DECODED_ACTUAL_APPLICATION_DATA_BEFORE_GLOBAL_LOSSLESS_REFERENCE_ENCODING; NOT_ADDITIVE_WIRE_BYTE_ALLOCATIONS"
+      },
+      "application_input": {
+        "unicode_codepoints": 328246,
+        "utf8_bytes": 422098,
+        "sha256": "bbf1570b5054a5913ea4c5e3a035f6880daecd27ee7e5fa20f818c3b179dc2c2"
+      },
+      "protocol_schema_utf8_bytes": 2921,
+      "positive_registered_cases": 6,
+      "exact_source_bound_cases": 6,
+      "capacity_projection_applied": false
+    },
+    {
+      "chapter": 23,
+      "external_effect_id": "e51d7635-e272-4acd-8e73-b129859a9945",
+      "task_hash": "sha256:8da1de4f6afdbc6eaa39d561500d80cfabe29e6b54a0bcb129c92ad45118980b",
+      "raw_history": {
+        "chapters": 22,
+        "unicode_codepoints": 109867,
+        "utf8_bytes": 325531,
+        "han_characters": 94227
+      },
+      "pre_capacity_selected_prose_codepoints": 17191,
+      "pre_capacity_selected_prose_utf8_bytes": 50937,
+      "memory_entries": 66,
+      "memory_candidates": 593,
+      "memory_provider_material": {
+        "unicode_codepoints": 109307,
+        "utf8_bytes": 139877
+      },
+      "actual_post_capacity_material": {
+        "post_capacity_source_passage_codepoints": 17191,
+        "post_capacity_source_passage_utf8_bytes": 50937,
+        "decoded_memory_material_codepoints": 109307,
+        "decoded_memory_material_utf8_bytes": 139877,
+        "basis": "DECODED_ACTUAL_APPLICATION_DATA_BEFORE_GLOBAL_LOSSLESS_REFERENCE_ENCODING; NOT_ADDITIVE_WIRE_BYTE_ALLOCATIONS"
+      },
+      "application_input": {
+        "unicode_codepoints": 347335,
+        "utf8_bytes": 446207,
+        "sha256": "efb4e4b0c6837d6fe27a601f3a2b4e5e4243c602de03644a066f81467f855b97"
+      },
+      "protocol_schema_utf8_bytes": 2908,
+      "positive_registered_cases": 7,
+      "exact_source_bound_cases": 7,
+      "capacity_projection_applied": false
+    },
+    {
+      "chapter": 24,
+      "external_effect_id": "41122165-0db4-474d-901c-6860de935b1f",
+      "task_hash": "sha256:5d33c3636359e3ce4e9c95b6b0e20b24c50bc43dcaabc5660aca38a5350e5fdc",
+      "raw_history": {
+        "chapters": 23,
+        "unicode_codepoints": 114928,
+        "utf8_bytes": 340538,
+        "han_characters": 98553
+      },
+      "pre_capacity_selected_prose_codepoints": 13480,
+      "pre_capacity_selected_prose_utf8_bytes": 39942,
+      "memory_entries": 43,
+      "memory_candidates": 593,
+      "memory_provider_material": {
+        "unicode_codepoints": 70765,
+        "utf8_bytes": 90545
+      },
+      "actual_post_capacity_material": {
+        "post_capacity_source_passage_codepoints": 13480,
+        "post_capacity_source_passage_utf8_bytes": 39942,
+        "decoded_memory_material_codepoints": 70765,
+        "decoded_memory_material_utf8_bytes": 90545,
+        "basis": "DECODED_ACTUAL_APPLICATION_DATA_BEFORE_GLOBAL_LOSSLESS_REFERENCE_ENCODING; NOT_ADDITIVE_WIRE_BYTE_ALLOCATIONS"
+      },
+      "application_input": {
+        "unicode_codepoints": 276088,
+        "utf8_bytes": 354208,
+        "sha256": "aaf9843995e46e64a16b3d6d4f293dd65e7b6a64a030065c274311ae6543b175"
+      },
+      "protocol_schema_utf8_bytes": 2155,
+      "positive_registered_cases": 7,
+      "exact_source_bound_cases": 7,
+      "capacity_projection_applied": false
+    },
+    {
+      "chapter": 25,
+      "external_effect_id": "9c9f7422-e673-4a83-9663-9b924db2fff4",
+      "task_hash": "sha256:db6f4608b3c848c81d71def25b5e8dd6a3c4d9359b051ef0653dbf4cde62ca1f",
+      "raw_history": {
+        "chapters": 24,
+        "unicode_codepoints": 119845,
+        "utf8_bytes": 355143,
+        "han_characters": 102869
+      },
+      "pre_capacity_selected_prose_codepoints": 15558,
+      "pre_capacity_selected_prose_utf8_bytes": 46156,
+      "memory_entries": 56,
+      "memory_candidates": 593,
+      "memory_provider_material": {
+        "unicode_codepoints": 90785,
+        "utf8_bytes": 116963
+      },
+      "actual_post_capacity_material": {
+        "post_capacity_source_passage_codepoints": 15558,
+        "post_capacity_source_passage_utf8_bytes": 46156,
+        "decoded_memory_material_codepoints": 90785,
+        "decoded_memory_material_utf8_bytes": 116963,
+        "basis": "DECODED_ACTUAL_APPLICATION_DATA_BEFORE_GLOBAL_LOSSLESS_REFERENCE_ENCODING; NOT_ADDITIVE_WIRE_BYTE_ALLOCATIONS"
+      },
+      "application_input": {
+        "unicode_codepoints": 311986,
+        "utf8_bytes": 404976,
+        "sha256": "c7cf35b8954873691c2cf41ed06edee253d7b737f4cc91e650a015cc999128ad"
+      },
+      "protocol_schema_utf8_bytes": 3309,
+      "positive_registered_cases": 10,
+      "exact_source_bound_cases": 10,
+      "capacity_projection_applied": false
+    }
+  ],
+  "boundary": "Characters, UTF-8 bytes and CLI tokens are distinct. Decoded memory/source allocations precede global lossless reference encoding and are not additive wire byte allocations."
+}

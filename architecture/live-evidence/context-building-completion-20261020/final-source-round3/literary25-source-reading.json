@@ -1,0 +1,132 @@
+{
+  "record_type": "FINAL_SOURCE_NATIVE_PROSE_READING_JUDGMENT",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "database": "nf_context_f799_acceptance",
+  "reviewer": "CODEX_ARTIFACT_READING_NOT_AUTHOR_ACCEPTANCE",
+  "skill": "quality-review",
+  "scope": "Complete selected25 native revision compared with24 independent practice and21 guided lesson, across actual24-to25 Group boundary",
+  "status": "BOUNDED_CONTINUITY_SUPPORTED_NOT_LITERARY_OR_LONGFORM_QUALIFICATION",
+  "model_scores_used": false,
+  "judgments": [
+    {
+      "id": "reported-chronology-kept",
+      "chapter": 25,
+      "source_asset_version_id": "authority-output:104cbf51-dab5-47fc-9a77-66694bf1998e:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:f47557b0e6a4c28e227710e32fb1dffe9e309bae86f6362ab95fa8607a525cff",
+      "source_text_sha256": "662042918dfcb3e4955b13c59bf8a3051783290a1a8f0a6d37e7a58519fd11ac",
+      "start_codepoint": 196,
+      "end_codepoint": 244,
+      "quote_sha256": "a72e5dc51120549ed1c4cb96ebe0433e50c92d322c6b0bcb455dda21645d06cf",
+      "assessment": "前章劳作、隔夜、饭歇与次日独练的时间关系被说清，教习经询问取得信息。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "unknown-onset-not-filled",
+      "chapter": 25,
+      "source_asset_version_id": "authority-output:104cbf51-dab5-47fc-9a77-66694bf1998e:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:f47557b0e6a4c28e227710e32fb1dffe9e309bae86f6362ab95fa8607a525cff",
+      "source_text_sha256": "662042918dfcb3e4955b13c59bf8a3051783290a1a8f0a6d37e7a58519fd11ac",
+      "start_codepoint": 838,
+      "end_codepoint": 854,
+      "quote_sha256": "7522c4cf445917a909367a839fbdaa2187a6893d85d0eadeedc5472bce4cbd01",
+      "assessment": "添力起点和持续时长不明仍保留，不凭事后结果补数。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "belief-not-causal-diagnosis",
+      "chapter": 25,
+      "source_asset_version_id": "authority-output:104cbf51-dab5-47fc-9a77-66694bf1998e:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:f47557b0e6a4c28e227710e32fb1dffe9e309bae86f6362ab95fa8607a525cff",
+      "source_text_sha256": "662042918dfcb3e4955b13c59bf8a3051783290a1a8f0a6d37e7a58519fd11ac",
+      "start_codepoint": 1320,
+      "end_codepoint": 1368,
+      "quote_sha256": "491048e38aca1370bff8554e4cdd81331231471268110ac9b191c348d8208519",
+      "assessment": "相似感受未提升为因果诊断，教习说明未观察到的知识边界。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "same-bounded-practice-used",
+      "chapter": 25,
+      "source_asset_version_id": "authority-output:104cbf51-dab5-47fc-9a77-66694bf1998e:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:f47557b0e6a4c28e227710e32fb1dffe9e309bae86f6362ab95fa8607a525cff",
+      "source_text_sha256": "662042918dfcb3e4955b13c59bf8a3051783290a1a8f0a6d37e7a58519fd11ac",
+      "start_codepoint": 2775,
+      "end_codepoint": 2796,
+      "quote_sha256": "858e6e26ddb96eb4867a5c682e4fc23f26b62d33803516915607708aeb70adaa",
+      "assessment": "在原有方法和一次短段内实际使用纠正。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "correction-actually-applied",
+      "chapter": 25,
+      "source_asset_version_id": "authority-output:104cbf51-dab5-47fc-9a77-66694bf1998e:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:f47557b0e6a4c28e227710e32fb1dffe9e309bae86f6362ab95fa8607a525cff",
+      "source_text_sha256": "662042918dfcb3e4955b13c59bf8a3051783290a1a8f0a6d37e7a58519fd11ac",
+      "start_codepoint": 3326,
+      "end_codepoint": 3372,
+      "quote_sha256": "d625e62cfebcd4930e804088ea11ff35eebaf4fd5c202486dbe3d1d46a5577ff",
+      "assessment": "动作中的纠正被实际观察，不只是记下将来建议。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "guidance-not-stable-mastery",
+      "chapter": 25,
+      "source_asset_version_id": "authority-output:104cbf51-dab5-47fc-9a77-66694bf1998e:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:f47557b0e6a4c28e227710e32fb1dffe9e309bae86f6362ab95fa8607a525cff",
+      "source_text_sha256": "662042918dfcb3e4955b13c59bf8a3051783290a1a8f0a6d37e7a58519fd11ac",
+      "start_codepoint": 3382,
+      "end_codepoint": 3413,
+      "quote_sha256": "2a4c76fdb0b033a416df0fe784f3a21fbf31c7f615d7c91f62e3e5db10534048",
+      "assessment": "人物承认仍需提醒，不把局部纠正当独立稳定掌握。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "recovery-remains-unmeasured",
+      "chapter": 25,
+      "source_asset_version_id": "authority-output:104cbf51-dab5-47fc-9a77-66694bf1998e:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:f47557b0e6a4c28e227710e32fb1dffe9e309bae86f6362ab95fa8607a525cff",
+      "source_text_sha256": "662042918dfcb3e4955b13c59bf8a3051783290a1a8f0a6d37e7a58519fd11ac",
+      "start_codepoint": 4222,
+      "end_codepoint": 4259,
+      "quote_sha256": "0cb5bc55cc17ecad865bce46da5b6936b237ff9776b498baa9722c0c6c2532b2",
+      "assessment": "动作观察不能推出每次劳作适用的固定恢复时数。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "cost-of-protected-time",
+      "chapter": 25,
+      "source_asset_version_id": "authority-output:104cbf51-dab5-47fc-9a77-66694bf1998e:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:f47557b0e6a4c28e227710e32fb1dffe9e309bae86f6362ab95fa8607a525cff",
+      "source_text_sha256": "662042918dfcb3e4955b13c59bf8a3051783290a1a8f0a6d37e7a58519fd11ac",
+      "start_codepoint": 4044,
+      "end_codepoint": 4087,
+      "quote_sha256": "85aacd83c05443bf5c7d8ee3a345a9406f679469e834081203d0c4131cc0a183",
+      "assessment": "留练习和恢复时间带来少接工的机会成本，并影响今后承诺。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    }
+  ],
+  "author_length": {
+    "unit": "HAN_CHARACTERS_V1",
+    "actual": 4275,
+    "target": {
+      "maximum": 5000,
+      "minimum": 4000
+    }
+  },
+  "original_draft_length_failure": {
+    "han": 3665,
+    "status": "FAIL_RETAINED",
+    "source_asset_version_id": "authority-output:35e70c49-2832-4d70-8c1e-bb080e1641a7:chapter.draft:v1"
+  },
+  "native_revision_used": true,
+  "manual_prose_edit": false,
+  "aesthetic_observations": [
+    {
+      "kind": "DISCRETIONARY_AESTHETIC_SUGGESTION",
+      "observation": "现场短试处理了具体困难，并显出恢复时间与接工收入的冲突；21、24、25细写同一衔接困难，仍有讲解重复和节奏程序化的风险，未证明长篇文学质量提高。"
+    }
+  ],
+  "first_writer_effect_unknown": "8459825a-2d82-40da-8206-79b7abfe51c6",
+  "controlled_native_successor_effect": "9c9f7422-e673-4a83-9663-9b924db2fff4",
+  "course_and_fee_assessment": "Course completion is directly established in21 and preserved through22-25.25 does not reopen old debt or a pending third lesson, and does not explicitly state a new charge; no universal charging rule is imposed."
+}

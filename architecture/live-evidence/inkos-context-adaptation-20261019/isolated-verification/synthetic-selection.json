@@ -1,0 +1,287 @@
+{
+  "record_type": "SYNTHETIC_SOURCE_SELECTION_COMPARISON",
+  "authority": "NOT_RUNTIME_AUTHORITY",
+  "created_at": "2026-10-19T13:02:18.020930+00:00",
+  "python": "3.12.14",
+  "reproducer": {
+    "path": "architecture/live-evidence/inkos-context-adaptation-20261019/synthetic-selection-benchmark.py",
+    "sha256": "9b0ff828f518455e7f71cbd87d22e41c67f0e72c4fe1794aa283307d603a1c93"
+  },
+  "reproduce": "PYTHONHASHSEED=0 python architecture/live-evidence/inkos-context-adaptation-20261019/synthetic-selection-benchmark.py --repo-root . --output /tmp/novel-forge-synthetic-selection.json",
+  "reproduce_environment": "Run from the repository root with its Python dependencies installed; output must be outside that repository.",
+  "executed_command": [
+    "/workspace/scratch/0fb339719c59/nf-venv/bin/python",
+    "architecture/live-evidence/inkos-context-adaptation-20261019/synthetic-selection-benchmark.py",
+    "--repo-root",
+    ".",
+    "--output",
+    "/workspace/scratch/14a78be02082/synthetic-selection.json"
+  ],
+  "executed_repo_root": "/workspace/scratch/14a78be02082/novel-forge",
+  "executed_output": "/workspace/scratch/14a78be02082/synthetic-selection.json",
+  "source_sha256": {
+    "src/novel_forge/modules/book_authority/working_task.py": "a7b5bd12ab125f86a987dc451f64b3f8bb396f6d58569dd666d66475570cda0f",
+    "src/novel_forge/modules/book_authority/task_retrieval.py": "dd5907dacaa82519f78e1af528ebbe2547ae9d0e1b2839747bffa7f6ea31bf9c",
+    "src/novel_forge/modules/book_authority/working_selection.py": "b37a2360c11b24843592ca0072b3d9c0a74bb9a1744b05584c01706fac18c46e",
+    "src/novel_forge/modules/book_authority/working_prose.py": "1754d7cc0e0ebd1784278d3362b6cb7e2492b3d6a8bd6b2c7fce4c9474561e93",
+    "src/novel_forge/modules/narrative_state/working_memory.py": "fc2e5f9568c8f15bf28bb7923d13a5fc05546cfc129e50706bed8a253106d7e7",
+    "src/novel_forge/modules/book_authority/manuscript.py": "ff013e42c0355b5510a8923ae00f0f9712c1cd20a107b7eaafb6a4e4500b1637",
+    "src/novel_forge/modules/book_authority/manuscript_memory.py": "fa59582ffed20e2a86ea78641a340f7f2ac6dbf16d8bc46eeacbf6981037b187",
+    "src/novel_forge/modules/chapter_authority/character_references.py": "b766fa3013fa00fbd97d88f2459257620f8ac22643e424c0abf99fbdd957ccbf",
+    "src/novel_forge/modules/chapter_authority/author_editor.py": "4c15e17f463cd539f4f32e48a54326f4d578198fe574005853482e3e78c616de",
+    "src/novel_forge/modules/context_builder/task_context.py": "9f24418a0ff75c3a5a87a09c7c5ce09eb71e2bce1a404680aff0f03422588ad5",
+    "src/novel_forge/modules/review/diagnostics.py": "3ebdeecda8d0e62f0fcabe09028b20f2ef1fbbeb28d26ddff02481b590858434",
+    "src/novel_forge/modules/story_planning_runtime/domain.py": "ba1f5f441f49106f9703d65bf1481d1f2b508eb68fcce0ff7786a7206d1d44e2",
+    "config/execution_templates/creation_inputs.json": "a55d54661a3528701d1436c20595e2f9b8c7a286d37d27f4fca03ca03e546e8d"
+  },
+  "source_identity_stable_during_run": true,
+  "dataset": {
+    "chapters": 600,
+    "han_characters_per_chapter": 5000,
+    "unicode_codepoints_min": 5515,
+    "unicode_codepoints_max": 5563,
+    "unicode_codepoints_total": 3326999,
+    "source_texts_hash": "sha256:e6bafffa4af78bf7f20f8d24fd64d8f29f81bc50e15336b236e8b04e72f9836e",
+    "construction_elapsed_seconds": 0.808002,
+    "paragraph_layouts": {
+      "chapter_mod_4_0": "no newline, one overlong paragraph",
+      "chapter_mod_4_1": "blank lines",
+      "chapter_mod_4_2": "single newline",
+      "chapter_mod_4_3": "CRLF"
+    },
+    "memory": "All source observations are absent and explicitly report MISSING; v9 freezes every synthetic writer-source reference and observations digest",
+    "source_identity_kind": "Synthetic source/version/hash pointers only; no native delivery or database source resolution was performed",
+    "old_clue": {
+      "chapter": 1,
+      "paragraph_one_based": 13,
+      "line_one_based": 25,
+      "start": 2668,
+      "end": 2705,
+      "quote": "林殊交给渡者一枚玄铁鱼符，背面刻着七点红砂；这是前往北岸旧渡口的唯一凭记。",
+      "occurrences_in_corpus": 1
+    }
+  },
+  "fixed_task": {
+    "chapter_intent": "林殊追查玄铁鱼符背面的七点红砂",
+    "scene_goal": "林殊寻找北岸旧渡口",
+    "participants": [
+      "synthetic:lin-shu"
+    ],
+    "frozen_name": "林殊",
+    "extra_queries": [],
+    "stage": "CHAPTER",
+    "scope_note": "Demand text is identical; target Chapter and its exact synthetic ChapterPlan source identity change together as required by the frozen-task contract. V8 does not consume the new task field."
+  },
+  "policies": {
+    "v8_reviewed_default": {
+      "version": "working-prose-projection.v8",
+      "history_chapters": 128,
+      "recent_complete_chapters": 2,
+      "max_characters": null,
+      "queries": [],
+      "guidance_mode": "COMBINED"
+    },
+    "v9_current_template": {
+      "version": "working-prose-projection.v9",
+      "history_chapters": 10000,
+      "recent_complete_chapters": 0,
+      "recent_tail_paragraphs": 4,
+      "retrieval_passages": 12,
+      "retrieval_per_chapter": 3,
+      "neighbor_paragraphs": 1,
+      "passage_characters": 512,
+      "max_characters": null,
+      "queries": [],
+      "guidance_mode": "COMBINED"
+    }
+  },
+  "comparison_scope": "Both policies execute the current hashed code. This compares reviewed v8 defaults with current v9 defaults plus its frozen task; it does not isolate the contribution of each changed setting.",
+  "timing_scope": "Single local run per pair, including memory compilation, selection/materialization and host history freeze. V9 performs the existing two selection passes around optional memory. Excludes corpus/task construction, source/UoW DB reads, final provider rendering, capacity admission, transport and model execution.",
+  "results": [
+    {
+      "policy": "working-prose-projection.v8",
+      "target_chapter": 21,
+      "full_historical_source_characters": 110899,
+      "full_historical_han_characters": 100000,
+      "selected_prose_characters": 11078,
+      "selected_source_chapters": [
+        19,
+        20
+      ],
+      "selected_passage_count": 2,
+      "host_source_identity_count": 20,
+      "frozen_memory_source_reference_count": 0,
+      "memory_entry_count": 0,
+      "missing_memory_sources": 20,
+      "old_clue_quote_recalled": false,
+      "old_clue_original_ranges": [],
+      "elapsed_seconds_single_run": 0.001949,
+      "source_history_hash": "sha256:c0e1735ee11ccce418c42bc6628f62f5736bd5258e46e3db778ba20a787179ec",
+      "selected_prose_hash": "sha256:0f40d23916eacd5e9dbf739e2cf951e0d327c68f24aecfbf6603ab932416b884"
+    },
+    {
+      "policy": "working-prose-projection.v9",
+      "target_chapter": 21,
+      "full_historical_source_characters": 110899,
+      "full_historical_han_characters": 100000,
+      "selected_prose_characters": 2730,
+      "selected_source_chapters": [
+        1,
+        20
+      ],
+      "selected_passage_count": 8,
+      "host_source_identity_count": 20,
+      "frozen_memory_source_reference_count": 20,
+      "memory_entry_count": 0,
+      "missing_memory_sources": 20,
+      "old_clue_quote_recalled": true,
+      "old_clue_original_ranges": [
+        {
+          "start": 2668,
+          "end": 2892
+        }
+      ],
+      "elapsed_seconds_single_run": 0.418435,
+      "source_history_hash": "sha256:c0e1735ee11ccce418c42bc6628f62f5736bd5258e46e3db778ba20a787179ec",
+      "selected_prose_hash": "sha256:734eba2b941bfddd06cc19dcc3b3f8aa3fb862ae584e6872325ae2b0b2aa8466",
+      "task_hash": "sha256:ca26bf31ece4c03774de0c8bf01363b51630de890e5ab85a1b8e0db991dba244",
+      "selection_hash": "sha256:7f3f6cd76f87273611a0bf955d932652a65a17af196c4d11978b129044cf1afc",
+      "index_unit_count": 435,
+      "lexical_candidate_count": 1,
+      "historical_retrieval_hits": 1,
+      "semantic_completeness": "NOT_ESTABLISHED",
+      "old_clue_hit_queries": [
+        [
+          "goal",
+          "scenes/0/goal"
+        ]
+      ]
+    },
+    {
+      "policy": "working-prose-projection.v8",
+      "target_chapter": 130,
+      "full_historical_source_characters": 715322,
+      "full_historical_han_characters": 645000,
+      "selected_prose_characters": 11078,
+      "selected_source_chapters": [
+        128,
+        129
+      ],
+      "selected_passage_count": 26,
+      "host_source_identity_count": 129,
+      "frozen_memory_source_reference_count": 0,
+      "memory_entry_count": 0,
+      "missing_memory_sources": 129,
+      "old_clue_quote_recalled": false,
+      "old_clue_original_ranges": [],
+      "elapsed_seconds_single_run": 0.007604,
+      "source_history_hash": "sha256:eac5927b2c26890cc2abf0f056cc9f71f8cec0e8c4ec1cd3d2effefef8a82077",
+      "selected_prose_hash": "sha256:8c161ad46493a9ea967c5372e6911ba114784860c534522b07fb9a0cf82a5f94"
+    },
+    {
+      "policy": "working-prose-projection.v9",
+      "target_chapter": 130,
+      "full_historical_source_characters": 715322,
+      "full_historical_han_characters": 645000,
+      "selected_prose_characters": 1782,
+      "selected_source_chapters": [
+        1,
+        129
+      ],
+      "selected_passage_count": 8,
+      "host_source_identity_count": 129,
+      "frozen_memory_source_reference_count": 129,
+      "memory_entry_count": 0,
+      "missing_memory_sources": 129,
+      "old_clue_quote_recalled": true,
+      "old_clue_original_ranges": [
+        {
+          "start": 2668,
+          "end": 2892
+        }
+      ],
+      "elapsed_seconds_single_run": 2.47913,
+      "source_history_hash": "sha256:eac5927b2c26890cc2abf0f056cc9f71f8cec0e8c4ec1cd3d2effefef8a82077",
+      "selected_prose_hash": "sha256:01f277bd594b5de45db679e8893f366db83ac4892a01eee1f410dbbe94dbc627",
+      "task_hash": "sha256:a2d461122cc23fc03fa380e63ca51a7bda6cc3574295eb773c2654278b9df2d2",
+      "selection_hash": "sha256:9cb33e6ed132f9ce9ca7aa1b4d41e9c4017f4be5c20804a4035c941829879a77",
+      "index_unit_count": 2809,
+      "lexical_candidate_count": 1,
+      "historical_retrieval_hits": 1,
+      "semantic_completeness": "NOT_ESTABLISHED",
+      "old_clue_hit_queries": [
+        [
+          "goal",
+          "scenes/0/goal"
+        ]
+      ]
+    },
+    {
+      "policy": "working-prose-projection.v8",
+      "target_chapter": 600,
+      "full_historical_source_characters": 3321484,
+      "full_historical_han_characters": 2995000,
+      "selected_prose_characters": 11102,
+      "selected_source_chapters": [
+        598,
+        599
+      ],
+      "selected_passage_count": 2,
+      "host_source_identity_count": 599,
+      "frozen_memory_source_reference_count": 0,
+      "memory_entry_count": 0,
+      "missing_memory_sources": 599,
+      "old_clue_quote_recalled": false,
+      "old_clue_original_ranges": [],
+      "elapsed_seconds_single_run": 0.03277,
+      "source_history_hash": "sha256:6ddb07bcd36840d3161bdd7731af2fa88692f44596d46e9a64cdf93f343a9ca7",
+      "selected_prose_hash": "sha256:6ab4024678c669434a9911b08ce72f86cb8d6dac6490191b4a30876f746506d6"
+    },
+    {
+      "policy": "working-prose-projection.v9",
+      "target_chapter": 600,
+      "full_historical_source_characters": 3321484,
+      "full_historical_han_characters": 2995000,
+      "selected_prose_characters": 1782,
+      "selected_source_chapters": [
+        1,
+        599
+      ],
+      "selected_passage_count": 8,
+      "host_source_identity_count": 599,
+      "frozen_memory_source_reference_count": 599,
+      "memory_entry_count": 0,
+      "missing_memory_sources": 599,
+      "old_clue_quote_recalled": true,
+      "old_clue_original_ranges": [
+        {
+          "start": 2668,
+          "end": 2892
+        }
+      ],
+      "elapsed_seconds_single_run": 11.896658,
+      "source_history_hash": "sha256:6ddb07bcd36840d3161bdd7731af2fa88692f44596d46e9a64cdf93f343a9ca7",
+      "selected_prose_hash": "sha256:979265133344dee2e3194d280b0120c92a3c19252058100afcd62b0713499136",
+      "task_hash": "sha256:35a3a8557388007682eb44f2fde891310fc42d6d92fa9008af6ad6d45d8fcc5e",
+      "selection_hash": "sha256:d9479f0e7932526d5001c3d34383ac35c84491ba7b136fa672fba76eb826d43a",
+      "index_unit_count": 13038,
+      "lexical_candidate_count": 1,
+      "historical_retrieval_hits": 1,
+      "semantic_completeness": "NOT_ESTABLISHED",
+      "old_clue_hit_queries": [
+        [
+          "goal",
+          "scenes/0/goal"
+        ]
+      ]
+    }
+  ],
+  "evidence_limits": [
+    "Synthetic repeated Chinese filler and one deliberately distinctive lexical clue are not a representative retrieval-quality corpus.",
+    "Reported character counts are Unicode codepoints, not Provider tokens, billing cost or the complete prompt size.",
+    "The full 600-chapter corpus exists locally for reproducibility; each target receives only its actual predecessor prefix.",
+    "Host identity preservation is metadata provenance; it does not mean omitted original prose reached a model.",
+    "This synthetic run performs no PostgreSQL, real Provider request, literary evaluation, author acceptance or semantic-completeness proof.",
+    "These timings are single runs in a shared environment, not production latency or a statistical performance qualification."
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "record_type": "FINAL_IMPLEMENTATION_VERIFICATION_BOUNDARIES",
+  "source_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+  "implementation_tree_sha": "sha256:8c0ec4f18cb20c38c832d40e1147a7a7b33e24f472ee4a223dd2cb804c882431",
+  "evidence_ceiling": "EXECUTABLE",
+  "qualification": "FAIL",
+  "production_proven": false,
+  "source_main": "215abd7d0abf4a158d7454ed72237486d201b040",
+  "original_pr186_head": "faefb3f2845802d40adc253b2ab89d55060b961d",
+  "checks": {
+    "repository_governance": "PASS",
+    "focused_tests": {
+      "passed": 566,
+      "overlaps_full_backend": true
+    },
+    "full_non_postgresql_backend": {
+      "passed": 8732,
+      "failed": 0,
+      "skipped": 0,
+      "raw": "backend-pytest.xml"
+    },
+    "native_postgresql_directed": {
+      "passed": 16,
+      "deselected": 28,
+      "failed": 0,
+      "raw": "native-postgresql.xml"
+    },
+    "historical_frozen_root_replay": {
+      "passed": 6,
+      "provider_calls": 0,
+      "raw": "historical-replay.json"
+    },
+    "canonical_p0": {
+      "status": "FAIL",
+      "failed_gate": "postgresql-start",
+      "cause": "Existing Docker daemon resource/read-only failure; unrelated containers were not restarted or removed.",
+      "dependent_gates": "NOT_RUN_DEPENDENCY_GATE_FAILED",
+      "raw": "p0-backend-qualification.json"
+    }
+  },
+  "compatibility": {
+    "frozen_v2_v9": "RETAINED_NOT_RETROACTIVELY_UPGRADED",
+    "legacy_hash_only_inputs": "NOT_RETROFILLED",
+    "new_policy": "EXPLICIT_PROSPECTIVE_V10",
+    "new_observations": "LOCATED_UNREVIEWED_NOT_CANON_OR_AUTHOR_ACCEPTANCE",
+    "new_task": "working-memory-extraction-task.v2",
+    "new_prior_selection": "working-memory-prior-state.v2",
+    "new_review_window": "cross-chapter-working-review-window.v2",
+    "migration_head": "20261020_0237_preparation_cli_version_identity"
+  },
+  "remaining_issues": [
+    "Canonical P0 and full Compose readiness are not qualified.",
+    "The initial isolated round chapter24 ExternalEffect80bfedc1-3107-4ecc-a5ed-ad6e53202d91 remains UNKNOWN after a real network stream failure; no blind retry or fake success receipt.",
+    "The first isolated round selected chapters21-23 failed author Han length bounds; original failed candidates and receipts are retained.",
+    "Current sample has repeated procedural work/gesture closures and slow pacing. This bounded Codex reading is not author acceptance or independent literary qualification.",
+    "Target100 is unchanged. A bounded continuation does not prove whole-book delivery or long-form quality.",
+    "Original source database live connection was unavailable at final inspection; original selected20 are verified against the sealed checkpoint in the isolated restored database."
+  ],
+  "runtime_boundaries": [
+    "Provider I/O outside Book business locks; commit rechecks source and sidecar head.",
+    "Actual input, current preview, reconstructed comparison and old hash-only requests are distinct.",
+    "Measured tokens, Unicode codepoints, UTF8 bytes, conservative capacity bounds, elapsed time and UNKNOWN monetary cost are separate units.",
+    "Same frozen input performance comparison is host construction evidence, not Provider end-to-end speed or literary effect."
+  ]
+}

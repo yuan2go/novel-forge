@@ -1,0 +1,90 @@
+{
+  "record_type": "PROSPECTIVE_NATIVE_CHAPTER26_SOURCE_CHECKLIST",
+  "created_at": "2026-10-19T23:58:25.159560+00:00",
+  "verification_source_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+  "checkpoint": "PAUSED25_BEFORE_NATIVE26_PLANNING",
+  "cases": [
+    {
+      "id": "native26-actual-guided-short-practice",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "meaning": "The shorter guided practice happened; its effect does not establish cause or future independent success.",
+      "alternatives": [
+        {
+          "chapter": 25,
+          "asset_version_id": "authority-output:bc77b749-e321-4b19-94f4-24f21bbcf06f:chapter.best_candidate:v1",
+          "content_hash": "sha256:d2f2a61f3544c2707bf7b4218a368edc6bc32352a95b336274991c977bf8a7ac",
+          "text_sha256": "fad6d5d81300fadd0784f2591c141588bedd2bce081062ba01afc8a408866d46",
+          "start_codepoint": 3828,
+          "end_codepoint": 3875,
+          "quote_sha256": "3c7f8e65c3498b03ebb83d38def31f9f24c78f1fe45b3e7d3dc5d094f54bdcd4"
+        }
+      ]
+    },
+    {
+      "id": "native26-specific-next-practice-scope",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "meaning": "A newly taught shorter scope is distinct from the longer original third-class method.",
+      "alternatives": [
+        {
+          "chapter": 25,
+          "asset_version_id": "authority-output:bc77b749-e321-4b19-94f4-24f21bbcf06f:chapter.best_candidate:v1",
+          "content_hash": "sha256:d2f2a61f3544c2707bf7b4218a368edc6bc32352a95b336274991c977bf8a7ac",
+          "text_sha256": "fad6d5d81300fadd0784f2591c141588bedd2bce081062ba01afc8a408866d46",
+          "start_codepoint": 4927,
+          "end_codepoint": 4945,
+          "quote_sha256": "53ce5c58bc6cfad58d679fb7e9b551cffce38b0b3ed7b1eb9e5ff03b3f132eae"
+        }
+      ]
+    },
+    {
+      "id": "native26-unresolved-onset-preserved",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "meaning": "The unknown onset was retained, not retrospectively resolved by successful guided practice.",
+      "alternatives": [
+        {
+          "chapter": 25,
+          "asset_version_id": "authority-output:bc77b749-e321-4b19-94f4-24f21bbcf06f:chapter.best_candidate:v1",
+          "content_hash": "sha256:d2f2a61f3544c2707bf7b4218a368edc6bc32352a95b336274991c977bf8a7ac",
+          "text_sha256": "fad6d5d81300fadd0784f2591c141588bedd2bce081062ba01afc8a408866d46",
+          "start_codepoint": 4321,
+          "end_codepoint": 4370,
+          "quote_sha256": "c13efa9bbc48b502609d804690b4689d9fa5660b61be5eddf9737fff71f3c750"
+        }
+      ]
+    },
+    {
+      "id": "native26-guidance-versus-independent-knowledge",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "meaning": "Teacher prompts were real assistance; independent recognition remains unexecuted.",
+      "alternatives": [
+        {
+          "chapter": 25,
+          "asset_version_id": "authority-output:bc77b749-e321-4b19-94f4-24f21bbcf06f:chapter.best_candidate:v1",
+          "content_hash": "sha256:d2f2a61f3544c2707bf7b4218a368edc6bc32352a95b336274991c977bf8a7ac",
+          "text_sha256": "fad6d5d81300fadd0784f2591c141588bedd2bce081062ba01afc8a408866d46",
+          "start_codepoint": 3921,
+          "end_codepoint": 3965,
+          "quote_sha256": "126d0fb0a70e99e29c91d26bfe4b9c6bc5c8d8f4538c9d47bc3380d63e6ba815"
+        }
+      ]
+    },
+    {
+      "id": "native26-new-fee-closed-not-old-course-debt",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "meaning": "The new consultation payment did not reopen original course or labour obligations.",
+      "alternatives": [
+        {
+          "chapter": 25,
+          "asset_version_id": "authority-output:bc77b749-e321-4b19-94f4-24f21bbcf06f:chapter.best_candidate:v1",
+          "content_hash": "sha256:d2f2a61f3544c2707bf7b4218a368edc6bc32352a95b336274991c977bf8a7ac",
+          "text_sha256": "fad6d5d81300fadd0784f2591c141588bedd2bce081062ba01afc8a408866d46",
+          "start_codepoint": 4774,
+          "end_codepoint": 4794,
+          "quote_sha256": "0af9d78900fdbfbaea80fe03c34f4448636c37e25432d718f4b8feea01a8c6fe"
+        }
+      ]
+    }
+  ],
+  "method": "Source evidence only, never a prose template or native task input. New native tasks will be assessed against actual relevance.",
+  "private_checklist_sha256": "ed480977f7e49ceb6673073df0bb6b997b2e66a3984df4081b50c3020e08fddc"
+}

@@ -1,0 +1,21 @@
+{
+  "record_type": "ACTUAL_NATIVE_PURE_GENERATION_RECOVERY",
+  "captured_at": "2026-10-20T00:59:42.278169+00:00",
+  "verification_source_commit": "151733b4c3af62586d1900c5c9e11156abc1915a",
+  "original_operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+  "original_external_effect_id": "bbd7d382-6d19-446c-b3a5-30599c63bd48",
+  "original_effect_status": "UNKNOWN",
+  "isolation_contract": "pure-generation-isolation.v1",
+  "successor_operation_id": "740ebc7b-0c01-4142-9b60-6850fc488204",
+  "successor_contract": "kernel-failed-step-successor.v2",
+  "retained_completed_preparation_effects": 32,
+  "successor_effects": [
+    {
+      "external_effect_id": "02203730-754f-4050-9a58-e23e19ebd2ae",
+      "status": "DISPATCHING",
+      "stage": "draft"
+    }
+  ],
+  "private_native_recovery_evidence_sha256": "f0306cef90296ecad562381abf053abdbb63957310c72af519372302dbae375d",
+  "boundary": "Stopped original process and absent complete local result were verified by native isolation; original remote outcome and usage remain UNKNOWN. A governed fenced successor is not reconciliation of that unknown remote outcome."
+}

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from novel_forge.modules.command_kernel.errors import KernelError
 
@@ -94,6 +94,7 @@ class AuthorityHandlerRegistration:
     role: str
     completion_topic: str
     handler: AuthorityHandler
+    commit_output: Callable[[Any, AuthorityHandlerRequest, AuthorityHandlerOutput], None] | None = None
 
 
 class AuthorityHandlerRegistry(Protocol):

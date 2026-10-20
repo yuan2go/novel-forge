@@ -1,0 +1,90 @@
+{
+  "source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "record_type": "MEASURED_FINAL_SOURCE_NATIVE_LOCAL_PROCESS_STAGE_ACCOUNTING",
+  "stages": {
+    "chapter_group_plan.generate": {
+      "local_processes": 6,
+      "statuses": {
+        "SUCCEEDED": 6
+      },
+      "measured_input_tokens": 673976,
+      "measured_output_tokens": 74404,
+      "reasoning_output_tokens_subset": 1254,
+      "completed_process_elapsed_ms": 1469397,
+      "usage_unavailable_processes": 0
+    },
+    "chapter_plan.generate": {
+      "local_processes": 6,
+      "statuses": {
+        "SUCCEEDED": 6
+      },
+      "measured_input_tokens": 771262,
+      "measured_output_tokens": 60682,
+      "reasoning_output_tokens_subset": 1609,
+      "completed_process_elapsed_ms": 1250814,
+      "usage_unavailable_processes": 0
+    },
+    "draft": {
+      "local_processes": 6,
+      "statuses": {
+        "SUCCEEDED": 5,
+        "FAILED": 1
+      },
+      "measured_input_tokens": 702751,
+      "measured_output_tokens": 22316,
+      "reasoning_output_tokens_subset": 821,
+      "completed_process_elapsed_ms": 1593374,
+      "usage_unavailable_processes": 1
+    },
+    "working_memory_extract": {
+      "local_processes": 5,
+      "statuses": {
+        "SUCCEEDED": 5
+      },
+      "measured_input_tokens": 230928,
+      "measured_output_tokens": 27369,
+      "reasoning_output_tokens_subset": 371,
+      "completed_process_elapsed_ms": 479254,
+      "usage_unavailable_processes": 0
+    },
+    "review": {
+      "local_processes": 4,
+      "statuses": {
+        "SUCCEEDED": 4
+      },
+      "measured_input_tokens": 237229,
+      "measured_output_tokens": 4100,
+      "reasoning_output_tokens_subset": 626,
+      "completed_process_elapsed_ms": 135345,
+      "usage_unavailable_processes": 0
+    },
+    "revision": {
+      "local_processes": 4,
+      "statuses": {
+        "SUCCEEDED": 4
+      },
+      "measured_input_tokens": 211854,
+      "measured_output_tokens": 19047,
+      "reasoning_output_tokens_subset": 569,
+      "completed_process_elapsed_ms": 317681,
+      "usage_unavailable_processes": 0
+    },
+    "rereview": {
+      "local_processes": 4,
+      "statuses": {
+        "SUCCEEDED": 4
+      },
+      "measured_input_tokens": 241178,
+      "measured_output_tokens": 4153,
+      "reasoning_output_tokens_subset": 434,
+      "completed_process_elapsed_ms": 108664,
+      "usage_unavailable_processes": 0
+    }
+  },
+  "monetary_cost": "UNKNOWN",
+  "boundaries": [
+    "Input/output tokens are measured completed CLI usage; the first25 failed stream has unknown usage, not zero.",
+    "Reasoning tokens are an output subset.",
+    "Process elapsed time includes network/startup; sums can overlap concurrent maintenance and are not total wall time or GPU inference time."
+  ]
+}

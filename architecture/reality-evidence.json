@@ -26,7 +26,7 @@
     "docs/runtime-operations.md",
     "docs/development.md"
   ],
-  "migration_head": "20261019_0235_source_isolation_convergence",
+  "migration_head": "20261020_0237_preparation_cli_version_identity",
   "comment_policy": {
     "ratchet": "GIT_MERGE_BASE_NONINCREASING",
     "scope": "ALL_NON_MIGRATION_PRODUCTION_COMMENTS",
@@ -7196,6 +7196,46 @@
         {
           "path": "src/novel_forge/modules/book_authority/working_policy.py",
           "symbol": "select_working_policy"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/production.py",
+          "symbol": "PostgresBookAuthority.submit_chapter"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/queries.py",
+          "symbol": "PostgresBookProductionQuery.require_arc_working_set"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "freeze_working_context"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "verify_working_context"
+        },
+        {
+          "path": "src/novel_forge/modules/chapter_authority/working_regeneration.py",
+          "symbol": "prepare_regeneration"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/memory_backfill.py",
+          "symbol": "admit_backfill"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/memory_backfill.py",
+          "symbol": "advance_backfill"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/memory_backfill.py",
+          "symbol": "commit_backfill_sidecar"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/memory_backfill.py",
+          "symbol": "memory_coverage"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/memory_readback.py",
+          "symbol": "request_memory"
         }
       ],
       "domain_symbols": [
@@ -7222,6 +7262,34 @@
         {
           "path": "src/novel_forge/modules/book_authority/working_policy.py",
           "symbol": "selected_working_policy"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_task.py",
+          "symbol": "build_working_task"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_task.py",
+          "symbol": "validate_working_task"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/task_retrieval.py",
+          "symbol": "select_task_passages"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_selection.py",
+          "symbol": "task_passage_ranges"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_selection.py",
+          "symbol": "select_working_context"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_selection.py",
+          "symbol": "selected_memory_ranges"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/working_selection.py",
+          "symbol": "validate_working_selection"
         }
       ],
       "commands_operations": [
@@ -7270,6 +7338,10 @@
           {
             "path": "src/novel_forge/modules/book_authority/working_policy.py",
             "symbol": "select_working_policy"
+          },
+          {
+            "path": "src/novel_forge/modules/book_authority/manuscript.py",
+            "symbol": "freeze_working_context"
           }
         ]
       },
@@ -7580,6 +7652,10 @@
         {
           "path": "src/novel_forge/modules/chapter_authority/receipt_recovery.py",
           "symbol": "retained_owner_context"
+        },
+        {
+          "path": "src/novel_forge/modules/book_authority/manuscript.py",
+          "symbol": "verify_working_context"
         }
       ],
       "domain_symbols": [
@@ -7726,7 +7802,8 @@
         "source-import-and-knowledge",
         "canon-and-narrative-state",
         "capability-pack-instruction-runtime",
-        "external-effect-provider-control"
+        "external-effect-provider-control",
+        "book-production-coordination"
       ],
       "downstream_consumers": [
         "hierarchical-planning",
@@ -9660,6 +9737,16 @@
           "path": "src/novel_forge/storage/migrations/versions/v20261019_0235_source_isolation_convergence.py",
           "id": "20261019_0235_source_isolation_convergence",
           "locator": "MIGRATION_ID = '20261019_0235_source_isolation_convergence'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261020_0236_acknowledged_preparation_custody.py",
+          "id": "20261020_0236_acknowledged_preparation_custody",
+          "locator": "MIGRATION_ID = '20261020_0236_acknowledged_preparation_custody'"
+        },
+        {
+          "path": "src/novel_forge/storage/migrations/versions/v20261020_0237_preparation_cli_version_identity.py",
+          "id": "20261020_0237_preparation_cli_version_identity",
+          "locator": "MIGRATION_ID = '20261020_0237_preparation_cli_version_identity'"
         }
       ],
       "external_effects": {
@@ -10668,7 +10755,7 @@
   "projection_source": {
     "authority": "EXECUTABLE_CODE",
     "identity_scope": "IMPLEMENTATION_TREE_IDENTITY_V3",
-    "implementation_tree_sha": "sha256:397ed3132510afd7a3cea508bb6c34dbbb38fa21eda17e700e5c7d381cd14360"
+    "implementation_tree_sha": "sha256:987215298f22299086844e42006dbab289dcc7847c2a457806b51afc65522779"
   },
   "role_definitions": {
     "AUTHORITY": "Owns a business decision and is the only writer of that state.",

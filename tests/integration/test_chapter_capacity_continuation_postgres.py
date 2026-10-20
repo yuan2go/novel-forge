@@ -52,7 +52,9 @@ def _run_capacity_continuation(tmp_path, monkeypatch, *, enable_memo, target_pac
     policy["narrative_execution_contract"] = "native-narrative-execution.v2"
     profile = policy["profiles"]["production_profile"]["content"]
     profile.pop("context_capacity_policy")
-    profile["working_prose_policy"].update(version="working-prose-projection.v5", max_characters=24_000)
+    profile["working_prose_policy"] = {
+        "version": "working-prose-projection.v5", "history_chapters": 128,
+        "recent_complete_chapters": 2, "max_characters": 24_000, "queries": [], "guidance_mode": "COMBINED"}
     profile["chapter_context_policy"] = {"version": "book-chapter-context.v1", "draft_profile": "draft-context-profile-v4",
         "draft_token_budget": 6000, "quality_token_budget": 512_000}
     policy_file = tmp_path / "frozen-legacy-policy.json"

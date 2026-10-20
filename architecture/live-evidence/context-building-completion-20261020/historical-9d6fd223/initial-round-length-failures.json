@@ -1,0 +1,66 @@
+{
+  "record_type": "NATIVE_PROVIDER_INITIAL_ROUND_NEGATIVE_EVIDENCE",
+  "source_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+  "database": "nf_context_acceptance",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "target_chapters": 100,
+  "status": "FAIL_AUTHOR_HAN_LENGTH",
+  "cause": "This invocation omitted the existing ensure-chapter-length continuation; complete saved drafts were correctly readable but did not meet the frozen author bounds.",
+  "old_chapters_1_through_20_changed": false,
+  "originals_retained": true,
+  "new_units": [
+    {
+      "chapter": 21,
+      "asset_version_id": "authority-output:d40f6443-d01e-4615-a70f-e89ff1f44171:chapter.draft:v1",
+      "content_hash": "sha256:a9b74f501cec93f1be98243a3b042c10ed5cf5ef0876eca4e81345210e8c9c8d",
+      "text_sha256": "dc0adb2b994c19dbc8fb8650e16ac7fe4dd2b0a25b518e9bb53306861c62e814",
+      "unicode_codepoints": 4064,
+      "utf8_bytes": 12070,
+      "author_length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 3531,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "status": "FAIL_AUTHOR_HAN_LENGTH"
+    },
+    {
+      "chapter": 22,
+      "asset_version_id": "authority-output:d1fc21f0-6c2d-40f1-95b1-3bfd4008a657:chapter.draft:v1",
+      "content_hash": "sha256:38f67d8dda36ccf91076f1bb9444054eed02608c6454285c0c9cf1df1941e113",
+      "text_sha256": "1914ac128f975fa9540db1603a4e171a2e2571b928afdfa08c0234358b1d01db",
+      "unicode_codepoints": 4452,
+      "utf8_bytes": 13208,
+      "author_length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 3799,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "status": "FAIL_AUTHOR_HAN_LENGTH"
+    },
+    {
+      "chapter": 23,
+      "asset_version_id": "authority-output:ec8cd00f-b5b1-4a0b-a6f3-9885e64b1b11:chapter.draft:v1",
+      "content_hash": "sha256:7e7056436f37a8d3f625b4f12b3fda53270b52b293ec5d2cbb49b8f99d54bc8c",
+      "text_sha256": "48fd511c923f10dd4555e9a3c89e1d4b732ee7e78d198aaee90df404c633738f",
+      "unicode_codepoints": 4733,
+      "utf8_bytes": 13997,
+      "author_length": {
+        "unit": "HAN_CHARACTERS_V1",
+        "actual": 3985,
+        "target": {
+          "maximum": 5000,
+          "minimum": 4000
+        }
+      },
+      "status": "FAIL_AUTHOR_HAN_LENGTH"
+    }
+  ],
+  "automatic_memory_maintenance": "Native missing-memory batch covered21-22; the concurrent Book checkpoint conflict and changed-memory Planning request were retained separately.",
+  "round_followup": "A separate restored chapter20 instance runs the unchanged native continuation with ensure-chapter-length; these originals are never relabelled as qualified prose."
+}

@@ -140,9 +140,12 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
     stream_failures = []
     current_project = []
     compression_calls = []
+    writer_inputs = []
     def interrupt_first_memo(resolver, request, admission):
         payload = resolve(resolver, request, admission)
         current_project[:] = [request.project_id]
+        if default_template and request.stage == "draft":
+            writer_inputs.append(payload.input_text)
         if request.stage in {"context_compress", "context_fidelity"}:
             compression_calls.append((request.operation_id, request.stage))
         failure_stage = "context_fidelity" if completed_sibling else "draft" if default_template else "memo"
@@ -384,6 +387,18 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
                   AND memo.content #>> '{execution_evidence,model_call}'='NOT_RUN'
                 GROUP BY memo.content->>'enhancement_status'""", [project])
             assert uow.cursor.fetchall() == [("NOT_REQUESTED", 6)]
+            uow.cursor.execute("""SELECT request_payload->>'stage',
+                request_payload #> '{input,arc_working_set,working_manuscript,retrieval_task}',
+                request_payload #> '{input,planning_command,arc_working_set,working_manuscript,retrieval_task}'
+                FROM authority_external_effect WHERE project_id=%s
+                  AND request_payload->>'stage' IN ('chapter_group_plan.generate','chapter_plan.generate')""", [project])
+            planning_tasks = uow.cursor.fetchall()
+            assert {stage for stage, _, _ in planning_tasks} == {"chapter_group_plan.generate", "chapter_plan.generate"}
+            for stage, task, command_task in planning_tasks:
+                assert task == command_task and task["stage"] == "PLANNING"
+                kinds = {source["plan_kind"] for source in task["sources"]}
+                assert {"arc_plan", "character_cast"} <= kinds
+                assert ("chapter_group_plan" in kinds) == (stage == "chapter_plan.generate")
         assert not any(count for name, count in counts.items() if name.startswith(("chapter.review.", "chapter.quality.", "chapter.canon.", "chapter.revision.")))
     from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
     principal = build_trusted_principal_resolver().resolve_api_principal()
@@ -417,7 +432,8 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         from novel_forge.modules.command_kernel.errors import KernelError
         from novel_forge.modules.book_authority.working_policy import select_working_policy, selected_working_policy
         from novel_forge.modules.book_authority.manuscript import freeze_working_context
-        selected = json.loads((Path(__file__).resolve().parents[2] / 'config/execution_templates/creation_inputs.json').read_text())['profiles']['production_profile']['content']['working_prose_policy']
+        selected = {"version": "working-prose-projection.v8", "history_chapters": 128,
+            "recent_complete_chapters": 2, "max_characters": None, "queries": [], "guidance_mode": "COMBINED"}
         authority.pause(book['book_run_id'], reason='Keep production paused while selecting future inputs', principal=principal)
         paused = authority.require(book['book_run_id'])
         chosen = select_working_policy(authority, book['book_run_id'], policy=selected,
@@ -465,6 +481,30 @@ def test_native_author_first_cross_chapter_edit_and_export(tmp_path, monkeypatch
         uow.cursor.execute("SELECT context_snapshot FROM authority_book_manuscript_delivery WHERE book_run_id=%s AND chapter_number=7", [book["book_run_id"]])
         frozen_working = uow.cursor.fetchone()[0]
         sources = frozen_working["sources"]
+        if default_template:
+            from novel_forge.modules.book_authority.working_prose import TASK_POLICY_VERSION, validate_working_projection
+            from novel_forge.modules.book_authority.working_task import WORKING_TASK_VERSION, validate_working_task
+            assert frozen_working["projection_policy"]["version"] == TASK_POLICY_VERSION
+            assert frozen_working["projection_policy"]["recent_complete_chapters"] == 0
+            validate_working_projection(frozen_working, project_id=project, book_id=book["book_id"],
+                target_chapter=7, accepted_through_chapter=0)
+            task = frozen_working["retrieval_task"]
+            validate_working_task(task, book=book, chapter=7, stage="CHAPTER")
+            assert task["contract_version"] == WORKING_TASK_VERSION
+            assert {"chapter_plan", "character_cast"} <= {row["plan_kind"] for row in task["sources"]}
+            assert task["field_sources"]
+            for binding in task["sources"]:
+                source = uow.repositories.asset_documents.require(project_id=project,
+                    asset_version_id=binding["asset_version_id"])
+                assert source.content_hash == binding["content_hash"]
+            assert frozen_working["context_selection"]["task_hash"] == task["task_hash"]
+            uow.cursor.execute("""SELECT content FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+                WHERE a.project_id=%s AND a.asset_type='chapter_execution_intent'
+                AND (content->>'chapter')::integer=7 ORDER BY v.created_at DESC LIMIT 1""", [project])
+            assert uow.cursor.fetchone()[0]["working_manuscript"] == frozen_working
+            matching_writer_inputs = [text for text in writer_inputs if task["task_hash"] in text]
+            assert matching_writer_inputs
+            assert all(TASK_POLICY_VERSION in text and WORKING_TASK_VERSION in text for text in matching_writer_inputs)
         if enhanced_working:
             assert frozen_working["projection_policy"]["version"] == ("working-prose-projection.v4" if enhanced_working == "progression" else "working-prose-projection.v3" if enhanced_working == "memory" else "working-prose-projection.v2")
             assert len(sources) == 6 and sources[-1]["omitted_ranges"] == []

@@ -1,0 +1,25 @@
+{
+  "source_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+  "exit_code": 0,
+  "elapsed_seconds": 336.32466891699005,
+  "database": "nf_context_completion_test",
+  "postgresql_port": 55449,
+  "node_ids": [
+    "tests/integration/test_memory_backfill_postgres.py::test_native_memory_extraction_keeps_receipts_replays_and_source_guards",
+    "tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export[working-memory-interruption]",
+    "tests/integration/test_author_first_manuscript_postgres.py::test_native_author_first_cross_chapter_edit_and_export[default-author-first]",
+    "tests/integration/test_semantic_preparation_continuation_postgres.py::test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_foreign_changes[11.0.0-False-False]",
+    "tests/integration/test_semantic_preparation_continuation_postgres.py::test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_foreign_changes[11.0.0-True-False]",
+    "tests/integration/test_semantic_preparation_continuation_postgres.py::test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_foreign_changes[12.0.0-False-False]",
+    "tests/integration/test_semantic_preparation_continuation_postgres.py::test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_foreign_changes[12.0.0-True-False]",
+    "tests/integration/test_semantic_preparation_continuation_postgres.py::test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_foreign_changes[12.0.0-True-True]",
+    "tests/integration/test_semantic_preparation_continuation_postgres.py::test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_foreign_changes[13.0.0-True-True]",
+    "tests/integration/test_semantic_preparation_continuation_postgres.py::test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_foreign_changes[14.0.0-False-False]",
+    "tests/integration/test_semantic_preparation_continuation_postgres.py::test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_foreign_changes[15.0.0-False-False]",
+    "tests/integration/test_semantic_preparation_continuation_postgres.py::test_acknowledged_routing_link_retains_exact_frozen_contract_and_revoked_submission_rights[5.0.0]",
+    "tests/integration/test_semantic_preparation_continuation_postgres.py::test_acknowledged_routing_link_retains_exact_frozen_contract_and_revoked_submission_rights[11.0.0]",
+    "tests/integration/test_semantic_preparation_continuation_postgres.py::test_acknowledged_routing_link_retains_exact_frozen_contract_and_revoked_submission_rights[12.0.0]",
+    "tests/integration/test_semantic_preparation_continuation_postgres.py::test_acknowledged_routing_link_retains_exact_frozen_contract_and_revoked_submission_rights[14.0.0]",
+    "tests/integration/test_semantic_preparation_continuation_postgres.py::test_acknowledged_routing_link_retains_exact_frozen_contract_and_revoked_submission_rights[15.0.0]"
+  ]
+}

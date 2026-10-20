@@ -1,0 +1,33 @@
+{
+  "record_type": "FINAL_EVIDENCE_ONLY_TREE_BINDING",
+  "captured_at": "2026-10-20T04:29:27.108592+00:00",
+  "implementation_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "evidence_parent_commit": "222a6715b92938034a1fa7c4bb773dac768e0eee",
+  "implementation_tree_sha": "sha256:987215298f22299086844e42006dbab289dcc7847c2a457806b51afc65522779",
+  "implementation_paths": 2144,
+  "implementation_identity_equal": true,
+  "scope": "Final additions are confined to the existing live-evidence directory; backend/PostgreSQL checks and real Provider execution were run at the stated business source, not at a later evidence-only commit.",
+  "final_gates": {
+    "backend_junit": "PASS_8763",
+    "native_postgresql": "PASS_17",
+    "p0": "FAIL_POSTGRESQL_START",
+    "formal_pr_governance": "FAIL_CANONICAL_EXACT_SHA_P0",
+    "dependent_full_matrix": "NOT_RUN"
+  },
+  "original_chapter25_preregistration_unchanged": true,
+  "evidence_checks": {
+    "json_files_parsed": 138,
+    "xml_files_parsed": 10,
+    "new_verifier_ruff": "PASS",
+    "raw_diff_check_exit_code": 2,
+    "raw_diff_whitespace_paths": [
+      "architecture/live-evidence/context-building-completion-20261020/historical-151733b4/native-postgresql.log",
+      "architecture/live-evidence/context-building-completion-20261020/historical-7126dfe5/native-postgresql.log",
+      "architecture/live-evidence/context-building-completion-20261020/historical-9c96b3de/native-postgresql.log",
+      "architecture/live-evidence/context-building-completion-20261020/historical-9d6fd223/native-postgresql.log",
+      "architecture/live-evidence/context-building-completion-20261020/native-postgresql.log"
+    ],
+    "structured_nonlog_diff_check": "PASS",
+    "raw_log_policy": "Original framework-warning log whitespace is retained byte-for-byte; no raw validation evidence is normalized to manufacture a clean diff."
+  }
+}

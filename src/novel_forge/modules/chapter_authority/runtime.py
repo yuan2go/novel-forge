@@ -34,6 +34,31 @@ from .definitions import CHAPTER_SAMPLE_COMPLETION_TOPIC, CHAPTER_SAMPLE_OUTPUT_
 ChapterExecutionResult = AuthorityExecutionResult
 
 
+def bind_working_context_sources(request: ChapterHandlerRequest, node: ChapterNode) -> ChapterHandlerRequest:
+    from novel_forge.modules.book_authority.working_prose import TASK_POLICY_VERSIONS, working_auxiliary_source_refs
+    working = (request.command.get("preparation_report") or {}).get("working_manuscript")
+    if (node not in {ChapterNode.CONTEXT, ChapterNode.EXECUTION_INTENT}
+            or not working or (working.get("projection_policy") or {}).get("version") not in TASK_POLICY_VERSIONS):
+        return request
+    from dataclasses import replace
+    references = working_auxiliary_source_refs(working)
+    actual = {item.asset_version_id: item.content_hash for item in request.inputs}
+    if any(actual.get(row["asset_version_id"]) != row["content_hash"] for row in references):
+        raise KernelError("WORKING_AUXILIARY_SOURCE_INVALID", "Every working task and annotation source must retain its exact native input binding")
+    candidates = {row["asset_version_id"] for row in request.command.get("context_candidates", [])
+                  if str(row.get("asset_type") or "") != "chapter_plan"}
+    auxiliary = {row["asset_version_id"] for row in references} - candidates
+    rebound = replace(request, inputs=tuple(
+        replace(item, input_role="working_context_source") if item.asset_version_id in auxiliary else item
+        for item in request.inputs))
+    plan = rebound.require_input("chapter_plan")
+    sources = [row for row in working["retrieval_task"]["sources"] if row["plan_kind"] == "chapter_plan"]
+    if (len(sources) != 1 or plan.content.get("source_chapter_plan_asset_version_id") != sources[0]["asset_version_id"]
+            or plan.content.get("source_chapter_plan_content_hash") != sources[0]["content_hash"]):
+        raise KernelError("WORKING_TASK_SOURCE_SCOPE_INVALID", "The active Chapter plan must derive from the same frozen task source")
+    return rebound
+
+
 def bind_working_revision_inputs(request: ChapterHandlerRequest) -> ChapterHandlerRequest:
     working = (request.command.get("preparation_report") or {}).get("working_revision")
     if not working:
@@ -161,6 +186,7 @@ class _ChapterHandlerAdapter:
             source_definition_version=source_version,
         )
         chapter_request = bind_working_revision_inputs(chapter_request)
+        chapter_request = bind_working_context_sources(chapter_request, self.node)
         from .capacity_continuation import bind_context_capacity_upgrade, rebuild_frozen_capacity_context
         chapter_request = bind_context_capacity_upgrade(chapter_request)
         chapter_request = rebuild_frozen_capacity_context(chapter_request, self.registry)

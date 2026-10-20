@@ -13,7 +13,11 @@ LONGFORM_POLICY_VERSION = "working-prose-projection.v5"
 CAPACITY_POLICY_VERSION = "working-prose-projection.v6"
 SEMANTIC_POLICY_VERSION = "working-prose-projection.v7"
 RETRIEVAL_POLICY_VERSION = "working-prose-projection.v8"
-CAPACITY_POLICY_VERSIONS = {CAPACITY_POLICY_VERSION, SEMANTIC_POLICY_VERSION, RETRIEVAL_POLICY_VERSION}
+TASK_POLICY_VERSION = "working-prose-projection.v9"
+STATE_POLICY_VERSION = "working-prose-projection.v10"
+TASK_POLICY_VERSIONS = {TASK_POLICY_VERSION, STATE_POLICY_VERSION}
+RETRIEVAL_POLICY_VERSIONS = {RETRIEVAL_POLICY_VERSION, *TASK_POLICY_VERSIONS}
+CAPACITY_POLICY_VERSIONS = {CAPACITY_POLICY_VERSION, SEMANTIC_POLICY_VERSION, *RETRIEVAL_POLICY_VERSIONS}
 LONGFORM_POLICY_VERSIONS = {LONGFORM_POLICY_VERSION, *CAPACITY_POLICY_VERSIONS}
 MEMORY_POLICY_VERSIONS = {MEMORY_POLICY_VERSION, PROGRESSION_POLICY_VERSION, *LONGFORM_POLICY_VERSIONS}
 RESOLVED_POLICY_VERSIONS = {PROGRESSION_POLICY_VERSION, *LONGFORM_POLICY_VERSIONS}
@@ -122,6 +126,13 @@ def working_instruction(policy: Mapping[str, Any]) -> str:
         "plans into past events or return this metadata inside Scene prose. "
         if policy["version"] in MEMORY_POLICY_VERSIONS else ""
     )
+    if policy["version"] == STATE_POLICY_VERSION:
+        memory += ("This request uses working-observations.v2: every observation also has start and end "
+            "(Unicode code-point offsets, or both null for a unique literal quote), promise_status "
+            "(OPEN, FULFILLED, RELEASED, UNKNOWN; NOT_APPLICABLE for non-promises), and supersedes "
+            "(exact earlier promise observation IDs with the same subject, state_key, perspective and knowledge_owner). "
+            "Keep stable subject/state_key for the same state or promise. Closure requires literal evidence in your new prose "
+            "and explicit earlier promise IDs; otherwise retain uncertainty. Observations never change accepted facts. ")
     return (
         (CONTINUITY_INSTRUCTION.replace("selected working versions", "effective working versions")
             .replace("Discarded or unselected versions", "Discarded or superseded versions")
@@ -151,6 +162,9 @@ def working_prose_policy(content: Mapping[str, Any]) -> dict[str, Any] | None:
         "queries",
         "guidance_mode",
     }
+    task_policy = isinstance(value, Mapping) and value.get("version") in TASK_POLICY_VERSIONS
+    if task_policy:
+        keys.update({"recent_tail_paragraphs", "retrieval_passages", "retrieval_per_chapter", "neighbor_paragraphs", "passage_characters"})
     if (
         not isinstance(value, Mapping)
         or set(value) != keys
@@ -167,7 +181,7 @@ def working_prose_policy(content: Mapping[str, Any]) -> dict[str, Any] | None:
         or type(value.get("history_chapters")) is not int
         or not 1 <= value["history_chapters"] <= (10000 if value["version"] in MEMORY_POLICY_VERSIONS else 32)
         or type(value.get("recent_complete_chapters")) is not int
-        or not 1 <= value["recent_complete_chapters"] <= value["history_chapters"]
+        or not (0 if task_policy else 1) <= value["recent_complete_chapters"] <= value["history_chapters"]
         or (value.get("max_characters") is not None if value.get("version") in CAPACITY_POLICY_VERSIONS
             else type(value.get("max_characters")) is not int or not 1 <= value["max_characters"] <= 200_000)
         or not isinstance(value.get("queries"), list)
@@ -176,6 +190,9 @@ def working_prose_policy(content: Mapping[str, Any]) -> dict[str, Any] | None:
             not isinstance(q, str) or not q.strip() or len(q) > 200
             for q in value["queries"]
         )
+        or task_policy and any(type(value.get(key)) is not int or not low <= value[key] <= high
+            for key, low, high in (("recent_tail_paragraphs", 1, 32), ("retrieval_passages", 1, 128),
+                ("retrieval_per_chapter", 1, 32), ("neighbor_paragraphs", 0, 4), ("passage_characters", 64, 8000)))
     ):
         raise KernelError(
             "WORKING_PROSE_POLICY_INVALID",
@@ -191,9 +208,14 @@ def _paragraph_ranges(text: str) -> list[tuple[int, int]]:
 
 def project_working_sources(
     sources: list[dict[str, Any]], *, target_chapter: int, policy: Mapping[str, Any],
-    memory: Mapping[str, Any] | None = None,
+    memory: Mapping[str, Any] | None = None, task: Mapping[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     policy = working_prose_policy({"working_prose_policy": policy})
+    if policy["version"] in TASK_POLICY_VERSIONS:
+        from .working_selection import select_working_context
+        selection = select_working_context(sources, target_chapter=target_chapter, policy=policy, task=task, memory=memory)
+        return _project_ranges(sources, {(row["chapter"], row["start"], row["end"]) for row in selection["passages"]},
+            passage_characters=policy["passage_characters"])
     units = [
         (row["chapter"], start, end, row["text"][start:end])
         for row in sources
@@ -240,11 +262,16 @@ def project_working_sources(
             chosen.add((number, start, end))
             chosen_numbers.add(number)
             remaining -= len(text)
+    return _project_ranges(sources, chosen)
+
+
+def _project_ranges(sources: list[dict[str, Any]], chosen: set[tuple[int, int, int]], *, passage_characters: int | None = None) -> list[dict[str, Any]]:
+    from .working_selection import task_passage_ranges
     projected = []
     for source in sources:
         text = source["text"]
         passages, omitted = [], []
-        for start, end in _paragraph_ranges(text):
+        for start, end in (task_passage_ranges(text, passage_characters) if passage_characters is not None else _paragraph_ranges(text)):
             if (source["chapter"], start, end) in chosen:
                 passages.append(
                     {
@@ -327,6 +354,36 @@ def working_source_rows(snapshot: Mapping[str, Any]) -> list[dict[str, Any]]:
     if numbers != list(range(1, snapshot["target_chapter"])):
         raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Long-form history requires every ordered predecessor version")
     return history["sources"]
+
+
+def working_auxiliary_source_refs(snapshot: Mapping[str, Any] | None) -> list[dict[str, str]]:
+    if snapshot is None or (snapshot.get("projection_policy") or {}).get("version") not in TASK_POLICY_VERSIONS:
+        return []
+    from novel_forge.modules.narrative_state.working_memory import validate_frozen_memory_source
+    task, memory = snapshot.get("retrieval_task"), snapshot.get("working_memory")
+    if (not isinstance(task, Mapping) or not isinstance(task.get("sources"), list)
+            or not isinstance(memory, Mapping) or not isinstance(memory.get("source_coverage"), list)):
+        raise KernelError("WORKING_AUXILIARY_SOURCE_INVALID", "Task dependencies require frozen task and observation sources")
+    candidates = list(task["sources"])
+    for row in memory["source_coverage"]:
+        if not isinstance(row, Mapping):
+            raise KernelError("WORKING_AUXILIARY_SOURCE_INVALID", "Observation coverage must retain its source identity")
+        reference = row.get("memory_source")
+        if reference is not None:
+            validate_frozen_memory_source(reference)
+            if reference["kind"] == "MANUSCRIPT_MEMORY":
+                candidates.append(reference)
+    references = {}
+    for source in candidates:
+        if not isinstance(source, Mapping) or any(not isinstance(source.get(key), str) or not source[key]
+                for key in ("asset_version_id", "content_hash")):
+            raise KernelError("WORKING_AUXILIARY_SOURCE_INVALID", "Auxiliary dependencies require exact version hashes")
+        pointer = {key: source[key] for key in ("asset_version_id", "content_hash")}
+        existing = references.get(pointer["asset_version_id"])
+        if existing is not None and existing != pointer:
+            raise KernelError("WORKING_AUXILIARY_SOURCE_CONFLICT", "One frozen asset version cannot have conflicting dependency hashes")
+        references[pointer["asset_version_id"]] = pointer
+    return list(references.values())
 
 
 def project_working_history_for_provider(snapshot: Mapping[str, Any], *, bounded_memory: bool = True) -> dict[str, Any]:
@@ -557,18 +614,33 @@ def validate_working_projection(
         )
     )
     if policy["version"] in LONGFORM_POLICY_VERSIONS:
-        if (numbers != sorted(set(numbers)) or policy["version"] != RETRIEVAL_POLICY_VERSION and len(numbers) > policy["history_chapters"]
+        if (numbers != sorted(set(numbers)) or policy["version"] not in RETRIEVAL_POLICY_VERSIONS and len(numbers) > policy["history_chapters"]
                 or not set(range(max(1, snapshot["target_chapter"] - policy["recent_complete_chapters"]), snapshot["target_chapter"])).issubset(numbers)):
             raise KernelError("WORKING_PROSE_HISTORY_INVALID", "Bounded long-form prose must retain every mandatory recent source")
         expected = numbers
+    if policy["version"] in TASK_POLICY_VERSIONS:
+        from .working_task import validate_working_task
+        from .working_selection import validate_working_selection
+        validate_working_task(snapshot.get("retrieval_task"), book=snapshot,
+            chapter=snapshot["target_chapter"], stage=(snapshot.get("retrieval_task") or {}).get("stage"),
+            extra_queries=policy["queries"])
+        task = snapshot["retrieval_task"]
+        chapter_plans = [source for source in task["sources"] if source["plan_kind"] == "chapter_plan"]
+        if (task["stage"] == "CHAPTER" and len(chapter_plans) != 1 or task["stage"] == "PLANNING" and chapter_plans):
+            raise KernelError("WORKING_TASK_STAGE_INVALID", "The task stage must match its frozen Planning or Chapter input")
+        validate_working_selection(snapshot)
     if policy["version"] in MEMORY_POLICY_VERSIONS or snapshot.get("working_memory") is not None:
-        from novel_forge.modules.narrative_state.working_memory import PROVIDER_MEMORY_VERSION, validate_memory_packet
-        if isinstance(snapshot["working_memory"], Mapping) and snapshot["working_memory"].get("version") == PROVIDER_MEMORY_VERSION and (
+        from novel_forge.modules.narrative_state.working_memory import PROVIDER_MEMORY_VERSIONS, validate_memory_packet
+        if isinstance(snapshot["working_memory"], Mapping) and snapshot["working_memory"].get("version") in PROVIDER_MEMORY_VERSIONS and (
                 policy["version"] not in LONGFORM_POLICY_VERSIONS
                 or snapshot.get("source_history", {}).get("contract_version") != "working-source-history-reference.v1"
                 or snapshot["working_memory"].get("source_coverage_hash") != snapshot["source_history"]["memory_source_coverage_hash"]):
             raise KernelError("WORKING_MEMORY_PACKET_INVALID", "Provider memory requires the exact complete host history reference")
         validate_memory_packet(snapshot["working_memory"], snapshot["sources"])
+        if policy["version"] in TASK_POLICY_VERSIONS:
+            selected_ids = {entry["observation_id"] for entry in snapshot["working_memory"]["entries"]}
+            if any(cause not in selected_ids for entry in snapshot["working_memory"]["entries"] for cause in entry["causes"]):
+                raise KernelError("WORKING_MEMORY_CAUSE_UNAVAILABLE", "Task memory must retain every selected observation's source-bound cause")
         if policy["version"] not in MEMORY_POLICY_VERSIONS:
             raise KernelError("WORKING_MEMORY_POLICY_INVALID", "Frozen older projections cannot acquire observations")
     if numbers != expected or (policy["max_characters"] is not None and characters > policy["max_characters"]):

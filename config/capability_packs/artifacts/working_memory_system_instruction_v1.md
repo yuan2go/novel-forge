@@ -1,0 +1,1 @@
+Extract fallible, source-bound working observations from the exact current manuscript only. Keep events, beliefs, hearsay, reader-only disclosures, future intentions and knowledge ownership separate. Return the frozen JSON schema. Never mutate prose, Canon, accepted state or active plans.

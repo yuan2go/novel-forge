@@ -9,7 +9,9 @@ from .domain import canonical_hash
 LEGACY_CONTRACT = 'planning-first-isolated-preparation-handoff.v1'
 CONTRACT = 'planning-first-isolated-preparation-handoff.v2'
 CAPACITY_CONTRACT = 'planning-first-isolated-preparation-handoff.v3'
-SUPPORTED_CONTRACTS = frozenset({LEGACY_CONTRACT, CONTRACT, CAPACITY_CONTRACT})
+ACKNOWLEDGED_CONTRACT = 'planning-acknowledged-preparation-handoff.v1'
+ACCOUNT_VERSION_CONTRACT = 'planning-acknowledged-preparation-handoff.v2'
+SUPPORTED_CONTRACTS = frozenset({LEGACY_CONTRACT, CONTRACT, CAPACITY_CONTRACT, ACKNOWLEDGED_CONTRACT, ACCOUNT_VERSION_CONTRACT})
 CONTEXT_CONTRACT = 'same-capacity-isolated-preparation.v1'
 LINEAGE_LINK_FAILURE = dict(error_code='PLANNING_ROUTING_LINEAGE_INVALID',
     error_message='PLANNING_ROUTING_LINEAGE_INVALID: Runtime successor lacks its exact native continuation',
@@ -77,7 +79,7 @@ def require_source(uow, *, source_operation_id, frozen):
                 return None
         members.append(dict(operation=operation, generation=generation, isolation=isolation, parent=parent))
         if not parent:
-            if command.get('runtime_continuation_id') or not isolation:
+            if command.get('runtime_continuation_id') or (not isolation and operation['status'] != 'RECONCILIATION_REQUIRED'):
                 return None
             break
         current = parent['source_operation_id']
@@ -136,6 +138,7 @@ def require_source(uow, *, source_operation_id, frozen):
         pack_snapshot_hash=snapshot_hash, sources=[dict(asset_version_id=context.asset_version_id, content_hash=context.content_hash)])
     retained, stopped, first_task, projection, original_route = [], [], None, None, None
     capacity_failures = []
+    original_entitlement = None
     for member in reversed(members):
         op, gen, isolation = member['operation'], member['generation'], member['isolation']
         identity = op['operation_id']
@@ -222,6 +225,8 @@ def require_source(uow, *, source_operation_id, frozen):
                 raise rejected
             if identity == original['operation_id'] and original_route is None:
                 original_route = deepcopy(receipt['provider_evidence']['production_execution']['route_snapshot'])
+                cost = receipt['provider_evidence'].get('cost') or {}
+                original_entitlement = deepcopy(cost.get('entitlement_snapshot')) if cost.get('accounting_basis') == 'ACCOUNT_ENTITLEMENT' else None
             retained.append(dict(operation_id=identity, external_effect_id=effect['external_effect_id'], request_hash=effect['request_hash'],
                 stage=stage, task_hash=canonical_hash(task), result_hash=canonical_hash(receipt['provider_evidence']['result']), receipt_contract=receipt_kind))
         stop['effect_ids'] = [effect['external_effect_id'] for effect, _, _ in effects]
@@ -248,7 +253,10 @@ def require_source(uow, *, source_operation_id, frozen):
         ('backend_id', 'backend'), ('reasoning_effort', 'reasoning'))}
     if (account_route.get('model_provider'), account_route.get('backend_id')) == (main['provider'], main['backend']):
         original_route['auth_profile_ref'] = account_route['auth_profile_ref']
-    proof = dict(contract_version=CAPACITY_CONTRACT if capacity_members else CONTRACT, source_operation_id=original['operation_id'], source_attempt_id=attempt_id,
+    acknowledged_anchor = anchor['isolation'] is None
+    if acknowledged_anchor and any(member['kind'] != 'ACKNOWLEDGED_CANCELLATION' for member in stopped):
+        raise rejected
+    proof = dict(contract_version=ACKNOWLEDGED_CONTRACT if acknowledged_anchor else CAPACITY_CONTRACT if capacity_members else CONTRACT, source_operation_id=original['operation_id'], source_attempt_id=attempt_id,
         custody_source_operation_id=source_operation_id, book_run_id=working['book_run_id'], current_chapter=book[0],
         accepted_through_chapter=book[1], input_snapshot_id=book[2], working_snapshot_hash=working['snapshot_hash'],
         context_asset_version_id=context.asset_version_id, context_content_hash=context.content_hash,
@@ -259,10 +267,10 @@ def require_source(uow, *, source_operation_id, frozen):
     proof['original_capacity_bindings'] = bindings
     current_op = members[0]['operation']
     parent = members[0]['parent']
-    return dict(mode='FIRST_ISOLATED_PREPARATION_CUSTODY', source_operation_id=source_operation_id,
+    return dict(mode='ACKNOWLEDGED_PREPARATION_CUSTODY' if acknowledged_anchor else 'FIRST_ISOLATED_PREPARATION_CUSTODY', source_operation_id=source_operation_id,
         command=frozen, version=int(current_op['version']), snapshot=snapshot, depth=(int(parent['chain_depth']) if parent else 0) + 1,
         evidence_asset_version_id=context.asset_version_id, evidence_hash=context.content_hash, fresh_preparation=proof,
-        source_operation_status=current_op['status'], source_release_sha=current_op.get('definition_snapshot', {}).get('commit_sha', snapshot.get('release_sha')), provider=original_route['model_provider'], route_evidence_operation_id=original['operation_id'])
+        original_account_entitlement=original_entitlement, source_operation_status=current_op['status'], source_release_sha=current_op.get('definition_snapshot', {}).get('commit_sha', snapshot.get('release_sha')), provider=original_route['model_provider'], route_evidence_operation_id=original['operation_id'])
 
 
 def _require_paused_intent(uow, effect, budget, rejected):
@@ -359,8 +367,11 @@ def target_runtime(application, source, target):
             ('model_backend_id', 'backend_id'), ('reasoning_effort', 'reasoning_effort')):
         if not route.get(original_key) or target.get(target_key) != route[original_key]:
             raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'First isolation custody retains the original model, reasoning, backend and authenticated account')
-    if route.get('auth_profile_ref') and target.get('auth_profile_ref') != route['auth_profile_ref']:
+    reconciliation = _cli_version_reconciliation(source, target)
+    if route.get('auth_profile_ref') and target.get('auth_profile_ref') != route['auth_profile_ref'] and reconciliation is None:
         raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'First isolation custody retains the frozen authenticated account')
+    if reconciliation is not None:
+        proof = {**proof, 'contract_version': ACCOUNT_VERSION_CONTRACT, 'account_version_reconciliation': reconciliation}
     allocated = json.loads(original['context_policy_payload_json'])['planning_task_token_budget']
     if type(allocated) is not int or not 0 < allocated <= 512_000:
         raise KernelError('PLANNING_PREPARATION_REUSE_DRIFT', 'Retain the original physical selection target')
@@ -369,24 +380,37 @@ def target_runtime(application, source, target):
             context_asset_version_id=proof['context_asset_version_id'], context_content_hash=proof['context_content_hash']))}
 
 
+
+def _cli_version_reconciliation(source, target):
+    from novel_forge.modules.production_execution.codex_configuration import reconcile_codex_cli_version_account
+    if source.get('mode') != 'ACKNOWLEDGED_PREPARATION_CUSTODY':
+        return None
+    return reconcile_codex_cli_version_account(account=target.get('account') or {},
+        original_entitlement=source.get('original_account_entitlement'),
+        source_auth_profile_ref=source['fresh_preparation']['original_route'].get('auth_profile_ref'),
+        target_auth_profile_ref=target.get('auth_profile_ref'))
+
+
 def _first_route_authorization(source, target):
     from novel_forge.modules.production_execution.codex_configuration import codex_local_binding_hash
     proof = source['fresh_preparation']
     route, account = proof['original_route'], target.get('account') or {}
     ancestry = proof.get('stopped_ancestry', [])
     reference = route.get('auth_profile_ref')
-    if (source.get('mode') != 'FIRST_ISOLATED_PREPARATION_CUSTODY'
-            or proof.get('contract_version') != CONTRACT or proof.get('source_operation_id') != source['source_operation_id']
+    acknowledged = source.get('mode') == 'ACKNOWLEDGED_PREPARATION_CUSTODY'
+    reconciliation = _cli_version_reconciliation(source, target)
+    if (source.get('mode') not in {'FIRST_ISOLATED_PREPARATION_CUSTODY', 'ACKNOWLEDGED_PREPARATION_CUSTODY'}
+            or proof.get('contract_version') != (ACKNOWLEDGED_CONTRACT if acknowledged else CONTRACT) or proof.get('source_operation_id') != source['source_operation_id']
             or proof.get('custody_source_operation_id') != source['source_operation_id']
-            or proof.get('main_dispatch_count') != 0 or proof.get('isolated_generation_count') != 1
+            or proof.get('main_dispatch_count') != 0 or proof.get('isolated_generation_count') != (0 if acknowledged else 1)
             or proof.get('source_submission_rights') != 'REVOKED_OR_TERMINALLY_RELEASED'
-            or len(ancestry) != 1 or ancestry[0].get('kind') != 'ISOLATED'
+            or len(ancestry) != 1 or ancestry[0].get('kind') != ('ACKNOWLEDGED_CANCELLATION' if acknowledged else 'ISOLATED')
             or ancestry[0].get('operation_id') != source['source_operation_id']
             or not proof.get('retained_preparation') or not isinstance(reference, str) or not reference
             or target.get('model_provider') != 'codex-cli' or target.get('cost_accounting_basis') != 'ACCOUNT_ENTITLEMENT'
             or not all(isinstance(account.get(key), str) and account[key] for key in ('codex_home', 'executable'))
             or not isinstance(account.get('entitlement'), dict) or not account['entitlement']
-            or target.get('auth_profile_ref') != reference):
+            or target.get('auth_profile_ref') != reference and reconciliation is None):
         raise KernelError('PLANNING_RUNTIME_CONTINUATION_ACCOUNT_DRIFT',
             'First recovery requires its exact isolated owner, settled native preparation and authenticated membership route')
     target_runtime(None, source, target)
@@ -397,13 +421,14 @@ def _first_route_authorization(source, target):
     except (TypeError, ValueError) as error:
         raise KernelError('PLANNING_RUNTIME_CONTINUATION_ACCOUNT_DRIFT',
             'Original membership recovery requires a supported frozen local configuration') from error
-    if not reference.endswith(':codex:' + binding):
+    if not target['auth_profile_ref'].endswith(':codex:' + binding):
         raise KernelError('PLANNING_RUNTIME_CONTINUATION_ACCOUNT_DRIFT',
             'Current account, executable and configuration must reconstruct the original verified preparation authentication')
     return dict(reasoning_evidence_source='ORIGINAL_FROZEN_MAIN_ROUTE',
         authorized_reasoning_effort=route['reasoning_effort'], account_evidence_source='VERIFIED_PREPARATION_AND_MAIN_ROUTE',
         source_auth_profile_ref=reference, source_operation_id=source['source_operation_id'],
-        source_pack_snapshot_hash=proof['original_pack_snapshot_hash'], account_runtime_hash=canonical_hash(account))
+        source_pack_snapshot_hash=proof['original_pack_snapshot_hash'], account_runtime_hash=canonical_hash(account),
+        **({'account_version_reconciliation': reconciliation} if reconciliation is not None else {}))
 
 
 def authorization(uow, *, source, successor, principal, target):
@@ -413,7 +438,7 @@ def authorization(uow, *, source, successor, principal, target):
         authorized_reasoning_effort=source['fresh_preparation']['original_route']['reasoning_effort'])
         if source['command'].get('runtime_continuation_id') or source['provider'] == 'scripted_provider_v2'
         else _first_route_authorization(source, target))
-    return {**capacity, 'capacity_only': False, 'recovery_kind': 'FIRST_ISOLATED_PREPARATION_CUSTODY',
+    return {**capacity, 'capacity_only': False, 'recovery_kind': source['mode'],
         'route_authorization': route, 'preserved_repair_number': successor.repair_number,
         'retained_preparation_count': len(source['fresh_preparation']['retained_preparation']),
         'generation_recovery_number': source['fresh_preparation']['isolated_generation_count']}

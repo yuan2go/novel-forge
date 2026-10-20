@@ -1,0 +1,25 @@
+{
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "record_type": "ACTUAL_PAUSED_BOOK_NATIVE_DISPATCH_GUARD",
+  "book_state": "PAUSED",
+  "current_chapter": 25,
+  "book_version": 212,
+  "observed_rejection_code": "RUNTIME_DISPATCH_PAUSED",
+  "external_effects_created": 0,
+  "operations": [
+    {
+      "operation_id": "f05e9305-9f1c-4e60-881f-18c34d11b922",
+      "status": "FAILED_FINAL"
+    },
+    {
+      "operation_id": "740ebc7b-0c01-4142-9b60-6850fc488204",
+      "status": "FAILED_FINAL"
+    },
+    {
+      "operation_id": "4a064a1e-ef70-4f3d-b5f2-101f7ac3055a",
+      "status": "RECONCILIATION_REQUIRED"
+    }
+  ],
+  "held_leases": 0,
+  "boundary": "Actual retained native paused Book, read-only guard invocation; old UNKNOWN and pending cancellation histories are preserved. This does not execute a new Provider call or claim a fully settled cancellation."
+}

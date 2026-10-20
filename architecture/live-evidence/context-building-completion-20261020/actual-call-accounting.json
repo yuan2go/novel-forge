@@ -1,0 +1,3510 @@
+{
+  "record_type": "THREE_ISOLATED_ROUNDS_DEDUPLICATED_ACTUAL_CALL_ACCOUNTING",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "unique_effects": 161,
+  "actual_local_processes": 158,
+  "stages": {
+    "working_memory_extract": {
+      "unique_effects": 34,
+      "actual_local_processes": 34,
+      "process_status": {
+        "SUCCEEDED": 34
+      },
+      "measured_input_tokens": 3040477,
+      "measured_output_tokens": 193627,
+      "reasoning_output_tokens_subset": 3158,
+      "process_elapsed_ms": 3007427,
+      "usage_unavailable_processes": 0
+    },
+    "chapter_group_plan.generate": {
+      "unique_effects": 19,
+      "actual_local_processes": 17,
+      "process_status": {
+        "SUCCEEDED": 17
+      },
+      "measured_input_tokens": 1822473,
+      "measured_output_tokens": 209947,
+      "reasoning_output_tokens_subset": 3556,
+      "process_elapsed_ms": 3692755,
+      "usage_unavailable_processes": 0
+    },
+    "chapter_plan.generate": {
+      "unique_effects": 18,
+      "actual_local_processes": 18,
+      "process_status": {
+        "SUCCEEDED": 18
+      },
+      "measured_input_tokens": 2276462,
+      "measured_output_tokens": 180992,
+      "reasoning_output_tokens_subset": 5106,
+      "process_elapsed_ms": 3057582,
+      "usage_unavailable_processes": 0
+    },
+    "draft": {
+      "unique_effects": 17,
+      "actual_local_processes": 17,
+      "process_status": {
+        "SUCCEEDED": 13,
+        "FAILED": 4
+      },
+      "measured_input_tokens": 1684469,
+      "measured_output_tokens": 58176,
+      "reasoning_output_tokens_subset": 2382,
+      "process_elapsed_ms": 5235890,
+      "usage_unavailable_processes": 4
+    },
+    "review": {
+      "unique_effects": 9,
+      "actual_local_processes": 9,
+      "process_status": {
+        "SUCCEEDED": 9
+      },
+      "measured_input_tokens": 784702,
+      "measured_output_tokens": 9078,
+      "reasoning_output_tokens_subset": 1203,
+      "process_elapsed_ms": 268076,
+      "usage_unavailable_processes": 0
+    },
+    "revision": {
+      "unique_effects": 9,
+      "actual_local_processes": 9,
+      "process_status": {
+        "SUCCEEDED": 9
+      },
+      "measured_input_tokens": 717320,
+      "measured_output_tokens": 42798,
+      "reasoning_output_tokens_subset": 1286,
+      "process_elapsed_ms": 659030,
+      "usage_unavailable_processes": 0
+    },
+    "rereview": {
+      "unique_effects": 9,
+      "actual_local_processes": 9,
+      "process_status": {
+        "SUCCEEDED": 9
+      },
+      "measured_input_tokens": 788600,
+      "measured_output_tokens": 9990,
+      "reasoning_output_tokens_subset": 1331,
+      "process_elapsed_ms": 246872,
+      "usage_unavailable_processes": 0
+    },
+    "context_compress": {
+      "unique_effects": 15,
+      "actual_local_processes": 15,
+      "process_status": {
+        "SUCCEEDED": 15
+      },
+      "measured_input_tokens": 521695,
+      "measured_output_tokens": 2546,
+      "reasoning_output_tokens_subset": 1796,
+      "process_elapsed_ms": 211423,
+      "usage_unavailable_processes": 0
+    },
+    "context_fidelity": {
+      "unique_effects": 31,
+      "actual_local_processes": 30,
+      "process_status": {
+        "SUCCEEDED": 30
+      },
+      "measured_input_tokens": 1078934,
+      "measured_output_tokens": 7481,
+      "reasoning_output_tokens_subset": 3109,
+      "process_elapsed_ms": 495154,
+      "usage_unavailable_processes": 0
+    }
+  },
+  "monetary_cost": "UNKNOWN",
+  "effects": [
+    {
+      "external_effect_id": "46196214-d277-4957-9f97-b0d2547c7c19",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "a7c83133c6f635dd23a86b7b96dfe2b910486368",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:ab0d55448ecd279b9ab88fa5"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 921,
+          "receipt_id": "process-receipt:ab0d55448ecd279b9ab88fa5",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "c47a4659-0b89-444f-ac25-e27f483bddf1",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "bbd4c357248cd9acbfa3ed7a402de2f093fb1b39",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:c215874f143e17356edc9e35"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 922,
+          "receipt_id": "process-receipt:c215874f143e17356edc9e35",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "d725a490-9145-4c36-ac3c-71ad6bd61baf",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "bbd4c357248cd9acbfa3ed7a402de2f093fb1b39",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:db61f4edb57dd681bc98ac60"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 923,
+          "receipt_id": "process-receipt:db61f4edb57dd681bc98ac60",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "c2acdb5d-1c62-463a-9159-ccc9de37a0e4",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "bbd4c357248cd9acbfa3ed7a402de2f093fb1b39",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:020f6353f0c08d34b1ade0af"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 924,
+          "receipt_id": "process-receipt:020f6353f0c08d34b1ade0af",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "6f174e57-457d-4baf-ae80-d1f396dba7b0",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "bbd4c357248cd9acbfa3ed7a402de2f093fb1b39",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:a95fb0738a88fc794be63250"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 925,
+          "receipt_id": "process-receipt:a95fb0738a88fc794be63250",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "68142820-7c88-458b-9dcd-0fca65e90ba6",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "bbd4c357248cd9acbfa3ed7a402de2f093fb1b39",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:199c90f9f0eab0ad3bf629d6"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 926,
+          "receipt_id": "process-receipt:199c90f9f0eab0ad3bf629d6",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "741e2b42-a74c-4ef7-8e4a-cca048622ac1",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "bbd4c357248cd9acbfa3ed7a402de2f093fb1b39",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:6b637b2ed403a352551b871c"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 927,
+          "receipt_id": "process-receipt:6b637b2ed403a352551b871c",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "21a01a68-71f6-492f-a05e-03b3813bd005",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "bbd4c357248cd9acbfa3ed7a402de2f093fb1b39",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:e9d317601171d04848a4c2f1"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 928,
+          "receipt_id": "process-receipt:e9d317601171d04848a4c2f1",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "1e64c60a-5b4c-47e3-b72a-e75bd0c2ef59",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "bbd4c357248cd9acbfa3ed7a402de2f093fb1b39",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:300d3c342db49532ac777cb4"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 929,
+          "receipt_id": "process-receipt:300d3c342db49532ac777cb4",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "bd0a07b7-34a1-4b8b-b4c1-ca8f32783809",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "bbd4c357248cd9acbfa3ed7a402de2f093fb1b39",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:169953dbb25b8d1909475cb4"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 930,
+          "receipt_id": "process-receipt:169953dbb25b8d1909475cb4",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "d4d577b8-7610-4f2e-ab35-7c577c5a87e1",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "bbd4c357248cd9acbfa3ed7a402de2f093fb1b39",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:f319c40527c99fbe67c7fe1a"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 931,
+          "receipt_id": "process-receipt:f319c40527c99fbe67c7fe1a",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "ec59ab20-b0a2-4a04-a3cf-4041e5dd27f4",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "a62d413994a30d4581872aaf7a5b4843de03ea84",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:f95de12c8956036e8dc8c847"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 932,
+          "receipt_id": "process-receipt:f95de12c8956036e8dc8c847",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "f8ecfc39-edf1-4673-a910-8f9c639309b4",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "a62d413994a30d4581872aaf7a5b4843de03ea84",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:f4c0a220076ab81d6c163bb3"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 933,
+          "receipt_id": "process-receipt:f4c0a220076ab81d6c163bb3",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "f9b3a1c4-51ed-4d09-af37-476e3a0e399d",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "a62d413994a30d4581872aaf7a5b4843de03ea84",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:471451c00ffdaeaa393ba412"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 934,
+          "receipt_id": "process-receipt:471451c00ffdaeaa393ba412",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "b652346b-a74d-4c9a-a06a-567cb01f25ae",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "a62d413994a30d4581872aaf7a5b4843de03ea84",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:355b76652b2314da5caaebfd"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 935,
+          "receipt_id": "process-receipt:355b76652b2314da5caaebfd",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "7d813d59-6766-4f56-ac5f-f9c91668b420",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "a62d413994a30d4581872aaf7a5b4843de03ea84",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:417ee593d44f136b05caf900"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 936,
+          "receipt_id": "process-receipt:417ee593d44f136b05caf900",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "2ca25fd7-bce9-4a03-8cf0-dba13891814e",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "a62d413994a30d4581872aaf7a5b4843de03ea84",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:7868bea1c15be64865913dd6"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 937,
+          "receipt_id": "process-receipt:7868bea1c15be64865913dd6",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "5be299c6-5af4-408e-94d7-0021032da61b",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "a62d413994a30d4581872aaf7a5b4843de03ea84",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:a340a18b9162d2d59bc21ce0"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 938,
+          "receipt_id": "process-receipt:a340a18b9162d2d59bc21ce0",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "3b91d7e8-0dc3-4d59-982d-4497d9c8bc2d",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "a62d413994a30d4581872aaf7a5b4843de03ea84",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:0fd385b40bc2bc4b5cf12827"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 939,
+          "receipt_id": "process-receipt:0fd385b40bc2bc4b5cf12827",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "a4a7a8d9-ffe8-4ca3-b273-2a51fdbb1e1e",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "a62d413994a30d4581872aaf7a5b4843de03ea84",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:364512de221de4dea62e9c97"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 940,
+          "receipt_id": "process-receipt:364512de221de4dea62e9c97",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "74884182-f84d-4bcb-ba88-12076aaab272",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "a62d413994a30d4581872aaf7a5b4843de03ea84",
+      "databases": [
+        "nf_context_acceptance",
+        "nf_context_final_acceptance",
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:a564e4c3c6945dfc8bf50849"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 941,
+          "receipt_id": "process-receipt:a564e4c3c6945dfc8bf50849",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "a3a57783-01f9-4484-b40a-fe60b230b822",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "c1f074bb072f64c9809f5e59b3f7fc8f2a2cb1a9",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:feb777e0e69670f7cac5b1fa"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 942,
+          "receipt_id": "process-receipt:feb777e0e69670f7cac5b1fa",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "d87a665d-cfd6-49e5-ae1d-e16d853243c0",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "c1f074bb072f64c9809f5e59b3f7fc8f2a2cb1a9",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:81010f2e81112ffa2484e201"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 943,
+          "receipt_id": "process-receipt:81010f2e81112ffa2484e201",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "c7a1cb55-0f36-4b0c-ace3-bfd887903c3a",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "c1f074bb072f64c9809f5e59b3f7fc8f2a2cb1a9",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "FAILED_RETRYABLE",
+      "operation_status": "CANCELLED",
+      "local_process_receipt_ids": [],
+      "native_receipts": []
+    },
+    {
+      "external_effect_id": "0c391ada-8330-49d7-8eb0-de0fae30e0b1",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "ae81e2d8606966ef18d502c1146274e89192f166",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:09dabcbf57bfe328391e47dd"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 944,
+          "receipt_id": "process-receipt:09dabcbf57bfe328391e47dd",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "443e2e35-face-4cab-9821-9ae9299301b5",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "ae81e2d8606966ef18d502c1146274e89192f166",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "FAILED_RETRYABLE",
+      "operation_status": "CANCELLATION_REQUESTED",
+      "local_process_receipt_ids": [],
+      "native_receipts": []
+    },
+    {
+      "external_effect_id": "46922549-1e9c-4ca9-af0c-f602fac7f62f",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:14253cd89afcb0ae12bb777e"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 945,
+          "receipt_id": "process-receipt:14253cd89afcb0ae12bb777e",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "2c9fd442-60a1-4ffc-ad30-1df9521b8d30",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:06fb397d6e4aa5dd4851ac93"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 946,
+          "receipt_id": "process-receipt:06fb397d6e4aa5dd4851ac93",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "0b170461-b276-4b86-a736-e7e9d5ba92c2",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:0816e792afd0c5c2e9a9d0d5"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 947,
+          "receipt_id": "process-receipt:0816e792afd0c5c2e9a9d0d5",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "f3e691b0-4512-41ed-a9b7-860c713076b3",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:6130ea242e4c6af6340f2f08"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 948,
+          "receipt_id": "process-receipt:6130ea242e4c6af6340f2f08",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "e2a37658-5c4e-452d-aff3-3f76d7814cdb",
+      "stage": "draft",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:27c74cbf8324f47cc4c176dd"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 949,
+          "receipt_id": "process-receipt:27c74cbf8324f47cc4c176dd",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "49d97c6a-b0a3-49fd-a502-533063df16bb",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:0227194fbddd3ab5216bb96c"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 950,
+          "receipt_id": "process-receipt:0227194fbddd3ab5216bb96c",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "ce2e440a-8aa2-4641-ab44-da096efea901",
+      "stage": "draft",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:dd4d78c9354bb9ba772953ae"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 951,
+          "receipt_id": "process-receipt:dd4d78c9354bb9ba772953ae",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "760df2e4-c8dd-49aa-aba3-e2c40547e4fd",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:dceb9f036d12ed9be1636d73"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 953,
+          "receipt_id": "process-receipt:dceb9f036d12ed9be1636d73",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "23d9bc6d-4ca5-4e8c-b17f-8bf50f14c7d9",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:51834b0b8f67d0a88ad8ffed"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 952,
+          "receipt_id": "process-receipt:51834b0b8f67d0a88ad8ffed",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "2995e1b4-4217-42af-a4f9-48c37eb4eca3",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:0db01a65e652ee4ba083bec3"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 954,
+          "receipt_id": "process-receipt:0db01a65e652ee4ba083bec3",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "8acde8e1-c5de-4eec-8376-07cf0cf2d624",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:1d5aec9152f7389f9e4ee0ae"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 955,
+          "receipt_id": "process-receipt:1d5aec9152f7389f9e4ee0ae",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "ef1342ba-c8f7-4819-b7fa-816370967753",
+      "stage": "draft",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:33a67314ea8b598a19c6a21c"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 956,
+          "receipt_id": "process-receipt:33a67314ea8b598a19c6a21c",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "d533c099-dbd4-4184-9c41-39ac092b2374",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:31b29896299ae9c4d808d7c4"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 957,
+          "receipt_id": "process-receipt:31b29896299ae9c4d808d7c4",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "80bfedc1-3107-4ecc-a5ed-ad6e53202d91",
+      "stage": "draft",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_acceptance"
+      ],
+      "effect_status": "UNKNOWN",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:3054191efcf8011193139ed9"
+      ],
+      "native_receipts": []
+    },
+    {
+      "external_effect_id": "8d6c890b-7834-48d2-8e7b-d155eb2608f8",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:b7ded8a33fda0dd1dbf86ab4"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 942,
+          "receipt_id": "process-receipt:b7ded8a33fda0dd1dbf86ab4",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "87a33816-cd20-4258-b8c4-c57f41be4de5",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:c670a4553315f1f7988341b0"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 943,
+          "receipt_id": "process-receipt:c670a4553315f1f7988341b0",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "6756f003-3149-44c6-8e6e-e076255a9ef4",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:1d879f459df9d01229392b31"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 944,
+          "receipt_id": "process-receipt:1d879f459df9d01229392b31",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "84ff8a08-1ee4-478a-a239-01d159a0a4ee",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:4843d77d2ac245cb04f327e9"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 945,
+          "receipt_id": "process-receipt:4843d77d2ac245cb04f327e9",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "3c264706-8c1e-4692-8970-4d3caa9c4645",
+      "stage": "draft",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:27e81b5fa2dc3d5ec8bbc71b"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 946,
+          "receipt_id": "process-receipt:27e81b5fa2dc3d5ec8bbc71b",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "e7795f72-09bd-4053-aad7-2c50a60c0153",
+      "stage": "review",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:4ce63778aa696823736aa009"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 947,
+          "receipt_id": "process-receipt:4ce63778aa696823736aa009",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "2d0bea7d-8fc3-4483-ad21-bbcee0c56ab6",
+      "stage": "revision",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:31f07a4005d6cffcbc38df34"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 948,
+          "receipt_id": "process-receipt:31f07a4005d6cffcbc38df34",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "0da5c2d4-5f99-4229-b93c-fbfd55bcdb7d",
+      "stage": "rereview",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:8b0a8b69d90829583c8dffad"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 949,
+          "receipt_id": "process-receipt:8b0a8b69d90829583c8dffad",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "2ee3f1d8-a3e7-4984-9f70-e2e0f781e352",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:0d3b5612cad60cbd20d0cb45"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 950,
+          "receipt_id": "process-receipt:0d3b5612cad60cbd20d0cb45",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "6a743c97-7289-43db-892f-952b8286e4c8",
+      "stage": "draft",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:b80346cfe342f5b1faabc836"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 951,
+          "receipt_id": "process-receipt:b80346cfe342f5b1faabc836",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "7c11c4f1-c629-44f6-8c5b-216da8a3c568",
+      "stage": "review",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:5dd7f70019d79f6d5c516b9f"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 952,
+          "receipt_id": "process-receipt:5dd7f70019d79f6d5c516b9f",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "6b73f8f7-052a-4668-9940-a87fbd0ec77a",
+      "stage": "revision",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:18abceab50ad8c83f36df9a0"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 953,
+          "receipt_id": "process-receipt:18abceab50ad8c83f36df9a0",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "4b5dce78-2bc0-47a1-9e43-c4d8e7c869f7",
+      "stage": "rereview",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:c7a0c52530056a8485c31a5c"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 954,
+          "receipt_id": "process-receipt:c7a0c52530056a8485c31a5c",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "31cb9268-0279-4d1d-b279-c149c8839453",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:b846ef6893080e6234611050"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 955,
+          "receipt_id": "process-receipt:b846ef6893080e6234611050",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "d98cbcde-dbf3-43e1-884d-b656d511ff5a",
+      "stage": "draft",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:5215c073e7f7e4358ba918a5"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 956,
+          "receipt_id": "process-receipt:5215c073e7f7e4358ba918a5",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "b4880953-980d-4803-9417-8d21c83efa7e",
+      "stage": "review",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:3e3abc4e715eab0645c11deb"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 957,
+          "receipt_id": "process-receipt:3e3abc4e715eab0645c11deb",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "8fb2913b-f4be-4ad4-b2a4-1340a5e0d3f6",
+      "stage": "revision",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:cf40564efd89015e769c56b4"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 958,
+          "receipt_id": "process-receipt:cf40564efd89015e769c56b4",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "b6c21dd7-e1b1-41c1-96bf-2b7b61b842a7",
+      "stage": "rereview",
+      "operation_definition_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:d8b3ace39275fa1e779ed735"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 959,
+          "receipt_id": "process-receipt:d8b3ace39275fa1e779ed735",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "56c092ff-c52a-4dfb-b749-f8e0553bc590",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "9be655c8b0180576fca20550d8415ac84630a9cd",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:0938cdd2169fef7a12aafb7e"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 960,
+          "receipt_id": "process-receipt:0938cdd2169fef7a12aafb7e",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "e5becdd4-075b-4ff9-9704-8638a3d82a3a",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "b4b5efaa4511fc8a64a7cb043d06566386b48117",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:172a679c30a7131789a6b7b4"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 961,
+          "receipt_id": "process-receipt:172a679c30a7131789a6b7b4",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "ebd90ffd-9814-4fa5-b6b7-a44d8cded922",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "b4b5efaa4511fc8a64a7cb043d06566386b48117",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:5de1362082400e152ee4fa46"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 962,
+          "receipt_id": "process-receipt:5de1362082400e152ee4fa46",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "23bca711-71f2-4617-95cb-679ab64ff858",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:4c481456bb064d9a55f958e1"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 963,
+          "receipt_id": "process-receipt:4c481456bb064d9a55f958e1",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "a839cb70-d91f-49a4-b4f5-a106f4b247ad",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:9490b8c632d17f4efe3c7946"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 964,
+          "receipt_id": "process-receipt:9490b8c632d17f4efe3c7946",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "c0f90457-be40-4c6d-899d-2836816349f7",
+      "stage": "draft",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:fabe2dd0d833641519ebe1cf"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 965,
+          "receipt_id": "process-receipt:fabe2dd0d833641519ebe1cf",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "ebb6b978-4519-4dc8-be7d-83fec0f2e91e",
+      "stage": "review",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:e9a9734fa2187de793c5b97c"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 966,
+          "receipt_id": "process-receipt:e9a9734fa2187de793c5b97c",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "6f80fc91-d3d1-4e9d-9325-ae99ffc09799",
+      "stage": "revision",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:aa75c113e63f41b9c07e271f"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 967,
+          "receipt_id": "process-receipt:aa75c113e63f41b9c07e271f",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "dff92521-a0ca-4962-83ae-ee44dc1ae58a",
+      "stage": "rereview",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:054de9b561324c346ae52252"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 968,
+          "receipt_id": "process-receipt:054de9b561324c346ae52252",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "e5783ef8-0645-464c-802b-798825ae95ed",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:ef12c76c1c746874bd8dcd39"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 969,
+          "receipt_id": "process-receipt:ef12c76c1c746874bd8dcd39",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "6c439e17-363b-4394-93a9-9193cfb071a8",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:f0342668aee5fba9c1d609e5"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 970,
+          "receipt_id": "process-receipt:f0342668aee5fba9c1d609e5",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "d802e5af-699e-4293-8057-3f4b5a7c1389",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:3f0e96e5cd40de5e79b79bf0"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 971,
+          "receipt_id": "process-receipt:3f0e96e5cd40de5e79b79bf0",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "78a541da-23fa-4b91-9345-27a2f57e02fe",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:12dad1b54db6ff8a8f15ddf7"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 972,
+          "receipt_id": "process-receipt:12dad1b54db6ff8a8f15ddf7",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "056388b9-e567-4c72-80a8-35dffde663f3",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:3523fffd87f0fe8210f7c434"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 973,
+          "receipt_id": "process-receipt:3523fffd87f0fe8210f7c434",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "5d64d620-45a6-48d0-8cd1-3c4cf2ae9dee",
+      "stage": "draft",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:84d769d09bfa9fff49cd66a5"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 974,
+          "receipt_id": "process-receipt:84d769d09bfa9fff49cd66a5",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "98ac5a94-5a63-43a7-9d2e-6a3eda69d7d6",
+      "stage": "review",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:bbeee0393073823d710ee0a0"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 975,
+          "receipt_id": "process-receipt:bbeee0393073823d710ee0a0",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "391d5dd8-9b93-4f17-89ca-744aaa9881dd",
+      "stage": "revision",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:729d0285f7625a10acbaddf8"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 976,
+          "receipt_id": "process-receipt:729d0285f7625a10acbaddf8",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "f9bc073a-fbec-4a0b-8dc7-ef1cb0d33a28",
+      "stage": "rereview",
+      "operation_definition_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:9d5d7d5a69ce589d97b5548a"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 977,
+          "receipt_id": "process-receipt:9d5d7d5a69ce589d97b5548a",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "391bbf69-163c-4aad-9f43-f35ac13c4a7b",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:e03edcf23ccd9bfa88de473b"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 978,
+          "receipt_id": "process-receipt:e03edcf23ccd9bfa88de473b",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "7286a69b-d444-4f94-87b0-1f83e42c09e8",
+      "stage": "context_compress",
+      "operation_definition_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [
+        "process-receipt:5e22674a47d9a8b38c18ba75"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 979,
+          "receipt_id": "process-receipt:5e22674a47d9a8b38c18ba75",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "86e89bdb-e0f3-47bf-9c32-e86a82c55d70",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [
+        "process-receipt:5991a314d42e975eca9da433"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 980,
+          "receipt_id": "process-receipt:5991a314d42e975eca9da433",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "8964f6b0-d566-4f50-ba95-a27c0602e478",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [
+        "process-receipt:460bc7bf2f25de6309f8a30c"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 981,
+          "receipt_id": "process-receipt:460bc7bf2f25de6309f8a30c",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "93efe787-6d1c-40b2-901e-7387180dd6da",
+      "stage": "context_compress",
+      "operation_definition_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [
+        "process-receipt:8ee87d2b569565d9de25fa49"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 982,
+          "receipt_id": "process-receipt:8ee87d2b569565d9de25fa49",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "355c0a2a-d0b4-4ceb-a593-60a289b70ab1",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [
+        "process-receipt:6ef7bd3e3b119167e8fd9ac8"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 983,
+          "receipt_id": "process-receipt:6ef7bd3e3b119167e8fd9ac8",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "71d2a404-7211-4f60-a446-76a9c092fd52",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [
+        "process-receipt:8396f11d13bb3df134605236"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 984,
+          "receipt_id": "process-receipt:8396f11d13bb3df134605236",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "7352581a-4ea4-4245-90ed-46cc23f1e7f5",
+      "stage": "context_compress",
+      "operation_definition_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [
+        "process-receipt:7f9140eca525fa7cf4a367ae"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 985,
+          "receipt_id": "process-receipt:7f9140eca525fa7cf4a367ae",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "b3576852-2d94-4248-8138-917d0db7fa38",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [
+        "process-receipt:4fa261c11f97de5d8907270e"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 986,
+          "receipt_id": "process-receipt:4fa261c11f97de5d8907270e",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "6a57b3d5-71ef-4c75-b585-176e3be191a8",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [
+        "process-receipt:1bc751a67c0f8dcee98913d9"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 987,
+          "receipt_id": "process-receipt:1bc751a67c0f8dcee98913d9",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "25e9bb42-6bc8-4ce6-b21c-4e831c1949a5",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [
+        "process-receipt:63006394d38f4a9c65f267ec"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 988,
+          "receipt_id": "process-receipt:63006394d38f4a9c65f267ec",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "59c79d69-4210-41fb-ad87-3c3b26134337",
+      "stage": "context_compress",
+      "operation_definition_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [
+        "process-receipt:eee30976337e43f01c6eecc8"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 989,
+          "receipt_id": "process-receipt:eee30976337e43f01c6eecc8",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "f1101e35-594d-4c83-98d5-a4708fcdbd1d",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "FAILED_RETRYABLE",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [],
+      "native_receipts": []
+    },
+    {
+      "external_effect_id": "3cf8e55c-802b-4919-8f8c-c7f560ce2fa1",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:e5c2c8584abfb0b983741fd5"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 990,
+          "receipt_id": "process-receipt:e5c2c8584abfb0b983741fd5",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "63b40016-36c5-492b-813c-0b097c7f2a44",
+      "stage": "context_compress",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:0fb8abb7a4b3ef99ca900813"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 991,
+          "receipt_id": "process-receipt:0fb8abb7a4b3ef99ca900813",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "9582dee1-6553-4e3c-b07a-31be535353e8",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:6031d19474fa58ba6fc2cb4c"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 992,
+          "receipt_id": "process-receipt:6031d19474fa58ba6fc2cb4c",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "d06059ba-ae8b-4468-a342-fe6764150990",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:7f205bff67061749ee25d21f"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 993,
+          "receipt_id": "process-receipt:7f205bff67061749ee25d21f",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "db9bff87-cdb6-4e7a-9611-1c75f6139eba",
+      "stage": "context_compress",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:654784d07d73ce2caf371319"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 994,
+          "receipt_id": "process-receipt:654784d07d73ce2caf371319",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "2ef0f6b7-9d60-4932-8d95-a9566d5d4bd4",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:43286f812122087e66329b83"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 995,
+          "receipt_id": "process-receipt:43286f812122087e66329b83",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "a058caed-c503-47f2-bac8-842dc1ab76f3",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:2092695b5abd4bfa4b1beebc"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 996,
+          "receipt_id": "process-receipt:2092695b5abd4bfa4b1beebc",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "a1d38b88-7d19-4922-ae5e-d25dae8b450a",
+      "stage": "context_compress",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:18338d7bab56e93f7af132b7"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 997,
+          "receipt_id": "process-receipt:18338d7bab56e93f7af132b7",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "1aba3e87-7f25-4383-9875-822dd83a17e3",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:3f9f72c4adf3cc36dbf27bed"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 998,
+          "receipt_id": "process-receipt:3f9f72c4adf3cc36dbf27bed",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "3557410f-51b9-4472-a305-9aabbfd86850",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:396063d18c1c0a306c5efbf5"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 999,
+          "receipt_id": "process-receipt:396063d18c1c0a306c5efbf5",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "1dd34312-ed14-49a0-b10b-73e29e4f3001",
+      "stage": "context_compress",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:30dc65899a0a416a846060cc"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1000,
+          "receipt_id": "process-receipt:30dc65899a0a416a846060cc",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "be24e326-64a2-4189-84a6-f8a778103af6",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:8b843522e6c5831f8eaf153f"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1001,
+          "receipt_id": "process-receipt:8b843522e6c5831f8eaf153f",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "043fadfd-c43e-4fb9-9bda-ae59e275690a",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:4100abb56fe732de0456cfc5"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1002,
+          "receipt_id": "process-receipt:4100abb56fe732de0456cfc5",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "cd2bcf76-3bf3-4b66-8986-8bf4c6173242",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:3fc269423c89ad4c9fb773b4"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1003,
+          "receipt_id": "process-receipt:3fc269423c89ad4c9fb773b4",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "7bc79677-c757-47ed-9c90-83bc1ab0f20b",
+      "stage": "context_compress",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:8c64e652ebe2b85b3ca183c0"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1004,
+          "receipt_id": "process-receipt:8c64e652ebe2b85b3ca183c0",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "a2d0b2f2-1c6f-4bd6-ba92-a89471aa7c4c",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:f059f623ea602971629c3384"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1005,
+          "receipt_id": "process-receipt:f059f623ea602971629c3384",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "257aac79-5eb8-4c74-a87c-26d1d20c564e",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:a1d5b2867edb70806e19aac7"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1006,
+          "receipt_id": "process-receipt:a1d5b2867edb70806e19aac7",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "2e4ecd2d-7091-478d-b222-34cc53810fcb",
+      "stage": "context_compress",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:c4ef14f5ec423af2a1d364e5"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1007,
+          "receipt_id": "process-receipt:c4ef14f5ec423af2a1d364e5",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "5437c594-093e-4ebd-9c1d-0924de9b2b03",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:52308f2c225fdb16c9e512a1"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1008,
+          "receipt_id": "process-receipt:52308f2c225fdb16c9e512a1",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "5242db29-1d9f-4226-aa66-4c1afe3a4b75",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:12c754bbb62fe6c67a35e438"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1009,
+          "receipt_id": "process-receipt:12c754bbb62fe6c67a35e438",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "af7b942c-3c82-4fc8-9eb0-1e9b4f4ecbce",
+      "stage": "context_compress",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:8cc3fd0869d03ddc83d24d65"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1010,
+          "receipt_id": "process-receipt:8cc3fd0869d03ddc83d24d65",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "b43f830f-0982-4958-954f-6a0314ac11bd",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:1274e613fb30ad5fad32235e"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1011,
+          "receipt_id": "process-receipt:1274e613fb30ad5fad32235e",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "481a4494-3241-472b-a295-997392acfd8e",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:741295c5d15299d6afd62156"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1012,
+          "receipt_id": "process-receipt:741295c5d15299d6afd62156",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "73d8d96e-7720-4200-acb4-86d600229e95",
+      "stage": "context_compress",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:5aae8fdea8a6ec3daa3969f4"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1013,
+          "receipt_id": "process-receipt:5aae8fdea8a6ec3daa3969f4",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "b355c565-e53d-4d28-949d-e800bb24848c",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:6f5f778d4c0770cb6cfbd0e2"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1014,
+          "receipt_id": "process-receipt:6f5f778d4c0770cb6cfbd0e2",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "d645e633-6a80-4f7e-bd0e-f69c79882aba",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:c718fe2ca45633555de655c7"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1015,
+          "receipt_id": "process-receipt:c718fe2ca45633555de655c7",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "4166760c-6518-4ac4-9dee-e13fbf7becab",
+      "stage": "context_compress",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:2309e913179c9a657835f24a"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1016,
+          "receipt_id": "process-receipt:2309e913179c9a657835f24a",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "439e4968-c968-40cf-a484-3638b62073fc",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:02206b203bddfdc4ce14f87e"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1017,
+          "receipt_id": "process-receipt:02206b203bddfdc4ce14f87e",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "a1567b90-9280-4063-935e-bf3c9426bb77",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:1242f55028b0374665189037"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1018,
+          "receipt_id": "process-receipt:1242f55028b0374665189037",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "bd4fdfdc-8bda-419d-9d37-295f49ea5e7a",
+      "stage": "context_compress",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:2f3c2490cdacbc0e68163851"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1019,
+          "receipt_id": "process-receipt:2f3c2490cdacbc0e68163851",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "2be4f0cc-4c2a-4cf9-aad1-7f57798e0c2e",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:9bdb339ce7421f63d707090d"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1020,
+          "receipt_id": "process-receipt:9bdb339ce7421f63d707090d",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "30750ceb-ef74-40a1-86a0-15ec0cfe78f0",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:a01bbb52b330e2a703172cee"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1021,
+          "receipt_id": "process-receipt:a01bbb52b330e2a703172cee",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "4bed646b-3053-497c-8f86-2ca24f651bbd",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:2c020265543facf9517aa6d7"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1022,
+          "receipt_id": "process-receipt:2c020265543facf9517aa6d7",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "bbd7d382-6d19-446c-b3a5-30599c63bd48",
+      "stage": "draft",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "UNKNOWN",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:9d72c80e23b46d0106a3150e"
+      ],
+      "native_receipts": []
+    },
+    {
+      "external_effect_id": "02203730-754f-4050-9a58-e23e19ebd2ae",
+      "stage": "draft",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "UNKNOWN",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:e98c74c5adf08c11ea087017"
+      ],
+      "native_receipts": []
+    },
+    {
+      "external_effect_id": "95615745-4f6c-493b-b2b8-158671f227c1",
+      "stage": "context_compress",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [
+        "process-receipt:73375930e6a3ad51c5cb0b18"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1023,
+          "receipt_id": "process-receipt:73375930e6a3ad51c5cb0b18",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "d47c9a52-a931-41f3-a48d-eef05a04c6bb",
+      "stage": "context_fidelity",
+      "operation_definition_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "databases": [
+        "nf_context_final_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "RECONCILIATION_REQUIRED",
+      "local_process_receipt_ids": [
+        "process-receipt:0d17cb1dc2f3cd760c2c9d9e"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 1024,
+          "receipt_id": "process-receipt:0d17cb1dc2f3cd760c2c9d9e",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "f9f98a0b-6a97-47e4-94e4-1fd887dae865",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:70f7c44e01b608c1ac3a61bd"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 942,
+          "receipt_id": "process-receipt:70f7c44e01b608c1ac3a61bd",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "2b5454e6-1cd1-40f7-8692-28e3340b0081",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:0dce65bb2bf151f00fdf292a"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 943,
+          "receipt_id": "process-receipt:0dce65bb2bf151f00fdf292a",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "390adb7e-5bf1-4020-9097-c5860340d4d5",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:42cb8cb8d0846ec2cbe83e06"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 944,
+          "receipt_id": "process-receipt:42cb8cb8d0846ec2cbe83e06",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "5bd13dae-035b-4f6b-9280-a52b2ce5fcfb",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:303a3eb8bf23acfb621dd199"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 945,
+          "receipt_id": "process-receipt:303a3eb8bf23acfb621dd199",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "d9d0314e-4ad7-40ff-b4d9-ab7cf1397179",
+      "stage": "draft",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:18d1143defdda44160a463e5"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 946,
+          "receipt_id": "process-receipt:18d1143defdda44160a463e5",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "e1afaade-0a71-4313-9b89-e01512840dfe",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:a19a566f14a151705b3bf8b5"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 947,
+          "receipt_id": "process-receipt:a19a566f14a151705b3bf8b5",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "8566123b-2e62-4727-a7a7-4bffb00671b6",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:60b74ef51a9600dfb933e459"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 948,
+          "receipt_id": "process-receipt:60b74ef51a9600dfb933e459",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "05dea5da-8016-4dcb-9dbd-09fcb1e0d3d9",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:1ea2041b07a6c5a2b662e9ae"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 949,
+          "receipt_id": "process-receipt:1ea2041b07a6c5a2b662e9ae",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "bf0c851b-7752-4abe-86cb-7fdf932f0fab",
+      "stage": "draft",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:83c45e84a5a94c5d9d29c1e1"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 950,
+          "receipt_id": "process-receipt:83c45e84a5a94c5d9d29c1e1",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "71c4304b-0175-4773-b531-3a8e8986f23a",
+      "stage": "review",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:229f22e32b25237b9f72e059"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 951,
+          "receipt_id": "process-receipt:229f22e32b25237b9f72e059",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "39edf000-06a0-44b4-9c51-c58adad198c8",
+      "stage": "revision",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:c7648993e0dec47265b9305a"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 952,
+          "receipt_id": "process-receipt:c7648993e0dec47265b9305a",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "dc8b090b-37e8-46f9-9a38-25b3ff2b2cb8",
+      "stage": "rereview",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:e458d4ed57cf8fa4c8d27016"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 953,
+          "receipt_id": "process-receipt:e458d4ed57cf8fa4c8d27016",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "7c965e37-073c-4add-9d8b-e0fba0a0ed9c",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:292aede59ccd5898a9e7ae33"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 954,
+          "receipt_id": "process-receipt:292aede59ccd5898a9e7ae33",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "e51d7635-e272-4acd-8e73-b129859a9945",
+      "stage": "draft",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:b5551606b052a8c2bc2dd37a"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 955,
+          "receipt_id": "process-receipt:b5551606b052a8c2bc2dd37a",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "4d18fbfb-f72b-4c29-997b-5243ff00c1db",
+      "stage": "review",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:b9299f77818caed5b5657243"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 956,
+          "receipt_id": "process-receipt:b9299f77818caed5b5657243",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "0dc70a63-c938-43be-bf52-6e92830eeaeb",
+      "stage": "revision",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:401c0363e3eef368bbf88867"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 957,
+          "receipt_id": "process-receipt:401c0363e3eef368bbf88867",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "96576a02-4356-4cac-8017-1e5b62f8e874",
+      "stage": "rereview",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:b39bebe9c5faa71e251ec84f"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 958,
+          "receipt_id": "process-receipt:b39bebe9c5faa71e251ec84f",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "b1d5d853-6f86-4446-98d0-7d6e6efaecdf",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:da226d409582a683733fa109"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 959,
+          "receipt_id": "process-receipt:da226d409582a683733fa109",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "41122165-0db4-474d-901c-6860de935b1f",
+      "stage": "draft",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:3a1b1c5010d2725d4b061018"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 960,
+          "receipt_id": "process-receipt:3a1b1c5010d2725d4b061018",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "d2a1e647-8859-4160-ad21-48f7e7f97aa2",
+      "stage": "review",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:db4700197fc311d50c0fbd80"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 961,
+          "receipt_id": "process-receipt:db4700197fc311d50c0fbd80",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "c375cd46-2e99-4f59-a3fb-906707f5fa15",
+      "stage": "revision",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:83a09a5b008161a7a55e5c95"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 962,
+          "receipt_id": "process-receipt:83a09a5b008161a7a55e5c95",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "c40a4479-9ccc-4e48-8627-756d445e90ea",
+      "stage": "rereview",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:e1dcec87252a7af15c30bf23"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 963,
+          "receipt_id": "process-receipt:e1dcec87252a7af15c30bf23",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "6d495454-3abc-4a89-93c0-209dba14d1ec",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:f92b0ab9b0e872cded5557c5"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 964,
+          "receipt_id": "process-receipt:f92b0ab9b0e872cded5557c5",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "af401ae6-2d6b-4aef-8514-a660317f1017",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:241f7a0f95f9170b2ee4897e"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 965,
+          "receipt_id": "process-receipt:241f7a0f95f9170b2ee4897e",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "f08b72c7-19a3-4c1a-be96-5d78739681af",
+      "stage": "chapter_group_plan.generate",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:9be340154ff5e9943d103392"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 966,
+          "receipt_id": "process-receipt:9be340154ff5e9943d103392",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "dc70f4e8-f752-4fa4-a769-4763a9317e8d",
+      "stage": "chapter_plan.generate",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:0a466c62b24983b07da860e5"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 967,
+          "receipt_id": "process-receipt:0a466c62b24983b07da860e5",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "8459825a-2d82-40da-8206-79b7abfe51c6",
+      "stage": "draft",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "UNKNOWN",
+      "operation_status": "FAILED_FINAL",
+      "local_process_receipt_ids": [
+        "process-receipt:82d7dbca03ef64da801e68e1"
+      ],
+      "native_receipts": []
+    },
+    {
+      "external_effect_id": "9c9f7422-e673-4a83-9663-9b924db2fff4",
+      "stage": "draft",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:c3ce1be949adec65d2fb6d7e"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 968,
+          "receipt_id": "process-receipt:c3ce1be949adec65d2fb6d7e",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "54d3c51f-db29-4e0c-b4b6-625f62fa9c03",
+      "stage": "review",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:6441781e6853c69f5522b52b"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 969,
+          "receipt_id": "process-receipt:6441781e6853c69f5522b52b",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "a7f26028-1d54-44cd-bbcd-581123686663",
+      "stage": "revision",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:22951f92b12f5417bb6ba536"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 970,
+          "receipt_id": "process-receipt:22951f92b12f5417bb6ba536",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "3c06fb67-62e0-4448-ac4e-b10f02e1a270",
+      "stage": "rereview",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:c01cf3cf1dab7420e4ef6f54"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 971,
+          "receipt_id": "process-receipt:c01cf3cf1dab7420e4ef6f54",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "9f08e311-2d68-44aa-83dd-d258e56e8233",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:a8d9b0ffafcbb7948d5bd705"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 972,
+          "receipt_id": "process-receipt:a8d9b0ffafcbb7948d5bd705",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "51bfc47f-38d2-456b-9092-981f629a59be",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:94cc81dce450483a8c59dcfa"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 973,
+          "receipt_id": "process-receipt:94cc81dce450483a8c59dcfa",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "70210c4f-f46e-4e36-b184-e5c12a441f7b",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:d2a32c09c5af4bfab186ee2a"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 974,
+          "receipt_id": "process-receipt:d2a32c09c5af4bfab186ee2a",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    },
+    {
+      "external_effect_id": "e7cd3b25-f803-4da5-b7ab-c4620fd37121",
+      "stage": "working_memory_extract",
+      "operation_definition_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+      "databases": [
+        "nf_context_f799_acceptance"
+      ],
+      "effect_status": "SUCCEEDED",
+      "operation_status": "SUCCEEDED",
+      "local_process_receipt_ids": [
+        "process-receipt:2c66d00500e601da30b2bf12"
+      ],
+      "native_receipts": [
+        {
+          "external_receipt_id": 975,
+          "receipt_id": "process-receipt:2c66d00500e601da30b2bf12",
+          "status": "VERIFIED",
+          "real_model_call": true
+        }
+      ]
+    }
+  ],
+  "input_evidence_files": [
+    {
+      "private_filename": "native-runtime-e0e359be-metrics.json",
+      "sha256": "906fa3163d8ee532fc69cbac72fd18326f99a1731a43fc978f96e9669f7aaa87"
+    },
+    {
+      "private_filename": "native-runtime-final-f799c192-metrics.json",
+      "sha256": "372991cba47924cb6e76607d2cb69e8cbdd9ce8b1d178722ecfd847e9ae20d73"
+    },
+    {
+      "private_filename": "native-runtime-round3-f799c192-metrics.json",
+      "sha256": "6f78c5a5911983962737aaaa9159ba28e76da205dba73125d036043815cb3d7c"
+    }
+  ],
+  "boundaries": [
+    "Inherited effects with the same UUID across restored databases are counted once, not as fresh calls.",
+    "Pre-existing 77 preparation successes outside this task-local process evidence are not added as new calls.",
+    "Input/output tokens are measured CLI usage. Reasoning tokens are a subset of output, never added twice.",
+    "Known measured usage totals omit unknown failed-stream usage; unknown is not zero.",
+    "Process elapsed time includes network/startup and is not GPU inference time.",
+    "Earlier release calls, failed-length originals, host-rejected observation and UNKNOWN stream remain separate facts, not final-source fresh acceptance."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "record_type": "PUBLIC_EVIDENCE_PRIVACY_AND_CUSTODY_CHECK",
+  "verification_source_commit": "222a6715b92938034a1fa7c4bb773dac768e0eee",
+  "status": "PASS",
+  "files_checked": 158,
+  "novel_source_files": 34,
+  "source_line_variants_checked": 3660,
+  "credential_fields_checked": [
+    "NOVEL_FORGE_MINIO_ACCESS_KEY",
+    "NOVEL_FORGE_MINIO_SECRET_KEY"
+  ],
+  "hits": [],
+  "boundary": "Exact original prose lines of at least 40 codepoints and their JSON encodings, plus configured credential values. This check is not a general secret-detection guarantee."
+}

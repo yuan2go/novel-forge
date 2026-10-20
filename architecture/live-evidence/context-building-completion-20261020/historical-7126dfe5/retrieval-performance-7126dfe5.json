@@ -1,0 +1,157 @@
+{
+  "source_label": "7126dfe5",
+  "measurement": "REAL_SELECTED_PROSE_NATIVE_FROZEN_TASK_RETRIEVAL_ONLY",
+  "provider_calls": 0,
+  "history_chapters": 19,
+  "history_codepoints": 95271,
+  "history_utf8_bytes": 282255,
+  "runs": [
+    {
+      "iteration": 0,
+      "elapsed_seconds": 0.5252438750467263,
+      "selection_sha256": "7e897a591e3e02a30f40f89bd1494ddb343e3d4bcae3dd93c3e7375b7545376d",
+      "calls": [
+        {
+          "function": "task_passage_ranges",
+          "file": "working_selection.py",
+          "calls": 19,
+          "primitive_calls": 19,
+          "self_seconds": 7.8286e-05,
+          "cumulative_seconds": 0.001846582
+        },
+        {
+          "function": "_tokens",
+          "file": "task_retrieval.py",
+          "calls": 1775,
+          "primitive_calls": 1775,
+          "self_seconds": 0.008703906,
+          "cumulative_seconds": 0.168302629
+        },
+        {
+          "function": "_query_catalog",
+          "file": "task_retrieval.py",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.00028372200000000003,
+          "cumulative_seconds": 0.004908
+        },
+        {
+          "function": "_task_passage_ranges",
+          "file": "working_selection.py",
+          "calls": 19,
+          "primitive_calls": 19,
+          "self_seconds": 0.00038367100000000003,
+          "cumulative_seconds": 0.0017682960000000001
+        },
+        {
+          "function": "_token_items",
+          "file": "task_retrieval.py",
+          "calls": 1768,
+          "primitive_calls": 1768,
+          "self_seconds": 0.049244079,
+          "cumulative_seconds": 0.15588526500000002
+        },
+        {
+          "function": "_source_units",
+          "file": "task_retrieval.py",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.0015371660000000002,
+          "cumulative_seconds": 0.003197875
+        },
+        {
+          "function": "_rank_candidates",
+          "file": "task_retrieval.py",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.036582796,
+          "cumulative_seconds": 0.47957358400000005
+        }
+      ]
+    },
+    {
+      "iteration": 1,
+      "elapsed_seconds": 0.00914674997329712,
+      "selection_sha256": "7e897a591e3e02a30f40f89bd1494ddb343e3d4bcae3dd93c3e7375b7545376d",
+      "calls": [
+        {
+          "function": "task_passage_ranges",
+          "file": "working_selection.py",
+          "calls": 19,
+          "primitive_calls": 19,
+          "self_seconds": 1.1205e-05,
+          "cumulative_seconds": 1.1205e-05
+        },
+        {
+          "function": "_tokens",
+          "file": "task_retrieval.py",
+          "calls": 36,
+          "primitive_calls": 36,
+          "self_seconds": 9.6496e-05,
+          "cumulative_seconds": 0.000164623
+        },
+        {
+          "function": "_query_catalog",
+          "file": "task_retrieval.py",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.00022581,
+          "cumulative_seconds": 0.0009967090000000001
+        },
+        {
+          "function": "_source_units",
+          "file": "task_retrieval.py",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.0013408580000000001,
+          "cumulative_seconds": 0.0029955000000000003
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "elapsed_seconds": 0.009032582980580628,
+      "selection_sha256": "7e897a591e3e02a30f40f89bd1494ddb343e3d4bcae3dd93c3e7375b7545376d",
+      "calls": [
+        {
+          "function": "task_passage_ranges",
+          "file": "working_selection.py",
+          "calls": 19,
+          "primitive_calls": 19,
+          "self_seconds": 1.0208000000000001e-05,
+          "cumulative_seconds": 1.0208000000000001e-05
+        },
+        {
+          "function": "_tokens",
+          "file": "task_retrieval.py",
+          "calls": 36,
+          "primitive_calls": 36,
+          "self_seconds": 0.00010196,
+          "cumulative_seconds": 0.00016950300000000002
+        },
+        {
+          "function": "_query_catalog",
+          "file": "task_retrieval.py",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.00023302700000000002,
+          "cumulative_seconds": 0.001027708
+        },
+        {
+          "function": "_source_units",
+          "file": "task_retrieval.py",
+          "calls": 1,
+          "primitive_calls": 1,
+          "self_seconds": 0.0015448640000000002,
+          "cumulative_seconds": 0.0030726660000000004
+        }
+      ]
+    }
+  ],
+  "not_measured": [
+    "Provider latency",
+    "full Writer request",
+    "database reads",
+    "end-to-end creative quality"
+  ]
+}

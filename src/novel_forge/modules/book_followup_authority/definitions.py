@@ -41,6 +41,7 @@ def book_followup_operation_definitions(
         "additionalProperties": False,
     }
     specifications = (
+        ("working_memory_extract", "working_memory_result", "book.working_memory.result", ("manuscript_memory",), ("model.working_memory_extract",), 180),
         (
             PROSE_REVIEW_DEFINITION,
             "longform_prose_review_report",

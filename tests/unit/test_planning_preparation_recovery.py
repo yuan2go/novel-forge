@@ -1368,3 +1368,82 @@ def test_settled_capacity_handoff_preserves_preparation_and_rejects_changed_or_l
     assert proof['stopped_ancestry'][-1]['kind'] == 'UNSENT_CAPACITY_FAILURE'
     assert proof['stopped_ancestry'][-1]['failure_hash'] == canonical_hash(s.capacity_failure)
     assert s.effects == before
+
+
+@pytest.mark.parametrize('damage', ['', 'unacknowledged', 'lease', 'unknown', 'main-send', 'foreign-cancellation'])
+def test_first_acknowledged_preparation_keeps_native_receipts_without_inventing_isolation(first_isolation, damage):
+    s = first_isolation
+    op, generation, _ = s.members['original']
+    op['status'] = 'RECONCILIATION_REQUIRED'
+    s.members['original'] = (op, generation, None)
+    s.cancellations['original'] = [('author',)]
+    s.effects['original'] = s.effects['original'][:1]
+    if damage == 'unacknowledged':
+        s.acknowledged = False
+    elif damage == 'lease':
+        s.held = True
+    elif damage == 'unknown':
+        effect = deepcopy(s.effects['original'][0][0])
+        effect['status'] = 'UNKNOWN'
+        s.effects['original'].append((effect, 'HELD_UNKNOWN', False))
+    elif damage == 'main-send':
+        effect = s.effects['original'][0][0]
+        effect['request_payload']['stage'] = 'chapter_plan.generate'
+        effect['request_hash'] = canonical_hash(effect['request_payload'])
+    elif damage == 'foreign-cancellation':
+        s.cancellations['original'] = [('other',)]
+    before = deepcopy(s.effects)
+    if damage:
+        with pytest.raises(KernelError, match='PLANNING_FIRST_PREPARATION_CUSTODY_UNSAFE'):
+            s.consume()
+    else:
+        source = s.consume()
+        assert source['mode'] == 'ACKNOWLEDGED_PREPARATION_CUSTODY'
+        proof = source['fresh_preparation']
+        assert proof['contract_version'] == 'planning-acknowledged-preparation-handoff.v1'
+        assert proof['isolated_generation_count'] == 0
+        assert proof['retained_preparation'][0]['receipt_contract'] == 'ACKNOWLEDGED_PREPARATION'
+    assert s.effects == before
+
+
+@pytest.mark.parametrize('change', ['', 'cli-version', 'billing', 'executable', 'configuration', 'home', 'retry'])
+def test_acknowledged_membership_route_reconciles_only_verified_cli_version(first_native_route, change):
+    from novel_forge.modules.story_planning_runtime import fresh_preparation_custody as fresh
+    from novel_forge.modules.production_execution.codex_configuration import codex_local_binding_hash
+    source, target = first_native_route
+    proof = source['fresh_preparation']
+    source['mode'] = 'ACKNOWLEDGED_PREPARATION_CUSTODY'
+    proof.update(contract_version=fresh.ACKNOWLEDGED_CONTRACT, isolated_generation_count=0,
+        stopped_ancestry=[dict(operation_id=source['source_operation_id'], kind='ACKNOWLEDGED_CANCELLATION')])
+    old = dict(authorization_ref='original-native-authority', account_identity_ref='account', cli_version='original-cli',
+        executable_sha256='sha256:' + 'a' * 64, configuration_ref='config',
+        billing_identity=dict(account_ref='account', billing_channel='ACCOUNT_ENTITLEMENT'))
+    target['account']['entitlement'] = deepcopy(old)
+    original = 'original:codex:' + codex_local_binding_hash(**target['account'])
+    proof['original_route']['auth_profile_ref'] = original
+    source['original_account_entitlement'] = old
+    if change:
+        target['account']['entitlement']['cli_version'] = 'observed-cli'
+    if change == 'billing':
+        target['account']['entitlement']['billing_identity']['account_ref'] = 'other'
+    elif change == 'executable':
+        target['account']['entitlement']['executable_sha256'] = 'sha256:' + 'b' * 64
+    elif change == 'configuration':
+        target['account']['entitlement']['configuration_ref'] = 'other'
+    elif change == 'home':
+        target['account']['codex_home'] = '/other'
+    elif change == 'retry':
+        target['account']['retry_policy'] = 'codex-no-transport-retry.v1'
+    target['auth_profile_ref'] = 'original:codex:' + codex_local_binding_hash(**target['account'])
+    if change not in {'', 'cli-version'}:
+        with pytest.raises(KernelError, match='PLANNING_PREPARATION_REUSE_DRIFT'):
+            fresh.target_runtime(None, source, target)
+    else:
+        result = fresh.target_runtime(None, source, target)
+        authorization = fresh._first_route_authorization(source, target)
+        assert authorization['source_auth_profile_ref'] == original
+        assert result['preparation_handoff']['contract_version'] == (fresh.ACCOUNT_VERSION_CONTRACT if change else fresh.ACKNOWLEDGED_CONTRACT)
+        if change:
+            receipt = result['preparation_handoff']['account_version_reconciliation']
+            assert receipt['original_entitlement'] == old
+            assert receipt['target_auth_profile_ref'] == target['auth_profile_ref']

@@ -217,6 +217,8 @@ def main() -> int:
                 actor_id=principal.principal_id,
                 limit=batch_size,
             )
+            from novel_forge.modules.book_authority.memory_backfill import advance_pending_backfills
+            advance_pending_backfills(book, book.followup, principal=principal, limit=batch_size)
             coordinator.recover_reader_contracts(limit=batch_size)
             coordinator.reconcile_completed_arc_checkpoint_followups(limit=batch_size)
             schedule_book_followup_admission_jobs(

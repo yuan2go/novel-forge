@@ -1,0 +1,25 @@
+{
+  "record_type": "ACTUAL_NATIVE_PREPARATION_VALIDATED_AGAINST_CURRENT_ROUTE_AND_FULL_RENDERED_REQUEST",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "working_tree_modified": false,
+  "runtime_release": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "native_successor_operation_id": "4a064a1e-ef70-4f3d-b5f2-101f7ac3055a",
+  "source_external_effect_id": "02203730-754f-4050-9a58-e23e19ebd2ae",
+  "current_pack_snapshot_hash": "sha256:c26f9f4c0623825fa150ca3641100dcc7c0b7968e3368992ff6bade22292bc0b",
+  "accepted_with_current_binding": true,
+  "actual_render_equal_to_original_admitted_writer_input": true,
+  "application_input_utf8_bytes": 468963,
+  "application_input_sha256": "1c39ce0136657114159b88ac8c0dbcab77f3d23e0f79d8c6acbf1e0f9b9de11c",
+  "request_measurement": [
+    473012,
+    475000
+  ],
+  "route_accounting_method": "CODEX_CLI_APPLICATION_UTF8_BYTES_UPPER_BOUND_V1",
+  "measurement_units": "ROUTE_ADMISSION_ACCOUNTING_NOT_MEASURED_PROVIDER_TOKENS",
+  "actual_provider_input_tokens": null,
+  "provider_calls": 0,
+  "counts": {
+    "renders": 4
+  },
+  "boundary": "Actual retained native request and configured route, read-only rendering/admission validation; no new Writer invocation, no UNKNOWN settlement, and no creative completion."
+}

@@ -126,7 +126,7 @@ _STAGES = frozenset(
     }
 )
 _OPTIONAL_DOMAIN_STAGES = frozenset(
-    {"agent_session", "retrieval", "retrieval_query_expansion", *CONTEXT_MODEL_STAGES,
+    {"working_memory_extract", "agent_session", "retrieval", "retrieval_query_expansion", *CONTEXT_MODEL_STAGES,
      "model_reference_evaluate", "model_reference_adjudicate"}
 )
 
@@ -143,6 +143,7 @@ _PLANNING_STAGES = frozenset(
 )
 
 _STAGE_CAPABILITIES = {
+    "working_memory_extract": CapabilityId.CANON_EXTRACT,
     "memo": CapabilityId.PLANNING_CHAPTER_MEMO,
     "draft": CapabilityId.PROSE_CHAPTER_DRAFT,
     "review": CapabilityId.REVIEW_CHAPTER_EVALUATE,
@@ -467,6 +468,7 @@ def _provider_effective_context_policy(
         "novelos.narrative_evaluation_context_bundle.v1": (
             "narrative_semantic_evaluation"
         ),
+        "novelos.working_memory_context_bundle.v1": "working_memory_extract",
         "novelos.reader_outcome_context_bundle.v1": "reader_outcome",
         "novelos.reader_outcome_context_bundle.v2": "reader_outcome",
         "novelos.longform_prose_review_context_bundle.v2": "longform_prose_review",
@@ -837,6 +839,11 @@ class PostgresChapterExecutionContractBinder:
                 "CHAPTER_CAPABILITY_METADATA_MISSING",
                 "Capability preflight requires Attempt metadata",
             )
+        retained_projection = metadata.get("_retained_capacity_preparation")
+        if retained_projection is not None:
+            metadata = dict(metadata)
+            metadata.pop("_retained_capacity_preparation")
+            request_payload["_production_execution"] = metadata
         operation_id = str(metadata.get("operation_id") or "")
         attempt_id = str(metadata.get("attempt_id") or "")
         project_id = str(metadata.get("project_id") or "")
@@ -929,6 +936,7 @@ class PostgresChapterExecutionContractBinder:
             "prompt-template:narrative-semantic-evaluation-pack": {"v1"},
             "prompt-template:model-reference-creation": {"v1"},
             "prompt-template:scene-screenplay-pack": {"v1"},
+            "prompt-template:working-memory-pack": {"v1"},
         }
         if materialization.prompt_template.version not in supported_templates.get(
             materialization.prompt_template.ref, set()
@@ -1234,7 +1242,14 @@ class PostgresChapterExecutionContractBinder:
                         return False
                 return True
 
-            projection = prepare_request_capacity(original=provider_data, stage=stage, source_boundary=source_boundary,
+            reuse_proof = metadata.get("capacity_preparation_reuse")
+            reuse_applied = False
+            if retained_projection is not None and reuse_proof:
+                from .capacity_reuse import reusable_preparation
+                reuse_applied = reusable_preparation(retained_projection, reuse_proof, source_boundary=source_boundary,
+                    original=provider_data, route_contract=capacity_route_contract(route), measure=measure)
+                reuse_proof["status"] = "APPLIED_WITH_CURRENT_ADMISSION" if reuse_applied else "INVALIDATED_CURRENT_BINDINGS_OR_CAPACITY"
+            projection = retained_projection if reuse_applied else prepare_request_capacity(original=provider_data, stage=stage, source_boundary=source_boundary,
                 route=route, measure=measure, model_call=context_model_call, chunk_fits=chunk_fits,
                 capacity_bindings=capacity_bindings, preserve_quotes=protected_expression_quotes(provider_data, include_working_observations=frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4"),
                 semantic_contract=frozen_context_policy_payload.get("context_substage_method", "") if frozen_context_policy_payload.get("policy_id") == "context-policy:chapter-generation-pack:v4" else "",
@@ -1244,6 +1259,8 @@ class PostgresChapterExecutionContractBinder:
                 request_payload["input"] = provider_inputs
                 prompt, prompt_evidence = _materialize_production_codex_prompt(target_scope=target_scope,
                     stage=stage, inputs=provider_inputs, materialization=contract)
+        if metadata.get("capacity_preparation_reuse"):
+            prompt_evidence["capacity_preparation_reuse"] = dict(metadata["capacity_preparation_reuse"])
         output_policy = str(metadata.get("output_reservation_policy") or "")
         complete_input_reserve = route_input_tokens(route, prompt, protocol_schema_json=route_protocol_schema(route, provider_schema, provider_schema_ref) if frozen_context_policy_payload.get("capacity_policy") else "")
         system_limit = 512_000 if frozen_context_policy_payload.get("capacity_policy") == "complete-request-capacity.v1" else None
@@ -1340,6 +1357,9 @@ class PostgresChapterExecutionContractBinder:
             "capability_materialization_asset_version_id": document.asset_version_id,
             "capability_materialization_content_hash": document.content_hash,
         }
+        from .request_snapshot import admission_with_request_snapshot
+        admission_contract = admission_with_request_snapshot(admission_contract, stage=stage,
+            frozen_inputs=provider_inputs, frozen_context=contract.get("context_selection"), envelope=envelope)
         admission_ref = f"production_execution/provider_admissions/{token}"
         admission_document = self._ensure_contract(
             operation_id=operation_id,
@@ -1355,7 +1375,7 @@ class PostgresChapterExecutionContractBinder:
             asset_version_id=admission_document.asset_version_id,
             artifact_type=admission_document.asset_type,
             content_hash=admission_document.content_hash,
-            schema_version="novelos.provider_request_admission.v1",
+            schema_version=admission_contract["schema_version"],
             source_eligibility="NOT_SOURCE_DERIVED",
         )
         effect_binding = {
@@ -2998,6 +3018,8 @@ def default_chapter_fixture_response(
     stage: str, inputs: Mapping[str, Any]
 ) -> dict[str, Any]:
 
+    if stage == "working_memory_extract":
+        return {"observations": []}
     if stage == "longform_prose_review":
         from novel_forge.modules.book_followup_authority.prose_review import PROSE_DIMENSIONS
         return {"schema_version": "longform-prose-review.v1", "manifest_digest": inputs["manifest_digest"], "window_id": inputs["window_id"], "reviewed_dimensions": list(PROSE_DIMENSIONS), "findings": []}
@@ -4237,6 +4259,8 @@ def _stage_semantic_contract(
             "provider-unavailable identity, summary, or invented fact. Do not retrieve or "
             "mutate Authority state."
         )
+    if stage == "working_memory_extract":
+        return "Extract located working observations from the exact frozen prose. Preserve attribution and uncertainty; grant no Canon, author acceptance or plan mutation."
     if stage == "context_compress":
         return (
             "Select exact unit_id values from this bounded chunk that retain the task relevant "
@@ -4692,7 +4716,7 @@ def _materialize_production_codex_prompt(
     materialization: Mapping[str, Any],
     history_transport_version: str = "working-history-provider-transport.v2",
     template_render_contract: str = "opaque-template-substitution.v1",
-    prose_review_transport_version: str = "prose-review-exact-transport.v1",
+    prose_review_transport_version: str | None = None,
     provider_data_capture: dict[str, Any] | None = None,
 ) -> tuple[str, dict[str, Any]]:
     from novel_forge.modules.book_authority.working_prose import POLICY_VERSIONS
@@ -4924,10 +4948,16 @@ def _materialize_production_codex_prompt(
                 **({"semantic_contract": capacity_projection["semantic_contract"], "final_composition_hash": canonical_hash(capacity_projection.get("final_composition"))} if capacity_projection.get("semantic_contract") else {}),
                 "meaning": "Historical text contains fidelity-checked original extracts. Whole-source identity remains unchanged. Explicit historical_extract passages use original Unicode ranges and hashes of supplied text; other source bounds describe the complete original source. Exact derivation and fidelity receipts remain frozen in host custody. Empty or omitted expression is not evidence of absence."}
     exact_reference_proof = None
-    if prose_review_transport_version not in {"", "prose-review-exact-transport.v1"}:
+    if prose_review_transport_version is None:
+        from .request_snapshot import request_snapshot_required
+        prose_review_transport_version = ("prose-review-exact-transport.v2"
+            if stage in {"review", "rereview"} and request_snapshot_required(stage, {"inputs": inputs, "context": context_content})
+            else "prose-review-exact-transport.v1")
+    if prose_review_transport_version not in {"", "prose-review-exact-transport.v1", "prose-review-exact-transport.v2"}:
         raise KernelError("PROVIDER_EXACT_REFERENCE_INVALID", "Prose Review transport must retain its frozen version")
     review_transport = bool(prose_review_transport_version and stage in {"review", "rereview"}
         and template.get("ref") == "prompt-template:chapter-generation-pack" and template.get("version") in {"v13", "v15"})
+    task_review_transport = review_transport and prose_review_transport_version == "prose-review-exact-transport.v2"
     protected_accounting_version = (context_content.get("task_context_receipt") or {}).get("protected_exact_accounting", {}).get("contract_version")
     protected_exact_accounting = protected_accounting_version in {"protected-context-exact-accounting.v1", "protected-context-exact-accounting.v2"}
     if protected_exact_accounting and (stage not in {"draft", "revision"}
@@ -4951,10 +4981,11 @@ def _materialize_production_codex_prompt(
             or context_content.get("planning_group_method_scope_projection_version") == "group-method-scope-projection.v1"
             or context_content.get("planning_chapter_method_scope_projection_version") == "chapter-method-scope-projection.v1"
             or context_content.get("world_protected_context_accounting_version") == "world-protected-context-accounting.v1"
-            or protected_exact_accounting)
+            or protected_exact_accounting or task_review_transport)
         envelope, exact_reference_proof = compile_exact_context_references({"input_manifest": task_view, "context_bundle": context_view},
             structured_transport=structured_transport, short_literals=short_literals,
-            nested_canonical_strings=protected_accounting_version == "protected-context-exact-accounting.v2",
+            nested_canonical_strings=(protected_accounting_version == "protected-context-exact-accounting.v2"
+                or task_review_transport),
             prose_comparison=review_transport and stage == "rereview")
         task_view, context_view = envelope["input_manifest"], envelope["context_bundle"]
         exact_reference_proof["source_scope"] = "provider_data_envelope"
@@ -5108,6 +5139,19 @@ def _materialize_production_codex_prompt(
         stage_semantic_contract += "\n__text_fragments__ holds one exact text, its original Unicode start and ordered fragment ends. Split at those offsets to read the original passages; the host derives each original text_hash from its exact fragment. All prose, whitespace, source positions and version bindings are retained. These hashes and boundaries are source protocol, not story facts or character duties.\n"
     if exact_reference_proof and exact_reference_proof.get("text_edit_reference_count"):
         stage_semantic_contract += "\nAn exact string reference with __exact_text_edits__ reconstructs the complete revised body from the earlier complete original string: each ordered {start,end,text} replaces that half-open Unicode code-point range in the original, simultaneously. Preserve all intervening and trailing characters. Read both complete bodies and the unchanged earlier-source window; these host-derived differences prove no semantic preservation or issue resolution.\n"
+    schema_display = schema["content"]
+    schema_reference_proof = None
+    if task_review_transport:
+        from .provider_views import compile_exact_context_references
+        encoded_schema, encoded_schema_proof = compile_exact_context_references(
+            schema_display, structured_transport=True, short_literals=True)
+        schema_notice = ("\nThe output_schema section is a separate local exact-reference envelope. "
+            "Expand its __exact_value_ref__ pointers and object overrides within that section to read the complete original schema. "
+            "These are lossless input encoding, not JSON Schema keywords or an output format: return ordinary complete JSON satisfying the expanded schema. "
+            "The Provider response protocol and host validation retain the complete original schema.\n")
+        if len((_canonical(encoded_schema) + schema_notice).encode()) < len(_canonical(schema_display).encode()):
+            schema_display, schema_reference_proof = encoded_schema, encoded_schema_proof
+            stage_semantic_contract += schema_notice
     prompt_sections = [
             "<system_instruction>\n" + system_text + "\n</system_instruction>",
             "<governed_skill>\n" + skill_text + "\n</governed_skill>",
@@ -5129,7 +5173,7 @@ def _materialize_production_codex_prompt(
             "<stage_semantic_contract>\n"
             + stage_semantic_contract
             + "\n</stage_semantic_contract>",
-            "<output_schema>\n" + _canonical(schema["content"]) + "\n</output_schema>",
+            "<output_schema>\n" + _canonical(schema_display) + "\n</output_schema>",
     ))
     prompt = "\n\n".join(prompt_sections)
     if stage == "agent_session" and reference_prose.get("task_purpose") == "MANUSCRIPT_READING":
@@ -5147,7 +5191,7 @@ def _materialize_production_codex_prompt(
         "provider_context_view": _canonical(context_view),
         "tool_policy": _canonical(tools) if not compact_contract or stage == "agent_session" else "",
         "stage_semantic_contract": stage_semantic_contract,
-        "output_schema": _canonical(schema["content"]),
+        "output_schema": _canonical(schema_display),
         "fully_rendered_prompt": prompt,
     }
     component_characters = {key: len(value) for key, value in component_text.items()}
@@ -5173,6 +5217,7 @@ def _materialize_production_codex_prompt(
         + component_tokens["provider_knowledge"],
     )
     evidence = {
+        **({"output_schema_exact_references": schema_reference_proof} if schema_reference_proof else {}),
         "materialization_hash": str(materialization.get("materialization_hash") or ""),
         "reusable_prefix_bytes": len(prompt.split("</governed_skill>", 1)[0].encode())
         + len("</governed_skill>".encode()),

@@ -68,6 +68,8 @@ def execute_authority_handler(
             )
         if materialization_guard is not None:
             materialization_guard(uow, request)
+        if registration.commit_output is not None:
+            registration.commit_output(uow, request, output)
         created_any = False
         input_types = {
             item.asset_version_id: item.asset_type for item in request.inputs

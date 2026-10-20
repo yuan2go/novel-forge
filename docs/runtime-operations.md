@@ -560,6 +560,13 @@ For current v5, include `test_working_manuscript_revision.py`,
 selected replacement and transitive dependency invalidation, neutral guidance, located
 working Review phase support and unchanged frozen v1-v4 replay. Fixtures establish input
 contracts only; separately capture the actual sent Provider input and saved prose.
+For v10 working revision, inspect the frozen `cross-chapter-working-review-window.v2`
+task hash, exact visible ranges, exclusions and complete predecessor. Its initial Review
+selection comes from the frozen task Context; ReReview must retain that Review's window.
+New `prose-review-exact-transport.v2` requests may deduplicate the displayed output schema
+only when the local reference protocol saves bytes. Validate complete reconstruction and
+the unchanged Provider protocol schema separately. An old v1 window or transport remains
+replayable, and a failed capacity check is never a successful or sent Provider request.
 An offline located-case PASS, a scripted PostgreSQL execution
 or model evaluation cannot establish literary improvement or independent human validation.
 For World working continuity, run `test_world_working_continuity.py`,
@@ -622,24 +629,162 @@ For working memory, also run `test_working_memory.py`, `test_prose_repair_scope.
 `working-memory-interruption` native PostgreSQL variant. It checks eight chapter deliveries,
 interruption reconciliation, exact annotation replay, checkpoint rejection, historical
 selection invalidation and export; its Provider is scripted. Retain any failed attempts.
-The native editor API exposes GET/POST `/product/editor/manuscripts/memory`. GET takes
-`project_id`, `book_run_id` and a bounded `max_characters` and reads the current selected
-packet without Provider calls. POST binds `chapter`, `source_asset_version_id`, exact
+The native editor API exposes GET/POST `/product/editor/manuscripts/memory`. A GET with
+`project_id`, `book_run_id` and bounded `max_characters` returns `CURRENT_V3_PREVIEW`;
+its nested snapshot and compatibility `working_memory` field are a current preview,
+not an actual request. Add `chapter_request_id` for `FROZEN_CHAPTER_REQUEST`: this reads
+the original Root snapshot, source inputs, Writer Effects and receipts, and stored
+Context/materialization artifacts. It does not rebuild from current sidecars. The
+same read is available as `authority-manuscript memory-request --chapter-request-id ...`.
+For new v10 requests, inspect `context_selection.source_locator_receipt` as well as
+ranked hits: explicit past-chapter references and task event IDs retain complete original
+episodes through checked historical generation Plan pointers. The locator boundary is
+`HISTORICAL_GENERATION_PLAN_LOCATORS_NOT_EVENT_REALIZATION_OR_KNOWLEDGE`.
+Current task v3 retains task v2's native current Volume segment binding for Planning; an empty native
+demand rejects before generation. Locator v2 / selection v3 record
+`predecessor_handoff` separately from explicit chapter references and event matches,
+retaining the complete delivered predecessor. Inspect task `sources`, `field_sources`,
+subjects and goal; a collection of valid Arc pointers alone is not a task description.
+Missing Plan pointers and unlocated event IDs remain diagnostic gaps. Check actual
+admission snapshots to establish delivery; a current reconstruction is not historical
+Provider evidence. Selection v1 replay must retain its original receipt without locators.
+Frozen task v1-v2 and locator v1 / selection v2 replay also retain their original scope.
+Complete request capture checks original frozen stage inputs before Provider rendering;
+an empty rendering-capture object must not erase a v10 request's snapshot requirement.
+Task v3 freezes `source-bound-full-provider-request.v1` as its delivery contract. It has
+a distinct request identity from prior tasks; an obsolete never-sent branch is cancelled
+through its original Kernel lifecycle rather than rebound to another release or relabelled
+with a new receipt. Existing Effects retain their original admission artifacts.
+
+POST annotations still bind `chapter`, `source_asset_version_id`, exact
 `expected_version`, a replay-safe `idempotency_key`, `source_kind` and located observations.
-Allowed annotation source kinds are AUTHOR_ANNOTATION and ASSISTANT_ANALYSIS. A new version
-is required after manuscript changes; do not annotate discarded sources or label analysis
-as a model receipt. Enable v3 only prospectively in an authorized profile/request and
-budget the entire rendered Provider input. A readback packet does not prove dispatch.
+Allowed manual kinds are AUTHOR_ANNOTATION and ASSISTANT_ANALYSIS; they cannot impersonate
+native Provider receipts. Existing frozen requests retain the old sidecar or Writer-source
+version after a new annotation or extraction.
+
+For native backfill configure both `NOVEL_FORGE_WORKING_MEMORY_PROVIDER` and
+`NOVEL_FORGE_WORKING_MEMORY_MODEL`, the selected route's existing authorization, and the
+scoped `working_memory_pack` deployment. Build its explicit profile through
+`novel_forge.modules.capability_packs.memory_profiles.build_working_memory_pack_profile`
+with the registered `working_memory_extract` definition hash, then use the existing
+register/compile/approve/deploy/activate path. `register_validation_runtime_definitions`
+returns that hash as `working_memory`; the existing validation installer accepts the
+profile. A configured route alone is not a paid grant or an approved Pack.
+When the Router uses an explicit model task catalog or Provider task scope, include
+`working_memory_extract` in that existing authorized model's allowed tasks. Routing
+policy v14 classifies the stage as MEDIUM with domain-gate acceptance. Adding this
+stage does not authorize a different model, paid channel or larger context window.
+
+```bash
+novel-forge authority-manuscript memory-coverage --project-id "$PROJECT" --book-run-id "$BOOK_RUN"
+novel-forge authority-manuscript memory-backfill --project-id "$PROJECT" --book-run-id "$BOOK_RUN" \
+  --expected-version "$BOOK_VERSION" --idempotency-key "$BACKFILL_KEY" --foreground
+```
+
+Omit `--foreground` to leave the persisted batch to the existing Book followup worker.
+Omit `--chapters` to select missing, invalid or empty Writer memory automatically. Explicit
+chapters request re-extraction. The batch freezes the original selected source scope;
+each following Chapter request freezes newly available prior observations separately.
+GET `/product/editor/manuscripts/memory/coverage` reports source versions, coverage and
+extraction operations. POST `/product/editor/manuscripts/memory/backfill` uses the same
+Book checkpoint/key with optional `chapters`; admission performs no Provider call.
+Current source/sidecar changes stop stale submission, preserving the original receipt.
+
+`authority-manuscript memory-run --operation-id ...` resumes the original extraction.
+`memory-cancel --operation-id ... --expected-version ... --idempotency-key ... --reason ...`
+uses the operation version from coverage and the existing Kernel cancellation path;
+POST `/product/editor/manuscripts/memory/cancel` is equivalent. Cancellation also prevents
+later batch members from admission. For a diagnosed terminal failure, submit a new
+`memory-backfill` with one explicit `--chapters N`, `--retry-operation-id ...` and
+`--retry-reason ...`. This binds the failed original and changed task, preserves failure
+history, and rejects an unresolved Effect or held writer. Reconcile UNKNOWN first.
+Missing/failed memory does not erase or reject a complete Draft. Observation location
+and receipt validity do not establish semantic completeness or literary quality.
+
+For new retrieval task v5 (and frozen v4), inspect the frozen memory packet's
+`working-task-observation-relevance.v2` query support. It retains non-dominated
+lexical-score/source-chapter evidence, with observation identity reuse. Compare actual
+selected original ranges and the full request receipt; a correct draft or a matching
+source list does not close an omitted historical-support case. For new task v5/v6 Chapter Planning, verify that the frozen Group row supplies the
+primary/secondary functions and that regional goals are retained as source bindings
+without competing as Chapter retrieval demand. Frozen task v1-v4 extraction remains
+unchanged. Frozen task v3 keeps relevance v1. Do not replace a historical request with the current preview.
+
+Select v10 only prospectively using the existing `select-working-policy` command below.
+If a first native Planning preparation still owns an unsent Book-pause intent, request
+its existing Kernel cancellation and let the registered worker acknowledge it. Register
+the same-contract Planning runtime continuation through the existing local-operator API.
+`planning-acknowledged-preparation-handoff.v1` / control v14 retains verified preparation
+without requiring a fabricated isolated ancestor. Migration 0236 requires a private
+database backup; old migration bodies and v1-v13 continuation semantics remain intact.
+Never clear Effect rows or reservations to make the policy checkpoint pass. Revalidate
+the unchanged Pack contracts and original authenticated route before successor admission.
+If the observed CLI version label changed, v15 / acknowledged handoff v2 can compare
+the original verified receipt's entitlement to the current native entitlement. Only
+`cli_version` may differ; account, billing identity, executable digest, configuration,
+local paths and execution policies must reconstruct both authentication digests. The
+frozen `codex-cli-version-reconciliation.v1` records both snapshots and hashes. Migration
+0237 appends this guard; it does not relax v14 or rewrite old Provider evidence.
+V10 retains v9's policy fields and task binding, adding attributed promise lifecycle and
+v2 working memory. Frozen v2-v9 inputs keep their original meaning. New v10 Writer
+self-observations use v2; malformed optional metadata preserves the full prose and leaves
+a queryable coverage gap for backfill. The process-local rank cache is disposable,
+byte-bounded and keyed by task, exact source-unit digest, algorithm and rank limits;
+segmentation/tokenization cache only immutable source values. Source and final request
+validation remain mandatory. Measure cold and warm runs separately with original history,
+selected prose, full input, token accounting basis and stage timings.
+V10 records `working_memory.task_selection` with query-to-observation support and
+unmatched queries. A matching participant alone does not select every state and
+knowledge record. Selection reuses the best ranked claim/quote support for each task
+query, then restores source passages and recursive causes/resolutions. Open participant
+promises remain visible; neither the rank receipt nor a coverage status asserts that
+the model understood every relevant event.
+New memory-extraction and v10 requests persist the full application-visible Provider
+envelope inside `novelos.provider_request_admission.v2`. Exact request readback returns
+that admission artifact with `FROZEN_APPLICATION_REQUEST`, validates its hash and Effect
+binding, and retains separate dispatches and receipt input bindings. Historical requests
+with only original hashes return `LEGACY_HASH_ONLY`, never a newly rendered preview.
+
+For new task v6 complete-request preparation, inspect
+`compression_trace[].source_batch`: `source-bound-capacity-batching.v1` binds every
+member to the same original Context custodian and labels shared Effect receipts as
+`SHARED_BATCH_NOT_PER_SOURCE_CALL`. Count distinct Effect IDs, not per-source trace
+copies. Check the actual final transport after capacity projection, its independent
+final composition evidence, and the final admission; initial selection is insufficient.
+A native Book pause must prevent new Book-coordinated Chapter preparation calls and
+final dispatch, including a successor admitted before the pause. Check Effect creation
+and dispatch clocks against the persisted pause, and retain any observed post-pause
+failure evidence. Retained complete results remain readable; standalone author working
+revision retains its separate authorization. A pure-generation successor may record
+`capacity_preparation_reuse` / `chapter-complete-request-preparation-reuse.v1` in its
+admission. Verify the original admitted Context projection, current Pack/source/route
+bindings and final complete-request admission. `APPLIED_WITH_CURRENT_ADMISSION` means
+preparation was reused without another model call; it never settles the original main
+Writer UNKNOWN. `INVALIDATED_CURRENT_BINDINGS_OR_CAPACITY` rebuilds from the original
+verified inputs. Missing legacy full-request evidence cannot qualify this reuse.
+A singleton or oversized source uses its existing per-expression route. Task v1-v5
+replay cannot enable batching from a nested historical producer's packet. Preserve any
+uncertain invocation for the original Kernel reconciliation before a new send.
+
+For changes to this path run `test_context_building_completion.py`,
+`test_source_batch_capacity.py`,
+`test_memory_backfill_postgres.py`, existing working-memory/projection/history,
+Planning/World continuity and capacity/replay suites, plus the default-author-first and
+working-memory-interruption native cases. Run PostgreSQL suites serially per disposable
+`_test` database: their autouse fixture truncates business tables. Retain failed runs;
+scripted/native engineering evidence remains separate from real Provider creation and
+long-form literary qualification.
+
 Use `diagnosis_contract: prose-root-cause.v1` in a new long-form review policy to enable
 root-cause routing; historical review contracts are retained. FUTURE_REPLAN and INVESTIGATE
 proposals remain attached to author-edit candidates; selection is not issue-resolution proof.
 
-New Creation profiles enable `working-prose-projection.v7`,
+New Creation profiles enable `working-prose-projection.v9`,
 `working-story-schedule.v1`, `working-craft-delivery.v2`, `narrative-craft-budget.v5`
 and `native-prose-plan-feedback.v1`. The exact working Craft policy is
 `{"version":"working-craft-delivery.v2","use":"SELECTED_CONTINUATION_WITH_LOCATED_TRANSITIONS"}`;
 its frozen strategy is `narrative-craft-strategy.v4`. Historical profiles retain their
-existing versions. The v5/v6/v7 source-history manifest contains every predecessor, while
+existing versions. The v5-v9 source-history manifest contains every predecessor, while
 passages and located observations remain bounded by real request capacity. Check the
 host manifest separately from the shorter Provider projection; no omitted prose or
 receipt may be treated as realized experience or method success. Verify the selected working sources through Book,
@@ -651,6 +796,17 @@ Changed selected versions invalidate it. Existing policies retain historical cur
 Focused checks additionally cover `test_longform_narrative_contracts.py`,
 `test_craft_selection.py`, `test_prose_planning_evidence_working.py` and the native
 working-memory PostgreSQL variant. These checks prove consumption, not literary effects.
+For v9, also inspect the task, frozen Cast and original-range cases in
+`test_working_memory.py` and the local retrieval/selection cases in
+`test_working_prose_projection.py`. Verify native Chapter submission, Planning Arc Working
+Set preparation, regeneration and Book freeze/verify with their actual scoped inputs.
+The new source integration is `WIRED`; the local PostgreSQL `default-author-first` and
+`single-interruption` cases are `EXECUTABLE` with a scripted transport. Their exact
+implementation identity, actual Writer/task assertions and test output are recorded in
+`architecture/live-evidence/inkos-context-adaptation-20261019/verification.json`.
+This focused execution does not replace the complete same-revision repository gate or
+establish real Provider consumption; historical qualification does not automatically
+qualify v9.
 For method continuation, retain `NOT_ASSESSED` delivery allocations separately from
 source-bound working Review and formal acceptance. CONTINUE/DEFER can retain a stable
 same-phase instance; ADVANCE/END require located native phase Review support on the exact
@@ -806,7 +962,7 @@ remains independent and must still fit the unchanged model limit and output rese
 
 At the work-package starting revision `4948d9b3a1ca22a78daffb4f4ab1cbf46180ac52`,
 semantic overflow effects existed but formal Router selection rejected context tasks
-with `ROUTING_TASK_POLICY_REQUIRED`. Current policy `quality-constrained-routing.v13`
+with `ROUTING_TASK_POLICY_REQUIRED`. Current policy `quality-constrained-routing.v14`
 classifies `context_compress` and `context_fidelity` as HIGH-risk tasks using independent
 `DOMAIN_GATE_ACCEPTANCE` qualification (20 effective samples and the existing conservative
 quality floor). A cold or failed cohort blocks before dispatch; no direct Provider path
@@ -861,9 +1017,10 @@ and host Prompt `provider_view.capacity_projection` receipt. New story-only
 windows and their existing fidelity Effects, not a
 literary score or absolute semantic-losslessness certificate.
 Inspect frozen `capacity_history_exact_chapters` in both the selected Manifest and
-Context artifact, and the same field in the extraction. New v4 Packs retain one exact
-predecessor at capacity time; `recent_complete_chapters` still describes material
-preparation. Missing fields retain historical protection. The renderer rejects a
+Context artifact, and the same field in the extraction. New v4 Packs protect the supplied
+predecessor material at capacity time. With v9 this is the selected original ranges;
+capacity protection does not restore the omitted chapter. `recent_complete_chapters`
+still describes material preparation. Missing fields retain historical protection. The renderer rejects a
 policy mismatch instead of substituting repository defaults. An omitted range remains
 retrievable through Book's original manuscript/working-history source version; use the
 existing manuscript source and memory preparation entries before changing the task.
@@ -939,7 +1096,7 @@ version. An absent version preserves the historical rendering; an unsupported ve
 raises `CONTEXT_EXTRACT_TRANSPORT_INVALID`. Preserve the original Effect and reconcile
 its outcome before creating a new derivation; do not patch its frozen display version.
 Legacy 64,000-token Planning and 24,000-character history policies remain frozen;
-new ordinary creation uses v4 Context and v7 working prose. Explicit legacy Planning
+new ordinary creation uses v4 Context and v9 working prose. Explicit legacy Planning
 without the narrative intent boundary retains Pack 2.13.0 and Context v2; selecting
 that contract does not opt into the new capacity policy. Relevant history selection
 is still bounded by its Book/task policy, independently of physical capacity.
@@ -1658,10 +1815,47 @@ novel-forge authority-manuscript select-working-policy --project-id "$PROJECT" \
 ```
 
 The file contains the `working_prose_policy` object, not the entire Creation template.
-New Creation uses v8 with complete recent chapters and located historical retrieval.
-Empty or missing observations are coverage gaps; inspect exact older versions and select
-relevant query terms when that experience is needed. Do not label a recent-only input as
-complete historical memory. Selection keeps `PAUSED` unchanged, binds the original
+New Creation uses v9. Its template retains `queries=[]`, while Book automatically derives
+retrieval demand from the exact current ChapterPlan. For ChapterPlan generation and
+validation, Planning binds its frozen Arc inputs and the parent ChapterGroup's current
+Chapter-function row; ChapterGroup generation uses Arc inputs and the frozen Cast without
+binding its own Group output. The frozen input snapshot's unique `CHARACTER_CAST` binding supplies
+exact character names and unambiguous aliases; verification rereads that same version and
+hash. Do not substitute the latest Cast or stringify the governance payload into queries.
+`retrieval_task` binds stage, Chapter, source identities and field pointers;
+`context_selection` records the local ranking, original ranges, selection reasons and hashes.
+
+The current template defaults are:
+
+| Policy field | Default | Meaning |
+| --- | --- | --- |
+| `history_chapters` | `10000` | Chapter window for local historical passage candidates |
+| `recent_complete_chapters` | `0` | No recent chapter is required in full by default |
+| `recent_tail_paragraphs` | `4` | Predecessor ending paragraphs or long-paragraph source units |
+| `passage_characters` | `512` | Maximum Unicode codepoints per indexed source unit |
+| `retrieval_passages` | `12` | Ranked historical hits before memory and supporting ranges |
+| `retrieval_per_chapter` | `3` | Maximum ranked hits from one historical chapter |
+| `neighbor_paragraphs` | `1` | Adjacent source units retained around a selected range |
+| `max_characters` | `null` | No separate fixed prose-character allocation |
+
+V9 handles single newlines and CRLF and splits overlong paragraphs at sentence endings or
+whitespace when available, preserving original Unicode locations and text hashes. These
+paragraphs or units are not declarations of complete scenes. Their size and selection
+counts can be changed prospectively through this policy; they are not generation-failure
+token ceilings. Selected observations and recursive causal support may require additional
+ranges. Real rendered-request capacity remains enforced by its existing owner.
+
+Local task retrieval remains available when memory is absent. Task scope and selected
+ranges choose relevant latest observations and promises, with belief, hearsay, reader-only
+scope, knowledge owner and recursive causes retained. Inspect
+`source_coverage[*].memory_source` for exact sidecar or prose-source version IDs, content
+hashes and observations hashes, including predecessors omitted from delivered prose.
+Replay rebuilds selected memory and its causal support from those frozen versions
+independently of newer sidecar updates. Missing annotations remain explicit
+gaps and cannot block complete prose from being saved. Inspect omitted-candidate counts,
+source coverage and exact older versions when needed; lexical selection does not establish
+complete semantic memory. Frozen v2-v8 requests retain their original behavior, including
+v8's explicit-query and complete-recent selection. Policy selection keeps `PAUSED` unchanged, binds the original
 authenticated author, and replays only the same policy/reason/version. A stale checkpoint,
 active Chapter or unresolved Effect is rejected; reconcile it through the existing owner.
 The selection cannot reinterpret a frozen request or authorize a new Provider dispatch.

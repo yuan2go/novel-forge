@@ -1,0 +1,61 @@
+{
+  "record_type": "REAL_FROZEN_CHAPTER25_TASK_RECONSTRUCTION_NOT_PROVIDER_DELIVERY",
+  "verification_source_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+  "old_snapshot_hash": "sha256:c83a895d10e4899818cf3cd037e0678bf340fbc025221faad16329037175f6c4",
+  "new_snapshot_hash": "sha256:0bbbdd720b8a22202befe7e5b2efc9ac8527f5f9173fab328afd66832c411eaf",
+  "old_task_contract": "working-retrieval-task.v3",
+  "new_task_contract": "working-retrieval-task.v4",
+  "same_original_plan_and_cast_sources": true,
+  "old_memory_entries": 50,
+  "new_memory_entries": 61,
+  "old_selected_codepoints": 10143,
+  "new_selected_codepoints": 12199,
+  "elapsed_freeze_seconds": 1.853670125012286,
+  "old_frozen_context_replayed": true,
+  "provider_calls": 0,
+  "cases": [
+    {
+      "id": "native25-actual-first-self-practice",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "before_selected_original": true,
+      "after_selected_original": true
+    },
+    {
+      "id": "native25-left-elbow-unresolved",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "before_selected_original": true,
+      "after_selected_original": true
+    },
+    {
+      "id": "native25-two-forms-of-tightness",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "before_selected_original": true,
+      "after_selected_original": true
+    },
+    {
+      "id": "native25-knowledge-boundary",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "before_selected_original": true,
+      "after_selected_original": true
+    },
+    {
+      "id": "native25-three-classes-complete",
+      "requirement": "REQUIRED_IF_NEW_TASK_CONCERNS_COURSE_PROGRESS_OR_TEACHER_GUIDANCE",
+      "before_selected_original": false,
+      "after_selected_original": true
+    },
+    {
+      "id": "native25-unrelated-same-actor-old-tool-position",
+      "requirement": "EXCLUDE_AS_CURRENT_STATE_UNLESS_TASK_EXPLICITLY_REVISITS_OLD_QUARRY_ROUTE",
+      "before_selected_original": false,
+      "after_selected_original": false
+    },
+    {
+      "id": "native25-unexecuted-thought-is-not-event",
+      "requirement": "MANDATORY_PREDECESSOR_EVIDENCE",
+      "before_selected_original": true,
+      "after_selected_original": true
+    }
+  ],
+  "private_context_sha256": "af1c3610beb85ea57551a5e36035018d7297489625f59c731236ab01ff9bea38"
+}

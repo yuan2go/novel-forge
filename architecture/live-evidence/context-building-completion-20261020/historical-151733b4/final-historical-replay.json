@@ -1,0 +1,47 @@
+{
+  "source_commit": "151733b4c3af62586d1900c5c9e11156abc1915a",
+  "checks": [
+    {
+      "file": "baseline-v9-chapter20-context.json",
+      "file_sha256": "f47e35bd1c7dd577e4e19fa06dc6e427b5d7931541671da5886b9b4f3d9a90cc",
+      "snapshot_hash": "sha256:315f3ed62683e4dd6ad55d1ec20a0a69838499de41d0ffecb9400cb414c6a6e2",
+      "task_contract": "working-retrieval-task.v1",
+      "status": "PASS"
+    },
+    {
+      "file": "task20-v10-preview-full19.json",
+      "file_sha256": "72a9a3f7c86677f763a61b3a87ddd0a16a9bd76feb961c47649d0daa0d4101be",
+      "snapshot_hash": "sha256:bfbf85b492f05595e90739b5db3e5f35d3c238340bae48d79b1c12c898663834",
+      "task_contract": "working-retrieval-task.v1",
+      "status": "PASS"
+    },
+    {
+      "file": "task20-v10-preview-source-locators.json",
+      "file_sha256": "c1a65a5183a76ba9b37a75a2197f72f59bf74d81ce0a9dee62bc6ec8686ae014",
+      "snapshot_hash": "sha256:9887d31a5479d6ea0bdca5892e157676028c9009409d13f4e8b474405a8d959c",
+      "task_contract": "working-retrieval-task.v1",
+      "status": "PASS"
+    },
+    {
+      "file": "native-group21-actual-working-context-c1f074bb.json",
+      "file_sha256": "280d1cb51cbb53296ecae1f8209b57e037a8fa129fe252c02ebd6ca0434a9a4c",
+      "snapshot_hash": "sha256:0d4c61f1b4ef08c68d6e127baefd2f0f73ac37a6044e3e0c7564c759609de4a2",
+      "task_contract": "working-retrieval-task.v1",
+      "status": "PASS"
+    },
+    {
+      "file": "actual-planning-input-ae81e2d8.json",
+      "file_sha256": "9f64215089ebd1ab6d03283c768efeede1e4711852ae2a559ff55831394d7616",
+      "snapshot_hash": "sha256:7ddb1a7bf5b7ff90ca15b8b8179203bdb65966899c62861cdf8bc3997d3b2f94",
+      "task_contract": "working-retrieval-task.v2",
+      "status": "PASS"
+    },
+    {
+      "file": "actual-planning-input-e0e359be.json",
+      "file_sha256": "1739453cf5a33d473ac2ff6ce4bea8b24355081760f70872a113cc12643f2b5f",
+      "snapshot_hash": "sha256:036a76dc628821fcfd4a7020778d5d0b865c7c0c2306cb2fac8345b5d20e4a4b",
+      "task_contract": "working-retrieval-task.v3",
+      "status": "PASS"
+    }
+  ]
+}

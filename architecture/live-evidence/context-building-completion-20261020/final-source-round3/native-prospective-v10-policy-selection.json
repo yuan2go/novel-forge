@@ -1,0 +1,22 @@
+{
+  "operation_id": "5603c6e0-8621-4f58-a39c-24db8d73ca34",
+  "status": "SUCCEEDED",
+  "book_run_id": "book-run:e4b99400-7068-4ec8-aaa3-109a0de4478e",
+  "policy_asset_version_id": "b57c0bc6-9a32-4998-a5da-919c6b8d8b27",
+  "working_prose_policy": {
+    "version": "working-prose-projection.v10",
+    "history_chapters": 10000,
+    "recent_complete_chapters": 0,
+    "recent_tail_paragraphs": 4,
+    "retrieval_passages": 12,
+    "retrieval_per_chapter": 3,
+    "neighbor_paragraphs": 1,
+    "passage_characters": 512,
+    "max_characters": null,
+    "queries": [],
+    "guidance_mode": "COMBINED"
+  },
+  "effective_after_chapter": 20,
+  "state": "PAUSED",
+  "replayed": false
+}

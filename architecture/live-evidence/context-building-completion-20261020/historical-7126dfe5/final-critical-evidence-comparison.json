@@ -1,0 +1,162 @@
+{
+  "boundary": "READ_ONLY_FROZEN_TASK_RECONSTRUCTION_NOT_HISTORICAL_PROVIDER_DELIVERY",
+  "baseline_snapshot_hash": "sha256:315f3ed62683e4dd6ad55d1ec20a0a69838499de41d0ffecb9400cb414c6a6e2",
+  "current_snapshot_hash": "sha256:d3e70e37f1b98d11648fe4aa739ea8e987e0726d9bed7f55e0333fde2fc3e2ad",
+  "task_hash": "sha256:d7626f511192256ddd35cd8b151272ed304628cd39e91c14bab252d62abdf6a8",
+  "elapsed_freeze_seconds": 1.6801501250010915,
+  "checklist_file_sha256": "eee65d75ce30eb6e211408f7d5a327daa0794a99fb88ee2b8b11173e71b36d4b",
+  "selected_prose_codepoints": 24287,
+  "locator_receipt": {
+    "version": "working-source-locators.v2",
+    "boundary": "HISTORICAL_GENERATION_PLAN_LOCATORS_NOT_EVENT_REALIZATION_OR_KNOWLEDGE",
+    "index_hash": "sha256:e88c9a92ae16469af8c66ba8b227499900f2404f58b12330bd6e129a54640f71",
+    "source_count": 19,
+    "unavailable_plan_count": 0,
+    "selected": [
+      {
+        "chapter": 14,
+        "asset_version_id": "authority-output:c09cc5a0-1b0c-4c2b-a755-e43fd1f17d8c:chapter.best_candidate:v1",
+        "content_hash": "sha256:e028b127d24c8fa7b3aa2a11d4613a8188cd8fba566ddeb3384b8ed361a2f642",
+        "text_hash": "sha256:a442c975ca5f8bdced1a84601bed26fac75fd7b4aca00fa315cc757d88176f29",
+        "plan": {
+          "content_hash": "sha256:9f9e62f9417dc55c44b730eccfd249edeabd33a57eb6e16a91f8ae47aec90d8e",
+          "asset_version_id": "3d4c44d5-f940-43b3-9504-cbb09f41fddf"
+        },
+        "event_refs": [
+          "cg13-e14"
+        ],
+        "status": "HISTORICAL_PLAN_HINT_ONLY",
+        "matched_event_refs": [],
+        "explicit_chapter_reference": true,
+        "predecessor_handoff": false
+      },
+      {
+        "chapter": 16,
+        "asset_version_id": "authority-output:82900a6d-f40a-49cd-a7cb-a4db0343f09b:chapter.best_candidate:v1",
+        "content_hash": "sha256:e713347d34a2a6a708eea116f90c504f745b4dcde2eda47250f5b902e203e9a3",
+        "text_hash": "sha256:bf20df784967ea420693058dd5cb936d116ab088504ec3d0eaf0818b56deaebd",
+        "plan": {
+          "content_hash": "sha256:3e98af3a803a73368cf4f7e1216e0ce2445511e4b2d87a171e0531adeca77bd4",
+          "asset_version_id": "cffa91a5-00a3-4fb8-aa65-9af79a82d358"
+        },
+        "event_refs": [
+          "cg13-e16"
+        ],
+        "status": "HISTORICAL_PLAN_HINT_ONLY",
+        "matched_event_refs": [],
+        "explicit_chapter_reference": true,
+        "predecessor_handoff": false
+      },
+      {
+        "chapter": 17,
+        "asset_version_id": "authority-output:153d9a88-034a-44b0-a479-f5aaa18ade4e:chapter.best_candidate:v1",
+        "content_hash": "sha256:6965ab660a1790f2a8d3c6e32d6e5d63249ca9f13804ca8043faea37773e6a15",
+        "text_hash": "sha256:f09c0e8f9d5f8a4bc3399215775a116ca1366ac16c562932d6669057f6cf469c",
+        "plan": {
+          "content_hash": "sha256:4fec904302eabde106dd04c00be56546a0c70981f3c9221feed1a38e00ac45ab",
+          "asset_version_id": "b9406ea9-c84d-425a-807f-bcc73c4b725c"
+        },
+        "event_refs": [
+          "event:17:first-morning-work"
+        ],
+        "status": "HISTORICAL_PLAN_HINT_ONLY",
+        "matched_event_refs": [
+          "event:17:first-morning-work"
+        ],
+        "explicit_chapter_reference": false,
+        "predecessor_handoff": false
+      },
+      {
+        "chapter": 19,
+        "asset_version_id": "authority-output:90250101-c3db-423f-9305-b74ce4ad98ef:chapter.best_candidate:v1",
+        "content_hash": "sha256:6129c1105c98966f2f70ca7097618fa8475b4fcef27d4ee3a47312ab9c1e4e9e",
+        "text_hash": "sha256:f7d7fa798292d42ab66acd18759e1c100a7c835b8e8f650622d67319655055dd",
+        "plan": {
+          "content_hash": "sha256:9baeeccfd5e564713a13d66cc49978e3fa9ebe2f3cb6311283de63e919fb8118",
+          "asset_version_id": "21380388-83dd-442c-933f-2f3e61ee863a"
+        },
+        "event_refs": [
+          "event:19:second-lesson"
+        ],
+        "status": "HISTORICAL_PLAN_HINT_ONLY",
+        "matched_event_refs": [
+          "event:19:second-lesson"
+        ],
+        "explicit_chapter_reference": false,
+        "predecessor_handoff": true
+      }
+    ],
+    "unlocated_event_refs": [
+      "event:20:second-morning-work"
+    ],
+    "receipt_hash": "sha256:c9fd20c1fa4d45dbadabe3f7345fc672efdfd0b8d7ae2ba743c2d63008508761"
+  },
+  "cases": [
+    {
+      "id": "fee-original-choice",
+      "chapter": 14,
+      "before": "EXACT_SPAN_INCLUDED",
+      "after": "EXACT_SPAN_INCLUDED"
+    },
+    {
+      "id": "scope-not-permanent",
+      "chapter": 14,
+      "before": "EXACT_SPAN_MISSING",
+      "after": "EXACT_SPAN_INCLUDED"
+    },
+    {
+      "id": "cash-already-paid",
+      "chapter": 16,
+      "before": "EXACT_SPAN_MISSING",
+      "after": "EXACT_SPAN_INCLUDED"
+    },
+    {
+      "id": "first-morning-paid",
+      "chapter": 17,
+      "before": "EXACT_SPAN_MISSING",
+      "after": "EXACT_SPAN_INCLUDED"
+    },
+    {
+      "id": "carry-forward-practice",
+      "chapter": 17,
+      "before": "EXACT_SPAN_MISSING",
+      "after": "EXACT_SPAN_INCLUDED"
+    },
+    {
+      "id": "work-is-separate",
+      "chapter": 18,
+      "before": "EXACT_SPAN_INCLUDED",
+      "after": "EXACT_SPAN_INCLUDED"
+    },
+    {
+      "id": "classroom-misbelief",
+      "chapter": 19,
+      "before": "EXACT_SPAN_MISSING",
+      "after": "EXACT_SPAN_INCLUDED"
+    },
+    {
+      "id": "knowledge-correction",
+      "chapter": 19,
+      "before": "EXACT_SPAN_MISSING",
+      "after": "EXACT_SPAN_INCLUDED"
+    },
+    {
+      "id": "knowledge-not-generalization",
+      "chapter": 19,
+      "before": "EXACT_SPAN_INCLUDED",
+      "after": "EXACT_SPAN_INCLUDED"
+    },
+    {
+      "id": "labor-closed-after20",
+      "chapter": 20,
+      "before": "SOURCE_EXCLUDED",
+      "after": "SOURCE_EXCLUDED"
+    },
+    {
+      "id": "third-lesson-pending",
+      "chapter": 20,
+      "before": "SOURCE_EXCLUDED",
+      "after": "SOURCE_EXCLUDED"
+    }
+  ]
+}

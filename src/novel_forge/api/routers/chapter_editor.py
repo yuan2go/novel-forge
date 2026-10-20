@@ -48,6 +48,22 @@ class ManuscriptMemoryRequest(BaseModel):
     idempotency_key: str = Field(min_length=1)
 
 
+class ManuscriptMemoryBackfillRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str = Field(min_length=1)
+    book_run_id: str = Field(min_length=1)
+    expected_version: int = Field(ge=0, strict=True)
+    idempotency_key: str = Field(min_length=1)
+    chapters: list[int] | None = None
+    retry_operation_id: str = ""
+    retry_reason: str = ""
+
+
+class ManuscriptMemoryCancelRequest(ManuscriptMemoryBackfillRequest):
+    operation_id: str = Field(min_length=1)
+    reason: str = Field(min_length=1)
+
+
 class AuthorWorkflowRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     project_id: str = Field(min_length=1)
@@ -177,9 +193,13 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
         return execute(extend)
 
     @router.get("/manuscripts/memory")
-    def read_manuscript_memory(project_id: str, book_run_id: str, max_characters: int = Query(default=16000, ge=1, le=200000)):
+    def read_manuscript_memory(project_id: str, book_run_id: str, chapter_request_id: str = "", max_characters: int = Query(default=16000, ge=1, le=200000)):
         from novel_forge.modules.book_authority.manuscript import freeze_working_context
         def read(principal):
+            if chapter_request_id:
+                from novel_forge.modules.book_authority.memory_readback import request_memory
+                return request_memory(ctx.services.chapter_query.database_url, project_id=project_id,
+                    book_run_id=book_run_id, chapter_request_id=chapter_request_id, principal=principal)
             principal.require("book.authority.execute", project_id)
             with AuthorityUnitOfWork(ctx.services.chapter_query.database_url) as uow:
                 uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s AND project_id=%s", [book_run_id, project_id])
@@ -190,11 +210,37 @@ def create_router(ctx: ProductRouterContext) -> APIRouter:
                 uow.cursor.execute("SELECT book_id FROM authority_book WHERE book_id=%s FOR SHARE", [book["book_id"]])
                 uow.cursor.execute("SELECT to_jsonb(b) FROM authority_book_production b WHERE book_run_id=%s", [book_run_id])
                 book = uow.cursor.fetchone()[0]
-                return freeze_working_context(uow, book, book["current_chapter"]+1, projection_policy={
+                snapshot = freeze_working_context(uow, book, book["current_chapter"]+1, projection_policy={
                     "version": "working-prose-projection.v3", "history_chapters": max(1, book["current_chapter"]),
                     "recent_complete_chapters": min(2, max(1, book["current_chapter"])), "max_characters": max_characters,
                     "queries": [], "guidance_mode": "COMBINED"})
+                return {"read_kind": "CURRENT_V3_PREVIEW", "actual_request": False,
+                    "working_manuscript": snapshot, "working_memory": snapshot["working_memory"],
+                    "preview_policy": snapshot["projection_policy"]}
         return execute(read)
+
+    @router.get("/manuscripts/memory/coverage")
+    def read_memory_coverage(project_id: str, book_run_id: str):
+        from novel_forge.modules.book_authority.memory_backfill import memory_coverage
+        return execute(lambda principal: memory_coverage(ctx.services.chapter_query.database_url,
+            project_id=project_id, book_run_id=book_run_id, principal=principal))
+
+    @router.post("/manuscripts/memory/cancel")
+    def cancel_memory(request: ManuscriptMemoryCancelRequest):
+        from novel_forge.modules.book_authority.memory_backfill import cancel_backfill
+        return execute(lambda principal: cancel_backfill(ctx.services.chapter_query.database_url,
+            principal=principal, **request.model_dump(exclude={"chapters", "retry_operation_id", "retry_reason"})))
+
+    @router.post("/manuscripts/memory/backfill")
+    def backfill_memory(request: ManuscriptMemoryBackfillRequest):
+        from novel_forge.modules.book_authority.memory_backfill import admit_backfill
+        def admit(principal):
+            authority = ctx.services.book_authority_application
+            if authority.require(request.book_run_id)["project_id"] != request.project_id:
+                raise PermissionError("Work is outside this Project")
+            return admit_backfill(authority, authority.followup, principal=principal,
+                **request.model_dump(exclude={"project_id"}))
+        return execute(admit)
 
     @router.post("/manuscripts/memory")
     def manuscript_memory(request: ManuscriptMemoryRequest):

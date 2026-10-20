@@ -1,0 +1,17 @@
+{
+  "record_type": "NATIVE25_PRE_OUTPUT_CONDITIONAL_APPLICABILITY_FROM_FROZEN_GROUP_DEMAND",
+  "created_at": "2026-10-20T03:33:41.547184+00:00",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "preregistration_git_commit": "222a6715",
+  "private_checklist_sha256": "927235bf1797719cd6a4a3df699d9fcadd73b8b484c7d55c3ae1651db72f8053",
+  "native_planning_operation_id": "521bea9a-7189-48b7-980e-b0ea0d34026f",
+  "frozen_group_demand": "完整处理第24章独练留下的具体疑问，让教学从人物已经遇到的困难继续。",
+  "decisions": {
+    "seven_predecessor_continuity_cases": "APPLICABLE",
+    "prior-three-lessons-already-completed": "APPLICABLE_TEACHING_CONTINUATION",
+    "old-course-labour-settled": "PENDING_FINAL_CHAPTER_PLAN_FEE_SCOPE",
+    "old-course-cash-paid": "PENDING_FINAL_CHAPTER_PLAN_FEE_SCOPE",
+    "old-quarry-tool-position-negative-control": "APPLICABLE_NOT_A_QUARRY_OR_TOOL_ROUTE_TASK"
+  },
+  "output25_read": false
+}

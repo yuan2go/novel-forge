@@ -1,0 +1,37 @@
+{
+  "record_type": "FINAL_SOURCE_INDEPENDENT_NATIVE_ROUND_STABLE_CHECKPOINT_RESTORE",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "database": "nf_context_f799_acceptance",
+  "native_postgresql_port": 55450,
+  "postgresql_version": "16.15",
+  "restore_source": {
+    "private_dump_basename": "migration-533g1h57.dump",
+    "sha256": "4e98cacfd31d9bdeb8e059e032c7319a89bdcaee99e3b101db789cba25fc40ed",
+    "bytes": 999226381,
+    "source_migration_head": "20261019_0234_settled_preparation_capacity"
+  },
+  "final_migration_head": "20261020_0237_preparation_cli_version_identity",
+  "original_chapters": 20,
+  "original_codepoints": 100106,
+  "original_utf8_bytes": 296612,
+  "all_original_source_versions_hashes_and_text_exact": true,
+  "prior_round_new21_25_used_as_input": false,
+  "target_chapter_count": 100,
+  "accepted_through_chapter": 0,
+  "memory_coverage": {
+    "LOCATED_UNREVIEWED": 20
+  },
+  "provider_calls_for_upgrade_and_pack_activation": 0,
+  "retained_failed_preconditions": [
+    {
+      "action": "select-working-policy before native acknowledged preparation handoff",
+      "code": "AUTHOR_WORKFLOW_RECONCILIATION_REQUIRED"
+    },
+    {
+      "action": "repeat existing cancellation key with a different observed version",
+      "code": "IDEMPOTENCY_CONFLICT"
+    }
+  ],
+  "boundary": "New isolated native round; target100 retained. Shared retained original object storage is not a cold deployment proof; no earlier new21-25 candidate was inserted.",
+  "postgresql_system_identifier": "7698565467505611090"
+}

@@ -1,0 +1,36 @@
+{
+  "cancellation": {
+    "cancel_command_id": "ed7f8cec-0a31-46a8-a899-a0db1bd3d47b",
+    "replayed": false,
+    "status": "CANCELLATION_REQUESTED",
+    "version": 3
+  },
+  "worker_error": {
+    "code": "OPERATION_CANCELLATION_REQUESTED",
+    "message": "OPERATION_CANCELLATION_REQUESTED: worker cancellation was requested"
+  },
+  "after": {
+    "status": "RECONCILIATION_REQUIRED",
+    "version": 4
+  },
+  "effects": [
+    [
+      "context_compress",
+      "SUCCEEDED",
+      4
+    ],
+    [
+      "context_fidelity",
+      "FAILED_RETRYABLE",
+      1
+    ],
+    [
+      "context_fidelity",
+      "SUCCEEDED",
+      7
+    ]
+  ],
+  "main_generation_effects": 0,
+  "source_commit": "9c96b3de106c89ed0371478c0f17d0635da1f161",
+  "operation_id": "f20461bf-b3f0-495b-8cf3-173d5c9f0ca7"
+}

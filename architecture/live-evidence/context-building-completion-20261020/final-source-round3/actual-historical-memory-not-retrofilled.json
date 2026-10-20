@@ -1,0 +1,29 @@
+{
+  "record_type": "ACTUAL_BACKFILL_DOES_NOT_RETROFILL_FROZEN_REQUEST",
+  "source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "old_request_chapter": 23,
+  "old_request_id": "chapter-request:c01f9514acfe19f5e3eb672c9c80ee913a58575f9d39992ca9aa7c98951353b0",
+  "historically_frozen_source22_memory_status": "MISSING",
+  "historically_frozen_source22_memory_ref": {
+    "kind": "WRITER_SELF_OBSERVATION",
+    "version": "working-memory-source.v1",
+    "content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+    "asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+    "observations_hash": "sha256:74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+  },
+  "current_source22_memory_status": "LOCATED_UNREVIEWED",
+  "current_source22_memory_ref": {
+    "version": "working-memory-source.v1",
+    "kind": "MANUSCRIPT_MEMORY",
+    "asset_version_id": "3db0718d-ba71-4146-9d4b-4f9696b385b0",
+    "content_hash": "sha256:4910ddc60f2dae9db317f10ec0679c8f706967933e72f4551b00fb1ef773ce73",
+    "observations_hash": "sha256:ea1086d7e253c129170ea99be2c955cb6c95cd9b10e8457b1ead0c20b38a61b2"
+  },
+  "current_book_version": 199,
+  "provider_effects_created_by_http_readback": 0,
+  "legacy20_statuses": [
+    "LEGACY_HASH_ONLY",
+    "LEGACY_HASH_ONLY"
+  ],
+  "current_preview_kind": "CURRENT_V3_PREVIEW"
+}

@@ -1,0 +1,41 @@
+{
+  "external_effect_id": "80bfedc1-3107-4ecc-a5ed-ad6e53202d91",
+  "operation_id": "172a76e2-6785-4899-923d-586a1f27f277",
+  "operation_status": "FAILED_FINAL",
+  "effect_status": "UNKNOWN",
+  "stage": "draft",
+  "source_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+  "application_input": {
+    "unicode_codepoints": 245409,
+    "utf8_bytes": 311909
+  },
+  "application_protocol_schema": {
+    "unicode_codepoints": 2202,
+    "utf8_bytes": 2202
+  },
+  "snapshot_hash": "sha256:1ed6755c59b71b125a25a78169684eda11914380a9f11a88f3daf8099e9d2b0e",
+  "envelope_hash": "sha256:f2ac6cd9aecc3d77c485782653315ff44df6197b6fc143827525f290ff2f2935",
+  "local_process_receipts": [
+    {
+      "receipt_id": "process-receipt:3054191efcf8011193139ed9",
+      "input_sha256": "b3a42b0a8365b2d5708d9666a6e62cb8c4f5d3a38da62751896972dddbeebac2",
+      "request_digest": "3054191efcf8011193139ed91ea673e018d36a5a3809171b91092b472b43037e",
+      "status": "FAILED",
+      "process_started_at": "2026-10-19T21:46:12.763216Z",
+      "completed_at": "2026-10-19T22:01:32.852261Z",
+      "elapsed_ms": 920116,
+      "actual_turn_usage": [],
+      "process_receipt_file_sha256": "be3d852433beab70c703af539a7a5f160a2a8a00c96e9a780551efc5165ac50f",
+      "stdout_file_sha256": "96ee519ad17d7c7906da9e3e445579fb53f1a44562a3244e44caa6ac6e7933bb"
+    }
+  ],
+  "native_receipts": [],
+  "record_type": "REAL_PROVIDER_TRANSPORT_FAILURE_UNKNOWN_REMOTE_RESULT",
+  "database": "nf_context_acceptance",
+  "provider_error": "stream disconnected before completion: Transport error: network error: error decoding response body",
+  "complete_result_available": false,
+  "actual_provider_usage": null,
+  "cost_status": "UNKNOWN",
+  "resend_performed": false,
+  "reconciliation": "Original Effect and process evidence retained; no complete Provider result or receipt exists to authorize success or a blind resend. The separate restored round is not a resolution of this UNKNOWN."
+}

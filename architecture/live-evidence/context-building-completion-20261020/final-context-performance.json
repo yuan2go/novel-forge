@@ -1,0 +1,284 @@
+{
+  "kind": "ACTUAL_INPUT_RECONSTRUCTION_HOST_TIMING_NOT_PROVIDER_LATENCY",
+  "source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "measurements": [
+    {
+      "repeat": 0,
+      "cache_state": "COLD_PROCESS",
+      "times": {
+        "freeze_seconds": 2.561063292028848,
+        "frozen_verify_seconds": 0.5455212910310365,
+        "provider_view_render_seconds": 0.11531766597181559
+      },
+      "snapshot_hash": "sha256:621599ffe5d51209d46f442fecf57bcf2a24a4495e50a77b9e84159cfe53b6ed",
+      "selected_prose_codepoints": 24287,
+      "provider_view_unicode_codepoints": 451936,
+      "provider_view_utf8_bytes": 569804,
+      "candidate_observations": 547,
+      "selected_observations": 137,
+      "functions": [
+        {
+          "file": "cursor.py",
+          "line": 100,
+          "function": "execute",
+          "primitive_calls": 593,
+          "calls": 593,
+          "self_seconds": 0.000615442,
+          "total_seconds": 1.2799615400000002
+        },
+        {
+          "file": "connection.py",
+          "line": 277,
+          "function": "execute",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 1.7500000000000002e-06,
+          "total_seconds": 8e-05
+        },
+        {
+          "file": "domain.py",
+          "line": 1407,
+          "function": "canonical_hash",
+          "primitive_calls": 1968,
+          "calls": 1968,
+          "self_seconds": 0.00051943,
+          "total_seconds": 0.31759026500000004
+        },
+        {
+          "file": "task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "primitive_calls": 2597,
+          "calls": 2597,
+          "self_seconds": 0.014133139000000001,
+          "total_seconds": 0.259143132
+        },
+        {
+          "file": "task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.004703243,
+          "total_seconds": 0.504348417
+        },
+        {
+          "file": "working_selection.py",
+          "line": 38,
+          "function": "select_working_context",
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.0063275350000000005,
+          "total_seconds": 0.567918541
+        },
+        {
+          "file": "working_selection.py",
+          "line": 17,
+          "function": "_task_passage_ranges",
+          "primitive_calls": 19,
+          "calls": 19,
+          "self_seconds": 0.00046004700000000005,
+          "total_seconds": 0.001789961
+        },
+        {
+          "file": "source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.006581133,
+          "total_seconds": 0.5763617080000001
+        },
+        {
+          "file": "working_selection.py",
+          "line": 103,
+          "function": "validate_working_selection",
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.013372278000000001,
+          "total_seconds": 0.044208167
+        }
+      ]
+    },
+    {
+      "repeat": 1,
+      "cache_state": "WARM_PROCESS",
+      "times": {
+        "freeze_seconds": 1.2761956250178628,
+        "frozen_verify_seconds": 0.5511431249906309,
+        "provider_view_render_seconds": 0.11029283294919878
+      },
+      "snapshot_hash": "sha256:621599ffe5d51209d46f442fecf57bcf2a24a4495e50a77b9e84159cfe53b6ed",
+      "selected_prose_codepoints": 24287,
+      "provider_view_unicode_codepoints": 451936,
+      "provider_view_utf8_bytes": 569804,
+      "candidate_observations": 547,
+      "selected_observations": 137,
+      "functions": [
+        {
+          "file": "cursor.py",
+          "line": 100,
+          "function": "execute",
+          "primitive_calls": 587,
+          "calls": 587,
+          "self_seconds": 0.00053827,
+          "total_seconds": 0.8155843770000001
+        },
+        {
+          "file": "connection.py",
+          "line": 277,
+          "function": "execute",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 2.376e-06,
+          "total_seconds": 0.00019508400000000002
+        },
+        {
+          "file": "domain.py",
+          "line": 1407,
+          "function": "canonical_hash",
+          "primitive_calls": 1966,
+          "calls": 1966,
+          "self_seconds": 0.0005442040000000001,
+          "total_seconds": 0.317467635
+        },
+        {
+          "file": "task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "primitive_calls": 336,
+          "calls": 336,
+          "self_seconds": 0.001241107,
+          "total_seconds": 0.001840789
+        },
+        {
+          "file": "task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.0018392170000000002,
+          "total_seconds": 0.031247459
+        },
+        {
+          "file": "working_selection.py",
+          "line": 38,
+          "function": "select_working_context",
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.006177779,
+          "total_seconds": 0.044842084000000004
+        },
+        {
+          "file": "source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.006473907,
+          "total_seconds": 0.496177876
+        },
+        {
+          "file": "working_selection.py",
+          "line": 103,
+          "function": "validate_working_selection",
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.013263450000000001,
+          "total_seconds": 0.043865499
+        }
+      ]
+    },
+    {
+      "repeat": 2,
+      "cache_state": "WARM_PROCESS",
+      "times": {
+        "freeze_seconds": 1.2348072500317357,
+        "frozen_verify_seconds": 0.5222164999577217,
+        "provider_view_render_seconds": 0.10447295900667086
+      },
+      "snapshot_hash": "sha256:621599ffe5d51209d46f442fecf57bcf2a24a4495e50a77b9e84159cfe53b6ed",
+      "selected_prose_codepoints": 24287,
+      "provider_view_unicode_codepoints": 451936,
+      "provider_view_utf8_bytes": 569804,
+      "candidate_observations": 547,
+      "selected_observations": 137,
+      "functions": [
+        {
+          "file": "cursor.py",
+          "line": 100,
+          "function": "execute",
+          "primitive_calls": 587,
+          "calls": 587,
+          "self_seconds": 0.000560163,
+          "total_seconds": 0.779985296
+        },
+        {
+          "file": "connection.py",
+          "line": 277,
+          "function": "execute",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 1.709e-06,
+          "total_seconds": 0.000115625
+        },
+        {
+          "file": "domain.py",
+          "line": 1407,
+          "function": "canonical_hash",
+          "primitive_calls": 1966,
+          "calls": 1966,
+          "self_seconds": 0.00048825900000000006,
+          "total_seconds": 0.30732544
+        },
+        {
+          "file": "task_retrieval.py",
+          "line": 68,
+          "function": "_tokens",
+          "primitive_calls": 336,
+          "calls": 336,
+          "self_seconds": 0.001035419,
+          "total_seconds": 0.0015802140000000001
+        },
+        {
+          "file": "task_retrieval.py",
+          "line": 185,
+          "function": "select_task_passages",
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.001629622,
+          "total_seconds": 0.029319875000000002
+        },
+        {
+          "file": "working_selection.py",
+          "line": 38,
+          "function": "select_working_context",
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.005443839000000001,
+          "total_seconds": 0.041684208
+        },
+        {
+          "file": "source_locators.py",
+          "line": 28,
+          "function": "freeze_source_locators",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.006563012,
+          "total_seconds": 0.497560667
+        },
+        {
+          "file": "working_selection.py",
+          "line": 103,
+          "function": "validate_working_selection",
+          "primitive_calls": 4,
+          "calls": 4,
+          "self_seconds": 0.012424572,
+          "total_seconds": 0.040998793000000006
+        }
+      ]
+    }
+  ],
+  "actual_provider_tokens": null,
+  "cost": null
+}

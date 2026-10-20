@@ -1,0 +1,16 @@
+{
+  "source_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+  "old_operation_id": "f142e5ef-51a7-4fa3-8ece-ecb08b6a2ce7",
+  "old_batch_id": "6f62d308-e644-440b-89d0-bc45b8d4e766",
+  "old_batch_status": "STOPPED",
+  "cancellation": {
+    "cancel_command_id": "e8f02299-38d5-4aaa-ae42-83222a1e0dfa",
+    "replayed": false,
+    "status": "CANCELLED",
+    "version": 5
+  },
+  "old_effect_count": 0,
+  "original_failed_attempt_retained": true,
+  "successful21_22_sidecars_retained": true,
+  "reason": "Unsent old task cancelled; a new task with a versioned prior selection is a distinct request, not a replay or Provider receipt."
+}

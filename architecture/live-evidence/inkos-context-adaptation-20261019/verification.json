@@ -1,0 +1,216 @@
+{
+  "record_type": "SOURCE_BOUND_CONTEXT_ADAPTATION_VERIFICATION",
+  "authority": "NOT_RUNTIME_AUTHORITY",
+  "recorded_at": "2026-10-19T13:02:43.170005+00:00",
+  "base_commit": "215abd7d0abf4a158d7454ed72237486d201b040",
+  "reference_commit": "https://github.com/Narcooo/inkos/tree/56aa33b04a27c45cc7a91f3d018187a77aec54ea",
+  "implementation": {
+    "schema_version": "implementation-tree-identity.v3",
+    "algorithm": "sha256-canonical-file-records-v2",
+    "implementation_tree_sha": "sha256:de875adaefceb55a5c01984f0fd5d76447a4ef5ba5251654dd997ba3a912cf3d",
+    "path_count": 2126
+  },
+  "scope_evidence_state": "EXECUTABLE",
+  "scope": "Existing Book/Planning/Chapter v9 input wiring, focused deterministic tests and the two named local PostgreSQL paths with a scripted transport.",
+  "focused_tests": {
+    "exit_code": 0,
+    "summary": "387 passed in 7.96s",
+    "command": [
+      "python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/unit/test_working_prose_projection.py",
+      "tests/unit/test_working_memory.py",
+      "tests/unit/test_longform_working_history.py",
+      "tests/unit/test_creation_coordination.py",
+      "tests/unit/test_planning_working_continuity.py",
+      "tests/unit/test_world_working_continuity.py",
+      "tests/unit/test_retained_working_continuation.py",
+      "tests/unit/test_working_plan_regeneration.py",
+      "tests/unit/test_chapter_capacity_continuation.py",
+      "--disable-warnings",
+      "--maxfail=1"
+    ],
+    "output": {
+      "path": "architecture/live-evidence/inkos-context-adaptation-20261019/focused-tests.log",
+      "sha256": "2318c952153c98fb8aace49174aa51fc39970de19659cddfd68fe42c67a96719"
+    }
+  },
+  "native_postgresql": {
+    "exit_code": 0,
+    "summary": "2 passed, 9 deselected, 8 warnings in 743.39s (0:12:23)",
+    "started_at": "2026-10-19T11:18:55.552375+00:00",
+    "completed_at": "2026-10-19T11:32:07.007204+00:00",
+    "command": [
+      "python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/integration/test_author_first_manuscript_postgres.py",
+      "-k",
+      "default-author-first or single-interruption",
+      "--disable-warnings",
+      "--maxfail=1"
+    ],
+    "environment_variables": {
+      "NOVEL_FORGE_DATABASE_URL": "postgresql://postgres@127.0.0.1:55439/novel_forge_inkos_context_test"
+    },
+    "transport": "Scripted SynthesisTransport and local test executables; no real Provider call.",
+    "cases": [
+      "single-interruption",
+      "default-author-first"
+    ],
+    "implementation_before": {
+      "schema_version": "implementation-tree-identity.v3",
+      "implementation_tree_sha": "sha256:de875adaefceb55a5c01984f0fd5d76447a4ef5ba5251654dd997ba3a912cf3d",
+      "path_count": 2126
+    },
+    "implementation_after": {
+      "schema_version": "implementation-tree-identity.v3",
+      "implementation_tree_sha": "sha256:de875adaefceb55a5c01984f0fd5d76447a4ef5ba5251654dd997ba3a912cf3d",
+      "path_count": 2126
+    },
+    "source_identity_stable_during_run": true,
+    "assertions": [
+      "ChapterGroup task binds Arc and frozen Cast without its own Group output",
+      "ChapterPlan task binds the parent Group",
+      "Actual Chapter 7 delivery uses v9 with recent_complete_chapters=0",
+      "Frozen task source IDs/hashes, field pointers and selection task hash validate",
+      "ExecutionIntent contains the same frozen working snapshot",
+      "Materialized Writer input contains the same task hash and v9 contract",
+      "Both cases complete eight chapters, interruption/recovery, author edit, export and backup restore",
+      "Final accepted cursor remains zero"
+    ],
+    "database": {
+      "database": "novel_forge_inkos_context_test",
+      "server_version": "16.15 (Ubuntu 16.15-0ubuntu0.24.04.1)",
+      "pgvector_extension_version": "0.8.1",
+      "halfvec_type": "halfvec",
+      "book_checkpoints": [
+        [
+          "READY",
+          8,
+          8,
+          0
+        ],
+        [
+          "READY",
+          8,
+          8,
+          0
+        ]
+      ]
+    },
+    "migration_history": {
+      "current": "20261019_0235_source_isolation_convergence",
+      "target_head": "20261019_0235_source_isolation_convergence",
+      "applied_head": "20261019_0235_source_isolation_convergence",
+      "history_valid": true,
+      "history_error": null,
+      "schema_qualification": "NOT_CHECKED",
+      "applied_at_semantics": "transaction timestamps; not per-statement execution order",
+      "missing": [],
+      "extra": [],
+      "ok": true,
+      "applied_count": 236,
+      "available_count": 236
+    },
+    "output": {
+      "path": "architecture/live-evidence/inkos-context-adaptation-20261019/native-postgres.log",
+      "sha256": "01b0657bbb5f72cefb7fc9f8446c3fb8f21d2fd07dad383da7647d86c379fe31"
+    }
+  },
+  "static_checks": {
+    "ruff": {
+      "exit_code": 0,
+      "python_file_count": 24,
+      "output": "All checks passed!"
+    },
+    "git_diff_check": {
+      "exit_code": 0
+    },
+    "test_reality": {
+      "status": "PASS",
+      "test_definition_count": 4844,
+      "test_file_count": 619,
+      "mock_fixture_false_qualification_count": 0,
+      "unclassified_files": [],
+      "errors": []
+    },
+    "documentation_reality": {
+      "status": "FAIL",
+      "errors": [
+        "canonical document references missing path: docs/README.md:reports/audits/",
+        "canonical document references missing path: docs/current-system.md:architecture/live-evidence/author-first-owned-recovery-5f5abbcb/",
+        "canonical document references missing path: docs/current-system.md:architecture/live-evidence/author-first-working-selection-9e289b4b/",
+        "canonical document references missing path: docs/current-system.md:reports/audits/",
+        "canonical document references missing path: docs/runtime-operations.md:architecture/evidence/",
+        "canonical document references missing path: docs/runtime-operations.md:novels/yu-xian-zhi-wai/inputs/author-guided-twelve",
+        "canonical document references missing path: docs/runtime-operations.md:novels/yu-xian-zhi-wai/current/README.md",
+        "qualification_runs[0].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[1].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[2].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[3].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[4].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[4].qualification_evidence evidence path does not exist: architecture/live-evidence/real-provider-qualification-45e901b2422b5f17dd70004cb186ff1e19155743.json",
+        "qualification_runs[5].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[6].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[6].qualification_evidence evidence path does not exist: architecture/live-evidence/real-provider-qualification-d978a35584e8c6784ac141f6ff69495fb123ea07.json",
+        "qualification_runs[7].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[8].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[8].qualification_evidence evidence path does not exist: architecture/evidence/p0-backend-qualification-3c6367b8fe7ced6c1ce22236606cba50f91a0d59.json",
+        "qualification_runs[9].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[9].qualification_evidence evidence path does not exist: architecture/evidence/p0-backend-qualification-7a9e2c6dd9261a115a2aac979df6e31961607c9c.json",
+        "qualification_runs[10].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[11].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[11].qualification_evidence evidence path does not exist: architecture/evidence/p0-backend-qualification-8e43eb27db57b321becf07d95542eec9e9017ffb.json",
+        "qualification_runs[11].qualification_evidence evidence path does not exist: architecture/live-evidence/narrative-reality-engineering-8e43eb27db57b321becf07d95542eec9e9017ffb/production-wiring-observation.json",
+        "qualification_runs[12].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[12].qualification_evidence evidence path does not exist: architecture/evidence/p0-backend-qualification-27ed5d5e14f9b6bd5f256a096532a6733ad524d3.json",
+        "qualification_runs[12].qualification_evidence evidence path does not exist: architecture/live-evidence/narrative-reality-engineering-27ed5d5e14f9b6bd5f256a096532a6733ad524d3/production-wiring-observation.json",
+        "qualification_runs[13].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[13].qualification_evidence evidence path does not exist: architecture/evidence/p0-backend-qualification-15f6d5e385c57c282e16e8c10932c646eec99db7.json",
+        "qualification_runs[13].qualification_evidence evidence path does not exist: architecture/live-evidence/world-causal-resume-15f6d5e385c57c282e16e8c10932c646eec99db7/production-wiring-observation.json",
+        "qualification_runs[14].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[14].qualification_evidence evidence path does not exist: architecture/evidence/p0-backend-qualification-23346cda84e9d2d8df62d75b55e2ba0f0f102799.json",
+        "qualification_runs[14].qualification_evidence evidence path does not exist: architecture/live-evidence/creative-grounded-23346cda84e9d2d8df62d75b55e2ba0f0f102799/production-wiring-observation.json",
+        "qualification_runs[15].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[16].observed_at_sha is not an ancestor Git commit",
+        "qualification_runs[16].qualification_evidence evidence path does not exist: architecture/evidence/p0-backend-qualification-45fa74ace314735112a3447e660c685172c6f79f.json",
+        "negative_boundaries[1].evidence evidence path does not exist: architecture/live-evidence/real-provider-qualification-45e901b2422b5f17dd70004cb186ff1e19155743.json"
+      ],
+      "comment_ratchet": {
+        "base_sha": "",
+        "status": "NOT_APPLICABLE_NO_ORIGIN"
+      },
+      "scope": "Local full-repository check blocked by unavailable original Git history and historical files; no changed-code/comment/projection error."
+    }
+  },
+  "synthetic_selection": {
+    "result": {
+      "path": "architecture/live-evidence/inkos-context-adaptation-20261019/synthetic-selection.json",
+      "sha256": "7738e681486909ddc19efd9d3201f86bac917690c6cde8ce18bfff40a8f19a1b"
+    },
+    "reproducer": {
+      "path": "architecture/live-evidence/inkos-context-adaptation-20261019/synthetic-selection-benchmark.py",
+      "sha256": "9b0ff828f518455e7f71cbd87d22e41c67f0e72c4fe1794aa283307d603a1c93"
+    },
+    "recorded_implementation_files_match": true,
+    "limitation": "Synthetic fixed-demand lexical selection; no native source resolution, real Provider input cost, semantic completeness, literary quality or production latency claim."
+  },
+  "repository_qualification": {
+    "status": "NOT_QUALIFIED",
+    "reason": "The local snapshot lacks upstream ancestor Git objects and historical evidence/manuscript files needed by the canonical whole-repository gate. Final draft PR CI must run in a complete checkout. Existing qualification records and gates are unchanged."
+  },
+  "negative_boundaries": {
+    "full_repository_P0_qualified": false,
+    "full_schema_qualification": "NOT_CHECKED",
+    "real_provider_call": false,
+    "production_proven": false,
+    "semantic_recall_complete": false,
+    "literary_improvement_proven": false,
+    "production_book_policy_changed": false
+  },
+  "compatibility": "Frozen v2-v8 requests retain original selection and replay. New Creation defaults to v9; prospective existing-Book policy changes use the existing versioned command."
+}

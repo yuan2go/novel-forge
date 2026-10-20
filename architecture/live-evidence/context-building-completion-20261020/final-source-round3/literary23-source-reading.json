@@ -1,0 +1,118 @@
+{
+  "record_type": "FINAL_SOURCE_NATIVE_PROSE_READING_JUDGMENT",
+  "verification_source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "database": "nf_context_f799_acceptance",
+  "reviewer": "CODEX_ARTIFACT_READING_NOT_AUTHOR_ACCEPTANCE",
+  "skill": "quality-review",
+  "frozen_task_hash": "sha256:8da1de4f6afdbc6eaa39d561500d80cfabe29e6b54a0bcb129c92ad45118980b",
+  "scope": "Complete selected23 native revision compared with21-22 and its actual finite paid-irrigation task;24 is not yet read",
+  "status": "BOUNDED_CONTINUITY_SUPPORTED_NOT_LITERARY_OR_LONGFORM_QUALIFICATION",
+  "model_scores_used": false,
+  "judgments": [
+    {
+      "id": "old-course-debt-stays-closed",
+      "chapter": 23,
+      "source_asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+      "source_text_sha256": "4654ebadb162d74038879630ecdac6d1cdb22f922a1f4bec3cbcc18c1eb231a2",
+      "start_codepoint": 573,
+      "end_codepoint": 633,
+      "quote_sha256": "1795c7b71e2f9cfa78a7e07136dd3aac0a0bb2271945e6023db6b89b14a445fd",
+      "assessment": "本次田务另计24钱；已完成的课程和抵费不被重开，也不变成常驻药田义务。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "scope-and-time-agreed",
+      "chapter": 23,
+      "source_asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+      "source_text_sha256": "4654ebadb162d74038879630ecdac6d1cdb22f922a1f4bec3cbcc18c1eb231a2",
+      "start_codepoint": 530,
+      "end_codepoint": 549,
+      "quote_sha256": "c886cc3122dfb1d13211fc0267671151c0823600570d0374516cac276e69becf",
+      "assessment": "人物对新工作明确范围、结束时间和不续接，保留实际未许出的时段。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "plant-knowledge-not-granted",
+      "chapter": 23,
+      "source_asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+      "source_text_sha256": "4654ebadb162d74038879630ecdac6d1cdb22f922a1f4bec3cbcc18c1eb231a2",
+      "start_codepoint": 1141,
+      "end_codepoint": 1192,
+      "quote_sha256": "a2070292303274829585d11f569cd0bd7ae645fedadcdec2ea32e6c8cb77f825",
+      "assessment": "他负责提送；土壤与植物用水判断仍由工友和宋既明承担。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "redistribution-has-opportunity-cost",
+      "chapter": 23,
+      "source_asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+      "source_text_sha256": "4654ebadb162d74038879630ecdac6d1cdb22f922a1f4bec3cbcc18c1eb231a2",
+      "start_codepoint": 3693,
+      "end_codepoint": 3713,
+      "quote_sha256": "571558d30c01c93922f09fb90ab3678466ffd732a80c262f667e3489c9df6615",
+      "assessment": "宋既明顺延归整来补送水人手，工作没有因主人公退出凭空消失。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "actual-handoff-not-only-a-promise",
+      "chapter": 23,
+      "source_asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+      "source_text_sha256": "4654ebadb162d74038879630ecdac6d1cdb22f922a1f4bec3cbcc18c1eb231a2",
+      "start_codepoint": 4184,
+      "end_codepoint": 4237,
+      "quote_sha256": "183d40e7b4b7c28b3ae0f0379aa230aab814e9e44e7586e7f6a32df8ffd0fd5a",
+      "assessment": "接手者实际完成下一段送水，留床者继续浇灌，有限承诺具备可见履行依据。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "current-pay-confirmed",
+      "chapter": 23,
+      "source_asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+      "source_text_sha256": "4654ebadb162d74038879630ecdac6d1cdb22f922a1f4bec3cbcc18c1eb231a2",
+      "start_codepoint": 4371,
+      "end_codepoint": 4383,
+      "quote_sha256": "e19745c7f776f91498449d5cd646fef67e03fd1e84cac88a0193e3e8f270c1ff",
+      "assessment": "新工作已交付付酬；不是再次偿还旧课程劳务。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    },
+    {
+      "id": "future-practice-remains-future",
+      "chapter": 23,
+      "source_asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+      "source_content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+      "source_text_sha256": "4654ebadb162d74038879630ecdac6d1cdb22f922a1f4bec3cbcc18c1eb231a2",
+      "start_codepoint": 4853,
+      "end_codepoint": 4931,
+      "quote_sha256": "eb4eecfbd9fe18dc0e0ea4d227b4bf960e6ccb257b54b85684f312979e750ac5",
+      "assessment": "当前只是留出明日时段；未把未来复练、恢复或独立掌握提前写成已完成。",
+      "status": "SUPPORTED_BY_SELECTED_PROSE"
+    }
+  ],
+  "author_length": {
+    "unit": "HAN_CHARACTERS_V1",
+    "actual": 4326,
+    "target": {
+      "maximum": 5000,
+      "minimum": 4000
+    }
+  },
+  "original_draft_length_failure": {
+    "han": 3847,
+    "status": "FAIL_RETAINED",
+    "source_asset_version_id": "authority-output:2deda8c8-6196-4315-933d-023f4f57ffd1:chapter.draft:v1"
+  },
+  "native_revision_used": true,
+  "manual_prose_edit": false,
+  "aesthetic_observations": [
+    {
+      "kind": "DISCRETIONARY_AESTHETIC_SUGGESTION",
+      "observation": "调走归整人手使边界产生了他人的劳动代价；22和23连续采用有限工作、收钱、回程的结构，长窗口中可能出现节奏重复，应结合作者慢成长目标继续观察，不能据此强加反转或爽点门槛。"
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "record_type": "PREREGISTERED_PREDECESSOR_SUPPORT_FOR_NATIVE24",
+  "created_at": "2026-10-20T03:09:14.468529+00:00",
+  "before_native24_prose": true,
+  "boundary": "Evaluation only; completed paid scope and future practice remain distinct. Not sent as a writing template.",
+  "cases": [
+    {
+      "id": "old-course-debt-stays-closed",
+      "requirement": "本次田务另计24钱；已完成的课程和抵费不被重开，也不变成常驻药田义务。",
+      "alternatives": [
+        {
+          "chapter": 23,
+          "asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+          "content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+          "quote_sha256": "1795c7b71e2f9cfa78a7e07136dd3aac0a0bb2271945e6023db6b89b14a445fd"
+        }
+      ]
+    },
+    {
+      "id": "scope-and-time-agreed",
+      "requirement": "人物对新工作明确范围、结束时间和不续接，保留实际未许出的时段。",
+      "alternatives": [
+        {
+          "chapter": 23,
+          "asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+          "content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+          "quote_sha256": "c886cc3122dfb1d13211fc0267671151c0823600570d0374516cac276e69becf"
+        }
+      ]
+    },
+    {
+      "id": "plant-knowledge-not-granted",
+      "requirement": "他负责提送；土壤与植物用水判断仍由工友和宋既明承担。",
+      "alternatives": [
+        {
+          "chapter": 23,
+          "asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+          "content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+          "quote_sha256": "a2070292303274829585d11f569cd0bd7ae645fedadcdec2ea32e6c8cb77f825"
+        }
+      ]
+    },
+    {
+      "id": "redistribution-has-opportunity-cost",
+      "requirement": "宋既明顺延归整来补送水人手，工作没有因主人公退出凭空消失。",
+      "alternatives": [
+        {
+          "chapter": 23,
+          "asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+          "content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+          "quote_sha256": "571558d30c01c93922f09fb90ab3678466ffd732a80c262f667e3489c9df6615"
+        }
+      ]
+    },
+    {
+      "id": "actual-handoff-not-only-a-promise",
+      "requirement": "接手者实际完成下一段送水，留床者继续浇灌，有限承诺具备可见履行依据。",
+      "alternatives": [
+        {
+          "chapter": 23,
+          "asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+          "content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+          "quote_sha256": "183d40e7b4b7c28b3ae0f0379aa230aab814e9e44e7586e7f6a32df8ffd0fd5a"
+        }
+      ]
+    },
+    {
+      "id": "current-pay-confirmed",
+      "requirement": "新工作已交付付酬；不是再次偿还旧课程劳务。",
+      "alternatives": [
+        {
+          "chapter": 23,
+          "asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+          "content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+          "quote_sha256": "e19745c7f776f91498449d5cd646fef67e03fd1e84cac88a0193e3e8f270c1ff"
+        }
+      ]
+    },
+    {
+      "id": "future-practice-remains-future",
+      "requirement": "当前只是留出明日时段；未把未来复练、恢复或独立掌握提前写成已完成。",
+      "alternatives": [
+        {
+          "chapter": 23,
+          "asset_version_id": "authority-output:ed79f126-edf5-46a2-92a8-47ee64d69061:chapter.best_candidate:v1",
+          "content_hash": "sha256:280e0348e4c1e85623a3311c86acc9897039451289248ce39b9845d9c6b9b375",
+          "quote_sha256": "eb4eecfbd9fe18dc0e0ea4d227b4bf960e6ccb257b54b85684f312979e750ac5"
+        }
+      ]
+    }
+  ],
+  "private_raw_sha256": "66fb1ee4d2424029572953e95717782d5e64eb15856daa38b88c63bc00c91db3"
+}

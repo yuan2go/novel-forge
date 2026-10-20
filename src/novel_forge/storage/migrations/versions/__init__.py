@@ -238,6 +238,8 @@ from . import (
     v20261019_0233_acknowledged_preparation_routing,
     v20261019_0234_settled_preparation_capacity,
     v20261019_0235_source_isolation_convergence,
+    v20261020_0236_acknowledged_preparation_custody,
+    v20261020_0237_preparation_cli_version_identity,
 )
 
 VERSION_MODULES = [
@@ -477,6 +479,8 @@ VERSION_MODULES = [
     v20261019_0233_acknowledged_preparation_routing,
     v20261019_0234_settled_preparation_capacity,
     v20261019_0235_source_isolation_convergence,
+    v20261020_0236_acknowledged_preparation_custody,
+    v20261020_0237_preparation_cli_version_identity,
 ]
 
 __all__ = ["VERSION_MODULES"]

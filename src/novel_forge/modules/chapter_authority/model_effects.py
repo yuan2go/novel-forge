@@ -409,10 +409,22 @@ class ExternalEffectChapterModelPort:
         provider_output_tokens: int | None = None,
         pre_send_assertion: Callable[[], None] | None = None,
     ) -> ModelProviderResult:
-        if stage not in MODEL_CAPABILITY_STAGES | CONTEXT_MODEL_STAGES | {"reader_outcome", "longform_prose_review", "screenplay_generate", "screenplay_review", "screenplay_revision"}:
+        if stage not in MODEL_CAPABILITY_STAGES | CONTEXT_MODEL_STAGES | {"working_memory_extract", "reader_outcome", "longform_prose_review", "screenplay_generate", "screenplay_review", "screenplay_revision"}:
             raise KernelError(
                 "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported model stage: {stage}"
             )
+        def require_book_dispatch():
+            if getattr(request, "database_url", ""):
+                from novel_forge.modules.book_authority.production_policy import require_chapter_provider_dispatch
+                with get_database_runtime(self.database_url).connection() as connection:
+                    with connection.cursor() as cursor:
+                        require_chapter_provider_dispatch(cursor, project_id=request.project_id, operation_id=request.operation_id)
+
+        def require_provider_dispatch():
+            require_book_dispatch()
+            if pre_send_assertion is not None:
+                pre_send_assertion()
+
         capacity_upgrade = getattr(request, "capacity_upgrade", None)
         if capacity_upgrade and stage not in CONTEXT_MODEL_STAGES:
             if payload.get("_context_capacity_upgrade") not in (None, capacity_upgrade):
@@ -521,7 +533,7 @@ class ExternalEffectChapterModelPort:
             dict(business_payload.get("preparation_report") or {}).get("stage_context_profile_versions", {}).get("draft")
             or business_payload.get("draft_profile_version") or ""
         )
-        task_admission_scoped = task_profile == "draft-context-profile-v4" or stage in CONTEXT_MODEL_STAGES
+        task_admission_scoped = task_profile == "draft-context-profile-v4" or stage in CONTEXT_MODEL_STAGES or stage == "working_memory_extract"
         task_scoped = task_admission_scoped or (stage == "reader_outcome" and request.definition_version == "1.4.0") or task_scoped_prose_review(request, stage)
         route = getattr(self.adapter, "routes", {}).get(stage)
         output_target = None
@@ -759,6 +771,14 @@ class ExternalEffectChapterModelPort:
                     bounded_reservation_tokens = frozen_total
             effect_request_payload = frozen_payload
         elif binder is not None:
+            require_provider_dispatch()
+            if getattr(request, "database_url", "") and stage not in CONTEXT_MODEL_STAGES:
+                from .capacity_reuse import retained_preparation
+                prepared = retained_preparation(self.database_url, request, stage=stage, payload=payload)
+                if prepared is not None:
+                    projection, reuse_proof = prepared
+                    effect_request_payload["_production_execution"]["_retained_capacity_preparation"] = projection
+                    effect_request_payload["_production_execution"]["capacity_preparation_reuse"] = reuse_proof
             freeze_capability = getattr(binder, "freeze_before_external_effect", None)
             if not callable(freeze_capability):
                 raise KernelError(
@@ -773,6 +793,7 @@ class ExternalEffectChapterModelPort:
 
             def context_model_call(substage, task):
                 require_context_execution()
+                require_book_dispatch()
                 sources = []
                 for pointer in effect_request_payload["_production_execution"]["input_artifacts"]:
                     document = self.query.require(project_id=request.project_id, asset_version_id=pointer["asset_version_id"])
@@ -1112,7 +1133,7 @@ class ExternalEffectChapterModelPort:
                 lease_seconds=self.lease_seconds,
                 adapter=effect_adapter,
                 budget_reservation_id=str(reservation["reservation_id"]),
-                pre_send_assertion=pre_send_assertion,
+                pre_send_assertion=require_provider_dispatch,
             )
         except KernelError as exc:
             if getattr(exc, "code", "") != "RUNTIME_DISPATCH_PAUSED":
@@ -1986,7 +2007,7 @@ def _normalize_model_output(
 ) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise KernelError("MODEL_RESPONSE_INVALID", "model response must be an object")
-    if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
+    if stage in {"working_memory_extract", "screenplay_generate", "screenplay_review", "screenplay_revision"}:
         return dict(raw)
     if stage == "draft":
         text = str(raw.get("text") or "")

@@ -414,10 +414,18 @@ def test_unsent_carrier_control_reader_requires_exact_successful_native_receipt(
             connection.rollback()
 
 
-@pytest.mark.parametrize('version,bridge,lineage_stop', [('11.0.0', False, False), ('11.0.0', True, False), ('12.0.0', False, False), ('12.0.0', True, False), ('12.0.0', True, True), ('13.0.0', True, True)])
+@pytest.mark.parametrize('version,bridge,lineage_stop', [('11.0.0', False, False), ('11.0.0', True, False), ('12.0.0', False, False), ('12.0.0', True, False), ('12.0.0', True, True), ('13.0.0', True, True), ('14.0.0', False, False), ('15.0.0', False, False)])
 def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_foreign_changes(version, bridge, lineage_stop):
     capacity_stop = version == '13.0.0'
-    if capacity_stop:
+    acknowledged = version in {'14.0.0', '15.0.0'}
+    cli_version = version == '15.0.0'
+    if cli_version:
+        from novel_forge.storage.migrations.versions.v20261020_0237_preparation_cli_version_identity import PERMITTED as FIRST_PERMITTED
+        from novel_forge.storage.migrations.versions.v20261019_0233_acknowledged_preparation_routing import MEMBER_STOPPED
+    elif acknowledged:
+        from novel_forge.storage.migrations.versions.v20261020_0236_acknowledged_preparation_custody import PERMITTED as FIRST_PERMITTED
+        from novel_forge.storage.migrations.versions.v20261019_0233_acknowledged_preparation_routing import MEMBER_STOPPED
+    elif capacity_stop:
         from novel_forge.storage.migrations.versions.v20261019_0234_settled_preparation_capacity import PERMITTED as FIRST_PERMITTED, MEMBER_STOPPED, CAPACITY_STOPPED
     elif version == '12.0.0':
         from novel_forge.storage.migrations.versions.v20261019_0233_acknowledged_preparation_routing import PERMITTED as FIRST_PERMITTED, MEMBER_STOPPED
@@ -519,10 +527,42 @@ def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_
             insert('asset', asset_id='receipt-owner', project_id='project', asset_type='planning_runtime_continuation')
             insert('asset_version', asset_version_id='receipt', asset_id='receipt-owner', content_hash='receipt-hash', content=dict(source_operation_id=source, target_runtime=target))
             insert('operation_output_asset', operation_id='control', asset_version_id='receipt', content_hash='receipt-hash', role='primary')
+            if acknowledged:
+                c.execute("DELETE FROM authority_generation_isolation")
+                c.execute("DELETE FROM authority_external_effect WHERE external_effect_id='unknown'")
+                c.execute("DELETE FROM authority_budget_reservation WHERE external_effect_id='unknown'")
+                c.execute("UPDATE authority_operation SET status='RECONCILIATION_REQUIRED' WHERE operation_id='anchor'")
+                insert('cancellation_command', operation_id='anchor', actor_id='author')
+                insert('worker_cancel_signal', operation_id='anchor', status='ACKNOWLEDGED', acknowledged_at=datetime.now(timezone.utc))
+                proof.update(contract_version='planning-acknowledged-preparation-handoff.v1', isolated_generation_count=0,
+                    stopped_ancestry=[dict(operation_id='anchor', kind='ACKNOWLEDGED_CANCELLATION')])
+                if cli_version:
+                    old_entitlement = dict(cli_version='old', executable_sha256='same', configuration_ref='config', billing_identity=dict(account_ref='same'))
+                    new_entitlement = {**old_entitlement, 'cli_version': 'observed'}
+                    proof['contract_version'] = 'planning-acknowledged-preparation-handoff.v2'
+                    proof['account_version_reconciliation'] = dict(version='codex-cli-version-reconciliation.v1',
+                        source_auth_profile_ref='auth', target_auth_profile_ref='observed-auth', original_entitlement=old_entitlement,
+                        target_entitlement=new_entitlement, original_entitlement_hash='old-hash')
+                    target.update(auth_profile_ref='observed-auth', account=dict(entitlement=new_entitlement))
+                    c.execute("UPDATE authority_external_receipt SET payload=%s", [Jsonb(dict(evidence=dict(cost=dict(
+                        accounting_basis='ACCOUNT_ENTITLEMENT', entitlement_snapshot=old_entitlement, entitlement_snapshot_hash='old-hash'))))])
+                target['preparation_handoff'] = proof
+                c.execute("UPDATE authority_story_planning_runtime_continuation SET target_runtime=%s WHERE continuation_id='new-link'", [Jsonb(target)])
+                c.execute("UPDATE authority_asset_version SET content=%s WHERE asset_version_id='receipt'", [Jsonb(dict(source_operation_id=source, target_runtime=target))])
             def allowed():
-                function = 'authority_first_isolated_preparation_v13_permitted' if capacity_stop else 'authority_first_isolated_preparation_v12_permitted' if version == '12.0.0' else 'authority_first_isolated_preparation_permitted'
+                function = 'authority_acknowledged_cli_version_permitted' if cli_version else 'authority_acknowledged_preparation_permitted' if acknowledged else 'authority_first_isolated_preparation_v13_permitted' if capacity_stop else 'authority_first_isolated_preparation_v12_permitted' if version == '12.0.0' else 'authority_first_isolated_preparation_permitted'
                 return c.execute('SELECT '+function+'(%s,%s,%s)', ['new-link', 'child', Jsonb(gen)]).fetchone()[0]
             assert allowed()
+            if cli_version:
+                for statement in (
+                    "UPDATE authority_external_receipt SET payload='{}'",
+                    "UPDATE authority_story_planning_runtime_continuation SET target_runtime=jsonb_set(target_runtime,'{account,entitlement,billing_identity,account_ref}','\"foreign\"')",
+                    "UPDATE authority_story_planning_runtime_continuation SET target_runtime=jsonb_set(target_runtime,'{account,entitlement,cli_version}','\"old\"')",
+                ):
+                    c.execute('SAVEPOINT cli_negative')
+                    c.execute(statement)
+                    assert not allowed(), statement
+                    c.execute('ROLLBACK TO SAVEPOINT cli_negative')
             if capacity_stop:
                 for statement in (
                     "UPDATE authority_operation SET status='FAILED_RETRYABLE' WHERE operation_id='lineage-stop'",
@@ -543,13 +583,12 @@ def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_
                 "UPDATE authority_book_production SET current_chapter=20",
                 "UPDATE authority_book_production SET accepted_through_chapter=1",
                 "UPDATE authority_book_production SET input_snapshot_id='new-book-input'",
-                "UPDATE authority_generation_isolation SET proof=jsonb_set(proof,'{activation_right}','\"GRANTED\"')",
+                *(["DELETE FROM authority_cancellation_command", "UPDATE authority_worker_cancel_signal SET acknowledged_at=NULL", "UPDATE authority_external_effect SET status='UNKNOWN' WHERE external_effect_id='success'"] if acknowledged else ["UPDATE authority_generation_isolation SET proof=jsonb_set(proof,'{activation_right}','\"GRANTED\"')", "DELETE FROM authority_generation_isolation"]),
                 "UPDATE authority_external_effect SET request_hash='wrong' WHERE external_effect_id='success'",
                 "UPDATE authority_budget_reservation SET status='RESERVED' WHERE external_effect_id='success'",
                 "UPDATE authority_external_effect SET request_payload='{\"stage\":\"chapter_plan.generate\"}' WHERE external_effect_id='success'",
                 "UPDATE authority_attempt SET status='EXECUTING' WHERE operation_id='anchor'",
                 "INSERT INTO authority_lease_acquisition(attempt_id,status) VALUES('anchor-attempt','HELD')",
-                "DELETE FROM authority_generation_isolation",
                 "UPDATE authority_operation SET status='EXECUTING' WHERE operation_id='anchor'",
                 "UPDATE authority_asset_version SET content_hash='wrong' WHERE asset_version_id='context'",
                 "INSERT INTO authority_cancellation_command(operation_id) VALUES('book-root')",
@@ -564,7 +603,7 @@ def test_first_isolation_sql_retains_exact_stopped_ancestry_and_rejects_live_or_
             c.rollback()
 
 
-@pytest.mark.parametrize('version', ['5.0.0', '11.0.0', '12.0.0'])
+@pytest.mark.parametrize('version', ['5.0.0', '11.0.0', '12.0.0', '14.0.0', '15.0.0'])
 def test_acknowledged_routing_link_retains_exact_frozen_contract_and_revoked_submission_rights(version):
     from novel_forge.modules.story_planning_runtime.runtime_continuation import acknowledged_routing_link, ACKNOWLEDGED_ROUTING_CONTRACTS
     from novel_forge.modules.story_planning_runtime.domain import canonical_hash
@@ -653,3 +692,34 @@ def test_settled_capacity_upgrade_preserves_prior_functions_and_restored_busines
                 assert 'working-plan-regeneration.v1' in isolated_after
                 assert 'source-generation-isolation.v1' in isolated_after
             assert run_migrations(restored)['ok']
+
+
+def test_chapter_dispatch_checks_native_book_pause_retirement_and_cancellation():
+    from novel_forge.modules.book_authority.production_policy import require_chapter_provider_dispatch
+    from novel_forge.modules.command_kernel.errors import KernelError
+    with psycopg.connect(DATABASE_URL) as connection:
+        try:
+            for table in ('operation', 'book_chapter_request', 'book_production', 'cancellation_command',
+                          'story_creation_cancellation', 'story_formation_run'):
+                connection.execute(f'CREATE TEMP TABLE authority_{table} AS SELECT * FROM public.authority_{table} WITH NO DATA')
+            connection.execute("INSERT INTO authority_operation(operation_id,root_operation_id,project_id) VALUES('aux','chapter-root','project'),('revision','revision-root','project')")
+            connection.execute("INSERT INTO authority_book_chapter_request(chapter_request_id,chapter_root_operation_id,book_run_id,project_id) VALUES('request','chapter-root','run','project')")
+            connection.execute("INSERT INTO authority_book_production(book_run_id,project_id,book_id,state,root_operation_id,active_chapter_request_id) VALUES('run','project','book','READY','book-root','request')")
+            def check(operation='aux'):
+                require_chapter_provider_dispatch(connection.cursor(), project_id='project', operation_id=operation)
+            check()
+            for statement in (
+                "UPDATE authority_book_production SET state='PAUSED'",
+                "UPDATE authority_book_production SET active_chapter_request_id=NULL",
+                "UPDATE authority_book_production SET project_id='foreign'",
+                "INSERT INTO authority_cancellation_command(operation_id) VALUES('book-root')",
+                "UPDATE authority_book_production SET state='COMPLETED'",
+            ):
+                connection.execute('SAVEPOINT chapter_negative')
+                connection.execute(statement)
+                with pytest.raises(KernelError, match='RUNTIME_DISPATCH_PAUSED|BOOK_GENERATION_EXECUTION_NOT_LIVE'):
+                    check()
+                check('revision')
+                connection.execute('ROLLBACK TO SAVEPOINT chapter_negative')
+        finally:
+            connection.rollback()

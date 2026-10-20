@@ -1,0 +1,133 @@
+{
+  "source_commit": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "runtime_release": "f799c1924e281a6b14c2c8f1a0cd5c655151855d",
+  "database": "nf_context_final_acceptance",
+  "endpoint": "/product/editor/manuscripts/memory",
+  "transport": "ASGI_TESTCLIENT_WITH_REAL_CONFIGURED_POSTGRESQL_AND_UNMODIFIED_TRUSTED_PRINCIPAL_RESOLVER",
+  "provider_effects_created": 0,
+  "boundary": "ROUTE_EXECUTION_NOT_FULL_COMPOSE_DEPLOYMENT_OR_READINESS",
+  "requests": [
+    {
+      "chapter": null,
+      "chapter_request_id": "",
+      "status_code": 200,
+      "private_file": "http-native-memory-preview-f799c192-verifyf799c192.json",
+      "sha256": "c9af133106f05eb16072b2d60021e64864e03911115427e04fb542637469bee1",
+      "read_kind": "CURRENT_V3_PREVIEW",
+      "task_contract": null,
+      "writer_effects": [],
+      "top_level_keys": [
+        "actual_request",
+        "preview_policy",
+        "read_kind",
+        "working_manuscript",
+        "working_memory"
+      ]
+    },
+    {
+      "chapter": 20,
+      "chapter_request_id": "chapter-request:e79afcb69ee9d3083c9b6c3beb3c62f41f274a8c2a51b633712fc00175cf01a5",
+      "status_code": 200,
+      "private_file": "http-native-memory-20-f799c192-verifyf799c192.json",
+      "sha256": "fc008946560f31e49512aedc9b8d4569ffbb17c2ae5d30c89e04120ae5b93746",
+      "read_kind": "FROZEN_CHAPTER_REQUEST",
+      "task_contract": null,
+      "writer_effects": [
+        {
+          "external_effect_id": "124025fd-801f-49d1-bfc2-dfaf74faec37",
+          "status": "UNKNOWN",
+          "input_snapshot_status": "LEGACY_HASH_ONLY",
+          "receipt_input_binding_count": 0
+        },
+        {
+          "external_effect_id": "f63ad8ff-d7fe-4a85-9c0a-a9ba02c3e178",
+          "status": "SUCCEEDED",
+          "input_snapshot_status": "LEGACY_HASH_ONLY",
+          "receipt_input_binding_count": 0
+        }
+      ],
+      "top_level_keys": [
+        "attribution_boundary",
+        "book_run_id",
+        "chapter_request",
+        "dispatch_observed",
+        "effect_intent_recorded",
+        "input_assets",
+        "project_id",
+        "read_kind",
+        "request_artifacts",
+        "version",
+        "working_manuscript",
+        "writer_effects"
+      ]
+    },
+    {
+      "chapter": 25,
+      "chapter_request_id": "chapter-request:8f4a2a7c2f6191f19fef4b34c5c30800c4a671982acf2da9a377609c2972f0ca",
+      "status_code": 200,
+      "private_file": "http-native-memory-25-f799c192-verifyf799c192.json",
+      "sha256": "d6640983c543be88974dfed574119543317dcb4a687e21c7027c63359cae18aa",
+      "read_kind": "FROZEN_CHAPTER_REQUEST",
+      "task_contract": "working-retrieval-task.v3",
+      "writer_effects": [
+        {
+          "external_effect_id": "5d64d620-45a6-48d0-8cd1-3c4cf2ae9dee",
+          "status": "SUCCEEDED",
+          "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+          "receipt_input_binding_count": 1
+        }
+      ],
+      "top_level_keys": [
+        "attribution_boundary",
+        "book_run_id",
+        "chapter_request",
+        "dispatch_observed",
+        "effect_intent_recorded",
+        "input_assets",
+        "project_id",
+        "read_kind",
+        "request_artifacts",
+        "version",
+        "working_manuscript",
+        "writer_effects"
+      ]
+    },
+    {
+      "chapter": 26,
+      "chapter_request_id": "chapter-request:e56009cd5857511ec25db92915c77234abced0526707aab12155a2744d046a89",
+      "status_code": 200,
+      "private_file": "http-native-memory-26-f799c192-verifyf799c192.json",
+      "sha256": "b1314ddfedb2cd3907deb1dc9f51219b098a2cf2c3a20314528c4201ea785d47",
+      "read_kind": "FROZEN_CHAPTER_REQUEST",
+      "task_contract": "working-retrieval-task.v5",
+      "writer_effects": [
+        {
+          "external_effect_id": "bbd7d382-6d19-446c-b3a5-30599c63bd48",
+          "status": "UNKNOWN",
+          "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+          "receipt_input_binding_count": 0
+        },
+        {
+          "external_effect_id": "02203730-754f-4050-9a58-e23e19ebd2ae",
+          "status": "UNKNOWN",
+          "input_snapshot_status": "FROZEN_APPLICATION_REQUEST",
+          "receipt_input_binding_count": 0
+        }
+      ],
+      "top_level_keys": [
+        "attribution_boundary",
+        "book_run_id",
+        "chapter_request",
+        "dispatch_observed",
+        "effect_intent_recorded",
+        "input_assets",
+        "project_id",
+        "read_kind",
+        "request_artifacts",
+        "version",
+        "working_manuscript",
+        "writer_effects"
+      ]
+    }
+  ]
+}

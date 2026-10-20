@@ -1,0 +1,25 @@
+{
+  "verification_source_commit": "151733b4c3af62586d1900c5c9e11156abc1915a",
+  "record_type": "ACTUAL_FROZEN_NATIVE_REQUEST_WORKING_CONTEXT_REPLAY",
+  "provider_calls": 0,
+  "checks": [
+    {
+      "chapter": 25,
+      "chapter_request_id": "chapter-request:8f4a2a7c2f6191f19fef4b34c5c30800c4a671982acf2da9a377609c2972f0ca",
+      "original_producer_commit": "9d6fd223ea071e23f4a1d02dbe25dc8b00cb591f",
+      "snapshot_hash": "sha256:c83a895d10e4899818cf3cd037e0678bf340fbc025221faad16329037175f6c4",
+      "task_contract": "working-retrieval-task.v3",
+      "status": "PASS",
+      "replayed_original": true
+    },
+    {
+      "chapter": 26,
+      "chapter_request_id": "chapter-request:e56009cd5857511ec25db92915c77234abced0526707aab12155a2744d046a89",
+      "original_producer_commit": "7126dfe5d383d6dde4ee68da28c11eeef4edc4ff",
+      "snapshot_hash": "sha256:41887030595ca96e33c1cb2c242d1c35a09a69d73f3cecf6b9feea92a69159cc",
+      "task_contract": "working-retrieval-task.v5",
+      "status": "PASS",
+      "replayed_original": true
+    }
+  ]
+}

@@ -1181,6 +1181,8 @@ def build_provider_task_view(
     if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:
         return _task(stage, source_digest=inputs.get("source_digest"), candidate_digest=inputs.get("candidate_digest", ""),
                      **({"screenplay_source_contract": inputs["screenplay_source_contract"]} if inputs.get("screenplay_source_contract") else {}))
+    if stage == "working_memory_extract":
+        return _task(stage, task_hash=inputs.get("task_hash"))
     if stage == "longform_prose_review":
         return _task(stage, manifest_digest=inputs.get("manifest_digest"), window_id=inputs.get("window_id"),
                      **({"prose_citation_repair": deepcopy(inputs["prose_citation_repair"])} if inputs.get("prose_citation_repair") else {}),
@@ -1781,6 +1783,9 @@ def build_provider_context_view(
             "accepted_boundary": _compact(boundary),
             "protected": True,
         }
+    if stage == "working_memory_extract":
+        from novel_forge.modules.book_followup_authority.memory_execution import memory_context_view
+        return memory_context_view(context_bundle)
     if stage == "longform_prose_review":
         return _build_longform_prose_review_context_view(context_bundle)
     if stage in {"screenplay_generate", "screenplay_review", "screenplay_revision"}:

@@ -26,7 +26,7 @@ def validate_projection_quotes(data: dict, quotes: tuple[str, ...]) -> list[dict
     candidates = []
     def source_view(value):
         if isinstance(value, dict):
-            if value.get("version") in ("working-observations.v1", "working-observations-provider.v1"):
+            if value.get("version") in ("working-observations.v1", "working-observations-provider.v1", "working-observations-packet.v2", "working-observations-provider.v2"):
                 return {"source_coverage": value.get("source_coverage", [])}
             result = {}
             for key, child in value.items():
@@ -66,7 +66,7 @@ def working_observation_index(data):
     result = {}
     def visit(value):
         if isinstance(value, dict):
-            if value.get("version") in ("working-observations.v1", "working-observations-provider.v1") and value.get("authority") == "UNREVIEWED_WORKING_OBSERVATIONS":
+            if value.get("version") in ("working-observations.v1", "working-observations-provider.v1", "working-observations-packet.v2", "working-observations-provider.v2") and value.get("authority") == "UNREVIEWED_WORKING_OBSERVATIONS":
                 for entry in value.get("entries") or []:
                     source = entry.get("source") or {}
                     identity = (source.get("asset_version_id"), source.get("content_hash"))
@@ -474,8 +474,11 @@ def prepare_request_capacity(
     candidates = list(candidates_by_hash.values())
     dependency_bindings = semantic_units.protected_dependency_bindings(original, excluded_scopes=set(grouped)) if semantic else []
     eligible_quotes = [quote for quote in preserve_quotes if any(quote.replace("\r\n", "\n") in item.safe_summary.replace("\r\n", "\n") for item in candidates)] if semantic else list(preserve_quotes)
+    from .source_batches import current_batching_version
+    batching_version = current_batching_version(original) if semantic else ""
     task = {"stage": stage, "frozen_input_boundary": source_boundary, "source_projection_hash": narrative_hash(original),
             "preserve_quotes": eligible_quotes, "task_context": compression_task_context(original.get("input_manifest") or {}), "capacity_policy": CAPACITY_POLICY,
+            **({"source_batching_version": batching_version} if batching_version else {}),
             **({"capacity_bindings": capacity_bindings} if capacity_bindings else {}),
             **({"semantic_contract": semantic_contract} if semantic else {}),
             **({"capacity_history_exact_chapters": history_exact_chapters} if history_exact_chapters is not None else {}),
@@ -583,7 +586,7 @@ def protected_expression_quotes(value: Any, *, include_working_observations: boo
     quotes = set()
     def visit(item):
         if isinstance(item, dict):
-            if include_working_observations and item.get("version") in ("working-observations.v1", "working-observations-provider.v1") and item.get("authority") == "UNREVIEWED_WORKING_OBSERVATIONS":
+            if include_working_observations and item.get("version") in ("working-observations.v1", "working-observations-provider.v1", "working-observations-packet.v2", "working-observations-provider.v2") and item.get("authority") == "UNREVIEWED_WORKING_OBSERVATIONS":
                 for entry in item.get("entries") or []:
                     quote = (entry.get("location") or {}).get("quote")
                     if quote and quote == entry.get("quote") and (entry.get("source") or {}).get("asset_version_id"):

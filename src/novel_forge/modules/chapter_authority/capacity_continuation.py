@@ -451,6 +451,8 @@ def rebuild_frozen_capacity_context(request, registry):
                 [item["asset_version_id"]]).fetchone()
             inputs.append(ChapterInputAsset(item["asset_version_id"], asset_type, item["content_hash"], content))
     frozen = replace(request, operation_id=upgrade["successor_operation_id"], command=producer[0], inputs=tuple(inputs))
+    from .runtime import bind_working_context_sources
+    frozen = bind_working_context_sources(frozen, ChapterNode.CONTEXT)
     rebuilt = registry.require(ChapterNode.CONTEXT).execute(frozen).content
     if ((rebuilt.get("context_manifest") or {}).get("task_context_receipt") or {}).get("compression_trace"):
         raise KernelError("CHAPTER_CAPACITY_UPGRADE_SOURCE_DRIFT", "Context reconstruction must defer compression to complete request admission")

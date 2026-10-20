@@ -1,0 +1,93 @@
+{
+  "record_type": "PREREGISTERED_PREDECESSOR_SUPPORT_FOR_NATIVE23",
+  "created_at": "2026-10-20T02:55:05.071222+00:00",
+  "before_native23_prose": true,
+  "boundary": "Evaluation only; prior work fulfilled and practice still conditional. Applicability is judged against the native frozen23 task, not used as a prose template.",
+  "cases": [
+    {
+      "id": "bounded-work-commitment",
+      "requirement": "新工作有明确范围和当天边界，未把过去的课程劳务或师徒身份变为永久接活义务。",
+      "alternatives": [
+        {
+          "chapter": 22,
+          "asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+          "content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+          "quote_sha256": "79f8ecd473e5a873d52e08b7d2eb19cc18582ed1319950ff83a7e4328735b186"
+        }
+      ]
+    },
+    {
+      "id": "prior-learning-affects-action",
+      "requirement": "前课未独立掌握的事实直接影响限工和休息安排，没有被收面熟练抹去。",
+      "alternatives": [
+        {
+          "chapter": 22,
+          "asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+          "content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+          "quote_sha256": "ca81747bf63a0fc0856e5eca2d820a59bb5de01f260f76d4773a002dc27ac989"
+        }
+      ]
+    },
+    {
+      "id": "expertise-stays-attributed",
+      "requirement": "师父的底座与承接判断仍归师父；主人公承担外面收面，不越权替底座作结论。",
+      "alternatives": [
+        {
+          "chapter": 22,
+          "asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+          "content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+          "quote_sha256": "5e1a760e50320a4d8313adfa8c076313a229e67ae5c52a474ab5725847b71c3e"
+        }
+      ]
+    },
+    {
+      "id": "real-external-use",
+      "requirement": "劳动后果由院主真实使用显现，不是人物口头宣布任务完成。",
+      "alternatives": [
+        {
+          "chapter": 22,
+          "asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+          "content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+          "quote_sha256": "452f14207e18a037763734dc727be474bc4f27460d7d6e59378076e69bd0839f"
+        }
+      ]
+    },
+    {
+      "id": "new-payment-closed",
+      "requirement": "新任务已收28钱，独立于师父48钱和既有课费账；后续不应重复追收。",
+      "alternatives": [
+        {
+          "chapter": 22,
+          "asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+          "content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+          "quote_sha256": "db11e80c5188a301c4dea30477fd5c8d48f9a27349046a0d423cb4285b8d4ee7"
+        }
+      ]
+    },
+    {
+      "id": "relationship-consequence",
+      "requirement": "师父接受有限交接并独自去下个工点，边界在行动中产生关系后果。",
+      "alternatives": [
+        {
+          "chapter": 22,
+          "asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+          "content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+          "quote_sha256": "159230299d528ed5f48f17be34a535e13f1eecf7287b0181ca302427bbb8f7a3"
+        }
+      ]
+    },
+    {
+      "id": "fatigue-and-practice-remain-distinct",
+      "requirement": "石工经验与修炼练习、劳作后疲劳与已恢复分开；当前没有把将来复练写成已发生。",
+      "alternatives": [
+        {
+          "chapter": 22,
+          "asset_version_id": "authority-output:066529ed-75fe-4feb-8d5a-3442f80aa258:chapter.best_candidate:v1",
+          "content_hash": "sha256:270b7c932fd731b5bed7d3b66f9bd746e47ae051670e3b24e1aa143767b5996c",
+          "quote_sha256": "805b5af5fea42746906785600853e28aa6c00e7f164c83c07508b2788e6c03a5"
+        }
+      ]
+    }
+  ],
+  "private_raw_sha256": "bc597f4ae3c00982e54a0d7ec89b881edd77a6b1bc82f560cfec0102d6cea18a"
+}

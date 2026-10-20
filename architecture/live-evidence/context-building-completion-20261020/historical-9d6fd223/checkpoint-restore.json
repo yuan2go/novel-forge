@@ -1,0 +1,22 @@
+{
+  "record_type": "ACTUAL_POSTGRESQL_CHECKPOINT_RESTORE",
+  "source_commit": "e0e359bea792e024beb6cc29a66d76f32b5bed68",
+  "source_backup_sha256": "4e98cacfd31d9bdeb8e059e032c7319a89bdcaee99e3b101db789cba25fc40ed",
+  "source_backup_bytes": 999226381,
+  "target_database": "nf_context_final_acceptance",
+  "postgresql_port": 55449,
+  "restore_exit_code": 0,
+  "restore_overwrote_existing_database": false,
+  "migration_head_before": "20261019_0234_settled_preparation_capacity",
+  "migration_head_after": "20261020_0237_preparation_cli_version_identity",
+  "history_valid": true,
+  "source_chapters": 20,
+  "source_unicode_codepoints": 100106,
+  "source_utf8_bytes": 296612,
+  "source_han_characters": 85906,
+  "all_original_asset_versions_and_body_bytes_matched": true,
+  "all_original_han_length_bounds_matched": true,
+  "target_chapters": 100,
+  "accepted_through_chapter": 0,
+  "boundary": "DATABASE_RESTORE_WITH_RETAINED_BLOBS_AND_EXECUTION_FILES_NOT_COLD_DEPLOYMENT_QUALIFICATION"
+}

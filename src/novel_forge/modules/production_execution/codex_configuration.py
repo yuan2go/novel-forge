@@ -389,3 +389,31 @@ def codex_wire_correction_evidence(process_evidence: Mapping) -> dict | None:
         return None
     return {'contract_version':'codex-nullable-shared-types.v1','canonical_hash':digest(canonical),
         'previous_wire_hash':contract['provider_hash'],'corrected_wire_hash':digest(wire),'reversible_equivalence':'EXACT'}
+
+
+def reconcile_codex_cli_version_account(*, account, original_entitlement, source_auth_profile_ref, target_auth_profile_ref):
+    from .backends import CodexAccountEntitlementSnapshot
+    reference = source_auth_profile_ref
+    current_reference = target_auth_profile_ref
+    if reference == current_reference:
+        return None
+    old = original_entitlement
+    current = account.get('entitlement')
+    try:
+        original = CodexAccountEntitlementSnapshot(**old)
+        selected = CodexAccountEntitlementSnapshot(**current)
+        if (not old.get('billing_identity') or {key: value for key, value in old.items() if key != 'cli_version'} !=
+                {key: value for key, value in current.items() if key != 'cli_version'} or original.cli_version == selected.cli_version):
+            return None
+        fields = dict(codex_home=account['codex_home'], executable=account['executable'],
+            retry_policy=str(account.get('retry_policy') or ''), input_only_policy=str(account.get('input_only_policy') or ''))
+        old_binding = codex_local_binding_hash(**fields, entitlement=old)
+        new_binding = codex_local_binding_hash(**fields, entitlement=current)
+        if (not isinstance(reference, str) or not reference.endswith(':codex:' + old_binding)
+                or not isinstance(current_reference, str) or current_reference != reference[:-len(old_binding)] + new_binding):
+            return None
+    except (TypeError, ValueError, KeyError):
+        return None
+    return dict(version='codex-cli-version-reconciliation.v1', source_auth_profile_ref=reference,
+        target_auth_profile_ref=current_reference, original_entitlement=old, target_entitlement=current,
+        original_entitlement_hash=original.snapshot_hash, target_entitlement_hash=selected.snapshot_hash)

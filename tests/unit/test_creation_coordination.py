@@ -173,7 +173,8 @@ def test_native_creation_freezes_current_method_bindings_and_keeps_legacy_replay
     assert creation_narrative_execution({"narrative_execution_contract": "native-narrative-execution.v2"})["chapter"]["pack_version_override"] == "3.0.4"
     profile = policy["profiles"]["production_profile"]["content"]
     current = working_prose_policy(profile)
-    assert current["version"] == "working-prose-projection.v8"
+    assert current["version"] == "working-prose-projection.v9"
+    assert current["recent_complete_chapters"] == 0 and current["recent_tail_paragraphs"] == 4
     assert current["max_characters"] is None
     assert planning.manifest["context_sources"]["policy_id"] == "context-policy:chapter-generation-pack:v4"
     assert "No fixed number of turns" in working_instruction(current)
@@ -182,6 +183,10 @@ def test_native_creation_freezes_current_method_bindings_and_keeps_legacy_replay
     historical = deepcopy(policy)
     historical["narrative_execution_contract"] = "native-narrative-execution.v2"
     historical_profile = historical["profiles"]["production_profile"]["content"]
+    historical_profile["working_prose_policy"] = {key: value for key, value in historical_profile["working_prose_policy"].items()
+        if key in {"version", "history_chapters", "recent_complete_chapters", "max_characters", "queries", "guidance_mode"}}
+    historical_profile["working_prose_policy"]["history_chapters"] = 128
+    historical_profile["working_prose_policy"]["recent_complete_chapters"] = 2
     historical_profile["working_prose_policy"]["version"] = "working-prose-projection.v4"
     historical_profile["working_prose_policy"]["max_characters"] = 24_000
     historical_profile["craft_budget_policy"] = {"schema_version": "narrative-craft-budget.v4"}
