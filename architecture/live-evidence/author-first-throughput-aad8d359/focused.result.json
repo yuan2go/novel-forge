@@ -1,0 +1,93 @@
+{
+  "source_sha": "aad8d3597daa66e0daf1a5f488691de9ffb03ee4",
+  "source_clean_before_after": true,
+  "finished_at": "2026-10-19T09:18:30.122717+00:00",
+  "status": "PASS_FOCUSED",
+  "checks": [
+    {
+      "artifact": "focused-unit.xml",
+      "tests": 571,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "artifact": "focused-native-postgres.xml",
+      "tests": 2,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    }
+  ],
+  "pytest_observed_summaries": [
+    "571 passed in9.03s",
+    "2 passed,8 deprecation warnings in361.15s"
+  ],
+  "detached_child_exit_code": "NOT_CAPTURED; complete terminal JUnit and pytest summaries checked",
+  "static_checks": 7,
+  "provider_mode": "SCRIPTED_NATIVE",
+  "production_provider_calls": "NOT_RUN_BY_AUTHOR_PAUSE",
+  "formal_qualification": "INCOMPLETE",
+  "external_private_custody": [
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-0.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-1.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-2.log",
+      "bytes": 771,
+      "sha256": "8322a1fc075dfdd12c2ab17d90b6acf0cd60dad25e7ce9b8e88e482f53cff03d"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-3.log",
+      "bytes": 1402598,
+      "sha256": "eaaf082df28c51ce64b41d6920d5fb6afa986b2cf58a0556bc1e456f4d101bac"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-4.log",
+      "bytes": 118566,
+      "sha256": "b9aec66a35ab0b11b09934416a6e77dec6f8951d953834aca896a7a1427d67f3"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-5.log",
+      "bytes": 1937,
+      "sha256": "3b4ae728fade03514c419a7c805adad70d9ac47dc3355041dbb4614c671e84ad"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-static-aad8d359-6.log",
+      "bytes": 3189,
+      "sha256": "923c8c6c7536f3c992d787f39bf5eb7db96a02c8ded7bcd2b2d2ed482ecb0e05"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-unit-aad8d359.log",
+      "bytes": 660,
+      "sha256": "edc5a824fdae29833d70184132f38fe1b450b896ba7dc4d0ea8cc65ce186a4a8"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/throughput-analysis-20261019T0738/working-v8-native-aad8d359.log",
+      "bytes": 2267,
+      "sha256": "da39810d3c3cf5ef90ca3326634ae8f7ac7ac0d7e38a671e94bef8a524841fc7"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/probe-working-v8-readonly-aad8d359.py",
+      "bytes": 9606,
+      "sha256": "84ec1cfbc902bf9699ad6b2ccf83077a77ea2a0ecc6fa1f1186e8e42b7d32951"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/native21-repair-original-input-v2.private.json",
+      "bytes": 789255,
+      "sha256": "e9be92302bc0676262497868cdffddd39d5db7f4ed64800b7a21ea17227ec9fc"
+    },
+    {
+      "path": "/Volumes/DevSSD/Development/Workspace/task-data/WP-NF-AUTHOR-FIRST-100-QUALIFICATION-20261018/native21-repair-original-materialization-v2.private.json",
+      "bytes": 2092346,
+      "sha256": "aaf9bbd8b958c3da312d6c96d7be682c1f65ab22ad9037a5be21e99c99cd0b06"
+    }
+  ]
+}

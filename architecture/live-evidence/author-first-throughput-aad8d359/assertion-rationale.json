@@ -1,0 +1,19 @@
+{
+  "source_sha": "aad8d3597daa66e0daf1a5f488691de9ffb03ee4",
+  "updated_assertions": [
+    {
+      "file": "tests/integration/test_author_first_manuscript_postgres.py",
+      "old_assumption": "The first chapter must always remain visible prose in chapter6 input",
+      "reason": "v8 deliberately distinguishes immutable predecessor bindings from selected prose",
+      "equivalent_risk": "Assert first source in working_source_rows/full source history; editing that source must still invalidate chapter6 and downstream frozen dependencies"
+    },
+    {
+      "files": [
+        "tests/unit/test_working_prose_projection.py",
+        "tests/unit/test_working_manuscript_revision.py"
+      ],
+      "reason": "Freeze and verification now invoke the batch guard; mock that seam only in projection-focused tests",
+      "equivalent_risk": "Fresh single-source propagation negative checks remain, with an added second batch invocation that sees a newly committed serious contradiction"
+    }
+  ]
+}
