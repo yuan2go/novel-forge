@@ -1,0 +1,455 @@
+{
+  "schema_version": "architecture-manifest.v1",
+  "entries": [
+    {
+      "name": "story_design.scope.reconcile",
+      "source": "src/novel_forge/cli/authority.py",
+      "application_source": "src/novel_forge/modules/story_design_authority/scope_recovery.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "authority.reconcile_scope",
+      "definition_factory": "novel_forge.modules.story_design_authority.scope_recovery:scope_reconciliation_definition"
+    },
+    {
+      "name": "book.opening.continue_unstarted",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/book_authority/opening.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "composition.opening.continue_unstarted_with_budget",
+      "definition_factory": "novel_forge.modules.book_authority.opening:book_opening_capacity_continuation_definition"
+    },
+    {
+      "name": "creative.experiment_budget.configure",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "configure_creative_budget",
+      "definition_factory": "novel_forge.modules.command_kernel.creative_budget_runtime:creative_budget_definitions"
+    },
+    {
+      "name": "story_planning.runtime_continuation.register",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/story_planning_runtime/runtime_continuation.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "planning.register_runtime_continuation",
+      "definition_factory": "novel_forge.modules.story_planning_runtime.runtime_continuation:runtime_continuation_definition"
+    },
+    {
+      "name": "planning.causal.propose",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/hierarchical_planning/causal_application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_composition(ctx).causal_planning.propose",
+      "definition_factory": "novel_forge.modules.hierarchical_planning.causal_application:causal_planning_definition"
+    },
+    {
+      "name": "chapter_group.execution_policy.configure",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/chapter_group_authority/policy.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_composition(ctx).chapter_groups.execution_policies.configure",
+      "definition_factory": "novel_forge.modules.chapter_group_authority.policy:chapter_group_execution_policy_definitions"
+    },
+    {
+      "name": "reader_proxy.policy.configure",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/book_followup_authority/reader_policy_authority.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_composition(ctx).followup.reader_policies.configure",
+      "definition_factory": "novel_forge.modules.book_followup_authority.reader_policy_authority:reader_proxy_policy_definitions"
+    },
+    {
+      "name": "book.completion.assess",
+      "source": "src/novel_forge/api/routers/book_completion.py",
+      "application_source": "src/novel_forge/modules/book_authority/completion.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "authority.assess",
+      "definition_factory": "novel_forge.modules.book_authority.completion:book_completion_definitions"
+    },
+    {
+      "name": "book.completion.decide",
+      "source": "src/novel_forge/api/routers/book_completion.py",
+      "application_source": "src/novel_forge/modules/book_authority/completion.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "authority.decide",
+      "definition_factory": "novel_forge.modules.book_authority.completion:book_completion_definitions"
+    },
+    {
+      "name": "agent.definition.register",
+      "source": "src/novel_forge/api/routers/agent_runtime.py",
+      "application_source": "src/novel_forge/modules/agent_runtime/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "application.execute_admin",
+      "definition_factory": "novel_forge.modules.agent_runtime.definitions:agent_runtime_operation_definitions"
+    },
+    {
+      "name": "agent.definition.activate",
+      "source": "src/novel_forge/api/routers/agent_runtime.py",
+      "application_source": "src/novel_forge/modules/agent_runtime/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "application.execute_admin",
+      "definition_factory": "novel_forge.modules.agent_runtime.definitions:agent_runtime_operation_definitions"
+    },
+    {
+      "name": "agent.definition.disable",
+      "source": "src/novel_forge/api/routers/agent_runtime.py",
+      "application_source": "src/novel_forge/modules/agent_runtime/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "application.execute_admin",
+      "definition_factory": "novel_forge.modules.agent_runtime.definitions:agent_runtime_operation_definitions"
+    },
+    {
+      "name": "project_lifecycle.create",
+      "source": "src/novel_forge/api/routers/authority_projects.py",
+      "application_source": "src/novel_forge/modules/project_authority/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_application(ctx).execute",
+      "definition_factory": "novel_forge.modules.project_authority.definitions:project_authority_definitions"
+    },
+    {
+      "name": "project_lifecycle.update",
+      "source": "src/novel_forge/api/routers/authority_projects.py",
+      "application_source": "src/novel_forge/modules/project_authority/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_application(ctx).execute",
+      "definition_factory": "novel_forge.modules.project_authority.definitions:project_authority_definitions"
+    },
+    {
+      "name": "project_workspace.create",
+      "source": "src/novel_forge/api/routers/authority_projects.py",
+      "application_source": "src/novel_forge/modules/project_authority/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_application(ctx).execute",
+      "definition_factory": "novel_forge.modules.project_authority.definitions:project_authority_definitions"
+    },
+    {
+      "name": "project_lifecycle.transition",
+      "source": "src/novel_forge/api/routers/authority_projects.py",
+      "application_source": "src/novel_forge/modules/project_authority/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_application(ctx).execute",
+      "definition_factory": "novel_forge.modules.project_authority.definitions:project_authority_definitions"
+    },
+    {
+      "name": "project_binding.assign",
+      "source": "src/novel_forge/api/routers/authority_projects.py",
+      "application_source": "src/novel_forge/modules/project_authority/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_application(ctx).execute",
+      "definition_factory": "novel_forge.modules.project_authority.definitions:project_authority_definitions"
+    },
+    {
+      "name": "project_binding.remove",
+      "source": "src/novel_forge/api/routers/authority_projects.py",
+      "application_source": "src/novel_forge/modules/project_authority/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_application(ctx).execute",
+      "definition_factory": "novel_forge.modules.project_authority.definitions:project_authority_definitions"
+    },
+    {
+      "name": "book.create",
+      "source": "src/novel_forge/api/routers/book_design_authority.py",
+      "application_source": "src/novel_forge/modules/book_design_authority/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "application.execute",
+      "definition_factory": "novel_forge.modules.book_design_authority.definitions:book_design_definitions"
+    },
+    {
+      "name": "book_design.propose",
+      "source": "src/novel_forge/api/routers/book_design_authority.py",
+      "application_source": "src/novel_forge/modules/book_design_authority/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "application.execute",
+      "definition_factory": "novel_forge.modules.book_design_authority.definitions:book_design_definitions"
+    },
+    {
+      "name": "book_design.decide",
+      "source": "src/novel_forge/api/routers/book_design_authority.py",
+      "application_source": "src/novel_forge/modules/book_design_authority/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "application.execute",
+      "definition_factory": "novel_forge.modules.book_design_authority.definitions:book_design_definitions"
+    },
+    {
+      "name": "book_design.activate",
+      "source": "src/novel_forge/api/routers/book_design_authority.py",
+      "application_source": "src/novel_forge/modules/book_design_authority/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "application.execute",
+      "definition_factory": "novel_forge.modules.book_design_authority.definitions:book_design_definitions"
+    },
+    {
+      "name": "source.document.register",
+      "source": "src/novel_forge/api/routers/source_authority.py",
+      "application_source": "src/novel_forge/modules/source_authority/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit",
+      "definition_factory": "novel_forge.modules.source_authority.definitions:source_authority_definitions"
+    },
+    {
+      "name": "source.transform.commit",
+      "source": "src/novel_forge/api/routers/source_authority.py",
+      "application_source": "src/novel_forge/modules/source_authority/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_transform",
+      "definition_factory": "novel_forge.modules.source_authority.definitions:source_authority_definitions"
+    },
+    {
+      "name": "source.deconstruction.observation.commit",
+      "source": "src/novel_forge/api/routers/source_authority.py",
+      "application_source": "src/novel_forge/modules/source_authority/deconstruction_application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_observation",
+      "definition_factory": "novel_forge.modules.source_authority.definitions:source_authority_definitions"
+    },
+    {
+      "name": "source.deconstruction.reprocessing.plan",
+      "source": "src/novel_forge/api/routers/source_authority.py",
+      "application_source": "src/novel_forge/modules/source_authority/deconstruction_application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_reprocessing_plan",
+      "definition_factory": "novel_forge.modules.source_authority.definitions:source_authority_definitions"
+    },
+    {
+      "name": "mkaos.knowledge_candidate.commit",
+      "source": "src/novel_forge/api/routers/mkaos_authority.py",
+      "application_source": "src/novel_forge/modules/mkaos_authority/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_candidate",
+      "definition_factory": "novel_forge.modules.mkaos_authority.definitions:mkaos_authority_definitions"
+    },
+    {
+      "name": "mkaos.knowledge.approve",
+      "source": "src/novel_forge/api/routers/mkaos_authority.py",
+      "application_source": "src/novel_forge/modules/mkaos_authority/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_approval",
+      "definition_factory": "novel_forge.modules.mkaos_authority.definitions:mkaos_authority_definitions"
+    },
+    {
+      "name": "mkaos.knowledge_pack.build",
+      "source": "src/novel_forge/api/routers/mkaos_authority.py",
+      "application_source": "src/novel_forge/modules/mkaos_authority/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_pack",
+      "definition_factory": "novel_forge.modules.mkaos_authority.definitions:mkaos_authority_definitions"
+    },
+    {
+      "name": "chapter.slice.run",
+      "source": "src/novel_forge/api/routers/chapter_authority.py",
+      "application_source": "src/novel_forge/modules/chapter_authority/application.py",
+      "classification": "saga",
+      "dispatch": "saga_coordinator",
+      "api_call": "_application(ctx).admit",
+      "definition_factory": "novel_forge.modules.chapter_authority.definitions:chapter_root_operation_definition"
+    },
+    {
+      "name": "book.production.coordinate",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/book_authority/production.py",
+      "classification": "saga",
+      "dispatch": "saga_coordinator",
+      "api_call": "_application(ctx).start",
+      "definition_factory": "novel_forge.modules.book_authority.production:book_coordinate_definition"
+    },
+    {
+      "name": "planning.binding.activate",
+      "source": "src/novel_forge/modules/plan_change_authority/application.py",
+      "application_source": "src/novel_forge/modules/hierarchical_planning/application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "self.planning.bind_active_contract",
+      "definition_factory": "novel_forge.modules.hierarchical_planning.definitions:plan_binding_definitions"
+    },
+    {
+      "name": "book.control_policy.configure",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/book_authority/control_application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_composition(ctx).controls.configure",
+      "definition_factory": "novel_forge.modules.book_authority.control_application:control_policy_definition"
+    },
+    {
+      "name": "book.control.decide",
+      "source": "src/novel_forge/api/routers/book_authority.py",
+      "application_source": "src/novel_forge/modules/book_authority/control_application.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "_composition(ctx).controls.decide",
+      "definition_factory": "novel_forge.modules.book_authority.control_application:control_decision_definition"
+    },
+    {
+      "name": "source.corpus.commit",
+      "source": "src/novel_forge/api/routers/source_authority.py",
+      "application_source": "src/novel_forge/modules/source_authority/corpus_application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_corpus",
+      "definition_factory": "novel_forge.modules.source_authority.definitions:source_authority_definitions"
+    },
+    {
+      "name": "source.import.corpus.acquire",
+      "source": "src/novel_forge/api/routers/source_import.py",
+      "application_source": "src/novel_forge/modules/source_import/corpus_ingestion/runtime.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.create_corpus_import",
+      "definition_factory": "novel_forge.modules.source_import.definitions:source_import_definitions"
+    },
+    {
+      "name": "mkaos.craft.original.author",
+      "source": "src/novel_forge/api/routers/mkaos_authority.py",
+      "application_source": "src/novel_forge/modules/mkaos_authority/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_core_craft",
+      "definition_factory": "novel_forge.modules.mkaos_authority.definitions:mkaos_authority_definitions"
+    },
+    {
+      "name": "source.import.document.profile",
+      "source": "src/novel_forge/api/routers/source_import.py",
+      "application_source": "src/novel_forge/modules/source_import/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_provider_sample",
+      "definition_factory": "novel_forge.modules.source_import.definitions:source_import_definitions"
+    },
+    {
+      "name": "source.import.deconstruction.execute",
+      "source": "src/novel_forge/api/routers/source_import.py",
+      "application_source": "src/novel_forge/modules/source_import/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_provider_sample",
+      "definition_factory": "novel_forge.modules.source_import.definitions:source_import_definitions"
+    },
+    {
+      "name": "source.import.mkaos.extract",
+      "source": "src/novel_forge/api/routers/source_import.py",
+      "application_source": "src/novel_forge/modules/source_import/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_provider_sample",
+      "definition_factory": "novel_forge.modules.source_import.definitions:source_import_definitions"
+    },
+    {
+      "name": "story_planning.result_admission.recover",
+      "source": "src/novel_forge/modules/story_planning_runtime/application.py",
+      "application_source": "src/novel_forge/modules/story_planning_runtime/result_admission.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "recover(self, source_operation_id=source_operation_id",
+      "definition_factory": "novel_forge.modules.story_planning_runtime.result_admission:result_admission_definition"
+    },
+    {
+      "name": "story_planning.gateway_result.revalidate",
+      "source": "src/novel_forge/modules/story_planning_runtime/application.py",
+      "application_source": "src/novel_forge/modules/story_planning_runtime/gateway_result_recovery.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "recover(self, command=command, operation_id=str(row[0])",
+      "definition_factory": "novel_forge.modules.story_planning_runtime.gateway_result_recovery:gateway_result_revalidation_definition"
+    },
+    {
+      "name": "story_planning.world_preparation.defer",
+      "source": "src/novel_forge/modules/story_planning_runtime/application.py",
+      "application_source": "src/novel_forge/modules/story_planning_runtime/world_optional.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "follow_optional_failure(self, command=command",
+      "definition_factory": "novel_forge.modules.story_planning_runtime.world_optional:world_optional_deferral_definition"
+    },
+    {
+      "name": "source.public_catalog.capture",
+      "source": "src/novel_forge/api/routers/source_authority.py",
+      "application_source": "src/novel_forge/modules/source_authority/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "application.admit_catalog",
+      "definition_factory": "novel_forge.modules.source_authority.definitions:source_authority_definitions"
+    },
+    {
+      "name": "source.import.market.refresh",
+      "source": "src/novel_forge/api/routers/source_import.py",
+      "application_source": "src/novel_forge/modules/source_import/market_runtime.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "admit_market_refresh",
+      "definition_factory": "novel_forge.modules.source_import.definitions:source_import_definitions"
+    },
+    {
+      "name": "reader.manuscript.mapping.record",
+      "source": "src/novel_forge/api/routers/quality_qualification.py",
+      "application_source": "src/novel_forge/modules/reader_calibration/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "authority.reader_calibration.export_manuscript_pack",
+      "definition_factory": "novel_forge.modules.reader_calibration.application:manuscript_reading_definitions"
+    },
+    {
+      "name": "reader.manuscript.pack.export",
+      "source": "src/novel_forge/api/routers/quality_qualification.py",
+      "application_source": "src/novel_forge/modules/reader_calibration/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "authority.reader_calibration.export_manuscript_pack",
+      "definition_factory": "novel_forge.modules.reader_calibration.application:manuscript_reading_definitions"
+    },
+    {
+      "name": "reader.manuscript.feedback.record",
+      "source": "src/novel_forge/api/routers/quality_qualification.py",
+      "application_source": "src/novel_forge/modules/reader_calibration/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "authority.reader_calibration.record_manuscript_feedback",
+      "definition_factory": "novel_forge.modules.reader_calibration.application:manuscript_reading_definitions"
+    },
+    {
+      "name": "reader.manuscript.diagnosis.record",
+      "source": "src/novel_forge/api/routers/quality_qualification.py",
+      "application_source": "src/novel_forge/modules/reader_calibration/application.py",
+      "classification": "durable_job",
+      "dispatch": "worker_claim",
+      "api_call": "authority.reader_calibration.record_manuscript_model_diagnosis",
+      "definition_factory": "novel_forge.modules.reader_calibration.application:manuscript_reading_definitions"
+    },
+    {
+      "name": "book.authority.mutate",
+      "source": "src/novel_forge/cli/manuscript.py",
+      "application_source": "src/novel_forge/modules/book_authority/retained_working.py",
+      "classification": "transaction_command",
+      "dispatch": "inline_atomic",
+      "api_call": "continue_retained_working",
+      "definition_factory": "novel_forge.modules.book_authority.production:book_authority_mutation_definition"
+    }
+  ]
+}

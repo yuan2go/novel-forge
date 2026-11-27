@@ -1,0 +1,92 @@
+from __future__ import annotations
+
+import threading
+from contextvars import ContextVar
+from collections.abc import Callable
+from types import TracebackType
+
+from novel_forge.modules.command_kernel.errors import KernelError
+
+_active_guards = ContextVar("authority_active_lease_guards", default=())
+
+
+def assert_active_leases_healthy():
+    for guard in _active_guards.get():
+        guard.assert_healthy()
+
+
+class LeaseHeartbeatGuard:
+    """INVARIANT: Renew a lease while a blocking handler/adapter owns its fencing token."""
+    def __init__(
+        self,
+        renew: Callable[[], object],
+        *,
+        lease_seconds: int,
+        label: str,
+        probe: Callable[[], object] | None = None,
+        probe_on_exit: bool = True,
+    ) -> None:
+        if lease_seconds <= 0 or not label:
+            raise ValueError("positive lease_seconds and label are required")
+        self._renew = renew
+        self._interval = max(0.05, min(float(lease_seconds) / 3.0, 10.0))
+        self._label = label
+        self._probe = probe
+        self._probe_on_exit = probe_on_exit
+        self._stop = threading.Event()
+        self._failure: BaseException | None = None
+        self._thread = threading.Thread(
+            target=self._run,
+            name=f"authority-heartbeat:{label}",
+            daemon=True,
+        )
+
+    def __enter__(self) -> "LeaseHeartbeatGuard":
+        if self._probe is not None:
+            self._probe()
+        self._thread.start()
+        self._context_token = _active_guards.set((*_active_guards.get(), self))
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> bool:
+        del exc_type, traceback
+        _active_guards.reset(self._context_token)
+        self._stop.set()
+        self._thread.join(timeout=self._interval + 1.0)
+        if exc is None:
+            self._assert_background_healthy()
+            if self._probe_on_exit and self._probe is not None:
+                self._probe()
+        return False
+
+    def assert_healthy(self) -> None:
+        """INVARIANT: Fail the owning thread before it admits more work after lease loss."""
+        self._assert_background_healthy()
+        if self._probe is not None:
+            self._probe()
+
+    def _assert_background_healthy(self) -> None:
+        if self._failure is not None:
+            raise KernelError(
+                "AUTHORITY_LEASE_HEARTBEAT_FAILED",
+                f"{self._label} lease heartbeat failed: {self._failure}",
+            ) from self._failure
+
+    def _run(self) -> None:
+        while not self._stop.wait(self._interval):
+            try:
+                if self._probe is not None:
+                    self._probe()
+                self._renew()
+            except Exception as exc:  # WHY: recorded and re-raised on the owning thread
+                self._failure = exc
+                self._stop.set()
+                return
+
+
+__all__ = ["LeaseHeartbeatGuard"]

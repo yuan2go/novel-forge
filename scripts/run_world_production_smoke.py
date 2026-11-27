@@ -1,0 +1,691 @@
+"""Drive native Book production from an approved input snapshot in a disposable database."""
+
+from __future__ import annotations
+
+import argparse
+from dataclasses import asdict
+from decimal import Decimal
+import json
+import os
+from pathlib import Path
+import subprocess
+import time
+
+from novel_forge.api.authority_dependencies import (
+    build_book_production_composition,
+    build_chapter_authority_application,
+    build_production_execution_composition,
+    build_trusted_principal_resolver,
+)
+from novel_forge.infrastructure.settings import IndustrialSettings
+from novel_forge.modules.book_authority import StartBookProductionCommand
+from novel_forge.modules.runtime_job import RuntimeJobAuthority
+from novel_forge.modules.production_execution.security import redact_secret_text
+from novel_forge.modules.production_execution.provider_admission import SHARED_PROVIDER_MONEY_CAP_ENVIRONMENT
+from novel_forge.storage.authority_asset_store import AuthorityAssetQuery
+from novel_forge.tools.implementation_tree_identity import (
+    build_implementation_tree_identity,
+)
+from novel_forge.tools.backend_qualification_resources import (
+    require_disposable_database_name,
+)
+from novel_forge.workers.book_authority import (
+    schedule_book_coordination_jobs,
+    execute_book_coordination_claim,
+)
+
+
+CAPS = (
+    "NOVEL_FORGE_DAILY_PROVIDER_CAP",
+    "NOVEL_FORGE_PROJECT_DAILY_PROVIDER_CAP",
+    "NOVEL_FORGE_OPERATION_PROVIDER_CAP",
+    "NOVEL_FORGE_PROVIDER_MAX_COST_PER_CALL",
+)
+
+ACCOUNT_ENTITLEMENT_IDENTITY = (
+    "NOVEL_FORGE_CODEX_ACCOUNT_AUTHORIZATION_REF",
+    "NOVEL_FORGE_CODEX_ACCOUNT_IDENTITY_REF",
+    "NOVEL_FORGE_CODEX_CLI_VERSION",
+    "NOVEL_FORGE_CODEX_EXECUTABLE_SHA256",
+    "NOVEL_FORGE_CODEX_CONFIGURATION_REF",
+)
+
+ACCOUNT_ENTITLEMENT_LIMITS = (
+    "NOVEL_FORGE_PROJECT_PROVIDER_CALL_LIMIT",
+    "NOVEL_FORGE_PROJECT_PROVIDER_TOKEN_LIMIT",
+)
+MONETARY_CAPS = tuple(dict.fromkeys((
+    *CAPS, *(key for _, key in SHARED_PROVIDER_MONEY_CAP_ENVIRONMENT),
+    "NOVEL_FORGE_CHAPTER_PROVIDER_CAP",
+)))
+
+
+def validate_configuration(values: dict[str, str], *, campaign_accounting: dict | None = None) -> None:
+    accounting_basis = (
+        str(values.get("NOVEL_FORGE_CODEX_ACCOUNTING_MODE") or "PRICED").strip().upper()
+    )
+    if accounting_basis == "ACCOUNT_ENTITLEMENT":
+        priced_allowance = Decimal("0")
+        if campaign_accounting is not None:
+            if (campaign_accounting.get("accounting_basis") != "MIXED"
+                or campaign_accounting.get("monetary_cost_status") != "PRICED_ESTIMATED_ENTITLEMENT_UNKNOWN"
+                or not campaign_accounting.get("authorization_ref")):
+                raise ValueError("validated native mixed campaign accounting required")
+            priced_allowance = Decimal(str(campaign_accounting.get("authorized_total_usd")))
+            if not priced_allowance.is_finite() or priced_allowance < 0:
+                raise ValueError("native priced allowance must be finite and nonnegative")
+        configured_monetary_caps = [
+            key
+            for key in MONETARY_CAPS
+            if str(values.get(key) or "").strip()
+        ]
+        if configured_monetary_caps and priced_allowance == 0:
+            raise ValueError(
+                "account entitlement cannot use monetary Provider caps: "
+                + ", ".join(configured_monetary_caps)
+            )
+        if priced_allowance > 0:
+            for key in {*CAPS, "NOVEL_FORGE_PROJECT_TOTAL_PROVIDER_CAP", *configured_monetary_caps}:
+                amount = Decimal(values.get(key) or "0")
+                if not amount.is_finite() or not 0 < amount <= priced_allowance:
+                    raise ValueError(f"priced cap must be positive and within native campaign allowance: {key}")
+        missing_identity = [
+            key
+            for key in ACCOUNT_ENTITLEMENT_IDENTITY
+            if not str(values.get(key) or "").strip()
+        ]
+        if missing_identity:
+            raise ValueError(
+                "account entitlement identity is incomplete: "
+                + ", ".join(missing_identity)
+            )
+        for key in ACCOUNT_ENTITLEMENT_LIMITS:
+            raw = str(values.get(key) or "").strip()
+            try:
+                limit = int(raw)
+            except ValueError as exc:
+                raise ValueError(
+                    f"explicit positive account-entitlement limit required: {key}"
+                ) from exc
+            if not raw or str(limit) != raw or limit <= 0:
+                raise ValueError(
+                    f"explicit positive account-entitlement limit required: {key}"
+                )
+    elif accounting_basis == "PRICED":
+        for key in CAPS:
+            amount = Decimal(values.get(key) or "0")
+            if not amount.is_finite() or amount <= 0:
+                raise ValueError(f"explicit positive authorized budget required: {key}")
+    else:
+        raise ValueError("unsupported Provider accounting basis")
+    if values.get("NOVEL_FORGE_ENVIRONMENT") not in {"validation", "production"}:
+        raise ValueError("real smoke requires a controlled runtime environment")
+    if not values.get("NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID"):
+        raise ValueError("a configured operator Principal is required")
+    if values.get("NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE", "*") == "*":
+        raise ValueError("smoke requires an explicit isolated project scope")
+
+
+def start_command(snapshot, *, actor: str, run_key: str, chapters: int):
+    return StartBookProductionCommand(
+        project_id=snapshot.project_id,
+        workspace_id=snapshot.workspace_id,
+        book_id=snapshot.book_id,
+        actor_id=actor,
+        trace_id=f"trace:{run_key}",
+        correlation_id=run_key,
+        stable_idempotency_key=run_key,
+        book_design_version=snapshot.book_design_version,
+        book_plan_version=snapshot.book_plan_version,
+        production_profile_version=snapshot.production_profile_version,
+        longform_context_versions={
+            "volume_plan_version": snapshot.current_volume_plan_version,
+            "arc_plan_versions": list(snapshot.current_relevant_arc_plan_versions),
+            **{
+                key: getattr(snapshot, key)
+                for key in (
+                    "character_state_version",
+                    "foreshadowing_state_version",
+                    "quality_trend_version",
+                    "reward_ledger_version",
+                    "promise_ledger_version",
+                    "reader_segment_version",
+                    "reader_contract_version",
+                    "platform_profile_version",
+                )
+            },
+        },
+        target_chapter_count=chapters,
+        input_mode="RESOLVED_AUTHORITY_INPUT",
+        input_snapshot_id=snapshot.snapshot_id,
+    )
+
+
+def drive(
+    *,
+    composition,
+    chapter,
+    book_run_id: str,
+    worker,
+    events,
+    maximum_ticks: int,
+    deadline: float,
+    stop_after_chapter: int = 0,
+    pilot_stop_after_chapter: int = 0,
+    checkpoints: tuple[int, ...] = (),
+    resume_after_checkpoint: int = 0,
+    checkpoint_review_decision_id: str = "",
+):
+    if checkpoints and (tuple(sorted(set(checkpoints))) != checkpoints or checkpoints[-1] != pilot_stop_after_chapter):
+        raise ValueError("Reading checkpoints must end at the frozen pilot stop cursor")
+    if resume_after_checkpoint and resume_after_checkpoint not in checkpoints[:-1]:
+        raise ValueError("Resume checkpoint must be an intermediate frozen reading cursor")
+    jobs = RuntimeJobAuthority(composition.authority.database_url)
+    for _ in range(maximum_ticks):
+        book = composition.authority.require(book_run_id)
+        if checkpoints:
+            from scripts.creation_pilot import reading_checkpoint_gate
+            blocked = reading_checkpoint_gate(
+                composition=composition, book=book, checkpoints=checkpoints,
+                resume_after_checkpoint=resume_after_checkpoint,
+                decision_version_id=checkpoint_review_decision_id, events=events,
+            )
+            if blocked:
+                return blocked
+            book = composition.authority.require(book_run_id)
+        stop_cursor = pilot_stop_after_chapter or book["target_chapter_count"]
+        if book["accepted_through_chapter"] >= stop_cursor:
+            group_id = composition.query.active_chapter_group_run_id(
+                project_id=book["project_id"], book_run_id=book_run_id,
+            )
+            if group_id:
+                group = composition.chapter_groups.require(group_id)
+                if pilot_stop_after_chapter and book["accepted_through_chapter"] < group["chapter_end"]:
+                    if group["state"] == "CHAPTER_RUNNING":
+                        composition.chapter_groups.reconcile_and_accept(group_id, principal=composition.principal)
+                    if book["state"] != "PAUSED":
+                        composition.authority.pause(book_run_id, principal=composition.principal,
+                                                    reason="Frozen pilot cursor intersects an incomplete ChapterGroup")
+                    events({"kind": "PILOT_CURSOR_PARTIAL_GROUP_BLOCKED", "group_run_id": group_id,
+                            "accepted_through_chapter": book["accepted_through_chapter"],
+                            "chapter_range": [group["chapter_start"], group["chapter_end"]]})
+                    return "PILOT_CURSOR_PARTIAL_GROUP_BLOCKED"
+                if book["accepted_through_chapter"] >= group["chapter_end"]:
+                    if group["state"] == "CHAPTER_RUNNING":
+                        group = composition.chapter_groups.reconcile_and_accept(group_id, principal=composition.principal)
+                    if group["state"] == "CLOSURE_PENDING":
+                        group = composition.chapter_groups.close(group_id, principal=composition.principal)
+                        events({"kind": "ACCEPTED_GROUP_CLOSED", "group_run_id": group_id})
+                    if group["state"] != "COMPLETED":
+                        return "WAITING_ACCEPTED_GROUP_CLOSURE"
+            if pilot_stop_after_chapter:
+                if book["accepted_through_chapter"] != pilot_stop_after_chapter:
+                    return "PILOT_CURSOR_ALREADY_PASSED"
+                if book["state"] != "PAUSED":
+                    composition.authority.pause(book_run_id, principal=composition.principal,
+                                                reason=f"Frozen pilot accepted cursor {pilot_stop_after_chapter}; full Book target {book['target_chapter_count']} remains")
+                events({"kind": "PILOT_ACCEPTED_CURSOR_REACHED", "book_run_id": book_run_id,
+                        "accepted_through_chapter": book["accepted_through_chapter"],
+                        "target_chapter_count": book["target_chapter_count"], "full_book_completion": "NOT_PROVEN"})
+                return "PILOT_ACCEPTED_CURSOR_REACHED"
+            return "ACCEPTED_TARGET_REACHED"
+        future_group = (
+            composition.query.active_plan_covering_chapter(
+                project_id=book["project_id"], book_id=book["book_id"],
+                contract_type="CHAPTER_GROUP", chapter_number=stop_after_chapter + 1,
+            ) if stop_after_chapter and book["accepted_through_chapter"] >= stop_after_chapter else None
+        )
+        if stop_after_chapter and book["accepted_through_chapter"] >= stop_after_chapter:
+            blocked = "FUTURE_PLAN_CHANGE_CURSOR_PASSED" if book["accepted_through_chapter"] > stop_after_chapter else (
+                "FUTURE_PLAN_CHANGE_SCOPE_BLOCKED" if future_group and future_group["content"]["chapter_range"][0] <= stop_after_chapter else ""
+            )
+            if blocked:
+                if book["state"] != "PAUSED":
+                    composition.authority.pause(book_run_id, principal=composition.principal,
+                                                reason="Frozen future-plan boundary requires an unexecuted plan scope")
+                events({"kind": blocked, "book_run_id": book_run_id,
+                        "accepted_through_chapter": book["accepted_through_chapter"], "future_plan": future_group})
+                return blocked
+        if future_group and future_group["content"]["chapter_range"][0] > stop_after_chapter:
+            if book["state"] != "PAUSED":
+                composition.authority.pause(
+                    book_run_id, reason=f"Frozen creative experiment intervention after chapter {stop_after_chapter}",
+                    principal=composition.principal,
+                )
+            events({"kind": "FUTURE_PLAN_CHANGE_REQUIRED", "accepted_through_chapter": book["accepted_through_chapter"],
+                    "target_plan_version_id": future_group["asset_version_id"],
+                    "input_snapshot_id": book.get("input_snapshot_id"), "book_run_id": book_run_id})
+            return "FUTURE_PLAN_CHANGE_REQUIRED"
+        if time.monotonic() >= deadline:
+            return "BOUNDED_TIME_EXHAUSTED"
+        schedule_book_coordination_jobs(
+            composition.query, jobs, limit=1, book_run_id=book_run_id
+        )
+        claim = jobs.claim(
+            runtime_group="book",
+            worker_id=worker.principal_id,
+            lease_seconds=30,
+            job_kinds=("BOOK_COORDINATION_TICK",),
+            subject_kind="BOOK_RUN",
+            subject_id=book_run_id,
+        )
+        if claim is None:
+            return "WAITING_LEASE_OR_RETRY"
+        tick = execute_book_coordination_claim(jobs, composition, claim)
+        events({"kind": "BOOK_TICK", "result": tick})
+        progress = composition.query.progress(book_run_id=book_run_id)
+        active_root = (
+            str(tick.get("operation_id") or "")
+            if tick["action"] == "DISPATCH_CHAPTER"
+            else progress.active_operation_id
+        )
+        if active_root and progress.active_operation_status not in {
+            "SUCCEEDED",
+            "FAILED_TERMINAL",
+            "CANCELLED",
+        }:
+            scheduler = chapter.scheduler(principal=worker)
+            for _ in range(80):
+                if time.monotonic() >= deadline:
+                    return "BOUNDED_TIME_EXHAUSTED"
+                result = scheduler.tick(
+                    project_id=book["project_id"],
+                    root_operation_id=active_root,
+                )
+                events({"kind": "CHAPTER_TICK", "result": asdict(result)})
+                if result.saga_status == "SUCCEEDED":
+                    break
+        elif tick["action"].startswith(("BLOCK", "WAIT", "APPROVAL", "REQUEST_REPLAN")):
+            return tick["action"]
+    return "BOUNDED_TICKS_EXHAUSTED"
+
+
+def export_artifacts(
+    *,
+    database_url: str,
+    project_id: str,
+    destination: Path,
+    extra_kinds: tuple[str, ...] = (),
+):
+    query = AuthorityAssetQuery(database_url)
+    kinds = (
+        "world_preparation_source",
+        "world_preparation_generation",
+        "world_preparation_evaluation",
+        "narrative_governance_action",
+        "model_call_log",
+        "cost_ledger",
+        "execution_recovery_session",
+        "provider_request_admission_manifest",
+        "context_bundle",
+        "knowledge_card",
+        "knowledge_pack",
+    )
+    errors = []
+    for kind in dict.fromkeys((*kinds, *extra_kinds)):
+        try:
+            rows = query.list_versions(
+                project_id=project_id, asset_type=kind, limit=500
+            )
+            if len(rows) == 500:
+                raise RuntimeError(
+                    f"evidence export bound reached for {kind}; retain PostgreSQL for paged export"
+                )
+            (destination / f"{kind}.json").write_text(
+                json.dumps(
+                    [
+                        {
+                            "asset_version_id": row.asset_version_id,
+                            "content_hash": row.content_hash,
+                            "logical_ref": row.logical_ref,
+                            "content": row.content,
+                        }
+                        for row in rows
+                    ],
+                    default=str,
+                    indent=2,
+                )
+                + "\n"
+            )
+        except Exception as error:
+            errors.append({"asset_type": kind, "error": redact_secret_text(str(error))})
+    (destination / "asset-export-status.json").write_text(
+        json.dumps(
+            {"status": "PARTIAL" if errors else "COMPLETE", "errors": errors},
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    if errors:
+        raise RuntimeError("Partial artifact export; inspect asset-export-status.json")
+
+
+def export(
+    *, composition, book_run_id: str, destination: Path, include_artifacts: bool = True
+):
+    from novel_forge.modules.chapter_authority.queries import ChapterAuthorityQuery
+    from novel_forge.modules.chapter_outcome.acceptance_contract import (
+        resolve_accepted_manuscript,
+    )
+
+    book = composition.authority.require(book_run_id)
+    (destination / "book.json").write_text(
+        json.dumps(book, default=str, indent=2) + "\n"
+    )
+    errors = []
+    groups = None
+    try:
+        groups = composition.query.chapter_group_execution_lineage(
+            project_id=book["project_id"], book_run_id=book_run_id, limit=500,
+        )
+        (destination / "chapter-groups.json").write_text(
+            json.dumps(groups, default=str, ensure_ascii=False, indent=2) + "\n"
+        )
+        if groups["has_more"]:
+            raise RuntimeError("500 ChapterGroup bound reached; use the paged native lineage query")
+    except Exception as error:
+        errors.append({"stage": "chapter_groups", "error": redact_secret_text(str(error))})
+    if include_artifacts:
+        try:
+            export_artifacts(
+                database_url=composition.authority.database_url,
+                project_id=book["project_id"],
+                destination=destination,
+            )
+        except Exception as error:
+            errors.append(
+                {"stage": "artifacts", "error": redact_secret_text(str(error))}
+            )
+    chapters = ChapterAuthorityQuery(composition.authority.database_url)
+    runs = chapters.list_runs(
+        project_id=book["project_id"], book_run_id=book_run_id, limit=500
+    )
+    if len(runs) == 500:
+        errors.append(
+            {
+                "stage": "chapters",
+                "error": "500 chapter bound reached; PostgreSQL retained",
+            }
+        )
+    workspaces = []
+    for run in runs:
+        try:
+            workspace = chapters.require_workspace(
+                project_id=book["project_id"],
+                root_operation_id=run["root_operation_id"],
+            )
+            workspaces.append(workspace)
+            accepted = workspace.get("acceptance") or {}
+            if accepted.get("status") == "COMMITTED":
+                selected = resolve_accepted_manuscript(workspace)
+                (
+                    destination
+                    / f"accepted-chapter-{accepted['accepted_through_chapter']}.txt"
+                ).write_text(selected["candidate"]["content"]["text"], encoding="utf-8")
+        except Exception as error:
+            errors.append(
+                {
+                    "stage": "workspace",
+                    "root_operation_id": run["root_operation_id"],
+                    "error": redact_secret_text(str(error)),
+                }
+            )
+    (destination / "chapter-workspaces.json").write_text(
+        json.dumps(workspaces, default=str, ensure_ascii=False, indent=2) + "\n"
+    )
+    try:
+        from scripts.creation_reading import accepted_reading_manifest, write_accepted_reading
+        reading = accepted_reading_manifest(book=book, workspaces=workspaces, lineage=groups or {})
+        write_accepted_reading(reading, destination=destination, book=book)
+    except Exception as error:
+        errors.append({"stage": "accepted_reading", "error": redact_secret_text(str(error))})
+    try:
+        from novel_forge.modules.mkaos_authority.query import MkaosAuthorityQuery
+        usage = MkaosAuthorityQuery(composition.authority.database_url).list_runtime_usage(
+            project_id=book["project_id"], book_id=book["book_id"], limit=500,
+        )
+        context_ids = {item["asset_version_id"] for workspace in workspaces
+                       for item in workspace["artifacts"].get("inputs", [])
+                       if item.get("asset_type") == "context_bundle"}
+        (destination / "knowledge-runtime-usage.json").write_text(json.dumps({
+            "contract_version": "book-knowledge-runtime-export.v1", "project_id": book["project_id"],
+            "book_id": book["book_id"], "book_run_id": book_run_id,
+            "status": "PARTIAL" if len(usage) == 500 else "COMPLETE", "bounded": len(usage) == 500,
+            "records": [item for item in usage if item["context_bundle_asset_version_id"] in context_ids],
+        }, default=str, ensure_ascii=False, indent=2))
+        if len(usage) == 500:
+            raise RuntimeError("Knowledge delivery export reached its 500 receipt bound; retain PostgreSQL for inspection")
+    except Exception as error:
+        errors.append({"stage": "knowledge_runtime_usage", "error": redact_secret_text(str(error))})
+    realities = []
+    for number in range(1, min(500, book["accepted_through_chapter"]) + 1):
+        try:
+            realities.append(
+                composition.query.narrative_reality(
+                    book_run_id=book_run_id, chapter_number=number
+                )
+            )
+        except Exception as error:
+            errors.append(
+                {
+                    "stage": "reality",
+                    "chapter": number,
+                    "error": redact_secret_text(str(error)),
+                }
+            )
+    if book["accepted_through_chapter"] > 500:
+        errors.append(
+            {
+                "stage": "reality",
+                "error": "500 revision bound reached; PostgreSQL retained",
+            }
+        )
+    (destination / "realities.json").write_text(
+        json.dumps(realities, default=str, indent=2) + "\n"
+    )
+    (destination / "workspace-export-status.json").write_text(
+        json.dumps(
+            {"status": "PARTIAL" if errors else "COMPLETE", "errors": errors},
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+    if errors:
+        raise RuntimeError(
+            "Partial workspace export; inspect workspace-export-status.json: "
+            + json.dumps(errors, ensure_ascii=False)
+        )
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--expected-sha", required=True)
+    parser.add_argument(
+        "--input-snapshot-id",
+        required=True,
+        help="Approved Book opening/input resolver snapshot; no causal candidates or scores",
+    )
+    parser.add_argument(
+        "--run-key",
+        required=True,
+        help="Keep this exact key when resuming; confirmed effects are reconciled by the runtime",
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        required=True,
+        help="Existing isolated Authority runtime/object-store root",
+    )
+    parser.add_argument(
+        "--evidence-dir",
+        type=Path,
+        required=True,
+        help="A new export directory for this invocation; never overwrites failed evidence",
+    )
+    parser.add_argument(
+        "--chapters",
+        type=int,
+        default=3,
+        help="Experiment bound only, not a quality qualification level",
+    )
+    parser.add_argument("--max-ticks", type=int, default=60)
+    parser.add_argument("--max-seconds", type=int, default=1800)
+    parser.add_argument(
+        "--execute",
+        action="store_true",
+        help="Use the explicitly configured authorized budgets and real routes",
+    )
+    args = parser.parse_args(argv)
+    if (
+        not 3 <= args.chapters <= 12
+        or not 1 <= args.max_ticks <= 120
+        or not 1 <= args.max_seconds <= 7200
+    ):
+        parser.error(
+            "smoke bounds must be chapters 3..12, ticks 1..120 and seconds 1..7200"
+        )
+    args.evidence_dir.mkdir(parents=True, exist_ok=False)
+
+    def events(row):
+        with (args.evidence_dir / "events.jsonl").open("a") as stream:
+            stream.write(json.dumps(row, default=str) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+
+    repo = Path(__file__).resolve().parents[1]
+    report = {
+        "status": "BLOCKED",
+        "proof_ceiling": "REAL_PROVIDER_SMOKE_ONLY",
+        "source_sha": subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=repo, text=True
+        ).strip(),
+        "implementation_tree_sha": build_implementation_tree_identity(repo)[
+            "implementation_tree_sha"
+        ],
+        "snapshot_id": args.input_snapshot_id,
+        "run_key": args.run_key,
+        "human_editorial": "NOT_PROVEN",
+        "longitudinal": "NOT_PROVEN",
+        "production_operation": "NOT_PROVEN",
+    }
+    execution = composition = book_run_id = None
+    try:
+        values = dict(os.environ)
+        if (
+            report["source_sha"] != args.expected_sha
+            or subprocess.check_output(
+                ["git", "status", "--porcelain"], cwd=repo, text=True
+            ).strip()
+        ):
+            raise ValueError("a clean expected implementation commit is required")
+        validate_configuration(values)
+        if not args.execute:
+            raise ValueError("--execute is required after budget/configuration review")
+        import psycopg
+
+        database_url = values["NOVEL_FORGE_DATABASE_URL"]
+        with psycopg.connect(
+            database_url, options="-c default_transaction_read_only=on"
+        ) as connection:
+            require_disposable_database_name(
+                connection.execute("SELECT current_database()").fetchone()[0]
+            )
+        settings = IndustrialSettings.from_env(values, root=args.root)
+        execution = build_production_execution_composition(settings, env=values)
+        if any(
+            route.model_profile.model_provider == "scripted_provider_v2"
+            for route in execution.gateway.routes.values()
+        ):
+            raise ValueError("scripted routes cannot execute a real Provider smoke")
+        resolver = build_trusted_principal_resolver(env=values)
+        principal = resolver.resolve_api_principal()
+        worker = resolver.resolve_worker_principal("world-smoke-worker")
+        chapter = build_chapter_authority_application(
+            settings, execution=execution, env=values
+        )
+        composition = build_book_production_composition(
+            settings,
+            principal=principal,
+            execution=execution,
+            env=values,
+            chapter_application=chapter,
+        )
+        snapshot = composition.input_resolver.require(args.input_snapshot_id)
+        admitted = composition.authority.start(
+            start_command(
+                snapshot,
+                actor=principal.principal_id,
+                run_key=args.run_key,
+                chapters=args.chapters,
+            ),
+            principal=principal,
+        )
+        book_run_id = admitted.book_run_id
+        events(
+            {
+                "kind": "ADMITTED",
+                "book_run_id": book_run_id,
+                "snapshot": snapshot.to_dict(),
+            }
+        )
+        report.update(book_run_id=book_run_id, status="RUNNING")
+        report["stop_reason"] = drive(
+            composition=composition,
+            chapter=chapter,
+            book_run_id=book_run_id,
+            worker=worker,
+            events=events,
+            maximum_ticks=args.max_ticks,
+            deadline=time.monotonic() + args.max_seconds,
+        )
+        report["status"] = (
+            "EXECUTED_REVIEW_EVIDENCE"
+            if report["stop_reason"] == "ACCEPTED_TARGET_REACHED"
+            else "BLOCKED"
+        )
+    except Exception as exc:
+        report.update(
+            status="BLOCKED" if book_run_id is None else "FAILED",
+            error_type=type(exc).__name__,
+            error=redact_secret_text(exc),
+        )
+        events(
+            {
+                "kind": "FAILURE",
+                "error_type": type(exc).__name__,
+                "error": redact_secret_text(exc),
+            }
+        )
+    finally:
+        try:
+            if composition is not None and book_run_id is not None:
+                export(
+                    composition=composition,
+                    book_run_id=book_run_id,
+                    destination=args.evidence_dir,
+                )
+        except Exception as exc:
+            report.update(
+                status="EVIDENCE_EXPORT_FAILED", export_error=redact_secret_text(exc)
+            )
+            events({"kind": "EXPORT_FAILURE", "error": redact_secret_text(exc)})
+        finally:
+            if execution is not None:
+                execution.close()
+            if (
+                build_implementation_tree_identity(repo)["implementation_tree_sha"]
+                != report["implementation_tree_sha"]
+            ):
+                report.update(
+                    status="STALE_IMPLEMENTATION",
+                    error="Implementation identity changed during smoke",
+                )
+            (args.evidence_dir / "result.json").write_text(
+                json.dumps(report, indent=2) + "\n"
+            )
+    print(json.dumps(report, indent=2))
+    return 0 if report["status"] == "EXECUTED_REVIEW_EVIDENCE" else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

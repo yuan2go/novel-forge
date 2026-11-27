@@ -1,0 +1,391 @@
+name: novel-forge-authority
+
+x-authority-environment: &authority-environment
+  NOVEL_FORGE_ENVIRONMENT: ${NOVEL_FORGE_ENVIRONMENT:-development}
+  NOVEL_FORGE_NO_MODEL_DISPATCH: ${NOVEL_FORGE_NO_MODEL_DISPATCH:-false}
+  NOVEL_FORGE_STORAGE_AUTHORITY: postgresql
+  NOVEL_FORGE_DATABASE_URL: postgresql://novel_forge:${NOVEL_FORGE_POSTGRES_PASSWORD:-novel_forge_dev_only}@postgresql:5432/novel_forge
+  NOVEL_FORGE_APPLICATION_BUILD_ID: ${NOVEL_FORGE_APPLICATION_BUILD_ID:-authority-compose-fixture}
+  NOVEL_FORGE_COMMIT_SHA: ${NOVEL_FORGE_COMMIT_SHA:-0000000000000000000000000000000000000000}
+  NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID: ${NOVEL_FORGE_LOCAL_OPERATOR_PRINCIPAL_ID:-compose-operator}
+  NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE: ${NOVEL_FORGE_AUTHORITY_PROJECT_SCOPE:-*}
+  NOVEL_FORGE_MODEL_PROVIDER: ${NOVEL_FORGE_MODEL_PROVIDER:-mock}
+  NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT: ${NOVEL_FORGE_PROVIDER_MODEL_CONTEXT_LIMIT:-0}
+  NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD: ${NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_METHOD:-}
+  NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF: ${NOVEL_FORGE_PROVIDER_TOKEN_ACCOUNTING_EVIDENCE_REF:-}
+  NOVEL_FORGE_PROVIDER_TOKEN_SAFETY_MARGIN: ${NOVEL_FORGE_PROVIDER_TOKEN_SAFETY_MARGIN:-256}
+  NOVEL_FORGE_PROVIDER_TOKEN_FRAMING_OVERHEAD: ${NOVEL_FORGE_PROVIDER_TOKEN_FRAMING_OVERHEAD:-16}
+  NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE: ${NOVEL_FORGE_SOURCE_PROVIDER_OUTPUT_TOKEN_RESERVE:-4096}
+  NOVEL_FORGE_MKAOS_ALLOW_FIXTURE_ACTIVATION: ${NOVEL_FORGE_MKAOS_ALLOW_FIXTURE_ACTIVATION:-false}
+  NOVEL_FORGE_AUTHORITY_OBJECT_STORE_BACKEND: minio
+  NOVEL_FORGE_AUTHORITY_OBJECT_STORE_ROOT: /runtime/objects
+  NOVEL_FORGE_MINIO_ENDPOINT: object-store:9000
+  NOVEL_FORGE_MINIO_ACCESS_KEY: ${NOVEL_FORGE_MINIO_ACCESS_KEY:-novel_forge}
+  NOVEL_FORGE_MINIO_SECRET_KEY: ${NOVEL_FORGE_MINIO_SECRET_KEY:-novel_forge_dev_only}
+  NOVEL_FORGE_MINIO_SECURE: "false"
+  NOVEL_FORGE_AUTHORITY_POLL_SECONDS: ${NOVEL_FORGE_AUTHORITY_POLL_SECONDS:-0.5}
+  NOVEL_FORGE_DB_STATEMENT_TIMEOUT: ${NOVEL_FORGE_DB_STATEMENT_TIMEOUT:-30000}
+  NOVEL_FORGE_DB_LOCK_TIMEOUT: ${NOVEL_FORGE_DB_LOCK_TIMEOUT:-5000}
+  NOVEL_FORGE_DB_IDLE_TRANSACTION_TIMEOUT: ${NOVEL_FORGE_DB_IDLE_TRANSACTION_TIMEOUT:-30000}
+  NOVEL_FORGE_DB_TIMEZONE: UTC
+  NOVEL_FORGE_DB_SEARCH_PATH: public
+  NOVEL_FORGE_POSTGRES_MAX_CONNECTIONS: "100"
+  NOVEL_FORGE_DB_API_INSTANCES: "1"
+  NOVEL_FORGE_DB_CHAPTER_INSTANCES: "1"
+  NOVEL_FORGE_DB_CONTENT_INSTANCES: "1"
+  NOVEL_FORGE_DB_SOURCE_INSTANCES: "2"
+  NOVEL_FORGE_DB_MKAOS_INSTANCES: "1"
+  NOVEL_FORGE_DB_BOOK_INSTANCES: "1"
+  NOVEL_FORGE_DB_BOOK_FOLLOWUP_INSTANCES: "1"
+  NOVEL_FORGE_DB_OUTBOX_INSTANCES: "1"
+  NOVEL_FORGE_DB_MAINTENANCE_INSTANCES: "1"
+
+x-python-service: &python-service
+  build:
+    context: .
+    dockerfile: Dockerfile
+  init: true
+  user: "10001:10001"
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  volumes:
+    - authority-runtime:/runtime
+  restart: unless-stopped
+  stop_grace_period: 45s
+  security_opt:
+    - no-new-privileges:true
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+  deploy:
+    resources:
+      limits:
+        cpus: "1.00"
+        memory: 768M
+
+x-worker-dependencies: &worker-dependencies
+  authority-api:
+    condition: service_healthy
+
+services:
+  postgresql:
+    image: pgvector/pgvector:pg16
+    command:
+      - postgres
+      - -c
+      - max_connections=100
+      - -c
+      - idle_in_transaction_session_timeout=60s
+      - -c
+      - log_lock_waits=on
+    environment:
+      POSTGRES_DB: novel_forge
+      POSTGRES_USER: novel_forge
+      POSTGRES_PASSWORD: ${NOVEL_FORGE_POSTGRES_PASSWORD:-novel_forge_dev_only}
+    volumes:
+      - authority-postgresql-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    stop_grace_period: 60s
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U novel_forge -d novel_forge"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.50"
+          memory: 1G
+
+  object-store:
+    image: minio/minio:RELEASE.2024-07-16T23-46-41Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${NOVEL_FORGE_MINIO_ACCESS_KEY:-novel_forge}
+      MINIO_ROOT_PASSWORD: ${NOVEL_FORGE_MINIO_SECRET_KEY:-novel_forge_dev_only}
+    volumes:
+      - authority-object-data:/data
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.00"
+          memory: 512M
+
+  authority-migration:
+    <<: *python-service
+    restart: "no"
+    stop_grace_period: 15s
+    command: ["python", "-m", "novel_forge.cli.authority", "authority-migrate"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: authority-migration
+      NOVEL_FORGE_DATABASE_ROLE: migration
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      object-store:
+        condition: service_healthy
+
+  authority-api:
+    <<: *python-service
+    command:
+      - python
+      - -m
+      - novel_forge.cli.authority
+      - serve-api
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: authority-api
+      NOVEL_FORGE_DATABASE_ROLE: api
+      NOVEL_FORGE_AUTHORITY_WORKER_ID: chapter-authority-api
+    ports:
+      - target: 8000
+        host_ip: "${NOVEL_FORGE_AUTHORITY_API_HOST_IP:-0.0.0.0}"
+        published: "${NOVEL_FORGE_AUTHORITY_API_PORT:-8000}"
+        protocol: tcp
+    depends_on:
+      authority-migration:
+        condition: service_completed_successfully
+      object-store:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/readiness"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+      start_period: 10s
+    labels:
+      novel-forge.runtime-group: api-callback
+      novel-forge.operation-definitions: provider-callback-http,authority-command-http
+
+  chapter-authority-worker:
+    <<: *python-service
+    command: ["python", "-m", "novel_forge.workers.chapter_authority"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: chapter-authority-worker
+      NOVEL_FORGE_DATABASE_ROLE: chapter
+      NOVEL_FORGE_AUTHORITY_WORKER_ID: chapter-authority-worker-1
+    depends_on: *worker-dependencies
+    healthcheck:
+      test: ["CMD", "python", "-m", "novel_forge.workers.healthcheck", "--worker-kind", "chapter", "--worker-id", "chapter-authority-worker-1"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    labels:
+      novel-forge.runtime-group: chapter-execution-effect-dispatch
+      novel-forge.operation-definitions: chapter.*
+      novel-forge.concurrency: "1"
+      novel-forge.database-max-connections: "4"
+
+  agent-authority-worker:
+    <<: *python-service
+    command: ["python", "-m", "novel_forge.workers.agent_authority"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: agent-authority-worker
+      NOVEL_FORGE_DATABASE_ROLE: agent
+      NOVEL_FORGE_AUTHORITY_WORKER_ID: agent-authority-worker-1
+    depends_on: *worker-dependencies
+    healthcheck:
+      test: ["CMD", "python", "-m", "novel_forge.workers.healthcheck", "--worker-kind", "agent", "--worker-id", "agent-authority-worker-1"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    labels:
+      novel-forge.runtime-group: agent-execution-effect-dispatch
+      novel-forge.operation-definitions: agent.*
+      novel-forge.concurrency: "1"
+      novel-forge.database-max-connections: "4"
+
+  content-authority-worker:
+    <<: *python-service
+    command: ["python", "-m", "novel_forge.workers.content_authority"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: content-authority-worker
+      NOVEL_FORGE_DATABASE_ROLE: content
+      NOVEL_FORGE_CONTENT_AUTHORITY_WORKER_ID: content-authority-worker-1
+    depends_on: *worker-dependencies
+    healthcheck:
+      test: ["CMD", "python", "-m", "novel_forge.workers.healthcheck", "--worker-kind", "content", "--worker-id", "content-authority-worker-1"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    labels:
+      novel-forge.runtime-group: content-authority
+      novel-forge.operation-definitions: content.*
+      novel-forge.concurrency: "1"
+      novel-forge.database-max-connections: "4"
+
+  source-authority-worker:
+    <<: *python-service
+    command: ["novel-forge-source-authority-worker"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: source-authority-worker
+      NOVEL_FORGE_DATABASE_ROLE: source
+      NOVEL_FORGE_SOURCE_AUTHORITY_WORKER_ID: source-authority-worker-1
+    depends_on: *worker-dependencies
+    healthcheck:
+      test: ["CMD", "python", "-m", "novel_forge.workers.healthcheck", "--worker-kind", "source", "--worker-id", "source-authority-worker-1"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    labels:
+      novel-forge.runtime-group: source-authority
+      novel-forge.operation-definitions: source.*
+      novel-forge.concurrency: "1"
+      novel-forge.database-max-connections: "3"
+
+  source-import-worker:
+    <<: *python-service
+    command: ["novel-forge-source-import-worker"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: source-import-worker
+      NOVEL_FORGE_DATABASE_ROLE: source
+      NOVEL_FORGE_SOURCE_IMPORT_WORKER_ID: source-import-worker-1
+      NOVEL_FORGE_SOURCE_IMPORT_GIT_CACHE_ROOT: /runtime/source-import/git-cache
+    depends_on: *worker-dependencies
+    healthcheck:
+      test: ["CMD", "python", "-m", "novel_forge.workers.healthcheck", "--worker-kind", "source_import", "--worker-id", "source-import-worker-1"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    labels:
+      novel-forge.runtime-group: source-import
+      novel-forge.operation-definitions: source.import.*
+      novel-forge.concurrency: "1"
+      novel-forge.database-max-connections: "3"
+
+  mkaos-authority-worker:
+    <<: *python-service
+    command: ["novel-forge-mkaos-authority-worker"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: mkaos-authority-worker
+      NOVEL_FORGE_DATABASE_ROLE: mkaos
+      NOVEL_FORGE_MKAOS_AUTHORITY_WORKER_ID: mkaos-authority-worker-1
+    depends_on: *worker-dependencies
+    healthcheck:
+      test: ["CMD", "python", "-m", "novel_forge.workers.healthcheck", "--worker-kind", "mkaos", "--worker-id", "mkaos-authority-worker-1"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    labels:
+      novel-forge.runtime-group: mkaos-authority
+      novel-forge.operation-definitions: mkaos.*
+      novel-forge.concurrency: "1"
+      novel-forge.database-max-connections: "3"
+
+  book-authority-worker:
+    <<: *python-service
+    command: ["novel-forge-book-authority-worker"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: book-authority-worker
+      NOVEL_FORGE_DATABASE_ROLE: book
+      NOVEL_FORGE_BOOK_AUTHORITY_WORKER_ID: book-authority-worker-1
+    depends_on: *worker-dependencies
+    healthcheck:
+      test: ["CMD", "python", "-m", "novel_forge.workers.healthcheck", "--worker-kind", "book", "--worker-id", "book-authority-worker-1"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    labels:
+      novel-forge.runtime-group: book-authority
+      novel-forge.operation-definitions: book.*
+      novel-forge.concurrency: "1"
+      novel-forge.database-max-connections: "3"
+
+  book-followup-authority-worker:
+    <<: *python-service
+    command: ["novel-forge-book-followup-worker"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: book-followup-authority-worker
+      NOVEL_FORGE_DATABASE_ROLE: book_followup
+      NOVEL_FORGE_BOOK_FOLLOWUP_WORKER_ID: book-followup-authority-worker-1
+    depends_on: *worker-dependencies
+    healthcheck:
+      test: ["CMD", "python", "-m", "novel_forge.workers.healthcheck", "--worker-kind", "book_followup", "--worker-id", "book-followup-authority-worker-1"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    labels:
+      novel-forge.runtime-group: book-followup-authority
+      novel-forge.operation-definitions: reader_outcome.evaluate,longform.recap
+      novel-forge.concurrency: "1"
+      novel-forge.database-max-connections: "3"
+
+  outbox-worker:
+    <<: *python-service
+    command: ["novel-forge-outbox-worker"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: outbox-worker
+      NOVEL_FORGE_DATABASE_ROLE: outbox
+      NOVEL_FORGE_OUTBOX_WORKER_ID: outbox-worker-1
+    depends_on: *worker-dependencies
+    healthcheck:
+      test: ["CMD", "python", "-m", "novel_forge.workers.healthcheck", "--worker-kind", "outbox", "--worker-id", "outbox-worker-1"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    labels:
+      novel-forge.runtime-group: outbox-dispatch
+      novel-forge.operation-definitions: outbox.internal-delivery
+      novel-forge.concurrency: "1"
+      novel-forge.database-max-connections: "2"
+
+  maintenance-worker:
+    <<: *python-service
+    command: ["novel-forge-maintenance-worker"]
+    environment:
+      <<: *authority-environment
+      NOVEL_FORGE_SERVICE_NAME: maintenance-worker
+      NOVEL_FORGE_DATABASE_ROLE: maintenance
+      NOVEL_FORGE_RUNTIME_GROUP_WORKER_ID: maintenance-worker-1
+    depends_on: *worker-dependencies
+    healthcheck:
+      test: ["CMD", "python", "-m", "novel_forge.workers.healthcheck", "--worker-kind", "maintenance", "--worker-id", "maintenance-worker-1"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+    labels:
+      novel-forge.runtime-group: maintenance-recovery
+      novel-forge.operation-definitions: deadline-recovery,lease-expiry-scan
+      novel-forge.concurrency: "1"
+      novel-forge.database-max-connections: "2"
+
+volumes:
+  authority-postgresql-data:
+  authority-object-data:
+  authority-runtime:

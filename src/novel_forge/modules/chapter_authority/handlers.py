@@ -1,0 +1,3448 @@
+from __future__ import annotations
+
+from .capacity_continuation import effective_context_content
+
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+
+from dataclasses import asdict, dataclass, replace
+from decimal import Decimal, InvalidOperation
+import hashlib
+import json
+from typing import Any
+
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.context_builder.production_retrieval import (
+    build_campaign_final_query_plan,
+    build_expanded_retrieval_query_plan,
+    build_retrieval_result,
+    discover_accepted_retrieval_candidates,
+    freeze_retrieval_candidate_union,
+    load_frozen_retrieval_candidate_union,
+)
+from novel_forge.modules.context_builder.retrieval_campaign import (
+    RetrievalCampaignPolicy,
+    decide_retrieval_campaign_transition,
+    evaluate_retrieval_coverage,
+    merge_retrieval_round_documents,
+    validate_retrieval_expansion_plan,
+)
+from novel_forge.modules.context_builder.retrieval_campaign_store import (
+    complete_retrieval_campaign,
+    freeze_retrieval_round,
+    load_retrieval_rounds,
+    start_retrieval_campaign,
+)
+
+from novel_forge.modules.chapter_authority.contracts import (
+    ChapterAuxiliaryOutput,
+    ChapterHandlerOutput,
+    ChapterHandlerRegistry,
+    ChapterHandlerRequest,
+    ChapterInputAsset,
+    ChapterNode,
+    resolve_stage_context_token_budget,
+)
+from novel_forge.modules.chapter_authority.domain_handlers import (
+    build_canon_extraction,
+    build_canon_patch,
+    build_context_bundle,
+    build_export_package,
+    build_final_release_gate,
+    build_publish_gate,
+    build_quality_report,
+    normalize_draft_result,
+    normalize_review_result,
+    normalize_rereview_result,
+    normalize_revision_result,
+)
+from novel_forge.modules.chapter_authority.chapter_plan_views import (
+    ChapterPlanQualificationProfile,
+    build_draft_plan_view,
+    build_draft_style_view,
+    normalize_authoritative_chapter_plan,
+    qualification_profile_for_plan,
+)
+from novel_forge.modules.chapter_authority.model_effects import (
+    ChapterModelPort,
+    ModelProviderResult,
+)
+from novel_forge.modules.chapter_authority.execution_artifacts import (
+    build_chapter_execution_intent,
+)
+from novel_forge.modules.chapter_authority.candidate_selection import (
+    CandidateEvidence,
+    build_best_candidate,
+    compare_candidates,
+)
+from novel_forge.modules.chapter_quality_authority import (
+    QUALITY_GROUPS,
+    build_multiscale_quality_report,
+    build_quality_group_evidence,
+    build_quality_context_view,
+)
+from novel_forge.modules.canon_graph.approval_domain import (
+    build_canon_change_proposal,
+    resolve_canon_extraction,
+)
+from novel_forge.modules.content_intelligence import (
+    build_hook_analysis,
+    build_pacing_observation,
+)
+from novel_forge.modules.narrative_state import measure_narrative_runtime
+from novel_forge.modules.production_execution import CommitManifest
+from novel_forge.modules.revision.domain import apply_quality_revision_result
+from novel_forge.modules.production_preparation.policies import (
+    CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES,
+)
+
+
+class DeterministicFixtureChapterProvider:
+    provider_id = "deterministic_chapter_fixture_v1"
+    external_effect_backed = False
+
+    def invoke(
+        self,
+        request: ChapterHandlerRequest,
+        *,
+        stage: str,
+        payload: dict[str, Any],
+        reservation_amount: str | None = None,
+        reservation_tokens: int | None = None,
+        pre_send_assertion: Any | None = None,
+    ) -> ModelProviderResult:
+        if stage in {"memo", "canon_support"}:
+            from .execution_gateway import default_chapter_fixture_response
+            output = default_chapter_fixture_response(stage, payload)
+        elif stage == "draft":
+            plan = payload["plan"]
+            output = {
+                "text": (
+                    f"{plan['premise']} The choice is made in public. "
+                    "The promise is kept, but its cost remains too abstract."
+                )
+            }
+        elif stage == "review":
+            output = {
+                "decision": "NEEDS_REVISION",
+                "score": 72,
+                "issues": [
+                    {
+                        "code": "COST_NOT_CONCRETE",
+                        "severity": "blocking",
+                        "message": "The promised cost must become visible in the scene.",
+                    }
+                ],
+            }
+        elif stage == "revision":
+            draft = payload["draft"]
+            review = payload["review"]
+            output = {
+                "text": (
+                    f"{draft['text']} The protagonist surrenders the only safe route home "
+                    "before the witnesses leave, making the cost irreversible."
+                ),
+                "resolved_issue_codes": [
+                    str(item["code"]) for item in review["issues"]
+                ],
+                "canon_assertions": [
+                    {
+                        "subject": "protagonist",
+                        "predicate": "gave_up",
+                        "object": "safe_route_home",
+                        "effective_from_chapter": draft["chapter"],
+                    }
+                ],
+            }
+        elif stage == "rereview":
+            revision = payload["revision"]
+            review = payload["review"]
+            output = {
+                "decision": "PASSED",
+                "score": 88,
+                "issues": [],
+                "resolved_issue_codes": [
+                    str(item["code"]) for item in review.get("issues", [])
+                ],
+                "target_content_hash": str(revision.get("content_hash", "")),
+            }
+        else:
+            raise KernelError(
+                "MODEL_EFFECT_STAGE_UNSUPPORTED", f"unsupported fixture stage: {stage}"
+            )
+        output = self.structured_fixture_output(stage, payload, output)
+        return ModelProviderResult(
+            output=output,
+            provider_id=self.provider_id,
+            model_id="deterministic-fixture-model-v1",
+            prompt_version=f"chapter-{stage}-fixture-v1",
+            skill_version="deterministic-fixture-v1",
+            input_tokens=0,
+            output_tokens=0,
+            cost_amount="0",
+            currency="USD",
+            real_model_call=False,
+        )
+
+
+    @staticmethod
+    def structured_fixture_output(
+        stage: str, payload: dict[str, Any], output: dict[str, Any]
+    ) -> dict[str, Any]:
+        if stage in {"review", "rereview"}:
+            from .execution_gateway import _fixture_knowledge_checks
+            return {**output, "knowledge_checks": _fixture_knowledge_checks(payload)}
+        if stage not in {"draft", "revision"}:
+            return output
+        text = str(output["text"])
+        if stage == "draft":
+            artifacts = [
+                {"slot_id": slot["slot_id"], "text": text if index == 0 else "The visible consequences continue.", "used_fact_ids": [], **({"character_source_uses": []} if (payload.get("realization_contract") or {}).get("contract_version") == "scene-realization-composition.v3" else {})}
+                for index, slot in enumerate((payload.get("realization_contract") or {}).get("slots", []))
+            ]
+        else:
+            draft = payload["draft"]
+            artifacts = json.loads(json.dumps(draft.get("scene_artifacts", [])))
+            if artifacts:
+                if not text.startswith(draft["text"]):
+                    raise ValueError("fixture revision only supports append-only prose")
+                artifacts[-1]["text"] += text[len(draft["text"]):]
+        from .realization_composition import serialize_realization
+        separators = (payload.get("draft") or {}).get("scene_separators") if stage == "revision" else None
+        return {**output, "scene_artifacts": artifacts, "text": serialize_realization(artifacts, separators) if artifacts else text}
+
+
+@dataclass(frozen=True, slots=True)
+class _PlanHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        chapter = int(request.command["chapter"])
+        source_plan = request.require_input("chapter_plan")
+        if (
+            request.command.get("chapter_plan_asset_version_id")
+            != source_plan.asset_version_id
+            or request.command.get("chapter_plan_content_hash")
+            != source_plan.content_hash
+        ):
+            raise KernelError(
+                "CHAPTER_PLAN_FROZEN_IDENTITY_MISMATCH",
+                "ChapterPlan command identity does not match the frozen AssetVersion",
+            )
+        if (request.effective_definition_version in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}
+                and source_plan.content.get("source_planning_candidate_asset_version_id")
+                and source_plan.content.get("runtime_projection_version") != "2.0.0"):
+            raise KernelError("CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED",
+                "Current production cannot select a legacy projection with fabricated work methods")
+        if (request.effective_definition_version in {'3.9.16','3.10.0'}
+                and source_plan.content.get('source_planning_candidate_asset_version_id')
+                and ((source_plan.content.get('runtime_projection_version'), source_plan.content.get('chapter_contract_schema_version'))
+                     not in {('2.0.0','chapter-mission-scene.v3'), ('3.0.0','chapter-mission-scene.v4')})):
+            raise KernelError('CHAPTER_PLAN_PROJECTION_MIGRATION_REQUIRED',
+                              'Current Plan requires an exact declared method projection contract')
+        plan, qualification = normalize_authoritative_chapter_plan(
+            project_id=request.project_id,
+            expected_chapter=chapter,
+            expected_book_id=str(request.command.get("book_id") or ""),
+            include_book_identity=request.effective_definition_version == "3.10.0",
+            content=source_plan.content,
+            asset_version_id=source_plan.asset_version_id,
+            content_hash=source_plan.content_hash,
+            qualification_profile=(
+                ChapterPlanQualificationProfile(
+                    **request.command.get("preparation_report", {}).get(
+                        "chapter_plan_qualification_profile", {}
+                    )
+                )
+                if request.command.get("preparation_report", {}).get(
+                    "chapter_plan_qualification_profile"
+                )
+                else qualification_profile_for_plan({
+                    **source_plan.content,
+                    "constraint_envelope": {**dict(source_plan.content.get("constraint_envelope") or {}),
+                                            "creative_requirements_contract": "work-requirements.v1"},
+                }) if request.work_requirements_enabled else None
+            ),
+        )
+        manifest = dict(
+            request.command.get("preparation_report", {}).get(
+                "production_input_manifest", {}
+            )
+        )
+        if not manifest:
+            selected = [
+                {
+                    "asset_version_id": str(item["asset_version_id"]),
+                    "asset_type": str(item.get("asset_type") or "unknown"),
+                    "content_hash": str(item["content_hash"]),
+                    "role": "context",
+                    "entity_id": str(item.get("entity_id") or ""),
+                }
+                for item in request.command.get("context_candidates", [])
+            ]
+            payload = {
+                "project_id": request.project_id,
+                "chapter": chapter,
+                "stage": "draft",
+                "selected_asset_versions": selected,
+                "manifest_source": "FROZEN_COMMAND_CANDIDATES",
+                "fixture_protocol_only": False,
+            }
+            manifest = {
+                **payload,
+                "workspace_id": request.workspace_id,
+                **({"style_policy_version_id": next(
+                    (item["asset_version_id"] for item in selected if item["asset_type"] == "style_policy"), ""
+                )} if request.semantic_definition_version in {"3.8.0", "3.9.0"} else {}),
+                "quality_profile_version_id": next(
+                    (
+                        item["asset_version_id"]
+                        for item in selected
+                        if item["asset_type"] in {"quality_profile", "quality_rubric"}
+                    ),
+                    "",
+                ),
+                "platform_profile_version_id": next(
+                    (
+                        item["asset_version_id"]
+                        for item in selected
+                        if item["asset_type"] == "platform_profile"
+                    ),
+                    "",
+                ),
+                "manifest_digest": "sha256:"
+                + hashlib.sha256(
+                    json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+                ).hexdigest(),
+                "contract_version": "production-input-manifest-v2",
+                "approval_requirements": [],
+                "risk_summary": [],
+            }
+        manifest["created_by_operation_id"] = request.operation_id
+        manifest["manifest_digest"] = (
+            "sha256:"
+            + hashlib.sha256(
+                json.dumps(
+                    {
+                        key: value
+                        for key, value in manifest.items()
+                        if key != "manifest_digest"
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode()
+            ).hexdigest()
+        )
+        auxiliary = (
+            ChapterAuxiliaryOutput(
+                asset_type="production_input_manifest",
+                output_key="chapter.production_input_manifest",
+                role="production_input_manifest",
+                content=manifest,
+                reference_asset_version_ids=tuple(
+                    str(item["asset_version_id"])
+                    for item in manifest.get("selected_asset_versions", [])
+                ),
+            ),
+            ChapterAuxiliaryOutput(
+                asset_type="chapter_plan_qualification_report",
+                output_key="chapter.plan.qualification",
+                role="completion_evidence",
+                content={
+                    **json.loads(json.dumps(asdict(qualification), sort_keys=True)),
+                    "project_id": request.project_id,
+                    "chapter": chapter,
+                    "source_chapter_plan_asset_version_id": source_plan.asset_version_id,
+                },
+                reference_asset_version_ids=(source_plan.asset_version_id,),
+            ),
+        )
+        return ChapterHandlerOutput(
+            asset_type=ChapterNode.PLAN.asset_type,
+            output_key=ChapterNode.PLAN.output_key,
+            role="primary",
+            content=plan,
+            auxiliary_outputs=auxiliary,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _ExecutionIntentHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        plan = request.require_input("chapter_plan")
+        style_view = None
+        if request.work_requirements_enabled:
+            policies = [
+                item for item in request.inputs if item.asset_type == "style_policy"
+            ]
+            if request.semantic_definition_version in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
+                if len(policies) != 1 or (
+                    policies[0].content.get("contract_version") not in {"foundation-style-projection.v4", "foundation-style-projection.v5"}
+                    or not any(fact.get("key") == "work_applicability"
+                               for fact in policies[0].content.get("structured_facts", []))
+                ):
+                    raise KernelError(
+                        "STYLE_PROJECTION_MIGRATION_REQUIRED",
+                        "Current work production requires the source-bound Book applicability projection; migrate legacy style explicitly",
+                    )
+            if len(policies) > 1:
+                raise KernelError(
+                    "STYLE_POLICY_INPUT_AMBIGUOUS",
+                    "Execution intent needs one selected style policy",
+                )
+            style_view = build_draft_style_view(
+                {
+                    "context_segments": [
+                        {
+                            **policy.content,
+                            "asset_type": "style_policy",
+                            "asset_version_id": policy.asset_version_id,
+                            "content_hash": policy.content_hash,
+                        }
+                        for policy in policies
+                    ],
+                    "production_input_manifest": {
+                        "style_policy_version_id": policies[0].asset_version_id
+                        if policies
+                        else ""
+                    },
+                },
+                work_requirements=True,
+            )
+        accepted_inputs = [
+            {
+                **item.content,
+                "asset_type": item.asset_type,
+                "asset_version_id": item.asset_version_id,
+            }
+            for item in request.inputs
+            if item.asset_type in {"story_state_snapshot", "canon_snapshot"}
+        ]
+        working = (request.command.get("preparation_report") or {}).get("working_manuscript")
+        if working:
+            from novel_forge.modules.book_authority.manuscript import verify_working_handler
+            verify_working_handler(request, working)
+        content = build_chapter_execution_intent(
+            project_id=request.project_id, operation_id=request.operation_id,
+            chapter_plan_asset_version_id=plan.asset_version_id,
+            chapter_plan_content_hash=plan.content_hash, chapter_plan=plan.content,
+            accepted_inputs=accepted_inputs, work_requirements=request.work_requirements_enabled,
+            style_view=style_view,
+            accepted_through_chapter=working["accepted_through_chapter"] if working else None,
+            working_manuscript=working if working and working.get("projection_policy") else None,
+        )
+        from .character_references import frozen_character_references
+        references = frozen_character_references(request, scenes=content["scene_plans"])
+        if references is not None:
+            from .execution_artifacts import _hash
+            content.pop("intent_fingerprint")
+            content["character_reference_contract"] = references
+            content["intent_fingerprint"] = _hash(content)
+        return _output(ChapterNode.EXECUTION_INTENT, content)
+
+
+@dataclass(frozen=True, slots=True)
+class _MemoHandler:
+    provider: ChapterModelPort
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        intent = request.require_input("chapter_execution_intent")
+        if request.database_url:
+            from novel_forge.modules.production_execution.execution_template import selected_book_template, selected_template
+            from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+            with AuthorityUnitOfWork(request.database_url) as uow:
+                admission = selected_book_template(uow.cursor, project_id=request.project_id, book_id=str(request.command.get("book_id") or intent.content.get("book_id") or ""))
+                from .creative_memo import optional_memo_failure_source
+                failed_memo = optional_memo_failure_source(uow.cursor, request.operation_id, request.project_id)
+            template = selected_template(admission["policy_snapshot"]["policy"], admission["book_id"]) if admission else None
+            if template and ("memo" not in template.get("optional_enhancements", []) or failed_memo):
+                from .creative_memo import input_only_memo
+                return _output(ChapterNode.MEMO, input_only_memo(intent.content, intent.asset_version_id,
+                    failed_operation_id=failed_memo))
+        from .memo_recovery import consume_memo_receipt
+        retained = consume_memo_receipt(request)
+        generated, references = retained if retained else (self.provider.invoke(request, stage="memo", payload={"execution_intent": intent.content}), None)
+        from .creative_memo import qualify_creative_memo
+        content = qualify_creative_memo(
+            intent=intent.content, intent_asset_version_id=intent.asset_version_id,
+            result=generated.output, execution_evidence=_provider_evidence(generated),
+            character_references=references,
+        )
+        return _model_output(ChapterNode.MEMO, content, request=request, generated=generated)
+
+
+def deterministic_retrieval_coverage_fast_path(
+    *, project_id: str, book_id: str, intent_asset_version_id: str,
+    memo_asset_version_id: str, query_plan: dict[str, Any],
+    documents: list[dict[str, Any]], semantic_status: dict[str, Any],
+    context_token_budget: int,
+) -> bool:
+    del context_token_budget
+    if query_plan.get("semantic_policy") != "FALLBACK_ALLOWED":
+        return False
+    preview = build_retrieval_result(
+        project_id=project_id,
+        book_id=book_id,
+        intent_asset_version_id=intent_asset_version_id,
+        memo_asset_version_id=memo_asset_version_id,
+        query_plan=query_plan,
+        documents=documents,
+        discovery_rejections=(),
+        semantic_status=semantic_status,
+    )
+    selected = preview["selected_documents"]
+    coverage = evaluate_retrieval_coverage(
+        contract=dict(query_plan.get("coverage_contract") or {}),
+        documents=selected,
+    )
+    return bool(coverage.get("sufficient")) and (
+        bool(selected)
+        or int(dict(query_plan.get("accepted_boundary") or {}).get("accepted_through_chapter") or 0) == 0
+    )
+
+
+def bind_quality_prose_evidence(
+    locations: list[dict[str, Any]], *, text: str, target_asset_version_id: str,
+) -> list[dict[str, Any]]:
+    from novel_forge.modules.review.diagnostics import validate_location
+
+    return [
+        {
+            **validate_location({"quote": evidence.get("quote")}, text),
+            "claim": evidence.get("claim"),
+            "target_asset_version_id": target_asset_version_id,
+        }
+        for evidence in locations
+    ]
+
+
+@dataclass(frozen=True, slots=True)
+class _RetrievalHandler:
+    provider: ChapterModelPort
+    semantic_provider_bound: bool = False
+    expansion_provider_bound: bool = False
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        plan = request.require_input("chapter_plan")
+        intent = request.require_input("chapter_execution_intent")
+        memo = request.require_input("chapter_memo")
+        snapshot = dict(request.command.get("retrieval_snapshot") or {})
+        query_plan = dict(snapshot.get("query_plan") or {})
+        documents = [dict(item) for item in snapshot.get("documents") or ()]
+        if str(query_plan.get("intent_fingerprint") or "") != str(
+            intent.content.get("intent_fingerprint") or ""
+        ) or str(query_plan.get("memo_fingerprint") or "") != str(
+            memo.content.get("memo_fingerprint") or ""
+        ):
+            raise KernelError(
+                "RETRIEVAL_FROZEN_QUERY_IDENTITY_MISMATCH",
+                "retrieval query plan does not match frozen Intent and Memo",
+            )
+        expected_sources = {
+            (
+                str(item.get("source_asset_version_id") or ""),
+                str(item.get("source_content_hash") or ""),
+            )
+            for item in documents
+        }
+        control_ids = {
+            plan.asset_version_id,
+            intent.asset_version_id,
+            memo.asset_version_id,
+        }
+        frozen_sources = {
+            (item.asset_version_id, item.content_hash)
+            for item in request.inputs
+            if item.asset_version_id not in control_ids
+        }
+        if expected_sources != frozen_sources:
+            raise KernelError(
+                "RETRIEVAL_FROZEN_CANDIDATE_MISMATCH",
+                "retrieval document sources differ from frozen Operation inputs",
+            )
+        semantic_status = dict(snapshot.get("semantic_status") or {})
+        frozen_union = load_frozen_retrieval_candidate_union(
+            request.database_url,
+            project_id=request.project_id,
+            operation_id=request.operation_id,
+            query_plan_fingerprint=str(query_plan.get("query_plan_fingerprint") or ""),
+        )
+        if frozen_union is None:
+            query_embedding: tuple[float, ...] = ()
+            query_embedding_model = ""
+            query_embedding_dimensions = 0
+            query_embedding_evidence: dict[str, Any] = {}
+            semantic_enabled = query_plan.get("semantic_policy") != "DISABLED"
+            deterministic_coverage = deterministic_retrieval_coverage_fast_path(
+                project_id=request.project_id,
+                book_id=_book_identity(request, plan.content),
+                intent_asset_version_id=intent.asset_version_id,
+                memo_asset_version_id=memo.asset_version_id,
+                query_plan=query_plan,
+                documents=documents,
+                semantic_status=semantic_status,
+                context_token_budget=int(request.command.get("context_token_budget") or 6000),
+            )
+            if deterministic_coverage:
+                semantic_status["deterministic_coverage_fast_path"] = True
+            if (
+                semantic_enabled
+                and not deterministic_coverage
+                and int(semantic_status.get("ready_document_count") or 0) > 0
+                and self.semantic_provider_bound
+            ):
+                provider_result = self.provider.invoke(
+                    request,
+                    stage="retrieval",
+                    payload={
+                        "texts": [str(query_plan.get("postgresql_fts_query") or "")],
+                        "purpose": "accepted_history_query_embedding",
+                        "query_plan_fingerprint": str(
+                            query_plan.get("query_plan_fingerprint") or ""
+                        ),
+                        "candidate_projection_cutoff": str(
+                            query_plan.get("candidate_projection_cutoff") or ""
+                        ),
+                    },
+                )
+                vectors = provider_result.output.get("vectors")
+                if not isinstance(vectors, list) or len(vectors) != 1:
+                    raise KernelError(
+                        "RETRIEVAL_QUERY_EMBEDDING_INVALID",
+                        "query embedding Provider returned the wrong batch cardinality",
+                    )
+                query_embedding = tuple(float(item) for item in vectors[0])
+                query_embedding_dimensions = int(
+                    provider_result.output.get("embedding_dimensions") or 0
+                )
+                query_embedding_model = str(
+                    provider_result.output.get("embedding_model") or ""
+                )
+                if (
+                    not query_embedding_model
+                    or query_embedding_dimensions <= 0
+                    or len(query_embedding) != query_embedding_dimensions
+                ):
+                    raise KernelError(
+                        "RETRIEVAL_QUERY_EMBEDDING_INVALID",
+                        "query embedding Provider returned incompatible identity",
+                    )
+                query_embedding_evidence = provider_result.to_evidence()
+            elif query_plan.get("semantic_policy") == "REQUIRED":
+                raise KernelError(
+                    "RETRIEVAL_QUERY_EMBEDDING_REQUIRED",
+                    "semantic-required retrieval lacks a compatible governed projection/provider",
+                )
+            semantic_status["provider_wired"] = self.semantic_provider_bound
+            frozen_union = freeze_retrieval_candidate_union(
+                request.database_url,
+                project_id=request.project_id,
+                book_id=_book_identity(request, plan.content),
+                operation_id=request.operation_id,
+                attempt_id=request.attempt_id,
+                fencing_token=request.fencing_token,
+                worker_id=request.worker_id,
+                query_plan=query_plan,
+                base_documents=documents,
+                semantic_status=semantic_status,
+                query_embedding=query_embedding,
+                query_embedding_model=query_embedding_model,
+                query_embedding_dimensions=query_embedding_dimensions,
+                query_embedding_evidence=query_embedding_evidence,
+            )
+        return _output(
+            ChapterNode.RETRIEVAL,
+            self._run_campaign(
+                request=request,
+                plan=plan,
+                intent=intent,
+                memo=memo,
+                query_plan=query_plan,
+                frozen_union=frozen_union,
+                discovery_rejections=tuple(
+                    dict(item) for item in snapshot.get("rejected_documents") or ()
+                ),
+            ),
+        )
+
+    def _run_campaign(
+        self,
+        *,
+        request: ChapterHandlerRequest,
+        plan: ChapterInputAsset,
+        intent: ChapterInputAsset,
+        memo: ChapterInputAsset,
+        query_plan: dict[str, Any],
+        frozen_union: Any,
+        discovery_rejections: tuple[dict[str, Any], ...],
+    ) -> dict[str, Any]:
+        book_id = _book_identity(request, plan.content)
+        policy = RetrievalCampaignPolicy(
+            **dict(query_plan.get("campaign_policy") or {})
+        )
+        coverage_contract = dict(query_plan.get("coverage_contract") or {})
+        campaign = start_retrieval_campaign(
+            request.database_url,
+            project_id=request.project_id,
+            book_id=book_id,
+            operation_id=request.operation_id,
+            attempt_id=request.attempt_id,
+            fencing_token=request.fencing_token,
+            worker_id=request.worker_id,
+            chapter=int(plan.content.get("chapter") or 0),
+            intent_asset_version_id=intent.asset_version_id,
+            memo_asset_version_id=memo.asset_version_id,
+            intent_fingerprint=str(intent.content.get("intent_fingerprint") or ""),
+            memo_fingerprint=str(memo.content.get("memo_fingerprint") or ""),
+            accepted_boundary=dict(intent.content.get("accepted_boundary") or {}),
+            policy=policy,
+            coverage_contract=coverage_contract,
+        )
+        rounds = load_retrieval_rounds(
+            request.database_url, campaign_id=str(campaign["campaign_id"])
+        )
+        if campaign.get("final_result") is not None:
+            from novel_forge.modules.context_builder.retrieval_campaign_store import verify_campaign_result
+            result = campaign["final_result"]
+            verify_campaign_result(result, campaign["final_result_fingerprint"])
+            return result
+        if not rounds:
+            round_zero_result = build_retrieval_result(
+                project_id=request.project_id,
+                book_id=book_id,
+                intent_asset_version_id=intent.asset_version_id,
+                memo_asset_version_id=memo.asset_version_id,
+                query_plan=query_plan,
+                documents=frozen_union.documents,
+                discovery_rejections=discovery_rejections,
+                semantic_status=frozen_union.semantic_status,
+                query_embedding=frozen_union.query_embedding,
+                query_embedding_evidence=frozen_union.query_embedding_evidence,
+                candidate_snapshot_id=frozen_union.candidate_snapshot_id,
+                candidate_snapshot_hash=frozen_union.snapshot_hash,
+            )
+            coverage_before = evaluate_retrieval_coverage(
+                contract=coverage_contract, documents=()
+            )
+            coverage_after = evaluate_retrieval_coverage(
+                contract=coverage_contract,
+                documents=round_zero_result["selected_documents"],
+            )
+            freeze_retrieval_round(
+                request.database_url,
+                campaign_id=str(campaign["campaign_id"]),
+                project_id=request.project_id,
+                book_id=book_id,
+                operation_id=request.operation_id,
+                attempt_id=request.attempt_id,
+                fencing_token=request.fencing_token,
+                worker_id=request.worker_id,
+                round_number=0,
+                query_plan=query_plan,
+                documents=frozen_union.documents,
+                rejected_documents=discovery_rejections,
+                semantic_status=frozen_union.semantic_status,
+                coverage_before=coverage_before,
+                coverage_after=coverage_after,
+                new_evidence_count=len(frozen_union.documents),
+                provider_evidence=frozen_union.query_embedding_evidence,
+                external_effect_id=_external_effect_id(
+                    frozen_union.query_embedding_evidence
+                ),
+                **_provider_usage(frozen_union.query_embedding_evidence),
+            )
+            rounds = load_retrieval_rounds(
+                request.database_url, campaign_id=str(campaign["campaign_id"])
+            )
+
+        termination_reason = str(campaign.get("termination_reason") or "")
+        stopped_expansion = None
+        while not termination_reason:
+            coverage = dict(rounds[-1]["coverage_after"])
+            usage = _campaign_usage(rounds)
+            decision = decide_retrieval_campaign_transition(
+                coverage=coverage,
+                policy=policy,
+                completed_rounds=len(rounds),
+                total_queries=sum(
+                    len(item["query_plan"].get("queries") or ()) for item in rounds
+                ),
+                provider_calls=usage["provider_calls"],
+                model_tokens=usage["model_tokens"],
+                cost_amount=usage["cost_amount"],
+                last_round_new_evidence=int(rounds[-1]["new_evidence_count"]),
+                expansion_available=self.expansion_provider_bound,
+                coverage_before=rounds[-1]["coverage_before"],
+            )
+            if not bool(decision["continue"]):
+                termination_reason = str(decision["termination_reason"])
+                break
+
+            round_number = len(rounds)
+            existing_query_count = sum(
+                len(item["query_plan"].get("queries") or ()) for item in rounds
+            )
+            prior_fingerprints = [
+                str(query.get("query_fingerprint") or "")
+                for item in rounds
+                for query in item["expansion_plan"].get("queries") or ()
+            ]
+            expansion_request = replace(
+                request,
+                command={
+                    **request.command,
+                    "_effect_instance": f"retrieval-expansion-round-{round_number}",
+                    "context_token_budget": resolve_stage_context_token_budget(
+                        request.command, "retrieval_query_expansion"),
+                },
+            )
+            provider_result = self.provider.invoke(
+                expansion_request,
+                stage="retrieval_query_expansion",
+                payload={
+                    "campaign_id": str(campaign["campaign_id"]),
+                    "round_number": round_number,
+                    "accepted_boundary": dict(
+                        coverage_contract.get("accepted_boundary") or {}
+                    ),
+                    "intent_fingerprint": str(
+                        coverage_contract.get("intent_fingerprint") or ""
+                    ),
+                    "memo_fingerprint": str(
+                        coverage_contract.get("memo_fingerprint") or ""
+                    ),
+                    "mission": dict(intent.content.get("chapter_mission") or {}),
+                    "memo": dict(memo.content),
+                    "coverage": coverage,
+                    "coverage_contract": coverage_contract,
+                    "allowed_retrieval_dimensions": sorted(
+                        dict(coverage_contract.get("selectors") or {})
+                    ),
+                    "allowed_retrieval_selectors": dict(
+                        coverage_contract.get("selectors") or {}
+                    ),
+                    "prior_rounds": [
+                        {
+                            "round_number": int(item["round_number"]),
+                            "query_plan_fingerprint": str(
+                                item["query_plan_fingerprint"]
+                            ),
+                            "coverage_after": dict(item["coverage_after"]),
+                            "new_evidence_count": int(item["new_evidence_count"]),
+                        }
+                        for item in rounds
+                    ],
+                    "policy": policy.execution_policy(),
+                },
+            )
+            try:
+                expansion_plan = validate_retrieval_expansion_plan(
+                    raw=provider_result.output,
+                    contract=coverage_contract,
+                    coverage=coverage,
+                    policy=policy,
+                    round_number=round_number,
+                    prior_query_fingerprints=prior_fingerprints,
+                    prior_queries=[query for item in rounds for query in item["expansion_plan"].get("queries", [])],
+                    existing_query_count=existing_query_count,
+                )
+            except KernelError as error:
+                if error.code != "RETRIEVAL_EXPANSION_NO_NOVEL_QUERY":
+                    raise
+                termination_reason = "NO_NOVEL_QUERY"
+                stopped_expansion = {"provider_evidence": provider_result.to_evidence(),
+                    "external_effect_id": _external_effect_id(provider_result.to_evidence()),
+                    "usage": _provider_usage(provider_result.to_evidence()), "documents": []}
+                break
+            expanded_query_plan = build_expanded_retrieval_query_plan(
+                base_query_plan=query_plan,
+                expansion_plan=expansion_plan,
+            )
+            discovery = discover_accepted_retrieval_candidates(
+                request.database_url,
+                project_id=request.project_id,
+                book_id=book_id,
+                query_plan=expanded_query_plan,
+            )
+            existing_ids = {
+                str(document.get("retrieval_document_id") or "")
+                for item in rounds
+                for document in item["documents"]
+            }
+            merged_documents = merge_retrieval_round_documents(
+                [
+                    *(item["documents"] for item in rounds),
+                    discovery.documents,
+                ]
+            )
+            round_plans = [
+                *(item["query_plan"] for item in rounds),
+                discovery.query_plan,
+            ]
+            final_plan = build_campaign_final_query_plan(
+                base_query_plan=query_plan, round_query_plans=round_plans
+            )
+            intermediate = build_retrieval_result(
+                project_id=request.project_id,
+                book_id=book_id,
+                intent_asset_version_id=intent.asset_version_id,
+                memo_asset_version_id=memo.asset_version_id,
+                query_plan=final_plan,
+                documents=merged_documents,
+                discovery_rejections=(
+                    *discovery_rejections,
+                    *(
+                        rejection
+                        for item in rounds[1:]
+                        for rejection in item["rejected_documents"]
+                    ),
+                    *discovery.rejected_documents,
+                ),
+                semantic_status=_campaign_semantic_status(
+                    rounds, discovery.semantic_status
+                ),
+                candidate_snapshot_id=str(campaign["campaign_id"]),
+            )
+            coverage_after = evaluate_retrieval_coverage(
+                contract=coverage_contract,
+                documents=intermediate["selected_documents"],
+            )
+            evidence = provider_result.to_evidence()
+            freeze_retrieval_round(
+                request.database_url,
+                campaign_id=str(campaign["campaign_id"]),
+                project_id=request.project_id,
+                book_id=book_id,
+                operation_id=request.operation_id,
+                attempt_id=request.attempt_id,
+                fencing_token=request.fencing_token,
+                worker_id=request.worker_id,
+                round_number=round_number,
+                query_plan=discovery.query_plan,
+                documents=discovery.documents,
+                rejected_documents=discovery.rejected_documents,
+                semantic_status=discovery.semantic_status,
+                coverage_before=coverage,
+                coverage_after=coverage_after,
+                new_evidence_count=sum(
+                    str(item.get("retrieval_document_id") or "") not in existing_ids
+                    for item in discovery.documents
+                ),
+                expansion_plan=expansion_plan,
+                expansion_reason="DETERMINISTIC_COVERAGE_GAP",
+                provider_evidence=evidence,
+                external_effect_id=_external_effect_id(evidence),
+                **_provider_usage(evidence),
+            )
+            rounds = load_retrieval_rounds(
+                request.database_url, campaign_id=str(campaign["campaign_id"])
+            )
+
+        merged_documents = merge_retrieval_round_documents(
+            item["documents"] for item in rounds
+        )
+        final_plan = build_campaign_final_query_plan(
+            base_query_plan=query_plan,
+            round_query_plans=(item["query_plan"] for item in rounds),
+        )
+        final_semantic_status = _campaign_semantic_status(rounds)
+        final_evidence_identity = _content_hash(
+            {
+                "campaign_id": str(campaign["campaign_id"]),
+                "round_snapshot_hashes": [item["snapshot_hash"] for item in rounds],
+                "coverage": dict(rounds[-1]["coverage_after"]),
+                "termination_reason": termination_reason,
+            }
+        )
+        result = build_retrieval_result(
+            project_id=request.project_id,
+            book_id=book_id,
+            intent_asset_version_id=intent.asset_version_id,
+            memo_asset_version_id=memo.asset_version_id,
+            query_plan=final_plan,
+            documents=merged_documents,
+            discovery_rejections=tuple(
+                rejection for item in rounds for rejection in item["rejected_documents"]
+            ),
+            semantic_status=final_semantic_status,
+            query_embedding=(frozen_union.query_embedding if len(rounds) == 1 else ()),
+            query_embedding_evidence=(
+                frozen_union.query_embedding_evidence if len(rounds) == 1 else {}
+            ),
+            candidate_snapshot_id=str(campaign["campaign_id"]),
+            candidate_snapshot_hash=final_evidence_identity,
+        )
+        result.pop("result_fingerprint", None)
+        result["retrieval_campaign"] = {
+            "contract_version": "retrieval-campaign-result-v2",
+            "campaign_id": str(campaign["campaign_id"]),
+            "policy_version": policy.execution_policy()["policy_version"],
+            "frozen_policy_version": policy.policy_version,
+            "accepted_boundary": dict(coverage_contract.get("accepted_boundary") or {}),
+            "round_count": len(rounds),
+            "round_snapshot_hashes": [item["snapshot_hash"] for item in rounds],
+            "coverage": dict(rounds[-1]["coverage_after"]),
+            "termination_reason": termination_reason,
+            "final_evidence_identity": final_evidence_identity,
+            "usage": _campaign_usage((*rounds, *([stopped_expansion] if stopped_expansion else []))),
+            "stopped_expansion": stopped_expansion,
+            "authority": "DETERMINISTIC_CONTEXT_POLICY",
+        }
+        if campaign["status"] != "RUNNING":
+            if not all(item["contract_version"] == "retrieval-round-snapshot-v1" for item in rounds):
+                raise KernelError("RETRIEVAL_CAMPAIGN_RESULT_MISSING", "A terminal current campaign requires its retained final result")
+            # COMPATIBILITY: Legacy completion fingerprints bind the original v1 observation projection.
+            result["retrieval_campaign"] = {key: value for key, value in result["retrieval_campaign"].items()
+                if key not in {"stopped_expansion", "frozen_policy_version"}}
+            result["retrieval_campaign"].update(contract_version="retrieval-campaign-result-v1",
+                policy_version=policy.policy_version, usage=_legacy_campaign_usage(rounds))
+        result["result_fingerprint"] = _content_hash(result)
+        terminal_status = (
+            "FALLBACK"
+            if termination_reason == "DETERMINISTIC_FALLBACK"
+            else "COMPLETED"
+        )
+        completed = complete_retrieval_campaign(
+            request.database_url,
+            campaign_id=str(campaign["campaign_id"]),
+            project_id=request.project_id,
+            operation_id=request.operation_id,
+            attempt_id=request.attempt_id,
+            fencing_token=request.fencing_token,
+            worker_id=request.worker_id,
+            status=terminal_status,
+            termination_reason=termination_reason,
+            final_result_fingerprint=str(result["result_fingerprint"]),
+            final_evidence_identity=final_evidence_identity,
+            final_result=result,
+        )
+        if str(completed["final_result_fingerprint"]) != str(
+            result["result_fingerprint"]
+        ):
+            raise KernelError(
+                "RETRIEVAL_CAMPAIGN_REPLAY_DRIFT",
+                "replayed retrieval campaign produced a different result identity",
+            )
+        return result
+
+
+def merge_task_retrieval_projections(metadata: dict[str, Any], documents: list[dict[str, Any]], *, preserve_json: bool = False) -> dict[str, Any]:
+    from novel_forge.modules.context_builder.writer_projection import WRITER_PROJECTION_VERSION, project_writer_history, provider_visible_data
+
+    clean_history = any((item.get("compression_provenance") or {}).get("writer_projection_version") in {WRITER_PROJECTION_VERSION, "accepted-writer-history.v2"} for item in documents)
+    source_type = str((documents[0].get("source_artifact_type") if documents else "") or metadata.get("physical_asset_type") or "")
+    summary = str(metadata.get("safe_summary") or "")
+    if clean_history and summary:
+        summary = project_writer_history(summary, source_artifact_type=source_type, preserve_json=preserve_json)
+    facts = list(metadata.get("structured_facts") or ())
+    summaries = [summary]
+    refs = set(metadata.get("task_dependency_matched_refs") or ())
+    reasons = set(metadata.get("retrieval_reasons") or ())
+    for document in sorted(documents, key=lambda item: str(item.get("retrieval_document_id") or "")):
+        if str(document.get("source_content_hash") or "") != str(metadata.get("content_hash") or ""):
+            raise KernelError("CONTEXT_RETRIEVAL_SOURCE_DRIFT", "same-source task projections must bind the exact frozen content hash")
+        facts.extend(fact for fact in (document.get("metadata") or {}).get("structured_facts", ()) if isinstance(fact, dict))
+        summary = str(document.get("safe_summary") or "")
+        summaries.append(project_writer_history(summary, source_artifact_type=source_type, preserve_json=preserve_json) if clean_history and summary else summary)
+        refs.update(document.get("task_dependency_matched_refs") or ())
+        reasons.update(document.get("retrieval_reasons") or ())
+    if clean_history:
+        facts = provider_visible_data(facts)
+        metadata = {**metadata, "physical_asset_type": source_type, "provenance": {**dict(metadata.get("provenance") or {}), "writer_projection_version": "accepted-writer-history.v2" if any((item.get("compression_provenance") or {}).get("writer_projection_version") == "accepted-writer-history.v2" for item in documents) else WRITER_PROJECTION_VERSION}}
+    return {**metadata, "structured_facts": list({json.dumps(fact, ensure_ascii=False, sort_keys=True): fact for fact in facts}.values()), "safe_summary": "\n\n".join(dict.fromkeys(text for text in summaries if text)), "task_dependency_matched_refs": sorted(refs), "retrieval_reasons": sorted(reasons)}
+
+
+def _semantic_plan_predecessors(request: ChapterHandlerRequest, plan: ChapterInputAsset) -> list[dict[str, Any]]:
+    from novel_forge.modules.context_builder.semantic_units import frozen_plan_dependencies
+    from novel_forge.storage.narrative_realization_repositories import NarrativeRealizationRepository
+    from novel_forge.modules.capability_pack_authority.domain import canonical_hash
+    realization = plan.content.get("narrative_realization_slice") or {}
+    if not any(event.get("causes") for event in realization.get("events") or ()):
+        return []
+    with AuthorityUnitOfWork(request.database_url) as uow:
+        binding = NarrativeRealizationRepository(uow.cursor).require(realization["realization_id"])
+        if (binding["project_id"] != request.project_id or binding["book_id"] != plan.content["book_id"]
+                or binding["contract_digest"] != realization["contract_digest"]
+                or binding["chapter_group_plan_version_id"] != realization["chapter_group_plan_version_id"]):
+            raise KernelError("TASK_CONTEXT_PLAN_SOURCE_DRIFT", "Planned predecessors require the original qualified realization binding")
+        uow.cursor.execute("""SELECT version.content_hash,version.content FROM authority_asset_version version
+            JOIN authority_asset asset USING(asset_id) WHERE version.asset_version_id=%s AND asset.project_id=%s
+              AND asset.asset_type='planning_generation_candidate'""",
+            [realization["chapter_group_plan_version_id"], request.project_id])
+        row = uow.cursor.fetchone()
+    if (not row or row[0] != realization["chapter_group_content_hash"] or canonical_hash(row[1]) != row[0]
+            or row[1].get("book_id") != plan.content["book_id"]):
+        raise KernelError("TASK_CONTEXT_PLAN_SOURCE_DRIFT", "Original planned predecessor source is unavailable or changed")
+    source = ChapterInputAsset(realization["chapter_group_plan_version_id"], "planning_generation_candidate", row[0], row[1])
+    dependencies = frozen_plan_dependencies([source], {"events": realization["events"]}).get(source.asset_version_id, [])
+    return [{"source_asset_version_id": source.asset_version_id, "source_content_hash": source.content_hash,
+        "realization_id": realization["realization_id"], "status": "FROZEN_PLAN_NOT_EVENT_ACCEPTANCE", "dependencies": dependencies}]
+
+
+@dataclass(frozen=True, slots=True)
+class _ContextHandler:
+    provider: ChapterModelPort
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        plan = next(
+            (item for item in request.inputs if item.input_type == "chapter_plan"), None
+        )
+        if plan is None:
+            raise KernelError(
+                "CHAPTER_HANDLER_INPUT_INVALID", "generated chapter plan is missing"
+            )
+        manifest_asset = next(
+            (
+                item
+                for item in request.inputs
+                if item.asset_type == "production_input_manifest"
+            ),
+            None,
+        )
+        manifest = (
+            dict(manifest_asset.content)
+            if manifest_asset is not None
+            else dict(
+                request.command.get("preparation_report", {}).get(
+                    "production_input_manifest", {}
+                )
+            )
+        )
+        frozen_knowledge_access = manifest.get("knowledge_access_policy")
+        if frozen_knowledge_access is not None and not isinstance(
+            frozen_knowledge_access, dict
+        ):
+            raise KernelError(
+                "CONTEXT_KNOWLEDGE_ACCESS_POLICY_INVALID",
+                "Production Input Manifest Knowledge access policy is malformed",
+            )
+        candidate_metadata = {
+            str(item.get("asset_version_id")): dict(item)
+            for item in request.command.get("context_candidates", [])
+            if str(item.get("asset_type") or "") != "chapter_plan"
+        }
+        governed_candidates = []
+        frozen_arc_plans: dict[str, dict[str, Any]] = {}
+        intent = request.require_input("chapter_execution_intent")
+        memo = request.require_input("chapter_memo")
+        retrieval = request.require_input("retrieval_result")
+        if (
+            retrieval.content.get("intent_asset_version_id") != intent.asset_version_id
+            or retrieval.content.get("memo_asset_version_id") != memo.asset_version_id
+            or dict(retrieval.content.get("accepted_boundary") or {})
+            != dict(intent.content.get("accepted_boundary") or {})
+        ):
+            raise KernelError(
+                "CONTEXT_RETRIEVAL_IDENTITY_MISMATCH",
+                "Context requires RetrievalResult for its exact Intent, Memo, and boundary",
+            )
+        frozen_boundaries = {
+            json.dumps(
+                dict(item.get("accepted_boundary") or {}),
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            for item in request.command.get("context_candidates", [])
+            if dict(item.get("accepted_boundary") or {})
+        }
+        if len(frozen_boundaries) != 1:
+            raise KernelError(
+                "CONTEXT_ACCEPTED_BOUNDARY_UNRESOLVED",
+                "Context requires one frozen accepted boundary for every candidate",
+            )
+        governed_boundary = json.loads(next(iter(frozen_boundaries)))
+        retrieval_boundary = dict(retrieval.content.get("accepted_boundary") or {})
+        equivalent_boundary = {
+            "accepted_through_chapter": retrieval_boundary.get(
+                "accepted_through_chapter"
+            ),
+            "story_state_snapshot_version": retrieval_boundary.get(
+                "story_state_asset_version_id", ""
+            ),
+            "canon_snapshot_version": retrieval_boundary.get(
+                "canon_snapshot_asset_version_id", ""
+            ),
+        }
+        if governed_boundary != equivalent_boundary:
+            raise KernelError(
+                "CONTEXT_ACCEPTED_BOUNDARY_MISMATCH",
+                "Retrieval and governed Context use different accepted boundaries",
+            )
+        campaign_result = retrieval.content.get("retrieval_campaign")
+        if not isinstance(campaign_result, dict):
+            raise KernelError(
+                "CONTEXT_RETRIEVAL_CAMPAIGN_MISSING",
+                "Context requires deterministic Retrieval Campaign evidence",
+            )
+        coverage = campaign_result.get("coverage")
+        if not isinstance(coverage, dict) or coverage.get("sufficient") is not True:
+            missing = (
+                dict(coverage.get("missing") or {})
+                if isinstance(coverage, dict)
+                else {"campaign_evidence": ["coverage"]}
+            )
+            raise KernelError(
+                "CONTEXT_RETRIEVAL_INSUFFICIENT",
+                "Context cannot admit evidence until deterministic coverage is "
+                f"sufficient; missing={json.dumps(missing, sort_keys=True)}",
+            )
+        stage_context_profile = str(((request.command.get("preparation_report") or {}).get("stage_context_profile_versions") or {}).get("draft") or ("draft-context-profile-v4" if request.work_requirements_enabled else "draft-context-profile-v2"))
+        task_scoped_context = stage_context_profile == "draft-context-profile-v4"
+        semantic_context = (request.capacity_upgrade or {}).get("target_context_policy_ref") == "context-policy:chapter-generation-pack:v4" or bool((request.command.get("preparation_report") or {}).get("context_semantic_contract"))
+        task_dependency_refs = sorted(set((retrieval.content.get("query_plan") or {}).get("task_dependency_discovery", {}).get("required_refs") or ()))
+        selected_documents: dict[str, list[dict[str, Any]]] = {}
+        for document in retrieval.content.get("selected_documents") or ():
+            if isinstance(document, dict):
+                selected_documents.setdefault(
+                    str(document.get("source_asset_version_id") or ""), []
+                ).append(dict(document))
+        for source_id, documents in selected_documents.items():
+            if source_id in candidate_metadata:
+                if task_scoped_context and not semantic_context:
+                    candidate_metadata[source_id] = merge_task_retrieval_projections(candidate_metadata[source_id], documents, preserve_json=semantic_context)
+                continue
+            best = max(
+                documents,
+                key=lambda item: float(item.get("retrieval_score") or 0.0),
+            )
+            compression_method = str(best.get("compression_method") or "none")
+            compression_provenance = dict(best.get("compression_provenance") or {})
+            candidate_metadata[source_id] = {
+                "asset_version_id": source_id,
+                "asset_type": "narrative_retrieval_document",
+                "physical_asset_type": str(best.get("source_artifact_type") or ""),
+                "content_hash": str(best.get("source_content_hash") or ""),
+                "project_id": request.project_id,
+                "book_id": str(request.command.get("book_id") or ""),
+                "accepted_boundary": dict(governed_boundary),
+                "estimated_tokens": max(
+                    1, int(best.get("output_characters") or 0) // 4
+                ),
+                "safe_summary": str(best.get("safe_summary") or ""),
+                "structured_facts": [
+                    dict(item)
+                    for item in dict(best.get("metadata") or {}).get(
+                        "structured_facts", ()
+                    )
+                    if isinstance(item, dict)
+                ],
+                "narrative_function": str(
+                    dict(best.get("metadata") or {}).get("projection_kind")
+                    or "accepted_historical_evidence"
+                ),
+                "source_use_mode": "generation",
+                "allowed_use": "generation",
+                "context_class": (
+                    "COMPRESSIBLE"
+                    if compression_method not in {"", "none", "full", "full_asset"}
+                    else "RETRIEVABLE"
+                ),
+                "memory_layer": str(best.get("memory_layer") or ""),
+                "relevance_score": max(
+                    float(item.get("retrieval_score") or 0.0) for item in documents
+                ),
+                "retrieval_reasons": sorted(
+                    {
+                        str(reason)
+                        for item in documents
+                        for reason in item.get("retrieval_reasons") or ()
+                    }
+                ),
+                "retrieval_scores": dict(best.get("retrieval_scores") or {}),
+                "provenance": {
+                    "retrieval_result_asset_version_id": retrieval.asset_version_id,
+                    "retrieval_document_ids": sorted(
+                        str(item.get("retrieval_document_id") or "")
+                        for item in documents
+                    ),
+                    "accepted_boundary": dict(
+                        retrieval.content.get("accepted_boundary") or {}
+                    ),
+                    "source_projection_hashes": sorted(
+                        str(item.get("projection_hash") or "") for item in documents
+                    ),
+                },
+                "compression_method": compression_method,
+                "compression_trace": (
+                    [compression_provenance]
+                    if compression_method not in {"", "none", "full", "full_asset"}
+                    else []
+                ),
+            }
+        if semantic_context:
+            from novel_forge.modules.context_builder.story_projection import restore_source_json_fields, visible_business_data
+            from novel_forge.modules.context_builder.writer_projection import WRITER_PROSE_TYPES
+            sources = {item.asset_version_id: item.content for item in request.inputs}
+            prose_ids = {item.asset_version_id for item in request.inputs if item.asset_type in WRITER_PROSE_TYPES}
+            for source_id, metadata in candidate_metadata.items():
+                if source_id in prose_ids:
+                    continue
+                source = sources[source_id]
+                summary = visible_business_data(str(metadata.get("safe_summary") or ""), stage="draft", history=True, preserve_json=True)
+                summary, bindings = restore_source_json_fields(summary or "", source)
+                metadata["safe_summary"] = summary
+                metadata["provenance"] = {**dict(metadata.get("provenance") or {}), "source_json_field_bindings": bindings}
+                for document in selected_documents.get(source_id, ()):
+                    summary = visible_business_data(str(document.get("safe_summary") or ""), stage="draft", history=True, preserve_json=True)
+                    summary, bindings = restore_source_json_fields(summary or "", source)
+                    document["safe_summary"] = summary
+                    document["compression_provenance"] = {**dict(document.get("compression_provenance") or {}), "source_json_field_bindings": bindings}
+        if task_scoped_context:
+            for source_id, documents in selected_documents.items():
+                candidate_metadata[source_id] = merge_task_retrieval_projections(candidate_metadata[source_id], documents, preserve_json=semantic_context)
+        host_quality_segments: list[dict[str, Any]] = []
+        working = (request.command.get("preparation_report") or {}).get("working_manuscript")
+        from novel_forge.modules.book_authority.working_prose import working_auxiliary_source_refs, working_source_rows
+        working_ids = {row["asset_version_id"] for row in working_source_rows(working)} if working else set()
+        working_ids.update(source["asset_version_id"] for source in working_auxiliary_source_refs(working)
+            if source["asset_version_id"] not in candidate_metadata)
+        frozen_candidates = [
+            item
+            for item in request.inputs
+            if item is not plan and item.asset_version_id not in working_ids
+            and item.asset_type
+            not in {
+                "production_input_manifest",
+                "chapter_execution_intent",
+                "chapter_memo",
+                "retrieval_result",
+            }
+        ]
+        if set(candidate_metadata) != {
+            item.asset_version_id for item in frozen_candidates
+        }:
+            raise KernelError(
+                "CONTEXT_FROZEN_INPUT_MISMATCH",
+                "governed context candidates must equal frozen AssetVersion inputs",
+            )
+        if semantic_context:
+            from novel_forge.modules.context_builder.semantic_units import frozen_plan_dependencies
+            planned_dependencies = frozen_plan_dependencies(frozen_candidates, intent.content.get("chapter_mission") or {})
+            plan_dependency_sources = _semantic_plan_predecessors(request, plan)
+        else:
+            planned_dependencies = {}
+            plan_dependency_sources = []
+        for item in frozen_candidates:
+            metadata = candidate_metadata[item.asset_version_id]
+            # WHY: Accepted quality history is host evidence, excluded from Writer projections.
+            quality_facts = [
+                fact for original in request.command.get("context_candidates") or ()
+                if original.get("asset_version_id") == item.asset_version_id
+                for fact in original.get("structured_facts") or ()
+                if fact.get("key") == "accepted_quality_observations"
+                and fact.get("provider_visibility") == "INTERNAL_QUALITY_ONLY"
+            ]
+            if quality_facts:
+                host_quality_segments.append({
+                    "asset_version_id": item.asset_version_id,
+                    "content_hash": item.content_hash,
+                    "structured_facts": quality_facts,
+                    "provider_visibility": "INTERNAL_QUALITY_ONLY",
+                })
+            physical_asset_type = str(
+                metadata.get("physical_asset_type") or metadata.get("asset_type") or ""
+            )
+            if physical_asset_type != item.asset_type:
+                raise KernelError(
+                    "CONTEXT_FROZEN_INPUT_TYPE_MISMATCH",
+                    "Context candidate physical type differs from frozen AssetVersion",
+                )
+            if str(metadata.get("asset_type") or "") in {"narrative_retrieval_document", "story_state_snapshot", "canon_snapshot"}:
+                from .provider_views import build_task_narrative_projection, project_retrieved_state_context
+                projection = build_task_narrative_projection(plan.content, task_scoped=task_scoped_context)
+                if task_scoped_context:
+                    projection["required_event_refs"] = sorted(set(projection.get("required_event_refs") or ()) | set(task_dependency_refs) | set(metadata.get("task_dependency_matched_refs") or ()))
+                facts = list(item.content.get("structured_facts") or ())
+                if task_scoped_context:
+                    facts = list({json.dumps(fact, ensure_ascii=False, sort_keys=True): fact for fact in [*facts, *(metadata.get("structured_facts") or ())]}.values())
+                metadata = project_retrieved_state_context({**metadata, "structured_facts": facts or metadata.get("structured_facts") or []}, projection=projection, chapter=int(plan.content["chapter"]))
+                source_content = metadata
+            else:
+                source_content = item.content
+            summary = str(source_content.get("safe_summary") or metadata.get("safe_summary") or "")
+            if item.asset_version_id in planned_dependencies:
+                summary = json.dumps({"safe_summary": summary, "planned_dependencies": planned_dependencies[item.asset_version_id]}, ensure_ascii=False)
+            governed_candidates.append(
+                {
+                    **metadata,
+                    "asset_type": str(metadata.get("asset_type") or item.asset_type),
+                    "physical_asset_type": item.asset_type,
+                    "content_digest": item.content_hash,
+                    "safe_summary": summary,
+                    "structured_facts": list(
+                        source_content.get("structured_facts")
+                        or metadata.get("structured_facts")
+                        or []
+                    ),
+                }
+            )
+            if str(metadata.get("asset_type") or "") == "arc_plan":
+                frozen_arc_plans[item.asset_version_id] = dict(item.content)
+        available_candidate_types = {
+            str(item["asset_type"]) for item in governed_candidates
+        }
+        required_candidate_types = {
+            "character_cast",
+            "reader_promise",
+            "quality_rubric",
+            "platform_profile",
+        }
+        # WHY: These inputs are not prose-generation context, but once Preparation
+        # freezes them the downstream Quality/Publish nodes must consume the
+        # exact evidence.  Protect them from draft-oriented token eviction;
+        # Context rendering still keeps every one evidence-only.
+        quality_evidence_types = {
+            "operator_checklist",
+            "operator_approval",
+            "approval_decision",
+            "structural_quality_report",
+            "commercial_quality_report",
+            "source_originality_quality_report",
+            "longform_quality_report",
+            "platform_quality_report",
+        }
+        required_candidate_types.update(
+            quality_evidence_types & available_candidate_types
+        )
+        if int(plan.content["chapter"]) > 1:
+            required_candidate_types.update(CONTINUING_CHAPTER_REQUIRED_ASSET_TYPES)
+        def context_model_call(stage: str, task: dict[str, Any]) -> dict[str, Any]:
+            frozen = replace(request, command={
+                **request.command, "_context_compression_task": task,
+                "_effect_instance": _content_hash({"stage": stage, "task": task}),
+            })
+            result = self.provider.invoke(frozen, stage=stage, payload={
+                "chapter_plan": plan.content, "context_compression_task": task,
+            })
+            return {**result.output, "_execution_evidence": dict(result.execution_evidence or {})}
+
+        routes = getattr(getattr(self.provider, "adapter", None), "routes", {})
+        compression_routes = [routes.get(stage) for stage in ("context_compress", "context_fidelity")]
+        compression_allocation = min((int(getattr(route, "model_context_limit", 0)) // 4 for route in compression_routes), default=0)
+        bundle = build_context_bundle(
+            plan=plan.content,
+            plan_asset_version_id=plan.asset_version_id,
+            plan_content_hash=plan.content_hash,
+            project_id=request.project_id,
+            created_by_operation_id=request.operation_id,
+            governed_candidates=governed_candidates,
+            version_refs=dict(request.command.get("context_version_refs", {})),
+            required_asset_types=(
+                "chapter_plan",
+                "chapter_execution_intent",
+                "chapter_memo",
+                "retrieval_result",
+                *sorted(required_candidate_types & available_candidate_types),
+            ),
+            token_budget=int(request.command.get("context_token_budget", 6000)),
+            context_profile_version=stage_context_profile,
+            context_model_call=context_model_call,
+            compression_input_tokens=compression_allocation,
+            defer_token_capacity=request.capacity_upgrade is not None or (request.command.get("preparation_report") or {}).get("context_capacity_policy") == "complete-request-capacity.v1",
+            semantic_context_compression=(request.capacity_upgrade or {}).get("target_context_policy_ref") == "context-policy:chapter-generation-pack:v4" or bool((request.command.get("preparation_report") or {}).get("context_semantic_contract")),
+            plan_dependency_sources=plan_dependency_sources,
+            book_id=_book_identity(request, plan.content),
+            target_capability_id="prose.chapter.draft",
+            capability_pack_snapshot_ref=str(
+                request.command.get("capability_pack_snapshot_ref") or ""
+            ),
+            execution_intent=intent.content,
+            execution_intent_asset_version_id=intent.asset_version_id,
+            chapter_memo=memo.content,
+            chapter_memo_asset_version_id=memo.asset_version_id,
+            retrieval_result=retrieval.content,
+            retrieval_result_asset_version_id=retrieval.asset_version_id,
+            frozen_arc_plans=frozen_arc_plans,
+            knowledge_access_policy=(
+                dict(frozen_knowledge_access)
+                if isinstance(frozen_knowledge_access, dict)
+                else None
+            ),
+        )
+        if request.work_requirements_enabled:
+            bundle["host_quality_evidence"] = {
+                "contract_version": "accepted-quality-host-projection.v1",
+                "provider_visibility": "INTERNAL_QUALITY_ONLY",
+                "segments": [item for item in host_quality_segments
+                             if item["asset_version_id"] in bundle["selected_asset_version_ids"]],
+            }
+        bundle["production_input_manifest"] = manifest
+        if request.capacity_upgrade is not None:
+            bundle["capacity_policy_upgrade"] = request.capacity_upgrade
+        bundle["production_input_manifest_asset_version_id"] = (
+            manifest_asset.asset_version_id if manifest_asset is not None else ""
+        )
+        bundle["chapter_execution"] = {
+            "intent_asset_version_id": intent.asset_version_id,
+            "intent_fingerprint": str(intent.content.get("intent_fingerprint") or ""),
+            "memo_asset_version_id": memo.asset_version_id,
+            "memo_fingerprint": str(memo.content.get("memo_fingerprint") or ""),
+            "retrieval_result_asset_version_id": retrieval.asset_version_id,
+            "retrieval_result_fingerprint": str(
+                retrieval.content.get("result_fingerprint") or ""
+            ),
+            "source_chapter_plan_asset_version_id": plan.asset_version_id,
+            "accepted_boundary": dict(intent.content.get("accepted_boundary") or {}),
+        }
+        source_plan_asset_version_id = str(
+            plan.content.get("source_chapter_plan_asset_version_id") or ""
+        )
+        manifest_ids = {
+            str(item.get("asset_version_id"))
+            for item in manifest.get("selected_asset_versions", [])
+            if str(item.get("asset_version_id") or "") != source_plan_asset_version_id
+        }
+        execution_ids = {
+            intent.asset_version_id,
+            memo.asset_version_id,
+            retrieval.asset_version_id,
+        }
+        context_manifest_ids = {
+            str(item) for item in bundle.get("selected_asset_version_ids", [])
+        }
+        frozen_ids = {item.asset_version_id for item in frozen_candidates}
+        segment_ids = {
+            str(item.get("asset_version_id"))
+            for item in bundle.get("context_segments", [])
+            if str(item.get("asset_version_id")) != plan.asset_version_id
+        }
+        context_selected_ids = {
+            str(item)
+            for item in bundle.get("selected_asset_version_ids", [])
+            if str(item) != plan.asset_version_id
+        }
+        context_rejected_ids = {
+            str(item.get("asset_version_id") or "")
+            for item in bundle.get("rejected_asset_versions", [])
+            if str(item.get("asset_version_id") or "") != plan.asset_version_id
+        }
+        context_external_selected_ids = context_selected_ids - execution_ids
+        dynamic_candidate_ids = set(selected_documents) - {
+            str(item.get("asset_version_id") or "")
+            for item in request.command.get("context_candidates", [])
+        }
+        static_candidate_ids = frozen_ids - dynamic_candidate_ids
+        consistent = (
+            bool(manifest)
+            and manifest_ids == static_candidate_ids
+            and context_selected_ids == segment_ids
+            and execution_ids.issubset(context_manifest_ids)
+            and not context_external_selected_ids.intersection(context_rejected_ids)
+            and context_external_selected_ids.union(context_rejected_ids) == frozen_ids
+        )
+        if not consistent:
+            raise KernelError(
+                "CONTEXT_MANIFEST_CONSISTENCY_FAILED",
+                "Manifest, frozen inputs, and Context selection partition differ: "
+                f"manifest_only={sorted(manifest_ids - static_candidate_ids)}; "
+                f"static_only={sorted(static_candidate_ids - manifest_ids)}; "
+                f"selected_only={sorted(context_selected_ids - frozen_ids)}; "
+                f"segment_only={sorted(segment_ids - context_selected_ids)}; "
+                f"unaccounted={sorted(frozen_ids - context_selected_ids - context_rejected_ids)}",
+            )
+        report = {
+            "type": "ContextManifestConsistencyReport",
+            "project_id": request.project_id,
+            "manifest_asset_version_id": (
+                manifest_asset.asset_version_id if manifest_asset is not None else ""
+            ),
+            "manifest_digest": str(manifest.get("manifest_digest") or ""),
+            "selected_asset_version_ids": sorted(manifest_ids),
+            "frozen_input_asset_version_ids": sorted(frozen_ids),
+            "context_segment_asset_version_ids": sorted(segment_ids),
+            "execution_artifact_version_ids": sorted(execution_ids),
+            "context_rejected_asset_version_ids": sorted(context_rejected_ids),
+            "consistent": True,
+            "contract_version": "context-manifest-consistency-v2",
+        }
+        if working is not None:
+            from novel_forge.modules.book_authority.manuscript import verify_working_handler
+            verify_working_handler(request, working)
+            bundle["working_manuscript"] = working
+        if request.work_requirements_enabled:
+            from .quality_length_requirement import generation_requirement
+            length_requirement = generation_requirement(bundle)
+            if length_requirement is not None:
+                bundle["chapter_generation_length"] = length_requirement
+        return ChapterHandlerOutput(
+            asset_type=ChapterNode.CONTEXT.asset_type,
+            output_key=ChapterNode.CONTEXT.output_key,
+            role="primary",
+            content=bundle,
+            auxiliary_outputs=(
+                ChapterAuxiliaryOutput(
+                    asset_type="context_manifest_consistency_report",
+                    output_key="chapter.context.manifest_consistency",
+                    role="completion_evidence",
+                    content=report,
+                    reference_asset_version_ids=tuple(sorted(manifest_ids)),
+                ),
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _DraftHandler:
+    provider: ChapterModelPort
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        from .author_draft import adopted_author_draft
+
+        authored = adopted_author_draft(request)
+        if authored is not None:
+            if request.work_requirements_enabled:
+                from .chapter_plan_views import build_creative_baseline
+
+                authored.content["creative_baseline"] = build_creative_baseline(
+                    request.require_input("chapter_plan").content,
+                    effective_context_content(request),
+                )
+            return authored
+        from .candidate_repair import candidate_repair_payload
+        plan = request.require_input("chapter_plan")
+        intent = request.require_input("chapter_execution_intent")
+        memo = request.require_input("chapter_memo")
+        context = request.require_input("context_bundle")
+        baseline = None
+        if request.work_requirements_enabled:
+            from .chapter_plan_views import build_creative_baseline
+
+            baseline = build_creative_baseline(plan.content, effective_context_content(request, context), contract_version="creative-baseline.v2" if request.effective_definition_version == "3.10.3" else None)
+        from .realization_composition import compile_realization_contract
+        from .craft_execution import require_craft_delivery
+
+        craft_delivery = require_craft_delivery(plan=plan.content, intent=intent.content, memo=memo.content, context=effective_context_content(request, context))
+        style = build_draft_style_view(
+            effective_context_content(request, context), work_requirements=request.work_requirements_enabled
+        )
+        plan_view = build_draft_plan_view(
+            plan.content, work_requirements=request.work_requirements_enabled
+        )
+        core_policy = "scene-core-slots.v1" if request.effective_definition_version in {"3.9.1", "3.9.2", "3.10.0"} else "EXPLICIT_SKELETON_V1"
+        information_policy = "scene-information-flow.v1" if request.effective_definition_version in {"3.9.2", "3.10.0"} else "ENTRY_ONLY_V1"
+        source_arguments = {}
+        if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.3"}:
+            from .realization_composition import resolve_accepted_realization_sources
+            core_policy, information_policy = "continuous-scene.v1", "actor-source-scope.v1"
+            source_arguments = {"accepted_sources": resolve_accepted_realization_sources(request),
+                "world_preparation": effective_context_content(request, context).get("chapter_execution_expectations", {}).get("world_preparation", {})}
+        realization_contract = compile_realization_contract(plan.content, style, core_policy=core_policy, information_policy=information_policy, **source_arguments)
+        if not realization_contract["slots"]:
+            raise KernelError("REALIZATION_PLAN_UNBOUND", "model Draft requires frozen Scene slots")
+        generated = _invoke_with_known_receipt(self.provider,
+            request,
+            stage="draft",
+            payload={
+                "plan": plan_view,
+                "style": style,
+                "realization_contract": realization_contract,
+                **candidate_repair_payload(request),
+                "execution_intent": intent.content,
+                "chapter_memo": memo.content,
+            },
+        )
+        content = normalize_draft_result(
+            plan=plan.content,
+            context_asset_version_id=context.asset_version_id,
+            context_content_hash=context.content_hash,
+            context_content=effective_context_content(request, context),
+            result=generated.output,
+            provider_evidence=_provider_evidence(generated),
+            work_requirements=request.work_requirements_enabled,
+            core_policy=core_policy,
+            information_policy=information_policy,
+            realization_contract=realization_contract if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.3"} else None,
+            enforce_voice_contract=not bool((request.command.get("preparation_report") or {}).get("author_workflow")),
+        )
+        if (request.command.get("preparation_report") or {}).get("author_workflow"):
+            from novel_forge.modules.book_authority.manuscript import validate_complete_prose
+            validate_complete_prose({**content, **{key: generated.output[key] for key in ("truncated", "finish_reason") if key in generated.output}})
+            content["author_workflow"] = dict(request.command["preparation_report"]["author_workflow"])
+        content["creative_execution"] = {
+            "memo_asset_version_id": memo.asset_version_id,
+            "memo_content_hash": memo.content_hash,
+            "memo_fingerprint": memo.content.get("memo_fingerprint"),
+            "intent_asset_version_id": intent.asset_version_id,
+            "guidance": dict(memo.content.get("creative_guidance") or {}),
+            "scene_directives": list(memo.content.get("scene_directives") or []),
+            "authority": "CREATIVE_SUGGESTION_ONLY",
+        }
+        content["craft_delivery_evidence"] = craft_delivery
+        if baseline is not None:
+            content["creative_baseline"] = baseline
+        author_guidance = build_draft_plan_view(plan.content).get("author_design_guidance")
+        if author_guidance:
+            content["author_design_guidance"] = author_guidance
+        return _model_output(ChapterNode.DRAFT, content, request=request, generated=generated)
+
+
+@dataclass(frozen=True, slots=True)
+class _ReviewHandler:
+    provider: ChapterModelPort
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        from .review_window import prepare_native_review, require_review_frontier
+        draft, context, targets, window, payload = prepare_native_review(request, stage="review")
+        reviewed = _invoke_with_known_receipt(self.provider,
+            request,
+            stage="review",
+            payload=payload,
+        )
+        require_review_frontier(request)
+        content = normalize_review_result(
+                draft=draft.content,
+                draft_asset_version_id=draft.asset_version_id,
+                result=reviewed.output,
+                provider_evidence=_provider_evidence(reviewed),
+                project_id=request.project_id,
+                context_bundle_version_id=context.asset_version_id,
+                knowledge_targets=targets,
+                cross_chapter_window=window,
+            )
+        working = (request.command.get("preparation_report") or {}).get("working_revision")
+        if working:
+            content["working_revision_request"] = {"contract_version": working["contract_version"],
+                "source_asset_version_id": draft.asset_version_id, "reason": working["reason"],
+                "aesthetic_revision_requested": True, "core_story_change_authorized": False}
+        return _model_output(ChapterNode.REVIEW, content, request=request, generated=reviewed)
+
+
+@dataclass(frozen=True, slots=True)
+class _RevisionHandler:
+    provider: ChapterModelPort
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        quality_tasks = tuple(
+            item for item in request.inputs if item.asset_type == "revision_task"
+        )
+        if quality_tasks:
+            proof = _retained_result_proof(request)
+            if request.effective_definition_version == "3.10.0" and proof.get("contract_version") == "chapter-quality-range-revalidation.v1":
+                from .quality_revision_recovery import materialize_retained_revision
+                content = materialize_retained_revision(request)
+                return _revision_decision_output(ChapterNode.REVISION, _output(ChapterNode.REVISION, content), {
+                    "contract_version": "revision-execution-decision.v1", "decision": "RETAINED_RESULT_DERIVATION",
+                    "retained_result_derivation": content["retained_result_derivation"], "provider_dispatches": 0})
+            revision = request.require_input("best_draft_candidate")
+            quality = request.require_input("quality_score_report")
+            context = request.require_input("context_bundle")
+            from novel_forge.modules.revision.domain import quality_edit_contract
+            edit_contract = quality_edit_contract(revision=revision.content, revision_asset_version_id=revision.asset_version_id,
+                                                  revision_tasks=tuple(item.content for item in quality_tasks),
+                                                  range_policy="NAMED_DIAGNOSIS_UNION_V1" if request.effective_definition_version == "3.10.0" else "INTERSECTION_V1")
+            length_requirement = None
+            if request.effective_definition_version == "3.10.0":
+                from .quality_length_requirement import freeze_requirement
+                length_requirement = freeze_requirement(effective_context_content(request, context), context_id=context.asset_version_id)
+            revised = self.provider.invoke(
+                request,
+                stage="revision",
+                payload={
+                    **({"quality_edit_contract": edit_contract} if edit_contract is not None else {}),
+                    "draft": revision.content,
+                    "review": dict(revision.content.get("selected_review") or {}),
+                    "quality": quality.content,
+                    **({"quality_length_requirement": length_requirement} if length_requirement else {}),
+                    "required_actions": [item.content for item in quality_tasks],
+                },
+            )
+            corrected = apply_quality_revision_result(
+                    project_id=request.project_id,
+                    revision=revision.content,
+                    revision_asset_version_id=revision.asset_version_id,
+                    quality=quality.content,
+                    quality_asset_version_id=quality.asset_version_id,
+                    revision_tasks=tuple(item.content for item in quality_tasks),
+                    revision_task_asset_version_ids=tuple(
+                        item.asset_version_id for item in quality_tasks
+                    ),
+                    context_bundle_version_id=context.asset_version_id,
+                    result=revised.output,
+                    provider_evidence=_provider_evidence(revised),
+                    range_policy="NAMED_DIAGNOSIS_UNION_V1" if request.effective_definition_version == "3.10.0" else "INTERSECTION_V1",
+                )
+            if request.effective_definition_version == "3.10.0":
+                from .quality_length_requirement import require_length
+                require_length(length_requirement, corrected["text"])
+                if length_requirement:
+                    corrected["quality_length_requirement"] = length_requirement
+            return _model_output(ChapterNode.REVISION, corrected, request=request, generated=revised)
+        draft = request.require_input("draft_chapter")
+        review = request.require_input("review_report")
+        context = request.require_input("context_bundle")
+        length_scope = None
+        if request.effective_definition_version in {"3.9.4", "3.10.0"}:
+            from novel_forge.modules.revision.domain import freeze_chapter_length_scope
+            length_scope = freeze_chapter_length_scope(draft.content, source_asset_version_id=draft.asset_version_id,
+                context=effective_context_content(request, context), context_asset_version_id=context.asset_version_id)
+        if length_scope is not None and (request.command.get("preparation_report") or {}).get("working_revision"):
+            from novel_forge.modules.revision.domain import require_working_length_repair_scope
+            require_working_length_repair_scope(draft=draft.content, draft_id=draft.asset_version_id,
+                review=review.content, review_id=review.asset_version_id, context_id=context.asset_version_id)
+        if length_scope is None and request.effective_definition_version == "3.10.0" and not request.command.get("chapter_sampling"):
+            from novel_forge.modules.revision.domain import retain_reviewed_draft
+            retained = retain_reviewed_draft(draft=draft.content, draft_id=draft.asset_version_id,
+                draft_hash=draft.content_hash, review=review.content, review_id=review.asset_version_id,
+                review_hash=review.content_hash, context_id=context.asset_version_id, context_hash=context.content_hash)
+            if retained is not None:
+                from .review_window import require_review_frontier
+                require_review_frontier(request)
+                return _revision_decision_output(ChapterNode.REVISION, _output(ChapterNode.REVISION, retained), retained["revision_execution_decision"])
+        repair_payload = {}
+        if request.effective_definition_version in {"3.9.4", "3.10.0"}:
+            from novel_forge.modules.revision.domain import freeze_chapter_length_scope
+            from .candidate_repair import candidate_repair_payload
+            repair_payload = candidate_repair_payload(request)
+        revised = self.provider.invoke(
+            request,
+            stage="revision",
+            payload={
+                "draft": draft.content,
+                "review": review.content,
+                **({"chapter_length_repair_scope": length_scope} if length_scope else {}),
+                **repair_payload,
+            },
+        )
+        return _model_output(
+            ChapterNode.REVISION,
+            normalize_revision_result(
+                draft=draft.content,
+                review=review.content,
+                draft_asset_version_id=draft.asset_version_id,
+                review_asset_version_id=review.asset_version_id,
+                result=revised.output,
+                provider_evidence=_provider_evidence(revised),
+                project_id=request.project_id,
+                context_bundle_version_id=context.asset_version_id,
+                length_scope=length_scope,
+            ),
+            request=request,
+            generated=revised,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _ReReviewHandler:
+    provider: ChapterModelPort
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        proof = _retained_result_proof(request)
+        if request.effective_definition_version == "3.10.0" and proof.get("contract_version") == "chapter-quality-review-revalidation.v1":
+            from .quality_review_recovery import materialize_retained_rereview
+            content = materialize_retained_rereview(request)
+            return _revision_decision_output(ChapterNode.REREVIEW, _output(ChapterNode.REREVIEW, content), {
+                "contract_version": "revision-execution-decision.v1", "decision": "RETAINED_RESULT_DERIVATION",
+                "retained_result_derivation": content["retained_result_derivation"], "provider_dispatches": 0})
+        draft = request.require_input("draft_chapter")
+        review = request.require_input("review_report")
+        incumbent = next((item for item in request.inputs if item.input_type == "best_draft_candidate"), None)
+        if incumbent is not None:
+            from dataclasses import replace
+            from .candidate_selection import retained_candidate_evidence
+            retained = retained_candidate_evidence(incumbent.asset_version_id, incumbent.content)
+            draft = replace(draft, asset_version_id=retained.asset_version_id, content=incumbent.content)
+            review = replace(review, asset_version_id=retained.review_asset_version_id, content=dict(incumbent.content["selected_review"]))
+        from .review_window import prepare_native_review, require_review_frontier
+        revision, context, targets, _, payload = prepare_native_review(request, stage="rereview")
+        if request.effective_definition_version == "3.10.0" and not request.command.get("chapter_sampling"):
+            from novel_forge.modules.revision.domain import reuse_unchanged_review
+            reused = reuse_unchanged_review(draft=draft.content, draft_id=draft.asset_version_id,
+                draft_hash=draft.content_hash, review=review.content, review_id=review.asset_version_id,
+                review_hash=review.content_hash, revision=revision.content, revision_id=revision.asset_version_id,
+                context_id=context.asset_version_id, context_hash=context.content_hash)
+            if reused is not None:
+                require_review_frontier(request)
+                return _revision_decision_output(ChapterNode.REREVIEW, _output(ChapterNode.REREVIEW, reused), reused["review_reuse_evidence"])
+        reviewed = self.provider.invoke(
+            request,
+            stage="rereview",
+            payload=payload,
+        )
+        require_review_frontier(request)
+        rereview_result = reviewed.output
+        if request.effective_definition_version == "3.10.0":
+            from novel_forge.modules.review.quality_namespace import separate_quality_checks
+            rereview_result = separate_quality_checks(reviewed.output, review.content, revision.content)
+        return _model_output(
+            ChapterNode.REREVIEW,
+            _normalize_rereview_with_quality_namespace(
+                draft_asset_version_id=draft.asset_version_id,
+                review=review.content,
+                review_asset_version_id=review.asset_version_id,
+                revision=revision.content,
+                revision_asset_version_id=revision.asset_version_id,
+                context_bundle_version_id=context.asset_version_id,
+                result=rereview_result,
+                provider_evidence=_provider_evidence(reviewed),
+                project_id=request.project_id,
+                knowledge_targets=targets,
+            ),
+            request=request,
+            generated=reviewed,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _BestCandidateHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        revision = request.require_input("draft_version")
+        rereview = request.require_input("re_review_report")
+        existing_best = next(
+            (
+                item
+                for item in request.inputs
+                if item.input_type == "best_draft_candidate"
+            ),
+            None,
+        )
+        from .candidate_selection import bind_selected_review, retained_candidate_evidence
+        from novel_forge.modules.review.diagnostics import require_review_score
+        if existing_best is None:
+            previous_asset = request.require_input("draft_chapter")
+            previous_review = request.require_input("review_report")
+            previous_source_id = previous_asset.asset_version_id
+            previous_score = require_review_score(previous_review.content)
+            previous_blockers = _blocking_issue_codes(previous_review.content)
+            previous_review_id = previous_review.asset_version_id
+            bind_selected_review(candidate=previous_asset.content, candidate_id=previous_source_id,
+                                 review=previous_review.content, review_id=previous_review_id)
+        else:
+            previous_asset = existing_best
+            incumbent = retained_candidate_evidence(existing_best.asset_version_id, existing_best.content)
+            previous_source_id = incumbent.asset_version_id
+            previous_score, previous_blockers = incumbent.score, incumbent.blocker_codes
+            previous_review_id = incumbent.review_asset_version_id
+        bind_selected_review(candidate=revision.content, candidate_id=revision.asset_version_id,
+                             review=rereview.content, review_id=rereview.asset_version_id)
+        prior_quality = next(
+            (
+                item
+                for item in request.inputs
+                if item.asset_type == "quality_score_report"
+            ),
+            None,
+        )
+        if prior_quality is not None:
+            previous_blockers = tuple(
+                sorted(
+                    {
+                        *previous_blockers,
+                        *(
+                            str(
+                                item.get("observation")
+                                or item.get("issue", {}).get("code")
+                                or ""
+                            )
+                            for item in prior_quality.content.get("required_actions")
+                            or ()
+                        ),
+                    }
+                    - {""}
+                )
+            )
+        generation = int(request.command.get("correction_generation") or 0)
+        threshold = float(
+            (request.command.get("preparation_report") or {}).get(
+                "minimum_net_improvement", 3.0
+            )
+        )
+        comparison = compare_candidates(
+            project_id=request.project_id,
+            chapter_root_operation_id=str(
+                request.command.get("chapter_root_operation_id")
+                or request.correlation_id
+            ),
+            previous=CandidateEvidence(
+                asset_version_id=previous_source_id,
+                workspace_asset_version_id=previous_asset.asset_version_id,
+                content=previous_asset.content,
+                score=previous_score,
+                blocker_codes=tuple(previous_blockers),
+                review_asset_version_id=previous_review_id,
+                review_content=previous_review.content if existing_best is None else None,
+                review_content_hash=previous_review.content_hash if existing_best is None else "",
+            ),
+            challenger=CandidateEvidence(
+                asset_version_id=revision.asset_version_id,
+                content=revision.content,
+                score=require_review_score(rereview.content),
+                blocker_codes=tuple(sorted(set(_blocking_issue_codes(rereview.content)) | {
+                    check["observation"] for check in rereview.content.get("quality_resolution_checks", [])
+                    if check["status"] != "SATISFIED" or check["preservation"] != "PRESERVED"})),
+                review_asset_version_id=rereview.asset_version_id,
+                diagnostic_contract_version=str(rereview.content.get("diagnostic_contract_version") or ""),
+                resolution_checks=tuple(rereview.content.get("resolution_checks") or []),
+                cross_chapter_review=bool(rereview.content.get("cross_chapter_window")),
+                preservation_checks=tuple(rereview.content.get("preservation_checks") or []),
+                quality_resolution_checks=tuple(rereview.content.get("quality_resolution_checks") or []),
+                resolved_issue_codes=tuple(rereview.content.get("resolved_issue_codes") or []),
+                remaining_issue_codes=tuple(rereview.content.get("remaining_issue_codes") or []),
+                review_target_text_hash=str(rereview.content.get("target_text_hash") or ""),
+                review_report_type=str(rereview.content.get("report_type") or ""),
+                review_content=rereview.content,
+                review_content_hash=rereview.content_hash,
+            ),
+            minimum_net_improvement=threshold,
+            length_repair_scope=revision.content.get("chapter_length_repair_scope"),
+            correction_generation=generation,
+            maximum_correction_generations=int(
+                (request.command.get("preparation_report") or {}).get(
+                    "maximum_correction_generations", 1
+                )
+            ),
+        )
+        best, snapshot = build_best_candidate(
+            comparison=comparison,
+            candidates={
+                previous_source_id: previous_asset.content,
+                revision.asset_version_id: revision.content,
+            },
+        )
+        if comparison["selected_asset_version_id"] == revision.asset_version_id:
+            selected_review_content, selected_review_id = rereview.content, rereview.asset_version_id
+        elif existing_best is None:
+            selected_review_content, selected_review_id = previous_review.content, previous_review.asset_version_id
+        else:
+            selected_review_content = dict(existing_best.content["selected_review"])
+            selected_review_id = str(selected_review_content["selection_review_source_asset_version_id"])
+        selected_source_id = str(best.get("selected_source_asset_version_id") or "")
+        selected_review = bind_selected_review(candidate=best, candidate_id=selected_source_id,
+                                              review=selected_review_content, review_id=selected_review_id)
+        best["selected_review"] = selected_review
+        return ChapterHandlerOutput(
+            asset_type=ChapterNode.BEST_CANDIDATE.asset_type,
+            output_key=ChapterNode.BEST_CANDIDATE.output_key,
+            role="primary",
+            content=best,
+            auxiliary_outputs=(
+                ChapterAuxiliaryOutput(
+                    asset_type="re_review_report", output_key="chapter.best_candidate.selected_review",
+                    role="selection_evidence", content=selected_review,
+                    reference_asset_version_ids=(selected_review_id, selected_source_id),
+                ),
+                ChapterAuxiliaryOutput(
+                    asset_type="candidate_comparison",
+                    output_key="chapter.best_candidate.comparison",
+                    role="selection_evidence",
+                    content=comparison,
+                    reference_asset_version_ids=(
+                        previous_asset.asset_version_id,
+                        revision.asset_version_id,
+                        rereview.asset_version_id,
+                    ),
+                ),
+                ChapterAuxiliaryOutput(
+                    asset_type="best_candidate_snapshot",
+                    output_key="chapter.best_candidate.snapshot",
+                    role="selection_evidence",
+                    content=snapshot,
+                    reference_asset_version_ids=(
+                        previous_asset.asset_version_id,
+                        revision.asset_version_id,
+                    ),
+                ),
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _CanonHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        revision = request.require_input("best_draft_candidate")
+        extraction = request.require_input("canon_extraction")
+        proposal = request.require_input("canon_change_proposal")
+        decisions = [
+            {**item.content, "asset_version_id": item.asset_version_id}
+            for item in request.inputs
+            if item.asset_type == "canon_approval_decision"
+        ]
+        resolved_extraction = resolve_canon_extraction(
+            extraction=extraction.content,
+            proposal={
+                **proposal.content,
+                "asset_version_id": proposal.asset_version_id,
+            },
+            decisions=decisions,
+        )
+        context = request.require_input("context_bundle")
+        validation_contract = 'LEGACY_V1'
+        policy_binding = None
+        if request.effective_definition_version in {'3.9.10', '3.10.0'} and request.database_url:
+            from novel_forge.modules.canon_graph.validation_recovery import selected_validation_policy
+            with AuthorityUnitOfWork(request.database_url) as uow:
+                uow.cursor.execute('SELECT root_operation_id FROM authority_operation WHERE operation_id=%s AND project_id=%s', [request.operation_id,request.project_id])
+                root_id = uow.cursor.fetchone()[0]
+                policy_binding = selected_validation_policy(uow.cursor,project_id=request.project_id,root_operation_id=root_id)
+            if policy_binding:
+                validation_contract = policy_binding['canon_validation_contract']
+        content = build_canon_patch(
+            revision=revision.content,
+            revision_asset_version_id=revision.asset_version_id,
+            project_id=request.project_id,
+            context_bundle_version_id=context.asset_version_id,
+            extraction=resolved_extraction,
+            context_bundle=effective_context_content(request, context),
+            validation_contract=validation_contract,
+            reader_observation_lineage=request.effective_definition_version == "3.10.0",
+        )
+        continuity_report = {
+            **dict(content["deterministic_validation"]),
+            "project_id": request.project_id,
+            "chapter": int(content["chapter"]),
+            "canon_patch_source_operation_id": request.operation_id,
+            "source_revision_asset_version_id": revision.asset_version_id,
+            "context_bundle_asset_version_id": context.asset_version_id,
+            "review_issue_candidates": [
+                {
+                    "issue_type": "deterministic_continuity",
+                    "severity": item["severity"],
+                    "blocking": item["severity"] == "blocking",
+                    "code": item["conflict_code"],
+                    "message": item["recommended_resolution"],
+                    "evidence": item["evidence"],
+                }
+                for item in content["deterministic_validation"]["violations"]
+            ],
+        }
+        validation_output = ChapterAuxiliaryOutput(
+            asset_type="deterministic_continuity_report",
+            output_key="chapter.canon.deterministic_continuity",
+            role="completion_evidence",
+            content=continuity_report,
+            reference_asset_version_ids=tuple(
+                sorted(
+                    {
+                        revision.asset_version_id,
+                        extraction.asset_version_id,
+                        proposal.asset_version_id,
+                        context.asset_version_id,
+                        *content["historical_input_version_ids"],
+                    }
+                )
+            ),
+            evidence={
+                "authority_family": "chapter",
+                "validator": str(
+                    content["deterministic_validation"].get("contract_version")
+                    or "deterministic-continuity-v3"
+                ),
+                "semantic_judge_used": False,
+            },
+        )
+        primary = _output(
+            ChapterNode.CANON,
+            content,
+        )
+        return ChapterHandlerOutput(
+            asset_type=primary.asset_type,
+            output_key=primary.output_key,
+            role=primary.role,
+            content=primary.content,
+            qualification_policy=primary.qualification_policy,
+            auxiliary_outputs=(validation_output,),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _CanonExtractionHandler:
+    provider: ChapterModelPort
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        proof = _retained_result_proof(request)
+        if request.effective_definition_version == "3.10.0" and proof.get("contract_version") == "chapter-canon-reference-resolution-revalidation.v1":
+            from .canon_reference_recovery import materialize
+            return _output(ChapterNode.CANON_EXTRACTION, materialize(request))
+        revision = request.require_input("best_draft_candidate")
+        context = request.require_input("context_bundle")
+        span_inputs = {}
+        if request.effective_definition_version == "3.10.0":
+            from novel_forge.modules.canon_graph.source_spans import source_spans
+            from .domain_handlers import canon_history
+            baselines, _ = canon_history(effective_context_content(request, context))
+            from novel_forge.modules.canon_graph.background import scheduled_world_events
+            from novel_forge.modules.worldbuilding.production_schema import world_transition_schema
+            world_binding = (effective_context_content(request, context).get("chapter_execution_expectations") or {}).get("world_preparation") or {}
+            world_events = scheduled_world_events(world_binding) if world_binding else []
+            recovery_feedback = _canon_recovery_feedback(request)
+            span_inputs = {**recovery_feedback, "source_span_table": source_spans(revision.content["text"]),
+                "source_span_schema_contract": "typed-extraction-json.v2",
+                "world_transition_contract": world_transition_schema(agency=any(event.get("action_mode") for event in world_events)),
+                "observer_transition_constraints": [{key: value for key, value in event.items() if key != "action"}
+                    for event in world_events if event["camera"] == "ON_CAMERA"],
+                "transition_precondition_contract": "accepted-cas.v1", "accepted_transition_baselines": baselines,
+                "transition_result_contract": "canonical-plan-results.v1",
+                "canonical_transition_results": (effective_context_content(request, context).get("chapter_execution_expectations") or {}).get("required_state_transitions") or []}
+        provider_extraction = None
+        generated: ModelProviderResult | None = None
+        if request.effective_definition_version == "3.10.0":
+            from novel_forge.modules.canon_graph.source_spans import project_transition_preconditions
+            span_inputs["accepted_transition_baselines"] = project_transition_preconditions(span_inputs["accepted_transition_baselines"])
+            span_inputs["canon_context_projection"] = "canon-source-context.v1"
+        if bool(getattr(self.provider, "external_effect_backed", False)) or bool(
+            getattr(self.provider, "supports_semantic_extraction", False)
+        ):
+            generated = _invoke_with_known_receipt(self.provider,
+                request,
+                stage="canon_extraction",
+                payload={
+                    "revision": revision.content,
+                    **span_inputs,
+                    "execution_expectations": dict(
+                        effective_context_content(request, context).get("chapter_execution_expectations") or {}
+                    ),
+                },
+            )
+            provider_extraction = _canon_provider_extraction(generated)
+            if request.effective_definition_version == "3.10.0":
+                from novel_forge.modules.canon_graph.source_spans import bind_source_spans
+                from .receipt_recovery import known_receipt_proof, known_canon_extraction, known_receipt_source_span_contract
+                if request.database_url and known_receipt_proof(request):
+                    provider_extraction = known_canon_extraction(generated, revision.content["text"], source_span_contract=known_receipt_source_span_contract(request))
+                else:
+                    provider_extraction = bind_source_spans(provider_extraction, revision.content["text"])
+        from novel_forge.modules.canon_graph.grounding import extract_grounded_candidates
+        extractor = extract_grounded_candidates if generated is not None else build_canon_extraction
+        content = extractor(
+            revision=revision.content,
+            revision_asset_version_id=revision.asset_version_id,
+            project_id=request.project_id,
+            context_bundle_version_id=context.asset_version_id,
+            provider_extraction=provider_extraction,
+            work_requirements=request.work_requirements_enabled,
+        )
+        from novel_forge.modules.canon_graph.background import attach_background_proposals
+        content = attach_background_proposals(
+            extraction=content,
+            binding=dict((effective_context_content(request, context).get("chapter_execution_expectations") or {}).get("world_preparation") or {}),
+        )
+        proof = _retained_result_proof(request)
+        if request.effective_definition_version == "3.10.0" and proof and recovery_feedback:
+            content["retained_result_repair"] = _result_evidence_fields(proof)
+        if generated is None:
+            return _output(ChapterNode.CANON_EXTRACTION, content)
+        return _model_output(
+            ChapterNode.CANON_EXTRACTION,
+            content,
+            request=request,
+            generated=generated,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _CanonProposalHandler:
+    provider: ChapterModelPort
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        extraction = request.require_input("canon_extraction")
+        proposal = build_canon_change_proposal(
+            project_id=request.project_id,
+            extraction=extraction.content,
+            extraction_asset_version_id=extraction.asset_version_id,
+        )
+        generated = None
+        comparison = None
+        if extraction.content.get("grounding"):
+            from novel_forge.modules.canon_graph.grounding import grounded_claims, validate_support_review
+            revision = request.require_input("best_draft_candidate")
+            retained = None
+            if request.effective_definition_version == "3.10.0":
+                from novel_forge.modules.canon_graph.realization_comparison import comparison_input
+                context = request.require_input("context_bundle")
+                comparison = comparison_input(planned=(effective_context_content(request, context).get("chapter_execution_expectations") or {}).get("narrative_realization") or {},
+                    extraction=extraction.content, text=str(revision.content.get("text") or ""))
+            if request.definition_version == "3.10.0" and request.database_url:
+                from .canon_support_coverage import retained_review
+                retained = retained_review(request)
+            support_payload = {
+                "revision": revision.content, "grounding": extraction.content["grounding"],
+                **({"realization_comparison": comparison} if comparison is not None else {}),
+                "claims": retained[0]["unresolved_claims"] if retained else grounded_claims(extraction.content),
+                **({"support_kind_contract":"canon-support-kinds.v2"} if (request.source_definition_version or request.effective_definition_version) in {"3.9.8", "3.10.0"} else {}),
+            }
+            generated = self.provider.invoke(request, stage="canon_support", payload=support_payload)
+            if request.command.get("chapter_sampling"):
+                from novel_forge.modules.chapter_quality_authority.canon_support_reference import validate_sample_result
+                from .execution_gateway import PostgresChapterExecutionContractBinder
+                sample_schema, _ = PostgresChapterExecutionContractBinder._provider_output_contract(
+                    stage="canon_support", request_payload={"input": support_payload})
+                validate_sample_result(extraction.content, revision.content, revision.asset_version_id, generated.output,
+                    output_schema=sample_schema, realization_comparison=comparison)
+                return replace(_model_output(ChapterNode.CANON_PROPOSAL, dict(generated.output),
+                    request=request, generated=generated), asset_type="canon_support_review")
+            support = generated.output
+            if retained:
+                from .canon_support_coverage import combine_review
+                support = combine_review(extraction.content, retained[1], support)
+                proposal["retained_result_repair"] = _result_evidence_fields(retained[0])
+            proposal["grounding"] = validate_support_review(
+                extraction=extraction.content, revision=revision.content,
+                revision_asset_version_id=revision.asset_version_id, result=support, realization_comparison=comparison,
+            )
+        if comparison is not None:
+            for item in proposal["grounding"]["realization_comparisons"]:
+                item["support_operation_id"] = request.operation_id
+        generation = int(request.command.get("canon_reextraction_generation") or 1)
+        proposal["generation"] = generation
+        proposal["supersedes_asset_version_id"] = str(
+            request.command.get("supersedes_proposal_asset_version_id") or ""
+        )
+        if generated is not None:
+            return _model_output(ChapterNode.CANON_PROPOSAL, proposal, request=request, generated=generated)
+        return _output(
+            ChapterNode.CANON_PROPOSAL,
+            proposal,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _QualityGroupHandler:
+    group: str
+    provider: ChapterModelPort
+
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        revision = request.require_input("best_draft_candidate")
+        plan = request.require_input("chapter_plan")
+        canon = request.require_input("canon_patch")
+        context = request.require_input("context_bundle")
+        fixture = not any(
+            bool(item.content.get("provider_evidence", {}).get("real_model_call"))
+            for item in request.inputs
+            if isinstance(item.content.get("provider_evidence", {}), dict)
+        )
+        context_content = dict(effective_context_content(request, context))
+        generated: ModelProviderResult | None = None
+        reference_calibration = None
+        if request.work_requirements_enabled and request.semantic_definition_version not in {"3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}:
+            raise KernelError("QUALITY_FROZEN_SEMANTICS_MIGRATION_REQUIRED",
+                              "Frozen work-quality.v1 cannot safely continue under v2; retain receipts and admit an explicit replacement")
+        world_projection = None
+        if self.group == 'longform' and request.effective_definition_version in {'3.9.12', '3.10.0'} and request.database_url:
+            from novel_forge.modules.chapter_quality_authority.foundation_context import request_world_projection
+            world_projection = request_world_projection(request)
+        quality_context = build_quality_context_view(
+            group=self.group,
+            revision=revision.content,
+            revision_asset_version_id=revision.asset_version_id,
+            chapter_plan=plan.content,
+            chapter_plan_asset_version_id=plan.asset_version_id,
+            context_bundle=effective_context_content(request, context),
+            context_bundle_asset_version_id=context.asset_version_id,
+            canon=canon.content,
+            canon_asset_version_id=canon.asset_version_id,
+            token_budget=resolve_stage_context_token_budget(
+                request.command, f"quality_{self.group}"
+            ),
+            work_requirements=request.work_requirements_enabled,
+            governed_world_projection=world_projection,
+        )
+        if bool(
+            getattr(self.provider, "external_effect_backed", False)
+            or getattr(self.provider, "supports_quality_evaluation", False)
+        ):
+            quality_span_inputs = {}
+            if request.effective_definition_version == "3.10.0":
+                from novel_forge.modules.canon_graph.source_spans import source_spans
+                quality_span_inputs = {"source_span_table": source_spans(revision.content["text"]),
+                    "quality_span_contract": "literal-source-spans.v1"}
+            generated = self.provider.invoke(
+                request,
+                stage=f"quality_{self.group}",
+                payload={
+                    "revision": revision.content,
+                    "quality_context": quality_context,
+                    **({"quality_applicability_contract":"quality-host-applicability.v1"} if request.effective_definition_version in {"3.9.9", "3.9.12", "3.10.0"} else {}),
+                    "dimensions": list(QUALITY_GROUPS[self.group]),
+                    **quality_span_inputs,
+                },
+            )
+            from novel_forge.modules.chapter_quality_authority.reference_sampling import (
+                admitted_reference_calibration,
+            )
+
+            reference_calibration = admitted_reference_calibration(
+                request,
+                generated,
+                stage=f"quality_{self.group}",
+                target_asset_version_id=revision.asset_version_id,
+            )
+            provider_entries = []
+            schema_ref = str(
+                (generated.capability_evidence or {}).get("output_schema_ref") or ""
+            )
+            current_quality_contract = schema_ref.startswith(
+                (
+                    f"schema:chapter-provider-output:quality_{self.group}:v3",
+                    f"schema:chapter-provider-output:quality_{self.group}:v4",
+                    f"schema:chapter-provider-output:quality_{self.group}:v5",
+                    f"schema:chapter-provider-output:quality_{self.group}:v6",
+                )
+            )
+            if request.effective_definition_version == "3.10.0":
+                from novel_forge.modules.canon_graph.source_spans import require_quality_dimensions
+                require_quality_dimensions(generated.output.get("dimensions", []), QUALITY_GROUPS[self.group])
+            for item in generated.output.get("dimensions", []):
+                located = list(item.get("evidence_locations") or [])
+                if schema_ref == f"schema:chapter-provider-output:quality_{self.group}:v6":
+                    from novel_forge.modules.canon_graph.source_spans import bind_quality_spans
+                    located = bind_quality_spans(located, revision.content["text"])
+                if current_quality_contract:
+                    located = bind_quality_prose_evidence(
+                        located,
+                        text=str(revision.content.get("text") or ""),
+                        target_asset_version_id=revision.asset_version_id,
+                    )
+                    if item.get("gate_status") in {"PASSED", "FAILED"} and not located:
+                        raise KernelError(
+                            "QUALITY_EVIDENCE_LOCATION_MISSING",
+                            "a decisive model Quality status requires located candidate prose",
+                        )
+                provider_entries.append(
+                    {
+                        **dict(item),
+                        "evidence_locations": located,
+                        "target_asset_version_id": revision.asset_version_id,
+                        **(
+                            {
+                                "creative_baseline_digest": revision.content[
+                                    "creative_baseline"
+                                ]["baseline_digest"],
+                                "quality_policy_digest": quality_context[
+                                    "compiled_quality_policy"
+                                ]["policy_digest"],
+                                "evaluation_semantics_version": "work-quality.v2",
+                            }
+                            if request.work_requirements_enabled
+                            else {}
+                        ),
+                        "calibration_status": "REFERENCE_CALIBRATED"
+                        if reference_calibration
+                        else "PROVIDER_UNCALIBRATED",
+                        "provider_verified": True,
+                        "human_verified": False,
+                        # WHY: Scripted Provider output is useful only for exercising
+                        # the internal protocol.  Quality Authority will turn a
+                        # passing result into an explicit fixture waiver only
+                        # when a separately persisted scoped approval exists.
+                        "fixture_protocol_only": not generated.real_model_call,
+                    }
+                )
+            context_content["context_segments"] = [
+                *list(effective_context_content(request, context).get("context_segments", [])),
+                {
+                    "asset_version_id": f"external-effect:{request.operation_id}",
+                    "narrative_function": "quality_evidence",
+                    "source_expression_included": False,
+                    "structured_facts": [
+                        {"key": "dimension_evidence", "value": provider_entries}
+                    ],
+                },
+            ]
+            fixture = not generated.real_model_call
+        content = build_quality_group_evidence(
+            group=self.group,
+            project_id=request.project_id,
+            revision=revision.content,
+            revision_asset_version_id=revision.asset_version_id,
+            context_bundle=context_content,
+            canon=canon.content,
+            fixture=fixture,
+            reference_calibration=reference_calibration,
+            quality_context=quality_context
+            if request.work_requirements_enabled
+            else None,
+        )
+        if generated is not None:
+            from novel_forge.modules.chapter_quality_authority.creative_validation import model_quality_receipt
+            validation = model_quality_receipt(request, generated, target=revision.asset_version_id)
+            if validation is not None:
+                content["validation_receipt"] = validation
+        content["quality_context_type"] = quality_context["type"]
+        content["quality_context_digest"] = quality_context["context_digest"]
+        content["quality_context_coverage"] = dict(quality_context["coverage_report"])
+        node = {
+            "structural": ChapterNode.QUALITY_STRUCTURAL,
+            "commercial": ChapterNode.QUALITY_COMMERCIAL,
+            "source_originality": ChapterNode.QUALITY_SOURCE_ORIGINALITY,
+            "longform": ChapterNode.QUALITY_LONGFORM,
+            "platform": ChapterNode.QUALITY_PLATFORM,
+        }[self.group]
+        primary = _output(node, content)
+        coverage = ChapterAuxiliaryOutput(
+            asset_type="quality_context_coverage_report",
+            output_key=f"chapter.quality.context_coverage.{self.group}",
+            role="quality_context_evidence",
+            content={
+                **dict(quality_context["coverage_report"]),
+                "project_id": request.project_id,
+                "group": self.group,
+                "target_revision_asset_version_id": revision.asset_version_id,
+                "context_bundle_asset_version_id": context.asset_version_id,
+                "context_digest": quality_context["context_digest"],
+            },
+            reference_asset_version_ids=(
+                revision.asset_version_id,
+                plan.asset_version_id,
+                canon.asset_version_id,
+                context.asset_version_id,
+            ),
+            evidence={
+                "group": self.group,
+                "critical_facts_preserved": quality_context["coverage_report"][
+                    "critical_facts_preserved"
+                ],
+            },
+        )
+        auxiliaries: tuple[ChapterAuxiliaryOutput, ...] = (coverage,)
+        if self.group == "commercial":
+            provider_dimensions = (
+                list(generated.output.get("dimensions", []))
+                if generated is not None
+                else []
+            )
+            provider_evidence = (
+                {
+                    **_provider_evidence(generated),
+                    "trace_id": request.trace_id,
+                    "operation_id": request.operation_id,
+                }
+                if generated is not None
+                else {
+                    "trace_id": request.trace_id,
+                    "operation_id": request.operation_id,
+                    "real_model_call": False,
+                }
+            )
+            hook_analysis = build_hook_analysis(
+                project_id=request.project_id,
+                chapter=int(revision.content["chapter"]),
+                chapter_plan=plan.content,
+                provider_dimensions=provider_dimensions,
+                target_asset_version_id=revision.asset_version_id,
+                chapter_plan_asset_version_id=plan.asset_version_id,
+                provider_evidence=provider_evidence,
+            )
+            pacing_observation = build_pacing_observation(
+                project_id=request.project_id,
+                chapter=int(revision.content["chapter"]),
+                revision=revision.content,
+                chapter_plan=plan.content,
+                canon=canon.content,
+                provider_dimensions=provider_dimensions,
+                target_asset_version_id=revision.asset_version_id,
+                provider_evidence=provider_evidence,
+            )
+            intelligence_refs = (
+                revision.asset_version_id,
+                plan.asset_version_id,
+                canon.asset_version_id,
+                context.asset_version_id,
+            )
+            auxiliaries = (
+                *auxiliaries,
+                ChapterAuxiliaryOutput(
+                    asset_type="hook_analysis",
+                    output_key="chapter.quality.commercial.hook_analysis",
+                    role="longform_observation",
+                    content=hook_analysis,
+                    reference_asset_version_ids=intelligence_refs,
+                    evidence={
+                        "capability": "hook.analyze",
+                        "commercial_quality_reused": True,
+                    },
+                ),
+                ChapterAuxiliaryOutput(
+                    asset_type="pacing_observation",
+                    output_key="chapter.quality.commercial.pacing_observation",
+                    role="longform_observation",
+                    content=pacing_observation,
+                    reference_asset_version_ids=intelligence_refs,
+                    evidence={
+                        "capability": "pacing.analyze",
+                        "semantic_and_deterministic_separated": True,
+                    },
+                ),
+            )
+        if generated is not None:
+            commit = _execution_commit_auxiliary(node, request, generated)
+            if commit is not None:
+                auxiliaries = (*auxiliaries, commit)
+        return ChapterHandlerOutput(
+            asset_type=primary.asset_type,
+            output_key=primary.output_key,
+            role=primary.role,
+            content=primary.content,
+            qualification_policy=primary.qualification_policy,
+            auxiliary_outputs=auxiliaries,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _QualityHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        plan = request.require_input("chapter_plan")
+        revision = request.require_input("best_draft_candidate")
+        review = request.require_input("re_review_report")
+        canon = request.require_input("canon_patch")
+        context = request.require_input("context_bundle")
+        groups = [
+            item
+            for item in request.inputs
+            if item.asset_type == "chapter_quality_group_report"
+        ]
+        if {str(item.content.get("group")) for item in groups} != {
+            "structural",
+            "commercial",
+            "source_originality",
+            "longform",
+            "platform",
+        }:
+            raise KernelError(
+                "QUALITY_FANIN_INCOMPLETE", "all five quality groups are required"
+            )
+        group_reports = [
+            dimension
+            for group in groups
+            for dimension in group.content.get("dimensions", [])
+        ]
+        content = build_quality_report(
+            revision=revision.content,
+            revision_asset_version_id=revision.asset_version_id,
+            canon=canon.content,
+            canon_asset_version_id=canon.asset_version_id,
+            review=review.content,
+            review_asset_version_id=review.asset_version_id,
+            project_id=request.project_id,
+            context_bundle_version_id=context.asset_version_id,
+            context_bundle=effective_context_content(request, context),
+            evidence_reports=group_reports,
+        )
+        from novel_forge.modules.chapter_quality_authority.creative_validation import assess_internal_quality
+        admission = assess_internal_quality(groups=[group.content for group in groups], target=revision.asset_version_id, disposition_version=2 if request.effective_definition_version in {"3.9.11", "3.10.0"} else 1)
+        if admission is not None and request.effective_definition_version == "3.10.0":
+            from novel_forge.modules.chapter_quality_authority.creative_validation import (
+                receipt_work_constraints, assess_coordinated_internal_quality, apply_work_constraint_actions,
+                internal_required_actions,
+            )
+            constraints = receipt_work_constraints(request.database_url, project_id=request.project_id,
+                receipts=admission["receipts"], target=revision.asset_version_id)
+            admission = assess_coordinated_internal_quality(groups=[group.content for group in groups],
+                target=revision.asset_version_id, work_constraints=constraints)
+            content["required_actions"] = internal_required_actions(admission=admission,
+                evidence_reports=content["evidence_reports"], target=revision.asset_version_id)
+            content = apply_work_constraint_actions(content, admission=admission, revision=revision.content,
+                target=revision.asset_version_id, canon=canon.content,
+                bounded_single_scene=request.effective_definition_version == "3.10.0")
+        if admission is not None:
+            content["internal_admission"] = admission
+        primary = _output(
+            ChapterNode.QUALITY,
+            content,
+        )
+        evidence_outputs = tuple(
+            ChapterAuxiliaryOutput(
+                asset_type="chapter_quality_evidence",
+                output_key=f"chapter.quality.evidence.{report['dimension']}",
+                role="quality_evidence",
+                content=dict(report),
+                reference_asset_version_ids=(
+                    revision.asset_version_id,
+                    review.asset_version_id,
+                    canon.asset_version_id,
+                    context.asset_version_id,
+                ),
+                evidence={
+                    "dimension": report["dimension"],
+                    "calibration_status": report["calibration_status"],
+                    "production_verified": False,
+                },
+            )
+            for report in content["evidence_reports"]
+        )
+        from novel_forge.modules.revision.domain import freeze_quality_edit_scope
+
+        actions = content.get("required_actions", [])
+        if admission and request.effective_definition_version == '3.9.11':
+            from novel_forge.modules.chapter_quality_authority.creative_validation import internal_required_actions
+            actions = internal_required_actions(admission=admission, evidence_reports=content['evidence_reports'], target=revision.asset_version_id)
+            content['internal_required_actions'] = actions
+        action_outputs = (
+            tuple(
+                ChapterAuxiliaryOutput(
+                    asset_type="revision_task",
+                    output_key=f"chapter.quality.required_action.{ordinal}",
+                    role="evidence_action"
+                    if action.get("required_action") == "EVIDENCE_REASSESSMENT"
+                    else "required_action",
+                    content={
+                        **dict(action),
+                        "type": "GovernedRevisionTask",
+                        "contract_version": "governed-revision-task-v1",
+                        **(
+                            {
+                                "contract_version": "governed-revision-task-v2",
+                                "bounded_edit_scope": freeze_quality_edit_scope(
+                                    revision=revision.content,
+                                    revision_asset_version_id=revision.asset_version_id,
+                                    quality=content,
+                                    action=action,
+                                ),
+                            }
+                            if action.get("required_action") != "EVIDENCE_REASSESSMENT"
+                            and (
+                                request.work_requirements_enabled
+                                or (review.content.get("cross_chapter_window") or {}).get(
+                                    "contract_version"
+                                )
+                                == "cross-chapter-review-window.v2"
+                                or review.content.get("craft_targets")
+                            )
+                            else {}
+                        ),
+                        "project_id": request.project_id,
+                        "chapter": int(content["chapter"]),
+                        "target_revision_asset_version_id": revision.asset_version_id,
+                        "source_quality_operation_id": request.operation_id,
+                        "status": "OPEN",
+                        "mutates_accepted_canon": False,
+                    },
+                    reference_asset_version_ids=tuple(
+                        sorted(
+                            {
+                                revision.asset_version_id,
+                                review.asset_version_id,
+                                canon.asset_version_id,
+                                context.asset_version_id,
+                                *action.get("evidence_asset_version_ids", []),
+                            }
+                        )
+                    ),
+                    evidence={
+                        "required_authority": action["required_authority"],
+                        "reevaluation_gate": action["reevaluation_gate"],
+                    },
+                )
+                for ordinal, action in enumerate(
+                    actions, start=1
+                )
+            )
+            if not any(item.asset_type == "revision_task" for item in request.inputs)
+            else ()
+        )
+        manifest = dict(effective_context_content(request, context).get("context_manifest") or {})
+        authority_boundary = dict(manifest.get("authority_state_boundary") or {})
+        provider_usage = _provider_usage_records(request.inputs)
+        knowledge_selection = [
+            dict(item) for item in manifest.get("knowledge_usage") or []
+        ]
+        provider_effect_ids = sorted(
+            {
+                str(record.get("external_effect_id") or "")
+                for record in provider_usage or []
+                if str(record.get("external_effect_id") or "")
+                and record.get("context_bundle_asset_version_id") == context.asset_version_id
+            }
+        )
+        if provider_usage is None:
+            mkaos_usage = None
+        elif not knowledge_selection:
+            mkaos_usage = []
+        elif not provider_effect_ids:
+            mkaos_usage = [{"availability": "NOT_AVAILABLE"}]
+        else:
+            mkaos_usage = [
+                {
+                    **item,
+                    "availability": "MEASURED",
+                    "context_manifest_asset_version_id": context.asset_version_id,
+                    "provider_external_effect_ids": provider_effect_ids,
+                    "result_asset_version_id": revision.asset_version_id,
+                }
+                for item in knowledge_selection
+            ]
+        planning_violations = [
+            {
+                "dimension": str(item.get("observation") or ""),
+                "evidence_asset_version_ids": list(
+                    item.get("evidence_asset_version_ids") or []
+                ),
+                "issue": dict(item.get("issue") or {}),
+            }
+            for item in content.get("required_actions", [])
+            if str(item.get("observation") or "")
+            in {
+                "canon_consistency",
+                "character_motivation_drift",
+                "relationship_continuity",
+                "timeline_consistency",
+                "foreshadow_status",
+                "promise_payoff_debt",
+                "world_rule_conflict",
+                "power_state_conflict",
+                "arc_progress",
+            }
+        ]
+        constraint_envelope = plan.content.get("constraint_envelope")
+        planning_evidence = (
+            {
+                "constraint_envelope": dict(constraint_envelope),
+                "constraint_violations": planning_violations,
+                "evidence_source": "chapter_quality_aggregate",
+            }
+            if isinstance(constraint_envelope, dict) and constraint_envelope
+            else None
+        )
+        measurement = measure_narrative_runtime(
+            story_state={
+                "accepted_through_chapter": authority_boundary.get(
+                    "accepted_through_chapter",
+                    max(0, int(content["chapter"]) - 1),
+                ),
+                "state_hash": authority_boundary.get(
+                    "story_state_snapshot_version",
+                    effective_context_content(request, context).get("story_state_snapshot_version", ""),
+                ),
+            },
+            context_bundle=effective_context_content(request, context),
+            planning_candidate=planning_evidence,
+            quality_decision=content,
+            mkaos_usage_records=mkaos_usage,
+            provider_usage_records=provider_usage,
+        )
+        measurement_output = ChapterAuxiliaryOutput(
+            asset_type="narrative_runtime_measurement",
+            output_key="chapter.quality.narrative_runtime_measurement",
+            role="proof_observation",
+            content={
+                **measurement,
+                "project_id": request.project_id,
+                "chapter": int(content["chapter"]),
+                "source_quality_operation_id": request.operation_id,
+                "context_bundle_asset_version_id": context.asset_version_id,
+            },
+            reference_asset_version_ids=tuple(
+                sorted(
+                    {
+                        revision.asset_version_id,
+                        review.asset_version_id,
+                        canon.asset_version_id,
+                        context.asset_version_id,
+                        plan.asset_version_id,
+                        *(
+                            item.asset_version_id
+                            for item in request.inputs
+                            if item.asset_type in {"model_call_log", "cost_ledger"}
+                        ),
+                        *(item.asset_version_id for item in groups),
+                    }
+                )
+            ),
+            evidence={
+                "proof_status": measurement["proof_status"],
+                "context_digest": effective_context_content(request, context).get("actual_context_digest", ""),
+                "production_verified": False,
+            },
+        )
+        accepted_through_chapter = int(
+            authority_boundary.get(
+                "accepted_through_chapter",
+                max(0, int(content["chapter"]) - 1),
+            )
+        )
+        multiscale_quality = build_multiscale_quality_report(
+            work_requirements=request.work_requirements_enabled,
+            project_id=request.project_id,
+            book_id=str(
+                request.command.get("book_id")
+                or plan.content.get("book_id")
+                or effective_context_content(request, context).get("book_id")
+                or ""
+            ),
+            context_bundle=effective_context_content(request, context),
+            accepted_through_chapter=accepted_through_chapter,
+            source_asset_version_ids=(
+                context.asset_version_id,
+                plan.asset_version_id,
+                *(item.asset_version_id for item in groups),
+            ),
+        )
+        multiscale_output = ChapterAuxiliaryOutput(
+            asset_type="multiscale_narrative_quality_report",
+            output_key="chapter.quality.multiscale_narrative_quality",
+            role="longitudinal_quality_projection",
+            content={
+                **multiscale_quality,
+                "source_quality_operation_id": request.operation_id,
+            },
+            reference_asset_version_ids=tuple(
+                sorted(
+                    {
+                        context.asset_version_id,
+                        plan.asset_version_id,
+                        *(item.asset_version_id for item in groups),
+                    }
+                )
+            ),
+            evidence={
+                "accepted_history_only": True,
+                "observation_status": multiscale_quality["observation_status"],
+                "production_verified": False,
+            },
+        )
+        return ChapterHandlerOutput(
+            asset_type=primary.asset_type,
+            output_key=primary.output_key,
+            role=primary.role,
+            content=primary.content,
+            qualification_policy=primary.qualification_policy,
+            auxiliary_outputs=(
+                *evidence_outputs,
+                *action_outputs,
+                measurement_output,
+                multiscale_output,
+            ),
+        )
+
+
+def _provider_usage_records(
+    inputs: tuple[ChapterInputAsset, ...],
+) -> list[dict[str, Any]] | None:
+    costs = {
+        (
+            str(item.content.get("operation_id") or ""),
+            str(item.content.get("attempt_id") or ""),
+            str(item.content.get("stage") or ""),
+        ): item.content
+        for item in inputs
+        if item.asset_type == "cost_ledger"
+    }
+    model_calls = [item for item in inputs if item.asset_type == "model_call_log"]
+    if not model_calls:
+        return None
+    records: list[dict[str, Any]] = []
+    for item in model_calls:
+        content = dict(item.content)
+        evidence = dict(content.get("provider_evidence") or {})
+        usage = dict(evidence.get("usage") or {})
+        cost = dict(evidence.get("cost") or {})
+        key = (
+            str(content.get("operation_id") or ""),
+            str(content.get("attempt_id") or ""),
+            str(content.get("stage") or ""),
+        )
+        ledger = dict(costs.get(key) or {})
+        total_tokens = (
+            ledger.get("total_tokens")
+            if "total_tokens" in ledger
+            else usage.get("total_tokens")
+        )
+        amount = ledger.get("amount") if "amount" in ledger else cost.get("amount")
+        records.append(
+            {
+                "model_call_log_asset_version_id": item.asset_version_id,
+                "operation_id": key[0],
+                "attempt_id": key[1],
+                "stage": key[2],
+                "context_bundle_asset_version_id": str(content.get("context_bundle_asset_version_id") or ""),
+                "external_effect_id": str(
+                    content.get("external_effect_id")
+                    or ledger.get("external_effect_id")
+                    or ""
+                ),
+                "provider_id": str(
+                    evidence.get("provider_id") or ledger.get("provider_id") or ""
+                ),
+                "model_id": str(
+                    evidence.get("model_id") or ledger.get("model_id") or ""
+                ),
+                "trace_id": str(
+                    content.get("trace_id") or ledger.get("trace_id") or ""
+                ),
+                "total_tokens": (
+                    int(total_tokens) if total_tokens is not None else None
+                ),
+                "cost": str(amount) if amount is not None else None,
+                "currency": str(ledger.get("currency") or cost.get("currency") or ""),
+                "usage_receipt_ref": str(
+                    (evidence.get("production_execution") or {})
+                    .get("execution_result", {})
+                    .get("usage_receipt_ref")
+                    or ""
+                ),
+                "cost_receipt_ref": str(
+                    (evidence.get("production_execution") or {})
+                    .get("execution_result", {})
+                    .get("cost_receipt_ref")
+                    or ""
+                ),
+                "accepted_candidate": bool(content.get("accepted_candidate", True)),
+                "retry_count": 0 if content.get("accepted_candidate", True) else 1,
+            }
+        )
+    return records
+
+
+@dataclass(frozen=True, slots=True)
+class _PublishGateHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        revision = request.require_input("best_draft_candidate")
+        review = request.require_input("re_review_report")
+        canon = request.require_input("canon_patch")
+        quality = request.require_input("quality_score_report")
+        context = request.require_input("context_bundle")
+        if quality.content.get("internal_admission") is not None:
+            from novel_forge.modules.chapter_quality_authority.creative_validation import verify_internal_quality
+            verify_internal_quality(request.database_url, quality.content["internal_admission"], project_id=request.project_id)
+        return _output(
+            ChapterNode.PUBLISH_GATE,
+            build_publish_gate(
+                revision=revision.content,
+                revision_asset_version_id=revision.asset_version_id,
+                quality=quality.content,
+                quality_asset_version_id=quality.asset_version_id,
+                review=review.content,
+                review_asset_version_id=review.asset_version_id,
+                canon=canon.content,
+                canon_asset_version_id=canon.asset_version_id,
+                context_bundle=effective_context_content(request, context),
+                context_bundle_version_id=context.asset_version_id,
+                project_id=request.project_id,
+                work_admission=request.effective_definition_version == "3.10.0",
+            ),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _ExportHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        revision = request.require_input("best_draft_candidate")
+        publish_gate = request.require_input("publish_gate_report")
+        restored = None
+        if request.definition_version == "3.10.0" and publish_gate.content.get("gate") == "PUBLISH_GATE_BLOCKED":
+            from .publication_recovery import has_publication_successor, revalidate_frozen_publication
+            if has_publication_successor(request):
+                restored = revalidate_frozen_publication(request, revision=revision, publish_gate=publish_gate)
+                publish_gate = restored
+        output = _output(
+            ChapterNode.EXPORT,
+            build_export_package(
+                revision=revision.content,
+                revision_asset_version_id=revision.asset_version_id,
+                quality=publish_gate.content,
+                quality_asset_version_id=publish_gate.asset_version_id,
+            ),
+        )
+        if restored is not None:
+            output = replace(output, auxiliary_outputs=(ChapterAuxiliaryOutput(
+                "publish_gate_report", "chapter.export.revalidated_publish_gate", "completion_evidence", restored.content,
+                reference_asset_version_ids=(request.require_input("publish_gate_report").asset_version_id, revision.asset_version_id)),))
+        return output
+
+
+@dataclass(frozen=True, slots=True)
+class _FinalReleaseGateHandler:
+    def execute(self, request: ChapterHandlerRequest) -> ChapterHandlerOutput:
+        export = request.require_input("release_package")
+        publish_gate = request.require_input("publish_gate_report")
+        quality = request.require_input("quality_score_report")
+        review = request.require_input("re_review_report")
+        canon = request.require_input("canon_patch")
+        context = request.require_input("context_bundle")
+        return _output(
+            ChapterNode.FINAL_RELEASE_GATE,
+            build_final_release_gate(
+                project_id=request.project_id,
+                work_admission=request.effective_definition_version == "3.10.0",
+                export_package=export.content,
+                export_asset_version_id=export.asset_version_id,
+                export_blobs=export.blobs,
+                publish_gate=publish_gate.content,
+                publish_gate_asset_version_id=publish_gate.asset_version_id,
+                quality=quality.content,
+                quality_asset_version_id=quality.asset_version_id,
+                review=review.content,
+                review_asset_version_id=review.asset_version_id,
+                canon=canon.content,
+                canon_asset_version_id=canon.asset_version_id,
+                context_bundle_version_id=context.asset_version_id,
+            ),
+        )
+
+
+def _content_hash(value: dict[str, Any]) -> str:
+    return (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+            ).encode()
+        ).hexdigest()
+    )
+
+
+def _external_effect_id(evidence: dict[str, Any]) -> str:
+    pending: list[Any] = [evidence]
+    while pending:
+        current = pending.pop()
+        if isinstance(current, dict):
+            identity = str(current.get("external_effect_id") or "")
+            if identity:
+                return identity
+            pending.extend(current.values())
+        elif isinstance(current, list):
+            pending.extend(current)
+    return ""
+
+
+def _provider_latency_ms(evidence: dict[str, Any]) -> int:
+    pending: list[Any] = [evidence]
+    while pending:
+        current = pending.pop()
+        if isinstance(current, dict):
+            for key in ("latency_ms", "duration_ms", "elapsed_ms"):
+                if current.get(key) is not None:
+                    return max(0, int(current[key]))
+            pending.extend(current.values())
+        elif isinstance(current, list):
+            pending.extend(current)
+    return 0
+
+
+def _observed_integer(value):
+    return value if type(value) is int and value >= 0 else None
+
+
+def _observed_amount(value):
+    try:
+        amount = Decimal(str(value))
+    except (ValueError, InvalidOperation):
+        return None
+    return format(amount, "f") if amount.is_finite() and amount >= 0 else None
+
+
+def _provider_usage(evidence: dict[str, Any]) -> dict[str, Any]:
+    if not evidence:
+        return {"input_tokens": 0, "output_tokens": 0, "cost_amount": "0",
+                "currency": "NOT_APPLICABLE", "latency_ms": 0}
+    usage = dict(evidence.get("usage") or {})
+    cost = dict(evidence.get("cost") or {})
+    if usage.get("measurement") in {"UNKNOWN", "INVALID"} or usage.get("availability") == "UNAVAILABLE":
+        usage = {}
+    if (cost.get("measurement") in {"UNKNOWN", "INVALID"} or cost.get("availability") == "UNAVAILABLE"
+            or cost.get("currency") == "UNKNOWN"):
+        cost = {"currency": cost.get("currency", "UNKNOWN")}
+    latency, pending = None, [evidence]
+    while pending and latency is None:
+        current = pending.pop()
+        if isinstance(current, dict):
+            for key in ("latency_ms", "duration_ms", "elapsed_ms"):
+                latency = _observed_integer(current.get(key))
+                if latency is not None:
+                    break
+            pending.extend(current.values())
+        elif isinstance(current, list):
+            pending.extend(current)
+    return {"input_tokens": _observed_integer(usage.get("input_tokens")),
+        "output_tokens": _observed_integer(usage.get("output_tokens")),
+        "cost_amount": _observed_amount(cost.get("amount")),
+        "currency": str(cost.get("currency") or "UNKNOWN"), "latency_ms": latency}
+
+
+def _campaign_usage(rounds: tuple[dict[str, Any], ...]) -> dict[str, Any]:
+    def total(field):
+        values = [_observed_integer(item["usage"].get(field)) for item in rounds]
+        return sum(values) if all(value is not None for value in values) else None
+    by_currency = {}
+    for item in rounds:
+        usage = item["usage"]
+        currency = str(usage.get("currency") or "UNKNOWN")
+        if currency == "NOT_APPLICABLE":
+            continue
+        entry = by_currency.setdefault(currency, {"known_amount": None, "unknown_measurements": 0})
+        amount = _observed_amount(usage.get("cost_amount"))
+        if amount is None:
+            entry["unknown_measurements"] += 1
+        else:
+            entry["known_amount"] = format(Decimal(entry["known_amount"] or "0") + Decimal(amount), "f")
+    complete = len(by_currency) == 1 and all(not value["unknown_measurements"] for value in by_currency.values())
+    input_tokens, output_tokens = total("input_tokens"), total("output_tokens")
+    return {"provider_calls": sum(bool(item.get("external_effect_id") or item.get("provider_evidence")) for item in rounds),
+        "input_tokens": input_tokens, "output_tokens": output_tokens,
+        "model_tokens": input_tokens + output_tokens if input_tokens is not None and output_tokens is not None else None,
+        "cost_amount": next(iter(by_currency.values()))["known_amount"] if complete else "0" if not by_currency else None,
+        "currency": next(iter(by_currency)) if len(by_currency) == 1 else "MIXED" if by_currency else "NOT_APPLICABLE",
+        "cost_by_currency": by_currency, "latency_ms": total("latency_ms"),
+        "candidate_count": sum(len(item["documents"]) for item in rounds)}
+
+
+def _legacy_campaign_usage(rounds):
+    # COMPATIBILITY: This projection is used only to verify a pre-v2 immutable terminal fingerprint.
+    input_tokens = sum(int(item["usage"].get("input_tokens") or 0) for item in rounds)
+    output_tokens = sum(int(item["usage"].get("output_tokens") or 0) for item in rounds)
+    return {"provider_calls": sum(bool(item.get("external_effect_id") or item.get("provider_evidence")) for item in rounds),
+        "input_tokens": input_tokens, "output_tokens": output_tokens, "model_tokens": input_tokens + output_tokens,
+        "cost_amount": format(sum((Decimal(str(item["usage"].get("cost_amount") or "0")) for item in rounds), Decimal("0")), "f"),
+        "currency": next(iter({str(item["usage"].get("currency") or "USD") for item in rounds}), "USD"),
+        "latency_ms": sum(int(item["usage"].get("latency_ms") or 0) for item in rounds),
+        "candidate_count": sum(len(item["documents"]) for item in rounds)}
+
+
+def _campaign_semantic_status(
+    rounds: tuple[dict[str, Any], ...],
+    additional: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    statuses = [dict(item["semantic_status"]) for item in rounds]
+    if additional is not None:
+        statuses.append(dict(additional))
+    base = dict(statuses[0]) if statuses else {}
+    base.update(
+        {
+            "campaign_round_count": len(statuses),
+            "agentic_expansion_used": len(statuses) > 1,
+            "candidate_document_count": sum(
+                int(item.get("candidate_document_count") or 0) for item in statuses
+            ),
+            "semantic_candidate_expansion": False,
+        }
+    )
+    return base
+
+
+def build_chapter_handler_registry(
+    provider: ChapterModelPort,
+) -> ChapterHandlerRegistry:
+    routes = getattr(getattr(provider, "adapter", None), "routes", {})
+    semantic_provider_bound = isinstance(routes, dict) and "retrieval" in routes
+    expansion_provider_bound = (
+        bool(getattr(provider, "external_effect_backed", False))
+        and isinstance(routes, dict)
+        and "retrieval_query_expansion" in routes
+    )
+    registry = ChapterHandlerRegistry(
+        model_effects_required=bool(getattr(provider, "external_effect_backed", False)),
+        semantic_retrieval_available=semantic_provider_bound,
+        agentic_retrieval_available=expansion_provider_bound,
+        coordinated_contract=bool(getattr(provider, "external_effect_backed", False)),
+    )
+    registry.register(ChapterNode.PLAN, _PlanHandler())
+    registry.register(ChapterNode.EXECUTION_INTENT, _ExecutionIntentHandler())
+    registry.register(ChapterNode.MEMO, _MemoHandler(provider))
+    registry.register(
+        ChapterNode.RETRIEVAL,
+        _RetrievalHandler(
+            provider,
+            semantic_provider_bound,
+            expansion_provider_bound,
+        ),
+    )
+    registry.register(ChapterNode.CONTEXT, _ContextHandler(provider))
+    registry.register(ChapterNode.DRAFT, _DraftHandler(provider))
+    registry.register(ChapterNode.REVIEW, _ReviewHandler(provider))
+    registry.register(ChapterNode.REVISION, _RevisionHandler(provider))
+    registry.register(ChapterNode.REREVIEW, _ReReviewHandler(provider))
+    registry.register(ChapterNode.BEST_CANDIDATE, _BestCandidateHandler())
+    registry.register(ChapterNode.CANON_EXTRACTION, _CanonExtractionHandler(provider))
+    registry.register(ChapterNode.CANON_PROPOSAL, _CanonProposalHandler(provider))
+    registry.register(ChapterNode.CANON, _CanonHandler())
+    registry.register(
+        ChapterNode.QUALITY_STRUCTURAL, _QualityGroupHandler("structural", provider)
+    )
+    registry.register(
+        ChapterNode.QUALITY_COMMERCIAL, _QualityGroupHandler("commercial", provider)
+    )
+    registry.register(
+        ChapterNode.QUALITY_SOURCE_ORIGINALITY,
+        _QualityGroupHandler("source_originality", provider),
+    )
+    registry.register(
+        ChapterNode.QUALITY_LONGFORM, _QualityGroupHandler("longform", provider)
+    )
+    registry.register(
+        ChapterNode.QUALITY_PLATFORM, _QualityGroupHandler("platform", provider)
+    )
+    registry.register(ChapterNode.QUALITY, _QualityHandler())
+    registry.register(ChapterNode.PUBLISH_GATE, _PublishGateHandler())
+    registry.register(ChapterNode.EXPORT, _ExportHandler())
+    registry.register(ChapterNode.FINAL_RELEASE_GATE, _FinalReleaseGateHandler())
+    return registry
+
+
+def _output(node: ChapterNode, content: dict[str, Any]) -> ChapterHandlerOutput:
+    return ChapterHandlerOutput(
+        asset_type=node.asset_type,
+        output_key=node.output_key,
+        role="primary",
+        content=content,
+    )
+
+
+def _blocking_issue_codes(review: dict[str, Any]) -> tuple[str, ...]:
+    from novel_forge.modules.review.diagnostics import blocking_diagnosis_codes
+    return blocking_diagnosis_codes(review)
+
+
+def _model_output(
+    node: ChapterNode,
+    content: dict[str, Any],
+    *,
+    request: ChapterHandlerRequest,
+    generated: ModelProviderResult,
+) -> ChapterHandlerOutput:
+    from dataclasses import replace
+    known = None
+    if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.2", "3.10.3"} and request.database_url and node in {ChapterNode.MEMO, ChapterNode.DRAFT, ChapterNode.REVIEW, ChapterNode.CANON_EXTRACTION}:
+        from .receipt_recovery import known_receipt_proof
+        known = known_receipt_proof(request)
+    if known is not None:
+        content = {**content, "known_receipt_revalidation": known}
+    reused = (generated.execution_evidence or {}).get('completed_attempt_reuse') or (generated.execution_evidence or {}).get('completed_sibling_reuse')
+    if reused:
+        content = {**content, 'retained_generation_revalidation': reused}
+    if getattr(request, "capacity_context_derivation", None):
+        derivation = request.capacity_context_derivation
+        content = {**content, "context_derivation": {"contract_version": derivation["contract_version"],
+            "source_context_asset_version_id": derivation["source"]["asset_version_id"],
+            "source_context_content_hash": derivation["source"]["content_hash"],
+            "derived_content_hash": derivation["content_hash"], "policy_hash": derivation["policy_hash"]}}
+    primary = _output(node, content)
+    commit = None if known or reused else _execution_commit_auxiliary(node, request, generated)
+    if commit is not None:
+        primary = replace(primary, auxiliary_outputs=(commit,))
+    if request.effective_definition_version == "3.10.0" and node in {ChapterNode.REVISION, ChapterNode.REREVIEW}:
+        primary = _revision_decision_output(node, primary, {
+            "contract_version": "revision-execution-decision.v1",
+            "decision": "RETAINED_RESULT_DERIVATION" if reused else "PROVIDER_REVISION" if node is ChapterNode.REVISION else "PROVIDER_REREVIEW",
+            "operation_id": request.operation_id,
+            "provider_evidence": _provider_evidence(generated),
+        })
+    return primary
+
+
+def _revision_decision_output(node, output, evidence):
+    from dataclasses import replace
+    return replace(output, auxiliary_outputs=(*output.auxiliary_outputs, ChapterAuxiliaryOutput(
+        asset_type="revision_execution_decision", output_key=node.output_key + ".execution_decision",
+        role="completion_evidence", content=evidence)))
+
+
+def _execution_commit_auxiliary(
+    node: ChapterNode,
+    request: ChapterHandlerRequest,
+    generated: ModelProviderResult,
+) -> ChapterAuxiliaryOutput | None:
+    execution = generated.execution_evidence
+    if not execution:
+        return None
+    if execution.get('completed_attempt_reuse') or execution.get('completed_sibling_reuse'):
+        return None
+    validation_ref = str(execution.get("validation_manifest_ref") or "")
+    if not validation_ref:
+        raise KernelError(
+            "EXECUTION_COMMIT_MANIFEST_INVALID",
+            "gateway output has no durable ValidationManifest evidence reference",
+        )
+    committed_ref = f"authority-output:{request.operation_id}:{node.output_key}:v1"
+    manifest = CommitManifest(
+        manifest_id=f"commit-manifest:{request.operation_id}:{node.value}",
+        operation_id=request.operation_id,
+        attempt_id=request.attempt_id,
+        fencing_token=request.fencing_token,
+        validation_manifest_ref=validation_ref,
+        committed_asset_version_refs=(committed_ref,),
+        authority_commit_ref=(
+            f"authority-operation:{request.operation_id}:output:{node.output_key}"
+        ),
+        projection_materialization_refs=(),
+        rejected_output_refs=(),
+        rollback_ref=f"append-only:supersede:{committed_ref}",
+        decision="COMMITTED",
+    )
+    route = execution.get("route_snapshot")
+    return ChapterAuxiliaryOutput(
+        asset_type="execution_commit_manifest",
+        output_key=f"{node.output_key}.execution_commit_manifest",
+        role="execution_commit_evidence",
+        content=manifest.to_dict(),
+        qualification_policy="production-execution-commit-v1",
+        evidence={
+            "route_snapshot_id": (
+                str(route.get("route_snapshot_id") or "")
+                if isinstance(route, dict)
+                else ""
+            ),
+            "external_effect_bound": True,
+        },
+    )
+
+
+def _provider_evidence(result: ModelProviderResult) -> dict[str, Any]:
+    evidence = result.to_evidence()
+    evidence.pop("result", None)
+    return evidence
+
+
+def _canon_provider_extraction(result: ModelProviderResult) -> dict[str, Any]:
+    identity = {
+        "provider_id": result.provider_id,
+        "model_id": result.model_id,
+        "prompt_version": result.prompt_version,
+    }
+    return {
+        "provider_output_schema_ref": str((result.capability_evidence or {}).get("output_schema_ref") or ""),
+        **{key: value for key, value in result.output.items() if not isinstance(value, list)},
+        **{field: [{**dict(item), **identity} for item in values]
+        for field, values in result.output.items()
+        if isinstance(values, list)},
+    }
+
+
+def _normalize_rereview_with_quality_namespace(**arguments):
+    content = normalize_rereview_result(**arguments)
+    namespace = arguments["result"].get("quality_range_reassessment")
+    if namespace is not None:
+        content["quality_range_reassessment"] = namespace
+    return content
+
+
+def _retained_result_proof(request):
+    if request.command.get("chapter_sampling"):
+        return {}
+    return ((request.command.get("preparation_report") or {}).get("retained_graph_continuation") or {}).get("retained_result") or {}
+
+
+def _result_evidence_fields(proof):
+    return {key: proof[key] for key in ("contract_version", "source_operation_id", "source_effect_id", "source_dispatch_id", "source_output_hash", "source_request_hash", "provider_invoked", "strict_certification_eligible")}
+
+
+def _canon_recovery_feedback(request):
+    if request.effective_definition_version != "3.10.0" or not request.database_url:
+        return {}
+    proof = _retained_result_proof(request)
+    contract = proof.get("contract_version")
+    if contract in {"chapter-canon-output-repair.v1", "chapter-canon-output-repair.v2"}:
+        from .canon_output_recovery import repair_feedback
+        return {"canon_repair_feedback": repair_feedback(request)}
+    if contract == "chapter-canon-support-reextraction.v1":
+        from .canon_support_coverage import reextraction_feedback
+        return {"canon_repair_feedback": reextraction_feedback(request)}
+    if contract in {"chapter-current-semantic-repair.v1", "chapter-current-semantic-repair.v2"}:
+        from .current_semantic_recovery import repair_feedback
+        return {"canon_repair_feedback": repair_feedback(request)}
+    if contract in {"chapter-current-quote-repair.v1", "chapter-canon-reference-contract-repair.v1"}:
+        from .current_quote_recovery import repair_feedback
+        return {"canon_repair_feedback": repair_feedback(request, stage="canon_extraction")}
+    return {}
+
+
+def _invoke_with_known_receipt(provider, request, *, stage, payload):
+    retained = None
+    if request.effective_definition_version in {"3.10.0", "3.10.1", "3.10.3"} and request.database_url:
+        from .receipt_recovery import consume_known_draft_receipt
+        retained = consume_known_draft_receipt(request)
+    if stage == "draft" and request.effective_definition_version in {"3.10.1", "3.10.3"} and retained is None:
+        raise KernelError("DRAFT_RECOVERY_JOURNAL_REQUIRED", "A receipt successor cannot dispatch another model call")
+    return retained if retained is not None else provider.invoke(request, stage=stage, payload=payload)
+
+
+def _book_identity(request, plan):
+    if request.effective_definition_version == "3.10.0":
+        from .chapter_plan_views import resolve_chapter_plan_book_id
+        return resolve_chapter_plan_book_id(project_id=request.project_id, plan=plan,
+            host_book_id=str(request.command.get("book_id") or ""))
+    return str(request.command.get("book_id") or plan.get("book_id") or f"book:{request.project_id}")

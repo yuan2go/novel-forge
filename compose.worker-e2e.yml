@@ -1,0 +1,13 @@
+services:
+  postgresql:
+    ports:
+      - target: 5432
+        host_ip: 127.0.0.1
+        published: "0"
+        protocol: tcp
+  object-store:
+    ports:
+      - target: 9000
+        host_ip: 127.0.0.1
+        published: "0"
+        protocol: tcp

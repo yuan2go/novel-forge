@@ -1,0 +1,8 @@
+services:
+  postgresql:
+    ports:
+      - "${NOVEL_FORGE_POSTGRES_PORT:-5432}:5432"
+  object-store:
+    ports:
+      - "${NOVEL_FORGE_MINIO_PORT:-9000}:9000"
+      - "${NOVEL_FORGE_MINIO_CONSOLE_PORT:-9001}:9001"

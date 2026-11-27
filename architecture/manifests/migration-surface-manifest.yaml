@@ -1,0 +1,36 @@
+{
+  "schema_version": "novel-forge.migration-surface.v1",
+  "classification": "MIGRATION_ONLY",
+  "runtime_registration": "FORBIDDEN",
+  "production_import": "FORBIDDEN",
+  "entrypoint": "novel-forge-migrate",
+  "retained_paths": [
+    "src/novel_forge/cli/migration.py",
+    "src/novel_forge/modules/legacy_migration/__init__.py",
+    "src/novel_forge/modules/legacy_migration/application.py",
+    "src/novel_forge/modules/legacy_migration/approval.py",
+    "src/novel_forge/modules/legacy_migration/codecs.py",
+    "src/novel_forge/modules/legacy_migration/definitions.py",
+    "src/novel_forge/modules/legacy_migration/domain_adapters.py",
+    "src/novel_forge/modules/legacy_migration/references.py",
+    "src/novel_forge/modules/legacy_migration/scanner.py",
+    "src/novel_forge/modules/legacy_migration/service.py",
+    "src/novel_forge/modules/legacy_migration/state_machine.py",
+    "src/novel_forge/modules/legacy_migration/validation.py"
+  ],
+  "retired_paths": [
+    "compose.legacy.yml",
+    "src/novel_forge/cli/legacy.py",
+    "src/novel_forge/api/legacy_app.py",
+    "src/novel_forge/workers/legacy_tasks.py",
+    "src/novel_forge/workers/celery_app.py",
+    "src/novel_forge/storage/local.py",
+    "src/novel_forge/modules/production_execution/legacy.py",
+    "src/novel_forge/modules/production_kernel/__init__.py",
+    "src/novel_forge/modules/agent_scheduler/__init__.py",
+    "src/novel_forge/modules/tool_gateway/__init__.py",
+    "src/novel_forge/workflows/__init__.py",
+    "src/novel_forge/modules/source_intake/__init__.py",
+    "src/novel_forge/modules/mkaos/__init__.py"
+  ]
+}

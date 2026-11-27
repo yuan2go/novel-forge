@@ -1,0 +1,239 @@
+{
+  "contract_version": "creative-input-path-map.v1",
+  "entries": [
+    {
+      "previous_path": "config/production/author-guided-twelve/brief.json",
+      "archive_path": "config/archive/creative-inputs-legacy/author-guided-twelve/brief.json",
+      "sha256": "b386bce261cbade110ac1992307111f2dde78f43452cfe12abd546745bf9420f",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/author-guided-twelve/creation.json",
+      "archive_path": "config/archive/creative-inputs-legacy/author-guided-twelve/creation.json",
+      "sha256": "c8630ff8d393686f9466a1f13a3bbde03cca8ecd2d26495fb712c8de6cc8be4f",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/author-guided-twelve/deny-all.json",
+      "archive_path": "config/archive/creative-inputs-legacy/author-guided-twelve/deny-all.json",
+      "sha256": "1417223e6b2697b3c4e527b322bf7e7591fb022700667165781075a442289f3e",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/author-guided-twelve/experiment.json",
+      "archive_path": "config/archive/creative-inputs-legacy/author-guided-twelve/experiment.json",
+      "sha256": "c1a51d9fde642a1ea8b1a2860985adb0340eaf0cc731099035713458e0558871",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/author-guided-twelve/formation.json",
+      "archive_path": "config/archive/creative-inputs-legacy/author-guided-twelve/formation.json",
+      "sha256": "dca1e6ecd9dd6ec16a42f881882777cbb4dc270d3408d233aff711e5f201e5b4",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/chinese-pilot-brief.json",
+      "archive_path": "config/archive/creative-inputs-legacy/chinese-pilot-brief.json",
+      "sha256": "1cf9f472ebe40cc6857527dacbbc92b8675edb9d9a2c8a962203d41916734630",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/chinese-pilot-creation.json",
+      "archive_path": "config/archive/creative-inputs-legacy/chinese-pilot-creation.json",
+      "sha256": "66c1c84d862f731cff5fce6d4ea71de72b402832b6aea5eec5fedcb9b8b87a2e",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/chinese-pilot-formation.json",
+      "archive_path": "config/archive/creative-inputs-legacy/chinese-pilot-formation.json",
+      "sha256": "2737e9904afff266d891bc70f185cc950a7c0c219ec4ae582fd3b25fb9b5d72a",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/first-novel-creative-execution/brief.json",
+      "archive_path": "config/archive/creative-inputs-legacy/first-novel-creative-execution/brief.json",
+      "sha256": "ad3559a8dbe649db1c47f5c400a39e20246f9b2ec831a2d1070f7c5d91804c33",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/first-novel-creative-execution/creation.json",
+      "archive_path": "config/archive/creative-inputs-legacy/first-novel-creative-execution/creation.json",
+      "sha256": "f78235a1fa98ee089078592d4c81d3304f8cbdecf09b72fa1ddb71e989bf7a6c",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/first-novel-creative-execution/deny-all.json",
+      "archive_path": "config/archive/creative-inputs-legacy/first-novel-creative-execution/deny-all.json",
+      "sha256": "c172b1c1db8617aa5cb4480c827313027b513cee603e2c930acc4d56170ed658",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/first-novel-creative-execution/experiment.json",
+      "archive_path": "config/archive/creative-inputs-legacy/first-novel-creative-execution/experiment.json",
+      "sha256": "1aba142d442f56a1e53659449dd5cf6535e9abeb6347576365ae9f78b157d35f",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/first-novel-creative-execution/formation.json",
+      "archive_path": "config/archive/creative-inputs-legacy/first-novel-creative-execution/formation.json",
+      "sha256": "dca1e6ecd9dd6ec16a42f881882777cbb4dc270d3408d233aff711e5f201e5b4",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/first-novel-pilot/brief.json",
+      "archive_path": "config/archive/creative-inputs-legacy/first-novel-pilot/brief.json",
+      "sha256": "e01988ff8c197404623babfe11245169488f8fd99bbb633c2b776d4901f2f4bd",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/first-novel-pilot/creation.json",
+      "archive_path": "config/archive/creative-inputs-legacy/first-novel-pilot/creation.json",
+      "sha256": "f09249f2908e009ccc660fcc67330699020e66442e8ee6366af96a991258a950",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/first-novel-pilot/deny-all.json",
+      "archive_path": "config/archive/creative-inputs-legacy/first-novel-pilot/deny-all.json",
+      "sha256": "924ca3b1d67d49b31d893b9432dc0f3a1007febe685aadca51c4df5dd14993fe",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/first-novel-pilot/formation.json",
+      "archive_path": "config/archive/creative-inputs-legacy/first-novel-pilot/formation.json",
+      "sha256": "46175142683eab67dc45cbe9c75185655fc738c4276a2c8acab9e86da6cf6741",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/knowledge-closure/brief.json",
+      "archive_path": "config/archive/creative-inputs-legacy/knowledge-closure/brief.json",
+      "sha256": "baefe568cde1b50706854c771f84199eceb21479ab417fd40ed0a98f1c50157f",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/knowledge-closure/creation.json",
+      "archive_path": "config/archive/creative-inputs-legacy/knowledge-closure/creation.json",
+      "sha256": "46c2d9e0e7fe68d6b23181d73a19b3ae216b906fce438d68affbb9fa19894ac7",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/knowledge-closure/deny-all.json",
+      "archive_path": "config/archive/creative-inputs-legacy/knowledge-closure/deny-all.json",
+      "sha256": "833beaf8dafb61bab17f5a12e835ef8169b8f4363e3aa340ebceec79bf552518",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/knowledge-closure/experiment.json",
+      "archive_path": "config/archive/creative-inputs-legacy/knowledge-closure/experiment.json",
+      "sha256": "844053dfa30b3fb4099ae63ce33e5cb903b30a9c7913582961ad0fd7234636fb",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/knowledge-closure/fiction.jsonl",
+      "archive_path": "config/archive/creative-inputs-legacy/knowledge-closure/fiction.jsonl",
+      "sha256": "1abe12d9ea00f7bffe663f9252e249f6b1b7526f3f0b0a5c15aca7a1f75bc921",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/knowledge-closure/formation.json",
+      "archive_path": "config/archive/creative-inputs-legacy/knowledge-closure/formation.json",
+      "sha256": "f9c42835a11870e4ca9387901fc96c9c0766a602c0a4f5361b2401bd92f47bf0",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/knowledge-closure/professional.jsonl",
+      "archive_path": "config/archive/creative-inputs-legacy/knowledge-closure/professional.jsonl",
+      "sha256": "c0fa4fc7a53623ce7aa9292396a67ca523aa14c8da7166ee588a6f7e941888e1",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/narrative-closure/authorization-amendment-token100k-20260928.json",
+      "archive_path": "config/archive/creative-inputs-legacy/narrative-closure/authorization-amendment-token100k-20260928.json",
+      "sha256": "d96f4776f48f5e12ed87b235f386ac7362477ffb82f4a43a8f0dbf7ddc1b07c6",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/narrative-closure/authorization-approved-p0-20260927.json",
+      "archive_path": "config/archive/creative-inputs-legacy/narrative-closure/authorization-approved-p0-20260927.json",
+      "sha256": "3fe3d4504eda79e57807d7b61cd0887f4c7bdca51a9d38214aa00ec716494893",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/narrative-closure/authorization-completion-continuation-20260928.json",
+      "archive_path": "config/archive/creative-inputs-legacy/narrative-closure/authorization-completion-continuation-20260928.json",
+      "sha256": "8c4a905b156c55ffd7befb5b44af9d5daf441a1b8c2c9c6c777e9881bb4921b8",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/narrative-closure/authorization-deepseek-100cny-20260928.json",
+      "archive_path": "config/archive/creative-inputs-legacy/narrative-closure/authorization-deepseek-100cny-20260928.json",
+      "sha256": "6c74071a4f498b85dabd25da70e7682a1c2cfe3b3d6db31015de8e5d934611fa",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/narrative-closure/authorization-deepseek-docs-20260928.json",
+      "archive_path": "config/archive/creative-inputs-legacy/narrative-closure/authorization-deepseek-docs-20260928.json",
+      "sha256": "b99f7a96bfdcb84be9b41a57798b15f250aaf771956bf98327a64775ea782b5f",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/narrative-closure/authorization-request-p0-20260927.json",
+      "archive_path": "config/archive/creative-inputs-legacy/narrative-closure/authorization-request-p0-20260927.json",
+      "sha256": "e8c5a3fcae552d38eef8ba2a5cbf70040d3a9fc32c60028ebfe2949acc4e604a",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/narrative-closure/authorization-request.json",
+      "archive_path": "config/archive/creative-inputs-legacy/narrative-closure/authorization-request.json",
+      "sha256": "29d46f2e468b5364465f00c37b7d6646e4aeb74eb17c9abd855eb5743feed416",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/narrative-closure/authorization-strict-output-20260928.json",
+      "archive_path": "config/archive/creative-inputs-legacy/narrative-closure/authorization-strict-output-20260928.json",
+      "sha256": "fec4a85e5ee53d9d6cb623f6b2cd75103818a481c7c79f68fd57e4cc779acd04",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/narrative-closure/budget-proposal.json",
+      "archive_path": "config/archive/creative-inputs-legacy/narrative-closure/budget-proposal.json",
+      "sha256": "6bcdcce56144dccea362310f59973c8da22313b34aa15b4500cf3859ba1320b2",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/narrative-closure/diagnostic-foundation-inputs.json",
+      "archive_path": "config/archive/creative-inputs-legacy/narrative-closure/diagnostic-foundation-inputs.json",
+      "sha256": "e462a04dcbbc30baa51aa53dc20ef1a63afc1f3c7299b50d4820645f31e62216",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/narrative-closure/protocol.json",
+      "archive_path": "config/archive/creative-inputs-legacy/narrative-closure/protocol.json",
+      "sha256": "1a4b7f3a48c1cb04e38a91c2ffa13a44c704c9f6165cc189d81ec35e6d9ae54a",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/narrative-closure/samples.json",
+      "archive_path": "config/archive/creative-inputs-legacy/narrative-closure/samples.json",
+      "sha256": "86cd2ccc8093d3d8b38b69345f82947a40262a0354d8f5f4164dd2cc64054c3d",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/short-arc-brief.json",
+      "archive_path": "config/archive/creative-inputs-legacy/short-arc-brief.json",
+      "sha256": "5c7d9cfaf468c78d62373c35027bf588d921dce4601952a958f32d71f505bd74",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/short-arc-creation.json",
+      "archive_path": "config/archive/creative-inputs-legacy/short-arc-creation.json",
+      "sha256": "5d713b524f379055b3c15239cb2bb70d5db1eacb8ed320988989d858b20d94da",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    },
+    {
+      "previous_path": "config/production/short-arc-formation.json",
+      "archive_path": "config/archive/creative-inputs-legacy/short-arc-formation.json",
+      "sha256": "fccd70d7584325a5cf338fa826ef1fbe6d3f616e39910115bcab358e9dde3545",
+      "use": "HISTORICAL_REPLAY_ONLY"
+    }
+  ]
+}

@@ -1,0 +1,642 @@
+from __future__ import annotations
+from copy import deepcopy
+import hashlib
+import json
+from typing import Any, Mapping, Sequence
+from novel_forge.modules.command_kernel.errors import KernelError
+from .prose_citations import INDEXED_CITATION_CONTRACT
+
+PROSE_REVIEW_DEFINITION = "longform.prose_review"
+PROSE_REVIEW_SCHEMA = "longform-prose-review.v1"
+PROSE_DIMENSIONS = (
+    "structure_conflict_repetition",
+    "goals_relationships",
+    "setup_progress_payoff",
+    "voice_expression",
+    "arc_pacing",
+    "motivation_cost",
+)
+
+
+def completion_digest(value: Any) -> str:
+    return (
+        "sha256:"
+        + hashlib.sha256(
+            json.dumps(
+                value,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+                allow_nan=False,
+            ).encode()
+        ).hexdigest()
+    )
+
+
+def text_digest(text: str) -> str:
+    return "sha256:" + hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+CHAPTER_LITERAL_CITATION_CONTRACT = "chapter-literal-prose-citation.v1"
+LITERAL_CITATION_CONTRACTS = frozenset({"literal-prose-citation.v1", CHAPTER_LITERAL_CITATION_CONTRACT})
+
+
+def uses_literal_citations(policy: Mapping[str, Any]) -> bool:
+    return policy.get("citation_locator_contract") in LITERAL_CITATION_CONTRACTS
+
+
+def prose_review_output_schema(*, root_cause: bool = False, literal_citations: bool = False, located_citations: bool = False, chapter_citations: bool = False, indexed_citations: bool = False) -> dict[str, Any]:
+    text = {"type": "string", "minLength": 1}
+
+    def obj(properties: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": properties,
+            "required": list(properties),
+            "additionalProperties": False,
+        }
+
+    citation = obj(
+        {
+            **({"chapter_number": {"type": "integer", "minimum": 1}} if chapter_citations else {}),
+            **({"asset_version_id": text, "text_hash": text} if not chapter_citations or located_citations else {}),
+            **({"start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 1}}
+               if not literal_citations or located_citations else {}),
+            "quote": text,
+        }
+    )
+    if indexed_citations:
+        citation = obj({"citation_id": text, **({
+            "chapter_number": {"type": "integer", "minimum": 1}, "asset_version_id": text, "text_hash": text,
+            "start": {"type": "integer", "minimum": 0}, "end": {"type": "integer", "minimum": 1}, "quote": text,
+        } if located_citations else {})})
+    finding = obj(
+        {
+            "lineage_id": text,
+            "dimension": {"type": "string", "enum": list(PROSE_DIMENSIONS)},
+            "judgment": {
+                "type": "string",
+                "enum": ["ISSUE", "INTENTIONAL", "INSUFFICIENT_EVIDENCE"],
+            },
+            "severity": {
+                "type": "string",
+                "enum": ["BLOCKING", "MAJOR", "MINOR", "NONE"],
+            },
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+            "claim": text,
+            "rationale": text,
+            "evidence": {"type": "array", "items": citation, "minItems": 1},
+        }
+    )
+    if root_cause:
+        from novel_forge.modules.review.repair_scope import repair_schema
+        finding["properties"]["repair"] = repair_schema()
+        finding["required"].append("repair")
+    issue = deepcopy(finding)
+    issue["properties"]["judgment"]["enum"] = ["ISSUE"]
+    issue["properties"]["severity"]["enum"] = ["BLOCKING", "MAJOR", "MINOR"]
+    observation = deepcopy(finding)
+    observation["properties"]["judgment"]["enum"] = [
+        "INTENTIONAL",
+        "INSUFFICIENT_EVIDENCE",
+    ]
+    observation["properties"]["severity"]["enum"] = ["NONE"]
+    finding = {"anyOf": [issue, observation]}
+    return obj(
+        {
+            "schema_version": {"type": "string", "enum": ["longform-prose-review.v5" if indexed_citations else "longform-prose-review.v4" if chapter_citations else "longform-prose-review.v3" if literal_citations else "longform-prose-review.v2" if root_cause else PROSE_REVIEW_SCHEMA]},
+            "manifest_digest": text,
+            "window_id": text,
+            "reviewed_dimensions": {
+                "type": "array",
+                "items": {"type": "string", "enum": list(PROSE_DIMENSIONS)},
+                "uniqueItems": True,
+                "minItems": len(PROSE_DIMENSIONS),
+                "maxItems": len(PROSE_DIMENSIONS),
+            },
+            "findings": {"type": "array", "items": finding},
+        }
+    )
+
+
+def prose_review_invoke_payload(content: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "manifest_digest": content["manifest_digest"],
+        "window_id": content["window"]["window_id"],
+        **{"prose_" + key: content["policy"][key] for key in ("diagnosis_contract", "citation_locator_contract")
+           if content["policy"].get(key)},
+    }
+
+
+def normalize_prose_review_output(raw: Mapping[str, Any], *, located_citations: bool = False) -> dict[str, Any]:
+    result = deepcopy(dict(raw))
+    from novel_forge.modules.chapter_authority.provider_output_contracts import (
+        validate_chapter_provider_output_against_schema,
+    )
+
+    validate_chapter_provider_output_against_schema(
+        "longform_prose_review",
+        {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            **prose_review_output_schema(root_cause=result.get("schema_version") in {"longform-prose-review.v2", "longform-prose-review.v3", "longform-prose-review.v4", "longform-prose-review.v5"},
+                literal_citations=result.get("schema_version") in {"longform-prose-review.v3", "longform-prose-review.v4"},
+                located_citations=located_citations, chapter_citations=result.get("schema_version") == "longform-prose-review.v4",
+                indexed_citations=result.get("schema_version") == "longform-prose-review.v5"),
+        },
+        result,
+    )
+    for finding in result["findings"]:
+        if "repair" in finding:
+            from novel_forge.modules.review.repair_scope import validate_repair
+            validate_repair(finding["repair"])
+        if (finding["judgment"] == "ISSUE") != (finding["severity"] != "NONE"):
+            raise KernelError(
+                "LONGFORM_PROSE_JUDGMENT_INVALID",
+                "only an issue can carry issue severity",
+            )
+    return result
+
+
+def freeze_manifest(
+    *,
+    project_id: str,
+    workspace_id: str,
+    book_run_id: str,
+    sources: Sequence[Mapping[str, Any]],
+    policy: Mapping[str, Any],
+    work_intent: bool = True,
+) -> dict[str, Any]:
+    required = {
+        "policy_version",
+        "window_codepoints",
+        "overlap_codepoints",
+        "context_token_budget",
+        "maximum_windows",
+    }
+    optional = {"execution_mode", "relation_window_limit", "follow_acceptance", "relation_retrieval_version", "window_selection", "diagnosis_contract", "reading_mode", "source_current_policy", "citation_locator_contract", "provider_output_tokens"}
+    if (
+        not required <= set(policy)
+        or set(policy) - required - optional
+        or not str(policy["policy_version"]).strip()
+    ):
+        raise KernelError(
+            "LONGFORM_PROSE_POLICY_INVALID",
+            "an explicit versioned window and token policy is required",
+        )
+    if any(
+        type(policy[key]) is not int or policy[key] <= 0
+        for key in required - {"policy_version", "overlap_codepoints"}
+    ):
+        raise KernelError(
+            "LONGFORM_PROSE_POLICY_INVALID",
+            "window limits and request token cap must be positive integers",
+        )
+    if (
+        type(policy["overlap_codepoints"]) is not int
+        or not 0 <= policy["overlap_codepoints"] < policy["window_codepoints"]
+    ):
+        raise KernelError(
+            "LONGFORM_PROSE_POLICY_INVALID", "overlap must be smaller than the window"
+        )
+    if (
+        policy.get("execution_mode", "MANUAL") not in {"MANUAL", "AUTOMATIC"}
+        or type(policy.get("relation_window_limit", 0)) is not int
+        or not 0 <= policy.get("relation_window_limit", 0) <= policy["maximum_windows"]
+        or type(policy.get("follow_acceptance", False)) is not bool
+        or (
+            policy.get("follow_acceptance")
+            and policy.get("execution_mode") != "AUTOMATIC"
+        )
+    ):
+        raise KernelError(
+            "LONGFORM_PROSE_POLICY_INVALID",
+            "automatic review and bounded relation retrieval require explicit policy",
+        )
+    if policy.get("relation_retrieval_version", "lexical.v1") not in {"lexical.v1", "accepted-state-relations.v2"}:
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown explicit relation retrieval version")
+    if (policy.get("window_selection", "SEQUENTIAL") not in {"SEQUENTIAL", "EXPLICIT_RANGES_ONLY"}
+        or (policy.get("window_selection") == "EXPLICIT_RANGES_ONLY" and policy.get("execution_mode", "MANUAL") != "MANUAL")):
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Explicit range selection requires manual review")
+    if (any(source.get("source_isolation") == "AUTHOR_SELECTED_UNREVIEWED_PROSE" for source in sources)
+            and policy.get("relation_retrieval_version") == "accepted-state-relations.v2"):
+        raise KernelError("LONGFORM_PROSE_RELATION_FACTS_UNAVAILABLE", "Working prose does not grant accepted-state relation evidence; use lexical retrieval or complete formal fact review")
+    if policy.get("diagnosis_contract") not in {None, "prose-root-cause.v1"}:
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown root-cause diagnosis contract")
+    if (policy.get("citation_locator_contract") is not None and not uses_literal_citations(policy) and policy.get("citation_locator_contract") != INDEXED_CITATION_CONTRACT
+        or (policy.get("citation_locator_contract") and policy.get("diagnosis_contract") != "prose-root-cause.v1")):
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Literal citation delivery requires its explicit diagnosis contract")
+    if policy.get("source_current_policy") not in {None, "FROZEN_SELECTED_RANGE"}:
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown source-currentness policy")
+    if policy.get("reading_mode", "DESIGN_AWARE") not in {"DESIGN_AWARE", "BODY_FIRST"}:
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Unknown reading mode")
+    if policy.get("reading_mode") == "BODY_FIRST":
+        if (policy.get("execution_mode", "MANUAL") != "MANUAL"
+            or policy.get("follow_acceptance", False)
+            or policy.get("relation_retrieval_version") == "accepted-state-relations.v2"):
+            raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Body-first reading is manual and uses prose alone")
+        work_intent = False
+    if "provider_output_tokens" in policy and (
+        type(policy["provider_output_tokens"]) is not int
+        or policy["provider_output_tokens"] <= 0
+        or not sources
+        or not all(source.get("source_isolation") == "AUTHOR_SELECTED_UNREVIEWED_PROSE" for source in sources)
+    ):
+        raise KernelError("LONGFORM_PROSE_POLICY_INVALID", "Explicit output allocation requires positive tokens and an exact working-prose window")
+    records, windows = [], []
+    previous_tail = None
+    for source in sources:
+        text = source.get("text")
+        if not isinstance(text, str) or not text:
+            raise KernelError(
+                "LONGFORM_PROSE_SOURCE_EMPTY",
+                "Exact frozen prose is required; a recap cannot substitute",
+            )
+        record = {
+            key: source[key]
+            for key in (
+                "chapter_number",
+                "acceptance_id",
+                "asset_version_id",
+                "asset_hash",
+            )
+        }
+        record.update(text_hash=text_digest(text), codepoints=len(text))
+        if work_intent:
+            from novel_forge.modules.chapter_authority.chapter_plan_views import (
+                validate_creative_baseline,
+            )
+            baseline = source.get("creative_baseline")
+            record["creative_baseline"] = validate_creative_baseline(baseline) if baseline is not None else None
+            if baseline is not None and baseline["chapter"] != record["chapter_number"]:
+                raise KernelError(
+                    "LONGFORM_PROSE_SOURCE_BASELINE_DRIFT",
+                    "Accepted prose and its creative baseline must identify the same chapter",
+                )
+            record["work_intent_status"] = "FROZEN_CANDIDATE_BASELINE" if baseline is not None else "UNKNOWN_LEGACY_BASELINE"
+        if policy.get("relation_retrieval_version") == "accepted-state-relations.v2":
+            record["relation_evidence_digest"] = completion_digest(source.get("relation_evidence", []))
+        records.append(record)
+        start = 0
+        while start < len(text):
+            prefix = [previous_tail] if start == 0 and previous_tail else []
+            allowance = policy["window_codepoints"] - sum(
+                len(item["text"]) for item in prefix
+            )
+            end = min(len(text), start + allowance)
+            span = {**record, "start": start, "end": end, "text": text[start:end]}
+            spans = [*prefix, span]
+            windows.append(
+                {
+                    "window_id": completion_digest(
+                        {"spans": spans, "policy": dict(policy)}
+                    ),
+                    "spans": spans,
+                }
+            )
+            if end == len(text):
+                break
+            start = max(start + 1, end - policy["overlap_codepoints"])
+        previous_tail = (
+            {
+                **record,
+                "start": max(0, len(text) - policy["overlap_codepoints"]),
+                "end": len(text),
+                "text": text[max(0, len(text) - policy["overlap_codepoints"]) :],
+            }
+            if policy["overlap_codepoints"]
+            else None
+        )
+    if not records or len({row["chapter_number"] for row in records}) != len(records):
+        raise KernelError(
+            "LONGFORM_PROSE_MANIFEST_INVALID",
+            "Manifest needs distinct exact source chapters",
+        )
+    author_working = all(source.get("source_isolation") == "AUTHOR_SELECTED_UNREVIEWED_PROSE" for source in sources)
+    body = {
+        "schema_version": "longform-prose-manifest.v3" if author_working else "longform-prose-manifest.v2" if work_intent else "longform-prose-manifest.v1",
+        "project_id": project_id,
+        "workspace_id": workspace_id,
+        "book_run_id": book_run_id,
+        "sources": records,
+        "policy": dict(policy),
+        "windows": windows,
+    }
+    if author_working:
+        body["source_isolation"] = "AUTHOR_SELECTED_UNREVIEWED_PROSE"
+    if policy.get("relation_window_limit"):
+        from .prose_relations import relation_windows
+
+        if policy.get("relation_retrieval_version") == "accepted-state-relations.v2":
+            from .prose_semantic_relations import structured_relation_windows
+            relations, coverage = structured_relation_windows(sources, records, policy)
+        else:
+            relations, coverage = relation_windows(sources, records, policy)
+        body["windows"].extend(relations)
+        body["relation_retrieval"] = coverage
+    return {**body, "manifest_digest": completion_digest(body)}
+
+
+def revalidate_legacy_citation_report(report: Mapping[str, Any], *, source_manifest: Mapping[str, Any], source_window: Mapping[str, Any],
+    target_manifest: Mapping[str, Any], target_window: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    rejected = KernelError("LONGFORM_PROSE_CITATION_REVALIDATION_INVALID", "Only exact complete v2 judgments on unchanged supplied prose may use the versioned literal locator")
+    if (report.get("schema_version") != "longform-prose-review.v2"
+        or source_manifest["policy"].get("citation_locator_contract") is not None
+        or target_manifest["policy"].get("citation_locator_contract") != "literal-prose-citation.v1"
+        or source_manifest["policy"] != {key:value for key,value in target_manifest["policy"].items() if key != "citation_locator_contract"}
+        or any(source_manifest[key] != target_manifest[key] for key in ("project_id", "workspace_id", "book_run_id"))
+        or source_window["spans"] != target_window["spans"]):
+        raise rejected
+    try:
+        validate_window_report(report, manifest=source_manifest, window=source_window)
+    except KernelError as error:
+        if error.code != "LONGFORM_PROSE_CITATION_INVALID":
+            raise rejected from error
+    else:
+        raise rejected
+    original = normalize_prose_review_output(report)
+    result = deepcopy(original)
+    original_locations = []
+    for finding in result["findings"]:
+        for citation in finding["evidence"]:
+            original_locations.append({key: citation.pop(key) for key in ("start", "end")})
+    result.update(schema_version="longform-prose-review.v3",manifest_digest=target_manifest["manifest_digest"],window_id=target_window["window_id"])
+    result, locations = locate_report_citations(result, window=target_window)
+    result = validate_window_report(result,manifest=target_manifest,window=target_window)
+    proof = {"contract_version":"prose-citation-revalidation.v1", "source_report_hash":completion_digest(original),
+        "source_manifest_digest":source_manifest["manifest_digest"], "source_window_id":source_window["window_id"],
+        "target_manifest_digest":target_manifest["manifest_digest"], "target_window_id":target_window["window_id"],
+        "resolved_report_hash":completion_digest(result), "locations":[{**located,"original_location":prior}
+            for located,prior in zip(locations,original_locations,strict=True)],
+        "authority":"HOST_LITERAL_COORDINATES_ONLY; NARRATIVE_JUDGMENTS_UNCHANGED", "manuscript_mutation_allowed":False}
+    return result, proof
+
+
+def locate_report_citations(report: Mapping[str, Any], *, window: Mapping[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    findings = report.get("findings") if isinstance(report, Mapping) else None
+    located = isinstance(findings, list) and any("start" in citation or "end" in citation
+        for finding in findings if isinstance(finding, Mapping)
+        for citation in (finding.get("evidence") if isinstance(finding.get("evidence"), list) else []) if isinstance(citation, Mapping))
+    result = normalize_prose_review_output(report, located_citations=located)
+    supplied = []
+    for finding in result.get("findings", []):
+        for citation in finding.get("evidence", []):
+            supplied.append({key: citation.pop(key) for key in ("start", "end") if key in citation})
+    if result["schema_version"] not in {"longform-prose-review.v3", "longform-prose-review.v4"}:
+        raise KernelError("LONGFORM_PROSE_REPORT_CONTRACT_DRIFT", "Literal location requires its explicit report version")
+    resolutions = []
+    ordinal = 0
+    for finding in result["findings"]:
+        for citation in finding["evidence"]:
+            if result["schema_version"] == "longform-prose-review.v4":
+                sources = {(span["asset_version_id"], span["text_hash"]) for span in window["spans"]
+                           if span["chapter_number"] == citation["chapter_number"]}
+                if len(sources) != 1:
+                    raise KernelError("LONGFORM_PROSE_CITATION_SOURCE_AMBIGUOUS", "Chapter citation requires one exact frozen source version and hash",
+                        details={"citation_ordinal": ordinal, "chapter_number": citation["chapter_number"],
+                                 "reason": "CHAPTER_NOT_SUPPLIED" if not sources else "CHAPTER_SOURCE_AMBIGUOUS"})
+                asset_version_id, text_hash = next(iter(sources))
+                if located and (citation["asset_version_id"], citation["text_hash"]) != (asset_version_id, text_hash):
+                    raise KernelError("LONGFORM_PROSE_CITATION_INVALID", "Bound chapter citation must retain its original frozen identity")
+                citation.update(asset_version_id=asset_version_id, text_hash=text_hash)
+            locations = set()
+            supplied_spans = [span for span in window["spans"]
+                if span["asset_version_id"] == citation["asset_version_id"] and span["text_hash"] == citation["text_hash"]
+                and (result["schema_version"] != "longform-prose-review.v4" or span["chapter_number"] == citation["chapter_number"])]
+            for span in supplied_spans:
+                offset = 0
+                while (offset := span["text"].find(citation["quote"], offset)) >= 0:
+                    locations.add((span["start"] + offset, span["start"] + offset + len(citation["quote"])))
+                    offset += 1
+            if len(locations) != 1:
+                raise KernelError(
+                    "LONGFORM_PROSE_CITATION_NOT_UNIQUE",
+                    "Each quote must identify one exact location in its supplied source version; no fuzzy matching or invented coordinates",
+                    details={
+                        "citation_ordinal": ordinal,
+                        "reason": "SOURCE_IDENTITY_NOT_SUPPLIED" if not supplied_spans else "QUOTE_NOT_FOUND" if not locations else "QUOTE_AMBIGUOUS",
+                        "exact_occurrences": len(locations),
+                        "quote_hash": text_digest(citation["quote"]),
+                        **{key: citation[key] for key in ("chapter_number", "asset_version_id", "text_hash") if key in citation},
+                    },
+                )
+            start, end = next(iter(locations))
+            if supplied[ordinal] and supplied[ordinal] != {"start": start, "end": end}:
+                raise KernelError("LONGFORM_PROSE_CITATION_INVALID", "Persisted host coordinates must match their exact literal source")
+            citation.update(start=start, end=end)
+            resolutions.append({"citation_ordinal": ordinal, "asset_version_id": citation["asset_version_id"],
+                "text_hash": citation["text_hash"], "quote_hash": text_digest(citation["quote"]), "start": start, "end": end})
+            ordinal += 1
+    return result, resolutions
+
+
+def validate_window_source_binding(*, manifest: Mapping[str, Any], window: Mapping[str, Any]) -> None:
+    if "windows" in manifest:
+        registered = [item for item in manifest["windows"] if item["window_id"] == window["window_id"]]
+        if len(registered) != 1 or registered[0]["spans"] != window["spans"]:
+            raise KernelError(
+                "LONGFORM_PROSE_CITATION_SOURCE_DRIFT",
+                "Citations require the exact window registered in the frozen manifest",
+            )
+    if "sources" in manifest:
+        identity = ("chapter_number", "asset_version_id", "text_hash", "asset_hash")
+        sources = {tuple(source[key] for key in identity) for source in manifest["sources"]}
+        if any(tuple(span[key] for key in identity) not in sources for span in window["spans"]):
+            raise KernelError(
+                "LONGFORM_PROSE_CITATION_SOURCE_DRIFT",
+                "Window sources must retain the frozen manifest chapter, version and hashes",
+            )
+
+
+def validate_window_report(
+    report: Mapping[str, Any], *, manifest: Mapping[str, Any], window: Mapping[str, Any]
+) -> dict[str, Any]:
+    literal = uses_literal_citations(manifest["policy"])
+    indexed = manifest["policy"].get("citation_locator_contract") == INDEXED_CITATION_CONTRACT
+    expected_schema = "longform-prose-review.v5" if indexed else "longform-prose-review.v4" if manifest["policy"].get("citation_locator_contract") == CHAPTER_LITERAL_CITATION_CONTRACT else "longform-prose-review.v3" if literal else "longform-prose-review.v2" if manifest["policy"].get("diagnosis_contract") == "prose-root-cause.v1" else PROSE_REVIEW_SCHEMA
+    if report.get("schema_version") != expected_schema:
+        raise KernelError("LONGFORM_PROSE_REPORT_CONTRACT_DRIFT", "Report must retain its frozen diagnosis contract")
+    if (
+        report.get("manifest_digest") != manifest["manifest_digest"]
+        or report.get("window_id") != window["window_id"]
+    ):
+        raise KernelError(
+            "LONGFORM_PROSE_REPORT_STALE",
+            "review must bind the frozen manuscript and actual window",
+        )
+    validate_window_source_binding(manifest=manifest, window=window)
+    if literal:
+        report, _ = locate_report_citations(report, window=window)
+    if indexed:
+        from .prose_citations import resolve_indexed_citations
+        report = resolve_indexed_citations(report, window=window)
+    report = normalize_prose_review_output(report, located_citations=literal or indexed)
+    if set(report["reviewed_dimensions"]) != set(PROSE_DIMENSIONS):
+        raise KernelError(
+            "LONGFORM_PROSE_DIMENSIONS_MISSING",
+            "all dimensions must be assessed, including insufficient evidence",
+        )
+    for finding in report["findings"]:
+        for citation in finding["evidence"]:
+            matches = [
+                span
+                for span in window["spans"]
+                if span["asset_version_id"] == citation["asset_version_id"]
+                and span["text_hash"] == citation["text_hash"]
+                and ("chapter_number" not in citation or span["chapter_number"] == citation["chapter_number"])
+                and span["start"] <= citation["start"] < citation["end"] <= span["end"]
+            ]
+            if not matches or not any(
+                span["text"][
+                    citation["start"] - span["start"] : citation["end"] - span["start"]
+                ]
+                == citation["quote"]
+                for span in matches
+            ):
+                raise KernelError(
+                    "LONGFORM_PROSE_CITATION_INVALID",
+                    "finding must quote exact provided Unicode codepoint ranges",
+                )
+        if (
+            window.get("relation_hypothesis")
+            and finding["judgment"] != "INSUFFICIENT_EVIDENCE"
+        ):
+            if not all(
+                any(
+                    citation["asset_version_id"] == span["asset_version_id"]
+                    and span["start"]
+                    <= citation["start"]
+                    < citation["end"]
+                    <= span["end"]
+                    for citation in finding["evidence"]
+                )
+                for span in window["spans"]
+            ):
+                raise KernelError(
+                    "LONGFORM_PROSE_RELATION_EVIDENCE_INCOMPLETE",
+                    "a relation judgment must locate evidence in both retrieved passages",
+                )
+    return report
+
+
+def review_sources_current(frozen, current, policy) -> bool:
+    if policy.get("source_current_policy") != "FROZEN_SELECTED_RANGE":
+        return frozen == current
+    by_version = {source["asset_version_id"]:source for source in current}
+    return len(by_version) == len(current) and all(by_version.get(source["asset_version_id"]) == source for source in frozen)
+
+
+def aggregate_reports(
+    manifest: Mapping[str, Any], reports: Sequence[Mapping[str, Any]]
+) -> dict[str, Any]:
+    windows = {row["window_id"]: row for row in manifest["windows"]}
+    groups: dict[str, list[dict[str, Any]]] = {}
+    covered: dict[str, list[tuple[int, int]]] = {}
+    completed = set()
+    for report in reports:
+        window = windows.get(report["window_id"])
+        if window is None:
+            raise KernelError(
+                "LONGFORM_PROSE_WINDOW_UNKNOWN",
+                "report window is outside this manifest",
+            )
+        report = validate_window_report(report, manifest=manifest, window=window)
+        if report["window_id"] in completed:
+            continue
+        completed.add(report["window_id"])
+        for span in window["spans"]:
+            covered.setdefault(span["asset_version_id"], []).append(
+                (span["start"], span["end"])
+            )
+        for finding in report["findings"]:
+            groups.setdefault(finding["lineage_id"], []).append(
+                dict(finding, window_id=report["window_id"])
+            )
+    exclusions = []
+    for source in manifest["sources"]:
+        cursor = 0
+        for start, end in sorted(covered.get(source["asset_version_id"], [])):
+            if start > cursor:
+                exclusions.append(
+                    {
+                        "asset_version_id": source["asset_version_id"],
+                        "start": cursor,
+                        "end": start,
+                    }
+                )
+            cursor = max(cursor, end)
+        if cursor < source["codepoints"]:
+            exclusions.append(
+                {
+                    "asset_version_id": source["asset_version_id"],
+                    "start": cursor,
+                    "end": source["codepoints"],
+                }
+            )
+    findings = []
+    for lineage, members in sorted(groups.items()):
+        dimensions = {item["dimension"] for item in members}
+        judgments = {item["judgment"] for item in members}
+        evidence_sets = [
+            {
+                (e["asset_version_id"], e["text_hash"], e["start"], e["end"])
+                for e in item["evidence"]
+            }
+            for item in members
+        ]
+        connected = set(evidence_sets[0])
+        pending = list(evidence_sets[1:])
+        while pending:
+            linked = next((item for item in pending if item & connected), None)
+            if linked is None:
+                break
+            connected |= linked
+            pending.remove(linked)
+        findings.append(
+            {
+                "lineage_id": lineage,
+                "status": "CONFLICT_REQUIRES_REVIEW"
+                if len(dimensions) > 1 or len(judgments) > 1 or pending
+                else "OPEN"
+                if "ISSUE" in judgments
+                else "OBSERVATION",
+                "members": members,
+                "required_consumer": "VERSION_BOUND_EDITORIAL_PENDING",
+            }
+        )
+    if manifest["policy"].get("diagnosis_contract") == "prose-root-cause.v1":
+        from novel_forge.modules.review.repair_scope import finding_repair_route
+        for finding in findings:
+            finding["repair_route"] = finding_repair_route(finding)
+    return {
+        "manifest_digest": manifest["manifest_digest"],
+        "completed_window_ids": sorted(completed),
+        "total_windows": len(windows),
+        "uncovered_ranges": exclusions,
+        "coverage_complete": not exclusions,
+        "review_complete": len(completed) == len(windows),
+        "findings": findings,
+        "relation_verification": {
+            "retrieval": manifest.get(
+                "relation_retrieval", {"status": "NOT_REQUESTED"}
+            ),
+            "completed_hypothesis_ids": [
+                window["relation_hypothesis"]["hypothesis_id"]
+                for identity, window in windows.items()
+                if identity in completed and window.get("relation_hypothesis")
+            ],
+            "paired_evidence_hypothesis_ids": sorted(
+                {
+                    windows[report["window_id"]]["relation_hypothesis"]["hypothesis_id"]
+                    for report in reports
+                    if windows[report["window_id"]].get("relation_hypothesis")
+                    and any(
+                        finding["judgment"] != "INSUFFICIENT_EVIDENCE"
+                        for finding in report["findings"]
+                    )
+                }
+            ),
+            "global_relationships_verified": False,
+        },
+        "quality_absence_proven": False,
+        "independent_human_review": "NOT_RUN",
+    }

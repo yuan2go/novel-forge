@@ -1,0 +1,22 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+dist/
+build/
+*.egg-info/
+node_modules/
+.next/
+*.tsbuildinfo
+.env
+.DS_Store
+.claude/skills/
+
+# Runtime workspaces and generated state
+data/
+.local/
+.runtime/
+local-workspace/
+examples/sample_outputs/

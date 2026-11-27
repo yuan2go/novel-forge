@@ -1,0 +1,848 @@
+{
+  "schema_version": "ruff-legacy-baseline.v1",
+  "ruff_version": "ruff 0.15.20",
+  "scope": [
+    "src",
+    "tests",
+    "scripts"
+  ],
+  "diagnostic_count": 515,
+  "policy": {
+    "new_file_diagnostics": "FORBIDDEN",
+    "new_rule_for_existing_file": "FORBIDDEN",
+    "count_increase": "FORBIDDEN",
+    "modified_baseline_file": "MUST_REDUCE_FILE_TOTAL",
+    "directory_exclusions": "FORBIDDEN"
+  },
+  "files": [
+    {
+      "path": "scripts/agent_center_hardening_report.py",
+      "content_sha256": "5e2cd2cbcb3f48ee1bd98df2463aab2f661cde53bb43821c3f7cd037e35d8dd5",
+      "owner": "Runtime Operations",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Replace bootstrap import patterns with packaged entry points",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E402": 2
+      }
+    },
+    {
+      "path": "scripts/import_classical_modern_to_mkaos.py",
+      "content_sha256": "2d9e11c6059e5e4249b93492830ccbaeb3a51dc5eccc044d6647ddf547b51160",
+      "owner": "Runtime Operations",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Replace bootstrap import patterns with packaged entry points",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E402": 5,
+        "F841": 1
+      }
+    },
+    {
+      "path": "scripts/os_enforcement_audit.py",
+      "content_sha256": "67915c01c0c792db793f666a38a211c03c6568cb36939f34f7c116d7a5466143",
+      "owner": "Runtime Operations",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Replace bootstrap import patterns with packaged entry points",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E402": 2
+      }
+    },
+    {
+      "path": "scripts/provider_hard_stop_probe.py",
+      "content_sha256": "dc768a7fc861553ec9eac2083525c4b2f58b6e9bd13513a0c5d660eb463312c5",
+      "owner": "Runtime Operations",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Replace bootstrap import patterns with packaged entry points",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E402": 8,
+        "F401": 1
+      }
+    },
+    {
+      "path": "scripts/run_long_chain_webnovel.py",
+      "content_sha256": "affea355061bced65c31b1c57a1f18ff83390bbb48e05ab0e7348e548866a7a3",
+      "owner": "Runtime Operations",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Replace bootstrap import patterns with packaged entry points",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F841": 1
+      }
+    },
+    {
+      "path": "scripts/run_v1_chapter_sequence_acceptance.py",
+      "content_sha256": "5ae149cddb1be47c94209220d3dd70c7fdab68c86dce0a9335a11b2eda974908",
+      "owner": "Runtime Operations",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Replace bootstrap import patterns with packaged entry points",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E402": 8
+      }
+    },
+    {
+      "path": "scripts/verify_online_backends.py",
+      "content_sha256": "0e86ad7be74cbc1dfca37801f873020c079fb675f16c9e928a86b211da1f3cd4",
+      "owner": "Runtime Operations",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Replace bootstrap import patterns with packaged entry points",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E402": 3
+      }
+    },
+    {
+      "path": "src/novel_forge/api/routers/agents.py",
+      "content_sha256": "5643a1eafb5bde59ef6f2d2490b1956ca5fdae0bb64d79fe41cbddeaebba9ab5",
+      "owner": "API Platform",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Typed router and service boundary cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/api/routers/assets.py",
+      "content_sha256": "2009513f884947f9993eba03054c2619e950d14dfef331b571361c071e86ae6e",
+      "owner": "API Platform",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Typed router and service boundary cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 4,
+        "F821": 16
+      }
+    },
+    {
+      "path": "src/novel_forge/api/routers/batch.py",
+      "content_sha256": "c83f8593d2c5e2bc44541e0772b2afc144e7fe799b863e99bdb4eb667b4f8d71",
+      "owner": "API Platform",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Typed router and service boundary cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 5,
+        "F821": 15
+      }
+    },
+    {
+      "path": "src/novel_forge/api/routers/book_design_authority.py",
+      "content_sha256": "f91f50d341a3d04a6c8eeebbfef7a9f79b74aa939af0c99f3f1f2216ce570a87",
+      "owner": "API Platform",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Typed router and service boundary cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/api/routers/drafts.py",
+      "content_sha256": "6750a21a4d114d170f6a900755165e53b44fef0fdd39d21dddc3c7dcd6293329",
+      "owner": "API Platform",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Typed router and service boundary cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 4,
+        "F821": 16
+      }
+    },
+    {
+      "path": "src/novel_forge/api/routers/handoffs.py",
+      "content_sha256": "a08843b33c39ed0f0399116b735c978e286bfab5ac1f323f2f9f2dcc73d9a776",
+      "owner": "API Platform",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Typed router and service boundary cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 4,
+        "F821": 81
+      }
+    },
+    {
+      "path": "src/novel_forge/api/routers/libraries.py",
+      "content_sha256": "ef37f7ff8252eaaf2b9a9a7323b3452680fee81eedec9dc1ad86e8bcae7b7bfb",
+      "owner": "API Platform",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Typed router and service boundary cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F821": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/api/routers/projects.py",
+      "content_sha256": "2d6470d40fcbb5f5b58b1cc28d7379ebc55a26690d55d326002d026098489351",
+      "owner": "API Platform",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Typed router and service boundary cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 4,
+        "F821": 29
+      }
+    },
+    {
+      "path": "src/novel_forge/api/routers/reviews.py",
+      "content_sha256": "a771ed4f8c90577deaf579f55bda7dabfdfc784653f091893459a53b333951da",
+      "owner": "API Platform",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Typed router and service boundary cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 4,
+        "F821": 22
+      }
+    },
+    {
+      "path": "src/novel_forge/api/routers/system.py",
+      "content_sha256": "53452289f8c1f1338fce75453d897baad0ae269eef7b1087c9d908a90f8f75db",
+      "owner": "API Platform",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Typed router and service boundary cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 3,
+        "F821": 11
+      }
+    },
+    {
+      "path": "src/novel_forge/api/routers/tasks.py",
+      "content_sha256": "60435c05f52a927e815d68c6b3da4c16a902a37ad8cd9c0224f7ba19e83b92c5",
+      "owner": "API Platform",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Typed router and service boundary cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 2,
+        "F821": 17
+      }
+    },
+    {
+      "path": "src/novel_forge/api/routers/workflow_nodes.py",
+      "content_sha256": "492a1b5f2a27156f9161aaf22994686896b5bddb052685aaf23337602788a297",
+      "owner": "API Platform",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Typed router and service boundary cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/api/services/product.py",
+      "content_sha256": "b588e40489652d2c4c3fdbd109019b837fda7d76f20f9c9a3a303fb0a4769c0e",
+      "owner": "API Platform",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Typed router and service boundary cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 25,
+        "F841": 2
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/agent_registry/service.py",
+      "content_sha256": "df15b773838ad1afc387cd259f4e8fa627f3cb4f7402ec6aa85ce82ab8ca4523",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/audit/service.py",
+      "content_sha256": "590aeec94c94b82914970c369cf298a6d20ac284f3fc808e6d43c656962a195f",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_group_authority/application.py",
+      "content_sha256": "684bb70deaf0e6a16be7fea78b1c494ed4d761e9382e6b0309b736a8ce1c283b",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 2,
+        "F841": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/chapter_production_bus/service.py",
+      "content_sha256": "a4947b497b43f060444721ccf20978a42c8a9064a227f778c7c9dd1da3d4f730",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F841": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/context_builder/domain.py",
+      "content_sha256": "24f163396cce8726973a42625f8c9b5edf4b09d34a19784bf89e67c337cfd9cf",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F841": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/ending/domain.py",
+      "content_sha256": "27ee46bce4fe2d0b254ef10cb4a0a59d8088f8833cd9f831d65dc1447ed523df",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 3
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/genre_os/service.py",
+      "content_sha256": "1e7660aea0b8ee44b14bddbf18860cd5389c12dcc484a2af61fdbd8f51b87d08",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/long_memory/service.py",
+      "content_sha256": "037fc5ea1412138f74091c6590c982aedfb2959fea86f79a5dfe87303dfbd15e",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/longform_stability/semantic_domain.py",
+      "content_sha256": "6f3c1a4a42b0272a084d5212c62e3392d36f89932e814db446d083d1f16d1dda",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 21,
+        "E702": 2
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/mkaos/__init__.py",
+      "content_sha256": "9a3600696ec47beef51616081ffe3ce38edc06c5c990e9187d2221d10dc49204",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 3
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/mkaos/service.py",
+      "content_sha256": "1b59cb62c9256e1faf5bd22378f51ff6107570c19a51ad3ee046611b6d12162d",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F841": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/mkaos_converters/service.py",
+      "content_sha256": "40fa8bd55db7cffd0089e7fa2e065116121d15b6652f15bac50d3b22593325c3",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 2
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/mkaos_ingestion/service.py",
+      "content_sha256": "cdca24ad4f684e3686170991480f7acc773f833521d89fbbebe853981bc7f3f8",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/mkaos_production_gate/service.py",
+      "content_sha256": "50210973f0e9629dfc92a926e992574e81e54874476e8e8d12e8cf2ce21164f6",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/mkaos_quality/service.py",
+      "content_sha256": "47c21645ab4508c6c9ca5272943a2af63d46873f5001acb491d74a079d811503",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/novel_os_cockpit/service.py",
+      "content_sha256": "0c9522ccd21d1f6f40fa6b37ca5b692565765b3beb33e4a5b19f9fd46118feef",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/prompt_registry/service.py",
+      "content_sha256": "385120d75d20cbec238a55b23659a416995753f595fe482134a7e8040422cea8",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/provider_qualification/authority.py",
+      "content_sha256": "00206997dd67d8383fb6ba4ae8c6a2e0a174e1ce65431177d1d142858bf7d44c",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1,
+        "F841": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/provider_qualification/runner.py",
+      "content_sha256": "e0f70934e7c7ef798ab7b878eea70816af04894a21ad66437fdaeb3333da39fe",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/reader_calibration/application.py",
+      "content_sha256": "bf21d0207df161a5e267eb885ac6e1ce0ad111e264a5c8c54ede29b035714dcf",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 2
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/semantic_enhancement/service.py",
+      "content_sha256": "74635da7888917ed482bbb18359cb39d789a47adecf46297eacc1234a5e9d087",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F841": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/theme/domain.py",
+      "content_sha256": "4be7bf98f45f1a34a1659e7e1f658638dc8ff8c5db2d21134fd0af3325dd2d0a",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 3
+      }
+    },
+    {
+      "path": "src/novel_forge/modules/tool_gateway/service.py",
+      "content_sha256": "f8a9f4d042d19f8a9fb3edad561c4fcebbf837e0828409daed6f91176e389704",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/storage/book_design_authority_repositories.py",
+      "content_sha256": "325dc088c74c2630dfdce5aa25f0c325a03036efcd85844447af3e791b2897cc",
+      "owner": "PostgreSQL Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Repository-local cleanup during next storage change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/storage/production_repositories.py",
+      "content_sha256": "6f33f665cc91754f6a5b1d778c7a595a37adbcd1364748e67ff7eca984ee6dcb",
+      "owner": "PostgreSQL Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Repository-local cleanup during next storage change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 2,
+        "E702": 7
+      }
+    },
+    {
+      "path": "src/novel_forge/storage/production_uow.py",
+      "content_sha256": "11c2e9078921986edb4e494652899da6be7f38a6f01101741cf5698ef22c486c",
+      "owner": "PostgreSQL Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Repository-local cleanup during next storage change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 2,
+        "E702": 2
+      }
+    },
+    {
+      "path": "src/novel_forge/tools/production_execution_inventory.py",
+      "content_sha256": "1179f994dad2286cc3d7054448d271fb8f0c44477a4bc3cc5992ce9a31df2432",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F841": 2
+      }
+    },
+    {
+      "path": "src/novel_forge/workers/healthcheck.py",
+      "content_sha256": "f3ffcb7b78f252fc1e6df74877a75d5113c169ef457d2fff65749bbb274760af",
+      "owner": "Domain Authority",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Module-local Ruff cleanup during next functional change",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "src/novel_forge/workflows/__init__.py",
+      "content_sha256": "b405e6c04a8a33e455ece7f90eb38280f952f4030d17c4642f26e52711d6f38c",
+      "owner": "Workflow Runtime",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Explicit public exports and workflow import cleanup",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 18
+      }
+    },
+    {
+      "path": "tests/integration/test_authority_legacy_migration_postgres.py",
+      "content_sha256": "44e4f0ecf2d6addc037c53af18863311f7675f115a8581e7303c8bf94c7ad4b2",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "tests/integration/test_lifecycle_postgres.py",
+      "content_sha256": "0bd6e44499202eb4067a25cf160c6d163c911a76d5cbda0204b8c0791667f67e",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 1,
+        "E702": 2
+      }
+    },
+    {
+      "path": "tests/integration/test_operation_lease_postgres.py",
+      "content_sha256": "a1fe05f2f4aca6e786d44360aa60cafef2c87f89d4e690a6dcbb41112f24b0ef",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 1,
+        "E702": 3
+      }
+    },
+    {
+      "path": "tests/integration/test_transactional_outbox_postgres.py",
+      "content_sha256": "ce53e1e911112350c9b1f86974d75aa307dc4948c38e8037d63fabe4b6f2b5ad",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E702": 14
+      }
+    },
+    {
+      "path": "tests/unit/test_agent_collaboration_application.py",
+      "content_sha256": "295e53190fbb16da96903e054e81a10c163b6fb49b1bade1f8e49478abf2b428",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "tests/unit/test_agent_scheduler.py",
+      "content_sha256": "29ab33d4595843474eddea8c4252dfade5bf99d157d47e6cc0fd2d8157c19d52",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 8
+      }
+    },
+    {
+      "path": "tests/unit/test_api_policy_normalization.py",
+      "content_sha256": "19008c114e322047a1902f743b87616798fa2e1ef54a74e8de8698d6fc5961ff",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 2
+      }
+    },
+    {
+      "path": "tests/unit/test_character_domain.py",
+      "content_sha256": "82e677a5097433c5d91c1733bcace26d4a19eb6ecc60cf43769d56caca7bd544",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 4,
+        "E702": 2
+      }
+    },
+    {
+      "path": "tests/unit/test_command_kernel_admission.py",
+      "content_sha256": "43cb5a9d869b2f0ce9ede5a8abf5c68bc98d23ff21fbb971481c4aab609bb50b",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "tests/unit/test_content_authority_definitions.py",
+      "content_sha256": "bd09e1628ff744f0fdfddd135f8fb22c66546545f94d4a7b040043897b3a3292",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 1
+      }
+    },
+    {
+      "path": "tests/unit/test_creative_domain.py",
+      "content_sha256": "e65e3bbad9af9757492d39292e1202994789458f64fd7359cc7cff1a869bca39",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 3,
+        "E702": 5
+      }
+    },
+    {
+      "path": "tests/unit/test_editor_chief_console.py",
+      "content_sha256": "b1e6d8212e398767118ecda79fb77051cf50b5a137708a75647c0f3c88f41199",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "tests/unit/test_ending_domain.py",
+      "content_sha256": "c45424193d42941f27ba8dc26d12bb7a78477e58bf27589b203f555f48086df8",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 2,
+        "E702": 3
+      }
+    },
+    {
+      "path": "tests/unit/test_longform_semantic_domain.py",
+      "content_sha256": "8b135e1b926c688f69f7fe481044e91a15d3c4e6d8a10aa70c69901be9bd8747",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 2,
+        "E702": 8,
+        "F403": 1,
+        "F405": 11
+      }
+    },
+    {
+      "path": "tests/unit/test_mkaos_api_envelope.py",
+      "content_sha256": "136cc1be1651c06cba35f3970235bed6c975a436c6bb4faafc2814407b93ee2e",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "tests/unit/test_mkaos_knowledge_graph_learning.py",
+      "content_sha256": "6a91b5c49f6f997ab709d551fd6fdc49994b6c60e92c887f46d1b9292066057d",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "tests/unit/test_mkaos_os_envelope.py",
+      "content_sha256": "327d6a63dcae4af66584ba4d968dd3e43bd0b08ef7af7e57ae9ae52ca6d168fd",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "tests/unit/test_os_new_capabilities.py",
+      "content_sha256": "e3c5160949ac2a73d34b7f935933768087381a52eb23399cf476207e85436e4e",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F841": 1
+      }
+    },
+    {
+      "path": "tests/unit/test_platform_strategy_os.py",
+      "content_sha256": "58611e61bd7350830d4a11f1e388de62abd63b6be8d42fc3f5679567e2ecac0e",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "tests/unit/test_product_api.py",
+      "content_sha256": "d7edd75f4e513f5fe1e05e4cb26d46f584593f87f557fd7ca17fa41a21800160",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 1
+      }
+    },
+    {
+      "path": "tests/unit/test_product_api_routes.py",
+      "content_sha256": "1247714fe014efcf536f5d312004332e77a47745aa89011eaca63b81d6924904",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 18
+      }
+    },
+    {
+      "path": "tests/unit/test_schemas.py",
+      "content_sha256": "3d79efa6ebc57c361c077923d037bbad74fcdb194f3b025964eb3fc150f73ea6",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "F401": 16
+      }
+    },
+    {
+      "path": "tests/unit/test_theme_domain.py",
+      "content_sha256": "cc6a61d7ae1e90173151553641642d7acfea60eb2e107905d2fbb9894ed2d8dd",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 3,
+        "E702": 2
+      }
+    },
+    {
+      "path": "tests/unit/test_worldbuilding_domain.py",
+      "content_sha256": "a18957a020e044ab52194d89e3503f31f343a2c20ff797a75c84e098320d5607",
+      "owner": "Quality Engineering",
+      "legacy_classification": "LEGACY_PRE_RUFF_BASELINE",
+      "replacement": "Focused test cleanup while preserving fixture intent",
+      "removal_preconditions": "Any functional edit must reduce this file total; remove each rule entry when its count reaches zero.",
+      "violations": {
+        "E701": 1,
+        "E702": 2
+      }
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "contract_version": "published-craft-migration-retention.v1",
+  "source_commit": "1629155509ef6b0c6b8f41a1f35cee326517f9be",
+  "registered_on_main": false,
+  "modules": [
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261014_0205_source_observation_generation_isolation.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0205_source_observation_generation_isolation.py",
+      "sha256": "8b75eea8b89821d61b16cf9fedfe6d0388e7122d7af869a74d8cc7419a9856d8"
+    },
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261014_0206_story_design_book_namespace.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0206_story_design_book_namespace.py",
+      "sha256": "38569897d5db2983ca6e3d2f3738fbafadb2deab51a6d6c016a1fdd8683dcdd6"
+    },
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261014_0207_foundation_method_context.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0207_foundation_method_context.py",
+      "sha256": "6ee5efa5ca3efe2608a71523f253d620526459de7d9a885a935c2cff8f7dc64a"
+    },
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261014_0208_book_method_scope_context.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0208_book_method_scope_context.py",
+      "sha256": "52d9922a91aaf9acb749cb4990d6265d3fd3c7f14120eb2b19262b53592f0dcb"
+    },
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261014_0209_planning_input_scope_point_reads.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0209_planning_input_scope_point_reads.py",
+      "sha256": "9112c1b7fcb4b96bf5d7e1354ae7f5506f9f779f48a3a01289e8115bcd3cb47a"
+    },
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261014_0210_operation_outbox_lookup_indexes.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0210_operation_outbox_lookup_indexes.py",
+      "sha256": "bd9cca0de592a99fc68b984fe87dcbb8b410a188aec61d5e02d280543ab856be"
+    },
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261014_0211_unsent_context_query_recovery.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0211_unsent_context_query_recovery.py",
+      "sha256": "4350a7e1b8ae87a83ffd8d677fff74c5b54686f141f92a9d512b1ca6ccc15a6e"
+    },
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261014_0212_group_method_scope_context.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0212_group_method_scope_context.py",
+      "sha256": "99a86b3c4e12f9cf83a89106d88e5122ee73b29328ac0ccbe2d513ecaf95cefe"
+    },
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261014_0213_group_scope_identity.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0213_group_scope_identity.py",
+      "sha256": "7e66dbf6281f45aa48e997a5ffa31b2bd9ea59c3113693d69bdceb2b56410b2d"
+    },
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261014_0214_book_query_recovery.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261014_0214_book_query_recovery.py",
+      "sha256": "8add37a5c3f7f46922d7629e70b713df8ea298514bfaca6c454f050b4c8c9128"
+    },
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261015_0215_world_method_context.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261015_0215_world_method_context.py",
+      "sha256": "58920258c22bc79aa696f5c5a3b826adf5d5508626da188039fcd6ea5553ed98"
+    },
+    {
+      "original_path": "src/novel_forge/storage/migrations/versions/v20261015_0216_chapter_method_context.py",
+      "retained_path": "src/novel_forge/storage/migrations/historical/craft_16291555/v20261015_0216_chapter_method_context.py",
+      "sha256": "bf85ee5a441d6591d47abb8b9002031dd4fccde218f9b8e1f3d899da1c09adfe"
+    }
+  ]
+}

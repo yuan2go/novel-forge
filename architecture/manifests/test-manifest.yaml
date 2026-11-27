@@ -1,0 +1,1558 @@
+{
+  "schema_version": "novel-forge.test-reality-manifest.v1",
+  "collections": [
+    "tests/architecture",
+    "tests/unit",
+    "tests/acceptance",
+    "tests/integration"
+  ],
+  "classification_rules": [
+    {
+      "id": "working-selection-retired-main-checkpoint",
+      "patterns": [
+        "tests/integration/test_working_selection_checkpoint_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "author-manuscript-delivery",
+      "production_target": "src/novel_forge/modules/book_authority/manuscript.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    {
+      "id": "semantic-context-source-units",
+      "patterns": [
+        "tests/unit/test_semantic_context_units.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "context-builder",
+      "capability": "semantic-context-source-units",
+      "production_target": "src/novel_forge/modules/context_builder/semantic_units.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
+      "id": "complete-request-capacity",
+      "patterns": [
+        "tests/unit/test_complete_request_capacity.py",
+        "tests/unit/test_context_capacity_owner_contracts.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "production-execution",
+      "capability": "complete-request-capacity",
+      "production_target": "src/novel_forge/modules/context_builder/request_capacity.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
+      "id": "craft-working-continuation-v2",
+      "patterns": [
+        "tests/unit/test_working_craft_continuation.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "mkaos-authority",
+      "capability": "narrative-craft-contract",
+      "production_target": "src/novel_forge/modules/mkaos_authority/craft_usage.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
+      "id": "retained-working-source-proof",
+      "patterns": [
+        "tests/unit/test_retained_working_continuation.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "author-manuscript-delivery",
+      "production_target": "src/novel_forge/modules/book_authority/retained_working.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "craft-book-scope-migration",
+      "patterns": [
+        "tests/integration/test_craft_scope_migration_postgres.py",
+        "tests/unit/test_craft_migration_convergence.py",
+        "tests/integration/test_zero_send_context_guards_postgres.py",
+        "tests/integration/test_planning_public_dispatch_postgres.py"
+      ],
+      "classification": "MIGRATION_COMPATIBILITY",
+      "owner": "migration-authority",
+      "capability": "fresh-install-and-supported-upgrade",
+      "production_target": "src/novel_forge/storage/migrations/versions/v20261015_0214_story_design_book_scope.py",
+      "qualification_role": "COMPATIBILITY_ONLY",
+      "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY"
+    },
+    {
+      "id": "source-observation-isolation",
+      "patterns": [
+        "tests/integration/test_source_observation_isolation_postgres.py",
+        "tests/integration/test_source_abstraction_schema_recovery_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "source-import",
+      "capability": "retry-recovery-and-replay",
+      "production_target": "src/novel_forge/modules/source_import/generation_recovery.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "craft-method-scope-projection",
+      "patterns": [
+        "tests/unit/test_book_method_scope_projection.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "mkaos-authority",
+      "capability": "narrative-craft-contract",
+      "production_target": "src/novel_forge/modules/mkaos_authority/craft_context_projection.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
+      "id": "world-foundation-background-recovery",
+      "patterns": [
+        "tests/integration/test_world_foundation_background_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "story-planning-runtime",
+      "capability": "world-causal-production-contract",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "generation-execution-observations",
+      "patterns": [
+        "tests/unit/test_generation_execution_policy.py",
+        "tests/integration/test_generation_execution_policy_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "command-kernel",
+      "capability": "retry-recovery-and-replay",
+      "production_target": "src/novel_forge/modules/command_kernel/generation_policy.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "working-prose-source-projection",
+      "patterns": [
+        "tests/unit/test_working_prose_projection.py",
+        "tests/unit/test_working_memory.py",
+        "tests/unit/test_longform_working_history.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "author-manuscript-delivery",
+      "production_target": "src/novel_forge/modules/book_authority/working_prose.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
+      "id": "prose-root-cause-routing",
+      "patterns": [
+        "tests/unit/test_prose_repair_scope.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-followup-authority",
+      "capability": "longform-prose-review",
+      "production_target": "src/novel_forge/modules/book_followup_authority/prose_review.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
+      "id": "cli-original-recovery-unit",
+      "patterns": [
+        "tests/unit/test_codex_original_recovery.py",
+        "tests/unit/test_planning_query_recovery.py",
+        "tests/unit/test_cli_effect_reconciliation_migration.py",
+        "tests/unit/test_execution_diagnostics.py",
+        "tests/unit/test_generation_failure_classification.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "production-execution",
+      "capability": "original-cli-reconciliation",
+      "production_target": "src/novel_forge/modules/production_execution/backends.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "cli-original-recovery-postgres",
+      "patterns": [
+        "tests/integration/test_cli_effect_reconciliation_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "command-kernel",
+      "capability": "original-cli-reconciliation",
+      "production_target": "src/novel_forge/modules/command_kernel/cli_effect_reconciliation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "public-catalog-domain-and-transport",
+      "patterns": [
+        "tests/unit/test_public_catalog.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "source-authority",
+      "capability": "public-catalog-capture",
+      "production_target": "src/novel_forge/modules/source_authority/public_catalog_adapter.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "public-catalog-native-storage",
+      "patterns": [
+        "tests/integration/test_public_catalog_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "source-authority",
+      "capability": "public-catalog-capture",
+      "production_target": "src/novel_forge/modules/source_authority/public_catalog_application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "creation-delivery-window",
+      "patterns": [
+        "tests/unit/test_creation_window.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "author-manuscript-delivery",
+      "production_target": "src/novel_forge/modules/book_authority/creation_window.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    {
+      "id": "author-first-native-manuscript",
+      "patterns": [
+        "tests/integration/test_author_first_manuscript_postgres.py",
+        "tests/integration/test_book_delivery_window_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "book-production-coordination",
+      "production_target": "src/novel_forge/modules/book_authority/manuscript.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "coordinated-current-planning-controlled-wire",
+      "patterns": [
+        "tests/unit/test_synthesis_current_planning_wire.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "story-planning-runtime",
+      "capability": "creative-validation-bounded-recovery",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/binder.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "creative-planning-primary-context-identity",
+      "patterns": [
+        "tests/unit/test_planning_result_context_identity.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "story-planning-runtime",
+      "capability": "creative-validation-bounded-recovery",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/result_recovery.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "creative-quality-frozen-world-receipt",
+      "patterns": [
+        "tests/unit/test_quality_frozen_world_foundation.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "chapter-quality-authority",
+      "capability": "creative-validation-bounded-recovery",
+      "production_target": "src/novel_forge/modules/chapter_quality_authority/foundation_context.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "creative-creation-recovery-controls",
+      "patterns": [
+        "tests/unit/test_creation_recovery_control.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "creative-validation-bounded-recovery",
+      "production_target": "src/novel_forge/modules/book_authority/creation_runtime.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "creative-recovery-derived-contract",
+      "patterns": [
+        "tests/unit/test_derived_step_revalidation.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "command-kernel",
+      "capability": "creative-validation-bounded-recovery",
+      "production_target": "src/novel_forge/modules/command_kernel/derived_step_revalidation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "creative-recovery-controlled-protocol",
+      "patterns": [
+        "tests/unit/test_book_execution_recovery.py",
+        "tests/unit/test_native_stage_repair_bound.py",
+        "tests/unit/test_native_planning_repair_routing.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "runtime-authorities",
+      "capability": "creative-validation-bounded-recovery",
+      "production_target": "AUTO_FROM_TEST_IMPORTS",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    {
+      "id": "creative-validation-integration-upgrade",
+      "patterns": [
+        "tests/integration/test_creative_validation_integration_upgrade_postgres.py",
+        "tests/unit/test_migration_history_admission.py",
+        "tests/integration/test_migration_history_admission_postgres.py"
+      ],
+      "classification": "MIGRATION_COMPATIBILITY",
+      "owner": "migration-authority",
+      "capability": "fresh-install-and-supported-upgrade",
+      "production_target": "src/novel_forge/storage/migrations/runner.py",
+      "qualification_role": "COMPATIBILITY_ONLY",
+      "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY"
+    },
+    {
+      "id": "review-pressure-paired-regression",
+      "patterns": [
+        "tests/unit/test_review_pressure_regression.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "chapter-quality-authority",
+      "capability": "review-revision-quality",
+      "production_target": "src/novel_forge/modules/chapter_quality_authority/paired_regression.py",
+      "qualification_role": "SYNTHETIC_ENGINEERING_BENCHMARK_ONLY",
+      "proof_ceiling": "FIXTURE_ONLY"
+    },
+    {
+      "id": "creation-durable-coordination",
+      "patterns": [
+        "tests/unit/test_creation_coordination.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "continuous-creation-coordination",
+      "production_target": "src/novel_forge/modules/book_authority/creation_runtime.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "creation-native-controlled-process",
+      "patterns": [
+        "tests/integration/test_creation_cli_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "continuous-creation-native-owner-chain",
+      "production_target": "src/novel_forge/modules/book_authority/creation_runtime.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "quality-context-formal-mock-e2e",
+      "patterns": [
+        "tests/integration/test_quality_context_formal_e2e_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "quality-context-formal-mock-e2e",
+      "production_target": "src/novel_forge/modules/book_authority/production.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "context-feedback-native-receipts",
+      "patterns": [
+        "tests/integration/test_context_feedback_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "chapter-authority",
+      "capability": "context-feedback-native-receipts",
+      "production_target": "src/novel_forge/modules/authority_handler_runtime/context_feedback.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "context-compression-routing",
+      "patterns": [
+        "tests/unit/test_context_compression_routing.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "context-builder",
+      "capability": "context-compression-routing",
+      "production_target": "src/novel_forge/modules/context_builder/task_compression.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "work-applicability-binding",
+      "patterns": [
+        "tests/unit/test_work_applicability_binding.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-authority",
+      "capability": "work-applicability-binding",
+      "production_target": "src/novel_forge/modules/chapter_authority/chapter_plan_views.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "work-quality-semantics",
+      "patterns": [
+        "tests/unit/test_work_quality_semantics.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-quality-authority",
+      "capability": "work-quality-semantics",
+      "production_target": "src/novel_forge/modules/chapter_quality_authority/work_semantics.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "work-intent-consistency",
+      "patterns": [
+        "tests/unit/test_work_intent_consistency.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-authority",
+      "capability": "creative-requirements-projection",
+      "production_target": "src/novel_forge/modules/chapter_authority/chapter_plan_views.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "work-foundation-contract",
+      "patterns": [
+        "tests/unit/test_work_foundation_contract.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "story-design-authority",
+      "capability": "work-foundation-contract",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/foundation_generation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "work-realization-contract",
+      "patterns": [
+        "tests/unit/test_work_realization_contract.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "hierarchical-planning",
+      "capability": "work-realization-contract",
+      "production_target": "src/novel_forge/modules/hierarchical_planning/realization_domain.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "production-instruction-cleanup-contract",
+      "patterns": [
+        "tests/unit/test_production_instruction_cleanup.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-authority",
+      "capability": "writer-story-projection",
+      "production_target": "src/novel_forge/modules/context_builder/story_projection.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "writer-index-rebuild-postgres",
+      "patterns": [
+        "tests/integration/test_writer_index_rebuild_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "context-builder",
+      "capability": "writer-index-rebuild",
+      "production_target": "src/novel_forge/modules/context_builder/retrieval_rebuild.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "prompt-skill-calibration-contract",
+      "patterns": [
+        "tests/unit/test_prompt_skill_calibration.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-authority",
+      "capability": "production-instruction-projection",
+      "production_target": "src/novel_forge/modules/chapter_authority/prompt_methods.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "provider-budget-renewal-integration",
+      "patterns": [
+        "tests/integration/test_creative_budget_renewal_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "command-kernel",
+      "capability": "provider-budget-renewal",
+      "production_target": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "provider-budget-renewal-unit",
+      "patterns": [
+        "tests/unit/test_creative_budget_renewal.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "command-kernel",
+      "capability": "provider-budget-renewal",
+      "production_target": "src/novel_forge/modules/command_kernel/creative_budget_contract.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "author-supervision-workspace-postgres",
+      "patterns": [
+        "tests/integration/test_author_supervision_workspace_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "author-supervision-controls",
+      "production_target": "src/novel_forge/modules/book_authority/author_supervision.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "source-aware-author-review-unit",
+      "patterns": [
+        "tests/unit/test_cross_model_author_review.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "production-execution",
+      "capability": "source-aware-author-review",
+      "production_target": "src/novel_forge/modules/production_execution/cross_model_review.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "source-aware-author-review-postgres",
+      "patterns": [
+        "tests/integration/test_cross_model_source_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "production-execution",
+      "capability": "source-aware-author-review",
+      "production_target": "src/novel_forge/modules/production_execution/cross_model_review.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "chapter-dispatch-recovery-unit",
+      "patterns": [
+        "tests/unit/test_chapter_dispatch_recovery.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "chapter-dispatch-recovery",
+      "production_target": "src/novel_forge/modules/book_authority/governed_scheduler.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "chapter-dispatch-recovery-integration",
+      "patterns": [
+        "tests/integration/test_chapter_dispatch_recovery_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "chapter-dispatch-recovery",
+      "production_target": "src/novel_forge/modules/book_authority/governed_scheduler.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "book-editions-unit",
+      "patterns": [
+        "tests/unit/test_book_editions.py",
+        "tests/unit/test_book_edition_planning.py",
+        "tests/unit/test_book_edition_prefix.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-authority",
+      "capability": "book-editions",
+      "production_target": "src/novel_forge/modules/book_authority/edition_application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "book-editions-integration",
+      "patterns": [
+        "tests/integration/test_book_editions_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "book-editions",
+      "production_target": "src/novel_forge/modules/book_authority/edition_application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "canon-support-sampling-unit",
+      "patterns": [
+        "tests/unit/test_canon_support_sampling.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-quality-authority",
+      "capability": "canon-support-sampling",
+      "production_target": "src/novel_forge/modules/chapter_quality_authority/canon_support_reference.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "scene-screenplay-sampling-unit",
+      "patterns": [
+        "tests/unit/test_screenplay_sampling.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-followup-authority",
+      "capability": "scene-screenplay-sampling-unit",
+      "production_target": "src/novel_forge/modules/book_followup_authority/screenplay_sampling.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "scene-screenplay-unit",
+      "patterns": [
+        "tests/unit/test_screenplay.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "book-followup-authority",
+      "capability": "scene-screenplay-unit",
+      "production_target": "src/novel_forge/modules/book_followup_authority/screenplay.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "runtime-dispatch-control-unit",
+      "patterns": [
+        "tests/unit/test_runtime_dispatch_control.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "command-kernel",
+      "capability": "runtime-dispatch-control",
+      "production_target": "src/novel_forge/modules/command_kernel/dispatch_control.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "runtime-dispatch-control-integration",
+      "patterns": [
+        "tests/integration/test_runtime_dispatch_control_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "command-kernel",
+      "capability": "runtime-dispatch-control",
+      "production_target": "src/novel_forge/modules/command_kernel/dispatch_control.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "craft-closure-unit",
+      "patterns": [
+        "tests/unit/test_craft_closure.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "mkaos-authority",
+      "capability": "craft-closure",
+      "production_target": "src/novel_forge/modules/mkaos_authority/craft_reselection.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "world-actor-intents-unit",
+      "patterns": [
+        "tests/unit/test_world_actor_intents.py",
+        "tests/unit/test_world_actor_execution.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "worldbuilding",
+      "capability": "world-actor-intents",
+      "production_target": "src/novel_forge/modules/worldbuilding/actor_intents.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "runtime-inspection-postgres",
+      "patterns": [
+        "tests/integration/test_runtime_inspection_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "operations",
+      "capability": "runtime-inspection-postgres",
+      "production_target": "src/novel_forge/cli/runtime_inspection.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "author-editor-contract",
+      "patterns": [
+        "tests/unit/test_author_editor.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-authority",
+      "capability": "author-editor-contract",
+      "production_target": "src/novel_forge/modules/chapter_authority/author_editor.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "author-editor-postgres",
+      "patterns": [
+        "tests/integration/test_author_editor_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "chapter-authority",
+      "capability": "author-editor-postgres",
+      "production_target": "src/novel_forge/modules/chapter_authority/author_editor.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "author-replacement-postgres",
+      "patterns": [
+        "tests/integration/test_author_book_replacement_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "author-replacement-postgres",
+      "production_target": "src/novel_forge/modules/book_authority/author_revision.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "prose-editorial-contract",
+      "patterns": [
+        "tests/unit/test_longform_prose_editorial.py",
+        "tests/unit/test_prose_semantic_relations.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "prose-editorial-contract",
+      "production_target": "src/novel_forge/modules/book_authority/editorial_domain.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "prose-editorial-postgres",
+      "patterns": [
+        "tests/integration/test_longform_prose_editorial_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-followup-authority",
+      "capability": "prose-editorial-postgres",
+      "production_target": "src/novel_forge/modules/book_followup_authority/prose_coordinator.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "chapter-provider-sampling",
+      "patterns": [
+        "tests/integration/test_chapter_provider_sampling_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "chapter-authority",
+      "capability": "chapter-provider-sampling",
+      "production_target": "src/novel_forge/modules/chapter_authority/sampling.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "narrative-craft-migration",
+      "patterns": [
+        "tests/integration/test_narrative_craft_migration_upgrade_postgres.py"
+      ],
+      "classification": "MIGRATION_COMPATIBILITY",
+      "owner": "mkaos-authority",
+      "capability": "narrative-craft-migration",
+      "production_target": "src/novel_forge/storage/migrations/versions/v20260920_0138_narrative_craft_origin.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "narrative-craft-contract",
+      "patterns": [
+        "tests/unit/test_craft_selection.py",
+        "tests/unit/test_craft_need_driven_selection.py",
+        "tests/unit/test_craft_execution.py",
+        "tests/unit/test_narrative_craft_catalog.py",
+        "tests/unit/test_craft_solver.py",
+        "tests/unit/test_craft_usage.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "native-narrative-craft",
+      "capability": "narrative-craft-contract",
+      "production_target": "src/novel_forge/modules/mkaos_authority/craft_selection.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "narrative-craft-fixture",
+      "patterns": [
+        "tests/unit/test_narrative_craft_review.py",
+        "tests/unit/test_craft_discovery.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "native-narrative-craft",
+      "capability": "narrative-craft-fixture",
+      "production_target": "src/novel_forge/modules/review/craft.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_PROTOCOL_ONLY"
+    },
+    {
+      "id": "narrative-craft-operator",
+      "patterns": [
+        "tests/unit/test_narrative_craft_operator.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "native-narrative-craft",
+      "capability": "narrative-craft-operator",
+      "production_target": "src/novel_forge/modules/mkaos_authority/craft_authoring.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "narrative-craft-postgres",
+      "patterns": [
+        "tests/integration/test_narrative_craft_authoring_postgres.py",
+        "tests/integration/test_craft_planning_postgres.py",
+        "tests/integration/test_narrative_craft_chapter_postgres.py",
+        "tests/integration/test_craft_discovery_postgres.py",
+        "tests/integration/test_narrative_craft_catalog_replay_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "native-narrative-craft",
+      "capability": "narrative-craft-postgres",
+      "production_target": "src/novel_forge/modules/mkaos_authority/application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "cross-chapter-prose-contract",
+      "patterns": [
+        "tests/unit/test_cross_chapter_prose_review.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "chapter-review-quality",
+      "capability": "cross-chapter-prose-contract",
+      "production_target": "src/novel_forge/modules/review/prose_window.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "cross-chapter-prose-postgres",
+      "patterns": [
+        "tests/integration/test_cross_chapter_prose_review_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "chapter-review-quality",
+      "capability": "cross-chapter-prose-postgres",
+      "production_target": "src/novel_forge/modules/book_authority/prose_sources.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "routing-bootstrap-contract",
+      "patterns": [
+        "tests/unit/test_routing_bootstrap.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "production-execution",
+      "capability": "routing-bootstrap-contract",
+      "production_target": "src/novel_forge/modules/production_execution/routing_bootstrap.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "planning-bootstrap-contract",
+      "patterns": [
+        "tests/unit/test_planning_routing_bootstrap.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "story-planning-runtime",
+      "capability": "planning-bootstrap-contract",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "planning-bootstrap-postgres",
+      "patterns": [
+        "tests/integration/test_planning_routing_bootstrap_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "story-planning-runtime",
+      "capability": "planning-bootstrap-postgres",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "routing-bootstrap-budget-postgres",
+      "patterns": [
+        "tests/integration/test_routing_bootstrap_budget_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "command-kernel",
+      "capability": "routing-bootstrap-budget-postgres",
+      "production_target": "src/novel_forge/modules/command_kernel/routing_bootstrap.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "routing-evidence-budget",
+      "patterns": [
+        "tests/integration/test_provider_routing_postgres.py",
+        "tests/integration/test_routing_benchmark_sources_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "production-execution",
+      "capability": "routing-evidence-budget",
+      "production_target": "src/novel_forge/modules/production_execution/routing_runtime.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "deepseek-wire-contract",
+      "patterns": [
+        "tests/unit/test_deepseek_provider.py",
+        "tests/unit/test_deepseek_strict_output.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "provider-control",
+      "capability": "deepseek-wire-contract",
+      "production_target": "src/novel_forge/modules/provider_control/deepseek.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "FIXTURE_PROTOCOL_ONLY"
+    },
+    {
+      "id": "cost-aware-routing",
+      "patterns": [
+        "tests/unit/test_cost_aware_routing.py",
+        "tests/unit/test_routing_benchmark_sources.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "production-execution",
+      "capability": "cost-aware-routing",
+      "production_target": "src/novel_forge/modules/production_execution/cost_routing.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "planning-runtime-continuation-api",
+      "patterns": [
+        "tests/unit/test_planning_runtime_continuation_api.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "story-planning-runtime",
+      "capability": "planning-runtime-continuation-api",
+      "production_target": "src/novel_forge/api/routers/book_authority.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "planning-runtime-continuation-contract",
+      "patterns": [
+        "tests/unit/test_planning_runtime_continuation.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "story-planning-runtime",
+      "capability": "planning-runtime-continuation-contract",
+      "production_target": "src/novel_forge/modules/story_planning_runtime/runtime_continuation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "secondary-workspace-postgres",
+      "patterns": [
+        "tests/integration/test_secondary_workspace_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "project",
+      "capability": "secondary-workspace-postgres",
+      "production_target": "src/novel_forge/modules/project_authority/application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "production-book-budget-postgres",
+      "patterns": [
+        "tests/integration/test_production_book_budget_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "command-kernel",
+      "capability": "production-book-budget-postgres",
+      "production_target": "src/novel_forge/modules/command_kernel/creative_budget_runtime.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "production-book-budget-contract",
+      "patterns": [
+        "tests/unit/test_production_book_budget_contract.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "command-kernel",
+      "capability": "production-book-budget-contract",
+      "production_target": "src/novel_forge/modules/command_kernel/creative_budget_contract.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "volume-reading-checkpoints",
+      "patterns": [
+        "tests/unit/test_volume_reading_checkpoints.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-authority",
+      "capability": "volume-reading-checkpoints",
+      "production_target": "scripts/creation_checkpoints.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "world-foundation-generation-contract",
+      "patterns": [
+        "tests/unit/test_world_foundation_contract.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "worldbuilding",
+      "capability": "world-foundation-generation-contract",
+      "production_target": "src/novel_forge/modules/worldbuilding/foundation_schema.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "narrative-closure-campaign-contract",
+      "patterns": [
+        "tests/unit/test_narrative_closure_campaign.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-authority",
+      "capability": "narrative-closure-campaign-contract",
+      "production_target": "scripts/narrative_closure_campaign.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "narrative-closure-blind-response",
+      "patterns": [
+        "tests/unit/test_narrative_closure_review.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "reader-calibration",
+      "capability": "narrative-closure-blind-response",
+      "production_target": "scripts/narrative_closure_review.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "narrative-closure-native-recovery",
+      "patterns": [
+        "tests/integration/test_narrative_closure_campaign_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-authority",
+      "capability": "narrative-closure-native-recovery",
+      "production_target": "scripts/narrative_closure_campaign.py",
+      "qualification_role": "FIXTURE_CONTRACT_ONLY",
+      "proof_ceiling": "FIXTURE_ONLY"
+    },
+    {
+      "id": "creation-comparison-contract",
+      "patterns": [
+        "tests/unit/test_creation_comparison.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "command-kernel",
+      "capability": "creation-comparison-contract",
+      "production_target": "scripts/creation_comparison.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "creation-frozen-request",
+      "patterns": [
+        "tests/unit/test_creation_runner_freeze.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-authority",
+      "capability": "creation-frozen-request",
+      "production_target": "scripts/run_creation_synthesis.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "creation-freeze-integrity",
+      "patterns": [
+        "tests/unit/test_creation_freeze.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-authority",
+      "capability": "creation-freeze-integrity",
+      "production_target": "scripts/creation_freeze.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "corpus-ingestion-runtime",
+      "patterns": [
+        "tests/integration/test_corpus_ingestion_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "source-authority",
+      "capability": "corpus-ingestion",
+      "production_target": "src/novel_forge/modules/source_import/corpus_ingestion/runtime.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "corpus-parser-contract",
+      "patterns": [
+        "tests/unit/test_corpus_ingestion_formats.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "source-authority",
+      "capability": "corpus-ingestion",
+      "production_target": "src/novel_forge/modules/source_import/corpus_ingestion/parsers.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "corpus-transport-support",
+      "patterns": [
+        "tests/unit/test_corpus_ingestion_transports.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "source-authority",
+      "capability": "corpus-ingestion",
+      "production_target": "src/novel_forge/modules/source_import/corpus_ingestion/acquisition.py",
+      "qualification_role": "FIXTURE_CONTRACT_ONLY",
+      "proof_ceiling": "FIXTURE_ONLY"
+    },
+    {
+      "id": "corpus-migration-upgrade",
+      "patterns": [
+        "tests/integration/test_corpus_migrations_postgres.py"
+      ],
+      "classification": "MIGRATION_COMPATIBILITY",
+      "owner": "source-authority",
+      "capability": "corpus-foundation",
+      "production_target": "src/novel_forge/storage/migrations/versions/v20260908_0121_corpus_foundation.py",
+      "qualification_role": "COMPATIBILITY_ONLY",
+      "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY"
+    },
+    {
+      "id": "corpus-native-runtime",
+      "patterns": [
+        "tests/integration/test_corpus_foundation_postgres.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "source-authority",
+      "capability": "corpus-foundation",
+      "production_target": "src/novel_forge/modules/source_authority/corpus_application.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "corpus-rights-contract",
+      "patterns": [
+        "tests/unit/test_corpus_admission.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "source-authority",
+      "capability": "corpus-foundation",
+      "production_target": "src/novel_forge/modules/source_authority/corpus.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "creation-pilot-policy",
+      "patterns": [
+        "tests/unit/test_creation_pilot.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "chapter-quality-authority",
+      "capability": "bounded-chinese-creation-policy",
+      "production_target": "src/novel_forge/modules/chapter_quality_authority/domain.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "accepted-manuscript-export",
+      "patterns": [
+        "tests/unit/test_creation_export.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-canon-acceptance",
+      "capability": "accepted-manuscript-binding",
+      "production_target": "src/novel_forge/modules/chapter_outcome/acceptance_contract.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "native-creation-scripted-wiring",
+      "patterns": [
+        "tests/integration/test_synthesis_formation_postgres.py",
+        "tests/integration/test_author_reading_checkpoints_postgres.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "book-design-authority",
+      "capability": "native-creation-wiring",
+      "production_target": "src/novel_forge/modules/book_design_authority/formation.py",
+      "qualification_role": "FIXTURE_CONTRACT_ONLY",
+      "proof_ceiling": "FIXTURE_ONLY"
+    },
+    {
+      "id": "actionable-diagnostics",
+      "patterns": [
+        "tests/unit/test_actionable_diagnostics.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "chapter-review-quality",
+      "capability": "actionable-diagnostic-contract",
+      "production_target": "src/novel_forge/modules/review/domain.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "grounded-canon",
+      "patterns": [
+        "tests/unit/test_grounded_canon.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-canon-acceptance",
+      "capability": "grounded-canon-contract",
+      "production_target": "src/novel_forge/modules/canon_graph/grounding.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "world-causal-batch",
+      "patterns": [
+        "tests/unit/test_world_causal_batch.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-canon-acceptance",
+      "capability": "world-causal-production-contract",
+      "production_target": "src/novel_forge/modules/canon_graph/world_reconciliation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "world-preparation-planning",
+      "patterns": [
+        "tests/unit/test_world_causal_preparation.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "hierarchical-planning",
+      "capability": "world-causal-production-contract",
+      "production_target": "src/novel_forge/modules/worldbuilding/production_planning.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "background-fact-origin",
+      "patterns": [
+        "tests/unit/test_governed_background_actual.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-canon-acceptance",
+      "capability": "world-causal-production-contract",
+      "production_target": "src/novel_forge/modules/canon_graph/background.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "accepted-preparation-obligation",
+      "patterns": [
+        "tests/unit/test_causal_preparation_acceptance.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "book-canon-acceptance",
+      "capability": "world-causal-production-contract",
+      "production_target": "src/novel_forge/modules/canon_graph/causal_preparation.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "qualification-infrastructure",
+      "patterns": [
+        "tests/unit/test_architecture_manifest.py",
+        "tests/unit/test_backend_qualification*.py",
+        "tests/unit/test_core_os_characterization.py",
+        "tests/unit/test_documentation_reality.py",
+        "tests/unit/test_historical_reality.py",
+        "tests/unit/test_implementation_tree_identity.py",
+        "tests/unit/test_integration_database_safety.py",
+        "tests/unit/test_instruction_surface.py",
+        "tests/unit/test_production_execution_inventory.py",
+        "tests/unit/test_production_reachability.py",
+        "tests/unit/test_proposal_lifecycle.py",
+        "tests/unit/test_pr_governance.py",
+        "tests/unit/test_pytest_collection_evidence.py",
+        "tests/unit/test_release_run_evidence.py",
+        "tests/unit/test_skill_sync.py",
+        "tests/unit/test_test_reality.py",
+        "tests/unit/test_worker_fleet_evidence.py",
+        "tests/architecture/test_architecture_fitness.py",
+        "tests/architecture/test_architecture_manifests.py",
+        "tests/architecture/test_backend_qualification_boundaries.py",
+        "tests/architecture/test_head_integrity.py",
+        "tests/architecture/test_release_entrypoint_contract.py"
+      ],
+      "classification": "QUALIFICATION_INFRASTRUCTURE",
+      "owner": "repository-qualification",
+      "capability": "canonical-qualification",
+      "production_target": "src/novel_forge/tools/backend_qualification.py",
+      "qualification_role": "QUALIFICATION_MECHANICS_ONLY",
+      "proof_ceiling": "INFRASTRUCTURE_ONLY"
+    },
+    {
+      "id": "retired-runtime-guards",
+      "patterns": [
+        "tests/architecture/test_retired_compatibility_runtime.py"
+      ],
+      "classification": "RETIREMENT_GUARD",
+      "owner": "repository-architecture",
+      "capability": "retired-runtime-absence",
+      "production_target": "architecture/manifests/module-manifest.yaml",
+      "qualification_role": "NEGATIVE_BOUNDARY_ONLY",
+      "proof_ceiling": "RETIREMENT_ONLY"
+    },
+    {
+      "id": "agent-harness-fixture-protocol",
+      "patterns": [
+        "tests/unit/test_unified_agent_harness.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "agent-runtime-authority",
+      "capability": "agent-harness-protocol",
+      "production_target": "src/novel_forge/modules/agent_runtime/harness.py",
+      "qualification_role": "FIXTURE_CONTRACT_ONLY",
+      "proof_ceiling": "FIXTURE_ONLY"
+    },
+    {
+      "id": "synthetic-retrieval-benchmark-protocol",
+      "patterns": [
+        "tests/unit/test_longform_retrieval_benchmark.py"
+      ],
+      "classification": "FIXTURE_PROTOCOL",
+      "owner": "context-builder-authority",
+      "capability": "synthetic-longform-retrieval-benchmark",
+      "production_target": "src/novel_forge/modules/context_builder/retrieval_benchmark.py",
+      "qualification_role": "SYNTHETIC_ENGINEERING_BENCHMARK_ONLY",
+      "proof_ceiling": "FIXTURE_ONLY"
+    },
+    {
+      "id": "retrieval-campaign-domain-invariants",
+      "patterns": [
+        "tests/unit/test_retrieval_campaign.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "context-builder-authority",
+      "capability": "bounded-retrieval-campaign",
+      "production_target": "src/novel_forge/modules/context_builder/retrieval_campaign.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    },
+    {
+      "id": "migration-compatibility",
+      "patterns": [
+        "tests/unit/test_*migration*.py",
+        "tests/unit/test_*upgrade*.py",
+        "tests/unit/test_postgres_migrations.py",
+        "tests/integration/test_*migration*.py",
+        "tests/integration/test_*upgrade*.py",
+        "tests/integration/test_authority_schema_postgres.py",
+        "tests/integration/test_book_opening_legacy_reconciliation_postgres.py",
+        "tests/integration/test_book_opening_recovery_regression_postgres.py",
+        "tests/integration/test_book_opening_runtime_hardening_postgres.py"
+      ],
+      "classification": "MIGRATION_COMPATIBILITY",
+      "owner": "migration-authority",
+      "capability": "fresh-install-and-supported-upgrade",
+      "production_target": "src/novel_forge/storage/migrations/runner.py",
+      "qualification_role": "COMPATIBILITY_ONLY",
+      "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY"
+    },
+    {
+      "id": "current-authority-boundaries",
+      "patterns": [
+        "tests/architecture/test_*.py"
+      ],
+      "classification": "CURRENT_AUTHORITY_BOUNDARY",
+      "owner": "repository-architecture",
+      "capability": "current-authority-boundaries",
+      "production_target": "architecture/manifests/production-entry-manifest.yaml",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "STATIC_AUTHORITY_BOUNDARY"
+    },
+    {
+      "id": "current-postgresql-runtime-contracts",
+      "patterns": [
+        "tests/integration/test_*.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "runtime-authorities",
+      "capability": "postgresql-runtime",
+      "production_target": "compose.yml",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "POSTGRESQL_INTEGRATION_ONLY"
+    },
+    {
+      "id": "current-acceptance-contracts",
+      "patterns": [
+        "tests/acceptance/test_*.py"
+      ],
+      "classification": "CURRENT_RUNTIME_CONTRACT",
+      "owner": "runtime-authorities",
+      "capability": "backend-acceptance",
+      "production_target": "src/novel_forge/api/authority_app.py",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_ACCEPTANCE_ONLY"
+    },
+    {
+      "id": "current-domain-invariants",
+      "patterns": [
+        "tests/unit/test_*.py"
+      ],
+      "classification": "CURRENT_DOMAIN_INVARIANT",
+      "owner": "AUTO_FROM_PRODUCTION_TARGET",
+      "capability": "current-domain-and-runtime-policy",
+      "production_target": "AUTO_FROM_TEST_IMPORTS",
+      "qualification_role": "CURRENT_BUSINESS_SUPPORT",
+      "proof_ceiling": "IN_PROCESS_CONTRACT_ONLY"
+    }
+  ],
+  "semantic_slice_policy": {
+    "creative_grounded_chapter": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/chapter_authority/creative_memo.py",
+        "src/novel_forge/modules/review/diagnostics.py",
+        "src/novel_forge/modules/canon_graph/grounding.py",
+        "src/novel_forge/modules/narrative_state/contracts.py",
+        "src/novel_forge/modules/chapter_outcome/acceptance_contract.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "narrative_reality_causal_chain": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/narrative_state/reality.py",
+        "src/novel_forge/modules/worldbuilding/dynamics.py",
+        "src/novel_forge/modules/worldbuilding/foundation.py",
+        "src/novel_forge/modules/hierarchical_planning/causal_domain.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "narrative_reality_projection_upgrade": {
+      "role": "MIGRATION_COMPATIBILITY",
+      "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY"
+    },
+    "versioned_execution_and_reader_policy": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/chapter_group_authority/policy.py",
+        "src/novel_forge/modules/book_followup_authority/reader_policy.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "chapter_mission_scene_contract": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/hierarchical_planning/chapter_contracts.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "whole_book_completion_boundary": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/book_authority/completion_domain.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "migration_matrix": {
+      "role": "MIGRATION_COMPATIBILITY",
+      "proof_ceiling": "MIGRATION_COMPATIBILITY_ONLY"
+    },
+    "provider_hard_stop_and_callback": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/production_execution/provider_admission.py",
+        "src/novel_forge/modules/command_kernel/external_effect_runtime.py"
+      ],
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    },
+    "provider_effect_fixture_control": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/command_kernel/external_effect_runtime.py"
+      ],
+      "proof_ceiling": "FIXTURE_CONTROL_ONLY"
+    },
+    "story_design_plan_change_activation": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/story_design_authority/validators.py",
+        "src/novel_forge/modules/plan_change_authority/domain.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "backend_vertical_slice": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/chapter_outcome/__init__.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "book_opening_recovery": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/book_authority/opening_workflow.py",
+        "src/novel_forge/modules/book_authority/opening_progress.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "bounded_retrieval_context": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/context_builder/production_retrieval.py",
+        "src/novel_forge/modules/context_builder/retrieval_campaign.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "narrative_craft_engineering": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/mkaos_authority/craft.py",
+        "src/novel_forge/modules/mkaos_authority/craft_authoring.py"
+      ],
+      "proof_ceiling": "POSTGRESQL_CURRENT_CONTRACT"
+    },
+    "creative_validation_bounded_recovery": {
+      "role": "CURRENT_BUSINESS_CAPABILITY",
+      "production_targets": [
+        "src/novel_forge/modules/command_kernel/derived_step_revalidation.py",
+        "src/novel_forge/modules/command_kernel/step_successor.py"
+      ],
+      "proof_ceiling": "CURRENT_CONTRACT_NO_REAL_PROVIDER"
+    }
+  }
+}

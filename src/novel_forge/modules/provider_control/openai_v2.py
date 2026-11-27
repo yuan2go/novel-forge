@@ -1,0 +1,311 @@
+from __future__ import annotations
+
+import hashlib
+from datetime import datetime, timezone
+from typing import Any, Mapping, Protocol
+
+from .contracts import (
+    ProviderCancellationRequest,
+    ProviderCapabilityProfile,
+    ProviderControlLevel,
+    ProviderInvocationHandle,
+    ProviderInvocationRequest,
+    ProviderInvocationResult,
+    ProviderQueryRequest,
+    ProviderReceipt,
+)
+
+
+class OpenAITransportV2(Protocol):
+
+    def execute(self, request: ProviderInvocationRequest) -> Mapping[str, Any]: ...
+    def query(self, request: ProviderQueryRequest) -> Mapping[str, Any]: ...
+    def cancel(self, request: ProviderCancellationRequest) -> Mapping[str, Any]: ...
+    def verify_callback(
+        self, body: bytes, headers: Mapping[str, str], *, secret: str
+    ) -> ProviderReceipt: ...
+
+
+class OpenAIProviderAdapterV2:
+    """SECURITY: Controlled OpenAI SDK boundary with an explicit, mockable transport.
+
+    This class does not read environment variables and never creates a client by
+    itself.  The composition root owns credentials and transport construction.
+    """
+    provider = "openai"
+
+    def __init__(
+        self,
+        transport: OpenAITransportV2,
+        *,
+        supports_query: bool,
+        supports_cancel: bool,
+        supports_callback: bool,
+        supports_cost_receipt: bool,
+        provider_idempotency_supported: bool,
+        real_provider_validation_eligible: bool = True,
+    ) -> None:
+        self.transport = transport
+        reconciliation_mode = (
+            "query" if supports_query else "callback" if supports_callback else "unsupported"
+        )
+        self.reconciliation_mode = reconciliation_mode
+        self.capability_profile = ProviderCapabilityProfile(
+            provider=self.provider,
+            control_level=ProviderControlLevel.V2_CONTROLLED,
+            supports_request_timeout=True,
+            supports_provider_idempotency=provider_idempotency_supported,
+            supports_query=supports_query,
+            supports_cancel=supports_cancel,
+            supports_callback=supports_callback,
+            supports_usage_receipt=True,
+            supports_cost_receipt=supports_cost_receipt,
+            reconciliation_mode=reconciliation_mode,
+            real_provider_validation_eligible=real_provider_validation_eligible,
+        )
+
+    def invoke(self, request: ProviderInvocationRequest) -> ProviderInvocationResult:
+        if request.provider != self.provider:
+            raise ValueError("provider invocation was routed to the wrong adapter")
+        raw = dict(self.transport.execute(request))
+        return self._result(raw, request=request)
+
+    def query_v2(self, request: ProviderQueryRequest) -> ProviderInvocationResult:
+        if not self.capability_profile.supports_query:
+            return ProviderInvocationResult(
+                "ambiguous",
+                None,
+                {"manual_resolution_required": True, "query_supported": False},
+                False,
+            )
+        return self._result(dict(self.transport.query(request)), request=request)
+
+    def cancel_v2(
+        self, request: ProviderCancellationRequest
+    ) -> ProviderInvocationResult:
+        if not self.capability_profile.supports_cancel:
+            return ProviderInvocationResult(
+                "ambiguous",
+                None,
+                {"manual_resolution_required": True, "cancel_supported": False},
+                False,
+            )
+        return self._result(dict(self.transport.cancel(request)), request=request)
+
+    def verify_callback(
+        self,
+        body: bytes,
+        headers: Mapping[str, str],
+        *,
+        secret: str,
+    ) -> ProviderReceipt:
+        if not self.capability_profile.supports_callback:
+            raise ValueError("callback verification is not supported by this route")
+        receipt = self.transport.verify_callback(body, headers, secret=secret)
+        if not receipt.provider_request_id or not receipt.message_id or not receipt.payload_hash:
+            raise ValueError("verified callback receipt is incomplete")
+        return receipt
+
+    def _result(
+        self,
+        raw: dict[str, Any],
+        *,
+        request: ProviderInvocationRequest | ProviderQueryRequest | ProviderCancellationRequest,
+    ) -> ProviderInvocationResult:
+        outcome = str(raw.get("outcome") or "")
+        request_sent = bool(raw.get("request_sent"))
+        provider_request_id = str(raw.get("provider_request_id") or "")
+        handle = None
+        if provider_request_id:
+            handle = ProviderInvocationHandle(
+                provider_request_id=provider_request_id,
+                provider_correlation_id=str(raw.get("provider_correlation_id") or provider_request_id),
+                accepted_at=str(raw.get("accepted_at") or datetime.now(timezone.utc).isoformat()),
+                completion_mode=str(raw.get("completion_mode") or "synchronous"),
+                query_supported=self.capability_profile.supports_query,
+                cancel_supported=self.capability_profile.supports_cancel,
+                callback_supported=self.capability_profile.supports_callback,
+                idempotency_supported=self.capability_profile.supports_provider_idempotency,
+            )
+        evidence = raw.get("evidence")
+        if not isinstance(evidence, dict):
+            raise ValueError("provider SDK result has no evidence object")
+        if outcome == "success":
+            usage = evidence.get("usage")
+            if not isinstance(usage, dict) or any(
+                not isinstance(usage.get(key), int) or usage[key] < 0
+                for key in ("input_tokens", "output_tokens")
+            ):
+                evidence = {**evidence, "raw_usage": usage, "usage_error": "MALFORMED_PROVIDER_USAGE",
+                            "usage": {"input_tokens": None, "output_tokens": None},
+                            "cost": {"status": "UNKNOWN", "currency": "USD"}}
+                outcome = "unknown"
+            if self.capability_profile.supports_cost_receipt:
+                cost = evidence.get("cost")
+                if not isinstance(cost, dict) or not str(cost.get("currency") or ""):
+                    evidence = {**evidence, "raw_cost": cost,
+                                "cost": {"status": "UNKNOWN", "currency": "USD"}}
+                    outcome = "unknown"
+        return ProviderInvocationResult(outcome, handle, dict(evidence), request_sent)
+
+
+class OpenAISdkTransport:
+
+    def __init__(self, client: Any) -> None:
+        self.client = client
+
+    def execute(self, request: ProviderInvocationRequest) -> Mapping[str, Any]:
+        from novel_forge.modules.production_execution.provider_admission import (
+            ProviderAdmissionReceipt,
+            ProviderRequestEnvelope,
+            verify_provider_admission,
+        )
+
+        envelope = ProviderRequestEnvelope.from_dict(request.request_payload)
+        if not isinstance(request.provider_admission, Mapping):
+            raise ValueError("PROVIDER_ADMISSION_REQUIRED")
+        admission = ProviderAdmissionReceipt.from_dict(request.provider_admission)
+        verify_provider_admission(envelope, admission)
+        if (
+            envelope.envelope_hash != request.request_hash
+            or envelope.provider != request.provider
+            or envelope.model != request.model
+            or envelope.timeout_seconds != request.timeout_seconds
+            or envelope.stable_idempotency_key != request.stable_idempotency_key
+        ):
+            raise ValueError("PROVIDER_REQUEST_IDENTITY_DRIFT")
+        request_options: dict[str, Any] = {
+            "model": envelope.model,
+            "input": envelope.input_text,
+            "timeout": self._generation_timeout(),
+            "extra_headers": {"Idempotency-Key": envelope.stable_idempotency_key},
+        }
+        request_options["max_output_tokens"] = envelope.max_output_tokens
+        if envelope.reasoning_effort:
+            request_options["reasoning"] = {"effort": envelope.reasoning_effort}
+        response = self.client.responses.create(
+            **request_options,
+        )
+        request_id = str(getattr(response, "id", "") or "")
+        if not request_id:
+            raise ValueError("OpenAI SDK response did not include a request ID")
+        text = str(getattr(response, "output_text", "") or "")
+        from novel_forge.modules.production_execution.codex_configuration import strict_codex_json_loads
+        structured_error = None
+        try:
+            result = strict_codex_json_loads(text)
+            if not isinstance(result, dict):
+                raise ValueError("JSON_OBJECT_REQUIRED")
+        except (ValueError, RecursionError) as exc:
+            result = None
+            structured_error = type(exc).__name__
+        usage = getattr(response, "usage", None)
+        input_tokens = getattr(usage, "input_tokens", None)
+        output_tokens = getattr(usage, "output_tokens", None)
+        status = str(getattr(response, "status", "") or "")
+        return {
+            "outcome": "success" if status == "completed" and result is not None else "unknown",
+            "request_sent": True,
+            "provider_request_id": request_id,
+            "provider_correlation_id": request_id,
+            "completion_mode": "synchronous",
+            "evidence": {
+                "result": result,
+                "raw_output_text": text,
+                "source_complete": status == "completed",
+                "structured_output_error": structured_error,
+                "model_id": str(getattr(response, "model", "") or ""),
+                "provider_request_id": request_id,
+                "usage": {"input_tokens": input_tokens, "output_tokens": output_tokens},
+                "cost": {"status": "UNKNOWN", "currency": "USD", "source": "not_provided"},
+                "request_hash": request.request_hash,
+            },
+        }
+
+    @staticmethod
+    def _generation_timeout():
+        import httpx
+        return httpx.Timeout(None, connect=30.0, pool=30.0)
+
+    def query(self, request: ProviderQueryRequest) -> Mapping[str, Any]:
+        response = self.client.responses.retrieve(request.provider_request_id)
+        return self._control_result(response)
+
+    def cancel(self, request: ProviderCancellationRequest) -> Mapping[str, Any]:
+        response = self.client.responses.cancel(request.provider_request_id)
+        result = dict(self._control_result(response))
+        result["outcome"] = (
+            "cancelled" if str(getattr(response, "status", "")) == "cancelled"
+            else "already_completed"
+        )
+        return result
+
+    def verify_callback(
+        self, body: bytes, headers: Mapping[str, str], *, secret: str
+    ) -> ProviderReceipt:
+        webhook = self.client.webhooks.unwrap(body.decode("utf-8"), headers, secret=secret)
+        data = getattr(webhook, "data", None)
+        request_id = str(getattr(data, "id", "") or "")
+        message_id = str(getattr(webhook, "id", "") or headers.get("webhook-id") or "")
+        outcome = str(getattr(webhook, "type", "") or "")
+        normalized_outcome = {
+            "response.completed": "success",
+            "response.failed": "final_failure",
+            "response.cancelled": "cancelled",
+        }.get(outcome, "retryable_failure")
+        return ProviderReceipt(
+            provider_request_id=request_id,
+            receipt_id=message_id,
+            message_id=message_id,
+            outcome=normalized_outcome,
+            payload_hash="sha256:" + hashlib.sha256(body).hexdigest(),
+            evidence={
+                "signature_verified": True,
+                "provider": "openai",
+                "provider_event_type": outcome,
+            },
+        )
+
+    @staticmethod
+    def _control_result(response: Any) -> Mapping[str, Any]:
+        request_id = str(getattr(response, "id", "") or "")
+        status = str(getattr(response, "status", "") or "")
+        outcome = {
+            "completed": "success",
+            "failed": "final_failure",
+            "cancelled": "cancelled",
+        }.get(status, "ambiguous")
+        return {
+            "outcome": outcome,
+            "request_sent": True,
+            "provider_request_id": request_id,
+            "provider_correlation_id": request_id,
+            "completion_mode": "background",
+            "evidence": {"provider_status": status},
+        }
+
+
+def build_openai_provider_adapter(api_key: str) -> OpenAIProviderAdapterV2:
+
+    if not api_key:
+        raise ValueError("OpenAI adapter requires a resolved credential")
+    try:
+        from openai import OpenAI
+    except ModuleNotFoundError as exc:  # pragma: no cover - optional live boundary
+        raise RuntimeError("OpenAI adapter requires the optional openai SDK") from exc
+    return OpenAIProviderAdapterV2(
+        OpenAISdkTransport(OpenAI(api_key=api_key, max_retries=0)),
+        supports_query=True,
+        supports_cancel=True,
+        supports_callback=False,
+        supports_cost_receipt=False,
+        provider_idempotency_supported=True,
+    )
+
+
+__all__ = [
+    "OpenAIProviderAdapterV2",
+    "OpenAISdkTransport",
+    "OpenAITransportV2",
+    "build_openai_provider_adapter",
+]

@@ -1,0 +1,189 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import StrEnum
+from typing import Any
+
+from novel_forge.modules.command_kernel.errors import KernelError
+
+
+class PlanChangeSource(StrEnum):
+    LONGFORM_RECAP = "LONGFORM_RECAP"
+    PLAN_VS_ACTUAL = "PLAN_VS_ACTUAL"
+    READER_OUTCOME = "READER_OUTCOME"
+    HUMAN_FEEDBACK = "HUMAN_FEEDBACK"
+    CANON_CHANGE = "CANON_CHANGE"
+    STORY_STATE_CHANGE = "STORY_STATE_CHANGE"
+    QUALITY_ISSUE = "QUALITY_ISSUE"
+    PLATFORM_CHANGE = "PLATFORM_CHANGE"
+    ENDING_REACHABILITY_RISK = "ENDING_REACHABILITY_RISK"
+    ARC_CLOSURE_RISK = "ARC_CLOSURE_RISK"
+
+
+class PlanChangeRisk(StrEnum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+
+
+SEMANTIC_FIELDS = {
+    "objective": "OBJECTIVE_CHANGED",
+    "required_events": "REQUIRED_EVENT_CHANGED",
+    "forbidden_events": "FORBIDDEN_EVENT_CHANGED",
+    "required_payoffs": "PAYOFF_CHANGED",
+    "forbidden_payoffs": "PAYOFF_CHANGED",
+    "character_deltas": "CHARACTER_DELTA_CHANGED",
+    "arc_contributions": "ARC_CONTRIBUTION_CHANGED",
+    "chapter_range": "CHAPTER_RANGE_CHANGED",
+    "ending_contract": "ENDING_CONTRACT_CHANGED",
+    "canon_dependencies": "CANON_DEPENDENCY_CHANGED",
+    "quality_targets": "QUALITY_TARGET_CHANGED",
+    "character_development": "CHARACTER_DEVELOPMENT_CHANGED",
+    "knowledge_disclosure_obligations": "DISCLOSURE_OBLIGATION_CHANGED",
+    "narrative_segments": "NARRATIVE_SEGMENT_CHANGED",
+    "arc_segments": "ARC_SEGMENT_CHANGED",
+    "arc_relations": "ARC_RELATION_CHANGED",
+    "dependencies": "ARC_DEPENDENCY_CHANGED",
+    "closure_conditions": "ARC_COMPLETION_CRITERIA_CHANGED",
+    "target_window": "ARC_TARGET_WINDOW_CHANGED",
+    "chapter_function_matrix": "NARRATIVE_SCHEDULING_CHANGED",
+    "chapter_intent": "CHAPTER_MISSION_CHANGED",
+    "primary_function": "CHAPTER_MISSION_CHANGED",
+    "required_state_delta": "CHAPTER_MISSION_CHANGED",
+    "required_arc_contributions": "TRAJECTORY_COMMITMENT_CHANGED",
+    "arc_schedule": "TRAJECTORY_COMMITMENT_CHANGED",
+    "character_participation": "TRAJECTORY_COMMITMENT_CHANGED",
+    "required_state_transitions": "CHAPTER_MISSION_CHANGED",
+    "obligation_actions": "OBLIGATION_COMMITMENT_CHANGED",
+    "setups": "OBLIGATION_COMMITMENT_CHANGED",
+    "payoffs": "OBLIGATION_COMMITMENT_CHANGED",
+    "knowledge_boundaries": "CHAPTER_KNOWLEDGE_BOUNDARY_CHANGED",
+    "disclosures": "DISCLOSURE_OBLIGATION_CHANGED",
+    "narrative_realization_slice": "REALIZATION_EXECUTION_COMMITMENT_CHANGED",
+    "narrative_event_chain": "REALIZATION_EXECUTION_COMMITMENT_CHANGED",
+    "chapter_contract_schema_version": "CHAPTER_CONTRACT_SCHEMA_CHANGED",
+    "scene_plan": "SCENE_ARCHITECTURE_CHANGED",
+    "expected_exit_state": "EXPECTED_EXIT_STATE_CHANGED",
+    "planning_horizon": "PLANNING_HORIZON_CHANGED",
+    "realization_level": "REALIZATION_LEVEL_CHANGED",
+    "commitment_contract": "COMMITMENT_CONTRACT_CHANGED",
+    "world_realization": "WORLD_REALIZATION_CHANGED",
+    "character_realization": "CHARACTER_REALIZATION_CHANGED",
+    "knowledge_translations": "KNOWLEDGE_TRANSLATION_CHANGED",
+    "craft_strategy": "CRAFT_STRATEGY_CHANGED",
+}
+
+HIGH_RISK_FIELDS = frozenset(
+    {
+        "ending_contract",
+        "reader_promise",
+        "central_conflict_engine",
+        "protagonist_core_goal",
+        "primary_antagonist",
+        "world_rules",
+        "canon_dependencies",
+        "commercial_positioning",
+    }
+)
+
+
+@dataclass(frozen=True, slots=True)
+class SemanticFieldChange:
+    field: str
+    change_type: str
+    before: Any
+    after: Any
+
+
+def semantic_plan_diff(
+    before: dict[str, Any], after: dict[str, Any]
+) -> tuple[SemanticFieldChange, ...]:
+    changes: list[SemanticFieldChange] = []
+    fields = sorted(set(SEMANTIC_FIELDS) | HIGH_RISK_FIELDS)
+    for field in fields:
+        old = before.get(field)
+        new = after.get(field)
+        if _canonical(old) != _canonical(new):
+            changes.append(
+                SemanticFieldChange(
+                    field=field,
+                    change_type=SEMANTIC_FIELDS.get(field, f"{field.upper()}_CHANGED"),
+                    before=old,
+                    after=new,
+                )
+            )
+    return tuple(changes)
+
+
+def classify_plan_change_risk(
+    changes: tuple[SemanticFieldChange, ...],
+    *,
+    target_execution_scope: str,
+) -> PlanChangeRisk:
+    changed_fields = {change.field for change in changes}
+    if target_execution_scope in {"EXECUTED", "FROZEN"}:
+        return PlanChangeRisk.HIGH
+    if changed_fields & HIGH_RISK_FIELDS:
+        return PlanChangeRisk.HIGH
+    if changed_fields & {
+        "objective",
+        "required_events",
+        "chapter_range",
+        "character_deltas",
+        "arc_contributions",
+        "character_development",
+        "knowledge_disclosure_obligations",
+        "narrative_segments",
+        "arc_segments",
+        "arc_relations",
+        "chapter_function_matrix",
+        "chapter_intent",
+        "primary_function",
+        "required_state_delta",
+        "required_arc_contributions",
+        "arc_schedule",
+        "character_participation",
+        "required_state_transitions",
+        "obligation_actions",
+        "setups",
+        "payoffs",
+        "knowledge_boundaries",
+        "knowledge_translations",
+        "craft_strategy",
+        "disclosures",
+        "narrative_realization_slice",
+        "narrative_event_chain",
+        "chapter_contract_schema_version",
+        "scene_plan",
+        "commitment_contract",
+        "world_realization",
+        "character_realization",
+    }:
+        return PlanChangeRisk.MEDIUM
+    return PlanChangeRisk.LOW
+
+
+def require_approvable_scope(target_execution_scope: str) -> None:
+    if target_execution_scope == "EXECUTED":
+        raise KernelError(
+            "EXECUTED_PLAN_RETCON_ONLY",
+            "executed plans may only receive a separate Retcon proposal",
+        )
+
+
+def _canonical(value: Any) -> str:
+    import json
+
+    return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+
+
+__all__ = [
+    "HIGH_RISK_FIELDS",
+    "PlanChangeRisk",
+    "PlanChangeSource",
+    "SEMANTIC_FIELDS",
+    "SemanticFieldChange",
+    "classify_plan_change_risk",
+    "require_approvable_scope",
+    "semantic_plan_diff",
+]

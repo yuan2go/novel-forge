@@ -1,0 +1,44 @@
+{
+  "contract_version": "narrative-closure-user-approval-amendment.v1",
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "authorization_ref": "user:WP02:20260928:real-prose-resumption-strict:v1",
+  "parent_authorization_ref": "user:WP02:20260928:deepseek-documentation-adjustment:v1",
+  "user_instruction": "接续原工作包完成真实正文生产、作者入口接通与编辑收益验证；先修运行首断点，按现有授权执行有界诊断。",
+  "recorded_at": "2026-09-28T02:19:09.671245+00:00",
+  "expires_at": "2026-09-28T05:28:24Z",
+  "purpose": "One bounded native diagnostic after explicit strict-tool protocol implementation, same failed input and campaign; not another independent observation",
+  "predecessor_operation_id": "c20f0f1f-3f7b-44ce-b771-937ca9d9601c",
+  "predecessor_effect_id": "df35e16d-955b-4d14-9f27-55a18194129e",
+  "change": "Reviewed Pack opts creative.candidates.generate into strict-tool Beta output. Full schema remains frozen and natively validated; tool bytes included in admission. Same Flash model and low reasoning, no fallback or local output repair.",
+  "provider": "deepseek",
+  "model": "deepseek-flash",
+  "model_revision": "DeepSeek-V4.1-Flash",
+  "reasoning_effort": "low",
+  "thinking": "enabled",
+  "maximum_additional_calls": 1,
+  "maximum_tokens_per_call": 100000,
+  "maximum_additional_priced_usd": "0.15",
+  "maximum_cumulative_cny": "100",
+  "native_campaign_usd_ceiling": "1",
+  "calibration_cumulative_caps": {
+    "calls": 7,
+    "tokens": 700000,
+    "priced_usd": "0.75"
+  },
+  "original_purpose_totals_and_expiry_unchanged": true,
+  "retain_all_failures_and_usage": true,
+  "require_exact_new_pack_approval": true,
+  "require_new_producer_hash": true,
+  "copy_prior_qualification": false,
+  "production_eligible": false,
+  "stop_conditions": [
+    "One call only; preserve result and stop regardless of quality.",
+    "First failure or UNKNOWN stops affected path without automatic retry or fallback.",
+    "No cross-pool transfer or additional monetary allocation; original deadline remains."
+  ],
+  "official_sources": [
+    "https://api-docs.deepseek.com/zh-cn/guides/tool_calls/",
+    "https://api-docs.deepseek.com/zh-cn/api/create-chat-completion/",
+    "https://api-docs.deepseek.com/quick_start/pricing/"
+  ]
+}

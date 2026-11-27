@@ -1,0 +1,32 @@
+{
+  "name": "novel-forge-admin",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "test": "node --test tests/feature-architecture.test.mjs tests/author-editor-text.test.mjs tests/editorial-learning.test.mjs",
+    "smoke:browser": "NOVEL_FORGE_REQUIRE_PLAYWRIGHT=1 node --test tests/playwright-smoke.test.mjs",
+    "test:author-editor": "node tests/author-editor-browser.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "next": "^16.2.9",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "sharp": "^0.35.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "playwright": "^1.55.0",
+    "typescript": "^5.5.3"
+  },
+  "overrides": {
+    "postcss": "^8.5.18",
+    "sharp": "$sharp"
+  }
+}

@@ -1,0 +1,366 @@
+{
+  "schema_version": "novelos.capability_pack.v1",
+  "identity": {
+    "pack_id": "agent_session_pack",
+    "name": "Agent Session Pack",
+    "domain": "agent_runtime",
+    "capability_type": "agent_session_runtime",
+    "version": "1.0.0",
+    "owner": "novel-os-core",
+    "status": "CANDIDATE",
+    "lifecycle": "VALIDATION",
+    "description": "Governed execution identity and Tool boundary for durable Agent Harness sessions."
+  },
+  "compatibility": {
+    "novel_forge_min_version": "6.0.0",
+    "novel_forge_max_version": null,
+    "protocol_min_version": "novelos.capability_pack.v1",
+    "protocol_max_version": null,
+    "required_capabilities": [
+      "agent.workspace.execute"
+    ],
+    "required_schema_versions": [
+      "schema:execution-input:agent-workspace-execute:v1",
+      "schema:execution-output:agent-workspace-execute:v1"
+    ],
+    "incompatible_packs": [],
+    "compatible_runtime_profiles": [
+      "development",
+      "test",
+      "validation",
+      "production"
+    ]
+  },
+  "role": {
+    "role_type": "AGENT",
+    "role_name": "studio_director",
+    "responsibilities": [
+      "reason over the frozen accepted boundary",
+      "invoke governed Tools",
+      "return candidate or command-submission evidence"
+    ],
+    "boundaries": [
+      "does not own accepted narrative truth",
+      "does not activate plans",
+      "does not bypass Tool or budget policy"
+    ],
+    "forbidden_actions": [
+      "mutate Canon directly",
+      "advance Arc Actual directly",
+      "accept Chapter directly"
+    ],
+    "upstream_packs": [],
+    "downstream_packs": [],
+    "authority_level": "SUBMIT_ONLY"
+  },
+  "skill_binding": {
+    "mode": "STATIC",
+    "selection_policy_ref": null,
+    "skills": [
+      {
+        "skill_ref": "agent-loop-governance",
+        "version": "agent-loop-governance-v1",
+        "content_hash": "sha256:caf8f32bda87c6e48b3c4514133646de94c714a3222e0c86193ba7517b564fcc",
+        "required": true,
+        "input_contract_ref": "schema:execution-input:agent-workspace-execute:v1",
+        "output_contract_ref": "schema:execution-output:agent-workspace-execute:v1",
+        "preconditions": [
+          "frozen_execution_contract",
+          "accepted_boundary_current"
+        ],
+        "postconditions": [
+          "durable_transcript",
+          "authority_boundary_preserved"
+        ],
+        "depends_on": [],
+        "max_invocations_per_run": 8,
+        "drift_policy": "FAIL_CLOSED"
+      }
+    ],
+    "anti_drift": {
+      "duplicate_skill_refs_forbidden": true,
+      "unbound_skill_forbidden": true,
+      "dynamic_selection_requires_policy": true
+    }
+  },
+  "prompt_binding": {
+    "prompt_bundle_type": "AGENT_INSTRUCTION_BUNDLE",
+    "system_instruction_ref": "prompt-system:agent-session-pack",
+    "system_instruction_version": "v1",
+    "system_instruction_hash": "sha256:bcd0bbee6320dc6d61f8ad28e836da8ca97a4e3868f330de2b9bb907abc553c4",
+    "template_ref": "prompt-template:agent-session-pack",
+    "template_version": "v1",
+    "template_hash": "sha256:c86df042f1ebfca06a5d36e4fa881e2154b3109596a3426e08c17c25dbd48d8d",
+    "compiler_version": "agent-session-prompt-compiler:v1",
+    "input_schema_ref": "schema:execution-input:agent-workspace-execute:v1",
+    "output_schema_ref": "schema:execution-output:agent-workspace-execute:v1"
+  },
+  "workflow_template": {
+    "workflow_id": "agent_session_runtime",
+    "workflow_version": "2.1.0",
+    "execution_mode": "SAGA",
+    "idempotency_scope": "project:agent-harness",
+    "nodes": [
+      {
+        "node_id": "agent_session",
+        "operation_name": "agent.session.execute",
+        "operation_definition_ref": "agent.session.execute@2.1.0",
+        "operation_definition_hash": "sha256:795a11ec394f82a6d99295e0dcef31778533d2a048ef8ca22f7651d22fea7a1b",
+        "handler_key": "novel_forge.agent_runtime.harness",
+        "stage": "agent_session",
+        "capability_id": "agent.workspace.execute",
+        "agent_definition_ref": "studio-director@1",
+        "input_asset_types": [
+          "context_bundle"
+        ],
+        "output_asset_types": [],
+        "depends_on": [],
+        "retry_policy": {
+          "max_attempts": 3,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:agent-workspace-execute:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        },
+        "commit_authority": "AGENT_RUNTIME_AUTHORITY"
+      }
+    ],
+    "completion": {
+      "required_terminal_nodes": [
+        "agent_session"
+      ],
+      "required_evidence": [
+        "trace",
+        "audit",
+        "cost_when_provider_used",
+        "agent_session_transcript_committed"
+      ],
+      "required_output_asset_types": []
+    }
+  },
+  "context_sources": {
+    "policy_id": "context-policy:agent-session-pack:v1",
+    "max_tokens": 16000,
+    "source_isolation": "ABSTRACT_ASSETS_ONLY",
+    "allowed_asset_types": [
+      "context_bundle",
+      "canon_snapshot",
+      "story_state",
+      "chapter_outcome"
+    ],
+    "forbidden_asset_types": [
+      "raw_source_document",
+      "raw_source_chunk"
+    ],
+    "required_version_refs": [
+      "accepted_boundary"
+    ],
+    "priority": [
+      "context_bundle",
+      "canon_snapshot",
+      "story_state",
+      "chapter_outcome"
+    ],
+    "freshness": {
+      "reject_stale": true,
+      "reject_cross_project": true,
+      "reject_unqualified": true
+    },
+    "longform_bindings": {
+      "book": "required",
+      "volume": "optional",
+      "arc": "optional",
+      "chapter_group": "optional",
+      "chapter": "optional",
+      "canon": "required",
+      "story_bible": "optional",
+      "reader_feedback": "optional"
+    }
+  },
+  "tool_permissions": {
+    "policy_id": "tools:agent-session-pack:v1",
+    "default": "DENY",
+    "tools": [
+      {
+        "tool_ref": "model.provider.invoke",
+        "permission": "EXECUTE",
+        "allowed_operations": [
+          "agent_session"
+        ],
+        "risk_class": "HIGH",
+        "approval_required": false,
+        "audit_required": true,
+        "budget_policy_ref": "budget:agent-session-pack:v1"
+      },
+      {
+        "tool_ref": "narrative.query_accepted",
+        "permission": "QUERY",
+        "allowed_operations": [
+          "agent_session"
+        ],
+        "risk_class": "LOW",
+        "approval_required": false,
+        "audit_required": true,
+        "budget_policy_ref": "budget:agent-session-pack:v1"
+      },
+      {
+        "tool_ref": "story_planning.generate_candidate",
+        "permission": "EXECUTE",
+        "allowed_operations": [
+          "agent_session"
+        ],
+        "risk_class": "HIGH",
+        "approval_required": false,
+        "audit_required": true,
+        "budget_policy_ref": "budget:agent-session-pack:v1"
+      },
+      {
+        "tool_ref": "plan_change.submit",
+        "permission": "EXECUTE",
+        "allowed_operations": [
+          "agent_session"
+        ],
+        "risk_class": "CRITICAL",
+        "approval_required": true,
+        "audit_required": true,
+        "budget_policy_ref": "budget:agent-session-pack:v1"
+      }
+    ],
+    "database": {
+      "read_allowed": false,
+      "write_allowed": false,
+      "allowed_tables": [],
+      "forbidden_tables": [
+        "legacy_assets"
+      ]
+    },
+    "files": {
+      "read_allowed": false,
+      "write_allowed": false,
+      "allowed_roots": []
+    },
+    "external_models": {
+      "allowed": true,
+      "route_policy_ref": "chapter.agent_session.route:v1"
+    },
+    "retrieval": {
+      "allowed": false,
+      "source_policy_ref": null
+    }
+  },
+  "assets": {
+    "knowledge": {
+      "required_packs": [],
+      "allowed_usage_roles": [
+        "PRINCIPLE",
+        "CONSTRAINT",
+        "CHECK",
+        "REFERENCE"
+      ],
+      "project_knowledge_pack": {
+        "default_requirement": "OPTIONAL",
+        "required_stages": [],
+        "required_capability_ids": []
+      }
+    },
+    "rules": [],
+    "templates": [],
+    "source_policy": {
+      "allowed_eligibility": [
+        "PRODUCTION_ELIGIBLE",
+        "NOT_SOURCE_DERIVED"
+      ],
+      "raw_source_expression_allowed": false,
+      "requires_lineage": true
+    }
+  },
+  "evaluation": {
+    "evaluation_id": "agent-session-evaluation-v1",
+    "required_gates": [],
+    "metrics": [],
+    "failure_policy": {
+      "acceptable_failures": [],
+      "retryable_failures": [
+        "PROVIDER_TIMEOUT"
+      ],
+      "terminal_failures": [
+        "EXECUTION_CONTRACT_DRIFT",
+        "ACCEPTED_BOUNDARY_STALE",
+        "BUDGET_EXHAUSTED"
+      ]
+    }
+  },
+  "runtime_contract": {
+    "input_protocol_ref": "agent-session-input.v1",
+    "output_protocol_ref": "agent-session-output.v1",
+    "error_protocol_ref": "authority-error.v1",
+    "state_protocol_ref": "operation-saga-attempt-state.v1",
+    "event_protocol_ref": "authority-event.v1",
+    "audit_protocol_ref": "authority-audit.v1",
+    "rollback_protocol_ref": "append-only-supersede.v1",
+    "commit_policy_ref": "commit:agent-session-pack:v1",
+    "validation_policy_ref": "validation:agent-session-pack:v1",
+    "execution": {
+      "binds_authority_operation": true,
+      "binds_attempt_fence": true,
+      "external_effects_allowed": true,
+      "synchronous_fixture_allowed": false
+    }
+  },
+  "governance": {
+    "release_channel": "VALIDATION",
+    "approval_policy_ref": "domain-decision-record:v1",
+    "versioning": {
+      "compatibility": "BACKWARD_COMPATIBLE",
+      "migration_required": false,
+      "migration_policy_ref": null
+    },
+    "rollout": {
+      "mode": "OFF",
+      "canary_percent": 0
+    },
+    "rollback": {
+      "allowed": true,
+      "policy_ref": "append-only-supersede:v1"
+    },
+    "cost_tracking": {
+      "required": true,
+      "budget_policy_ref": "budget:agent-session-pack:v1"
+    },
+    "quality_tracking": {
+      "required": true,
+      "report_refs": [
+        "agent_session_transcript_committed"
+      ]
+    },
+    "deprecation": {
+      "replacement_pack_id": null,
+      "retirement_deadline": null
+    }
+  },
+  "audit": {
+    "audit_level": "FULL",
+    "record_operation_snapshot": true,
+    "record_pack_manifest_hash": true,
+    "record_input_manifest": true,
+    "record_route_snapshot": true,
+    "record_tool_calls": true,
+    "record_cost_receipts": true,
+    "record_evaluation_results": true
+  },
+  "ext": {
+    "ui": {
+      "display_group": "agent-runtime"
+    },
+    "enterprise": {},
+    "experiments": {},
+    "vendor": {}
+  }
+}

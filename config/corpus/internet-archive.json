@@ -1,0 +1,38 @@
+{
+  "schema_version": "corpus-ingestion-manifest.v1",
+  "purpose": "RESEARCH",
+  "analyze": false,
+  "source": {
+    "kind": "INTERNET_ARCHIVE",
+    "location": "aliceinwonderlan00carrgoog",
+    "files": [
+      {
+        "path": "aliceinwonderlan00carrgoog_djvu.txt"
+      }
+    ]
+  },
+  "parser": {
+    "format": "txt",
+    "completeness": "EXCERPT"
+  },
+  "rights": {
+    "dataset_license": "UNKNOWN",
+    "underlying_rights": "UNKNOWN",
+    "scope": "ALL_WORKS_IN_SNAPSHOT",
+    "allowed_purposes": [
+      "RESEARCH"
+    ],
+    "allowed_uses": [
+      "LOCAL_PROCESSING"
+    ],
+    "evidence_refs": [
+      "operator:bounded-local-research-only; review-underlying-rights-before-analysis"
+    ],
+    "copyright_boundary": "No prose, derived knowledge, model call or production use authorized by this example."
+  },
+  "budget": {
+    "max_files": 1,
+    "max_file_bytes": 2000000,
+    "max_total_bytes": 2000000
+  }
+}

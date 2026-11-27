@@ -1,0 +1,1251 @@
+{
+  "schema_version": "novelos.capability_pack.v1",
+  "identity": {
+    "pack_id": "chapter_generation_pack",
+    "name": "Chapter Generation Pack",
+    "domain": "chapter_production",
+    "capability_type": "production_workflow",
+    "version": "3.0.2",
+    "owner": "novel-os-core",
+    "status": "CANDIDATE",
+    "lifecycle": "VALIDATION",
+    "description": "Static governed mapping of the current 22-node Chapter Authority saga."
+  },
+  "compatibility": {
+    "novel_forge_min_version": "6.0.0",
+    "novel_forge_max_version": null,
+    "protocol_min_version": "novelos.capability_pack.v1",
+    "protocol_max_version": null,
+    "required_capabilities": [
+      "planning.chapter.generate",
+      "planning.chapter.memo",
+      "retrieval.index.query",
+      "context.task.compile",
+      "retrieval.embed",
+      "prose.chapter.draft",
+      "review.chapter.evaluate",
+      "revision.chapter.revise",
+      "canon.extract",
+      "quality.intrinsic.judge",
+      "quality.aggregate",
+      "quality.originality.judge",
+      "quality.platform.judge",
+      "publishing.release.query",
+      "storage.object.put"
+    ],
+    "required_schema_versions": [
+      "chapter-plan-authority.v1",
+      "operation-saga-attempt-state.v1"
+    ],
+    "incompatible_packs": [],
+    "compatible_runtime_profiles": [
+      "development",
+      "test",
+      "validation",
+      "production"
+    ]
+  },
+  "role": {
+    "role_type": "WORKER",
+    "role_name": "chapter_authority_worker",
+    "responsibilities": [
+      "execute admitted Chapter Authority operations",
+      "preserve attempt lease and fencing contracts",
+      "materialize schema-backed chapter assets"
+    ],
+    "boundaries": [
+      "does not replace Chapter Authority",
+      "does not activate unreviewed business state",
+      "does not select unbound skills"
+    ],
+    "forbidden_actions": [
+      "bypass source isolation",
+      "bypass attempt fence",
+      "read cross-project context"
+    ],
+    "upstream_packs": [],
+    "downstream_packs": [],
+    "authority_level": "DOMAIN_AUTHORITY_BOUND"
+  },
+  "skill_binding": {
+    "mode": "STATIC",
+    "selection_policy_ref": null,
+    "skills": [
+      {
+        "skill_ref": "chapter-outline",
+        "version": "chapter-plan-skill-v3",
+        "content_hash": "sha256:28ffc252369612355e48c86c49e4da5b82797c98a6da8d5efd586665f6d45c39",
+        "required": true,
+        "input_contract_ref": "schema:chapter-plan-version:v1",
+        "output_contract_ref": "schema:chapter-plan:v1",
+        "preconditions": [
+          "frozen_chapter_plan_version"
+        ],
+        "postconditions": [
+          "chapter_plan_materialized"
+        ],
+        "depends_on": [],
+        "max_invocations_per_run": 1,
+        "drift_policy": "FAIL_CLOSED"
+      },
+      {
+        "skill_ref": "context-builder-source-isolation",
+        "version": "context-builder-source-isolation-v2",
+        "content_hash": "sha256:8135e20e5076c38c5613a5b13dc1eb0f35aa343ea7df051e55a35545c15e2326",
+        "required": true,
+        "input_contract_ref": "schema:chapter-context-input:v1",
+        "output_contract_ref": "schema:context-bundle:v2",
+        "preconditions": [
+          "chapter_plan_materialized"
+        ],
+        "postconditions": [
+          "context_manifest_frozen"
+        ],
+        "depends_on": [
+          "chapter-outline"
+        ],
+        "max_invocations_per_run": 1,
+        "drift_policy": "FAIL_CLOSED"
+      },
+      {
+        "skill_ref": "prose-generation",
+        "version": "prose-generation-v4",
+        "content_hash": "sha256:93d775fbe89fa34cacfc26a07e02e716fa88ab5746a071f15fb3c50683539fea",
+        "required": true,
+        "input_contract_ref": "schema:execution-input:prose-chapter-draft:v1",
+        "output_contract_ref": "schema:execution-output:prose-chapter-draft:v1",
+        "preconditions": [
+          "context_manifest_frozen"
+        ],
+        "postconditions": [
+          "draft_candidate_materialized"
+        ],
+        "depends_on": [
+          "context-builder-source-isolation"
+        ],
+        "max_invocations_per_run": 2,
+        "drift_policy": "FAIL_CLOSED"
+      },
+      {
+        "skill_ref": "quality-review",
+        "version": "quality-review-v4",
+        "content_hash": "sha256:bf47e210d719e6846d13c103d08564c3242540b5b965bcc6d7874575d178f1c7",
+        "required": true,
+        "input_contract_ref": "schema:chapter-review-input:v1",
+        "output_contract_ref": "schema:chapter-review-output:v1",
+        "preconditions": [
+          "draft_candidate_materialized"
+        ],
+        "postconditions": [
+          "quality_evidence_materialized"
+        ],
+        "depends_on": [
+          "prose-generation"
+        ],
+        "max_invocations_per_run": 8,
+        "drift_policy": "FAIL_CLOSED"
+      },
+      {
+        "skill_ref": "canon-continuity-graph",
+        "version": "canon-continuity-graph-v2",
+        "content_hash": "sha256:72cc55db18b93ddd7fefb2d99dbe02f04204fc2c2323bb166c8bb7f186f790f8",
+        "required": true,
+        "input_contract_ref": "schema:canon-extraction-input:v1",
+        "output_contract_ref": "schema:canon-patch:v1",
+        "preconditions": [
+          "draft_candidate_materialized"
+        ],
+        "postconditions": [
+          "canon_evidence_materialized"
+        ],
+        "depends_on": [
+          "prose-generation"
+        ],
+        "max_invocations_per_run": 3,
+        "drift_policy": "FAIL_CLOSED"
+      }
+    ],
+    "anti_drift": {
+      "duplicate_skill_refs_forbidden": true,
+      "unbound_skill_forbidden": true,
+      "dynamic_selection_requires_policy": true
+    }
+  },
+  "prompt_binding": {
+    "prompt_bundle_type": "DOMAIN_PROMPT_BUNDLE",
+    "system_instruction_ref": "prompt-system:chapter-generation-pack",
+    "system_instruction_version": "v3",
+    "system_instruction_hash": "sha256:c6acb02c2450ffd3057b89b9d539002f853f49a09c2fcdb9fc145c922b6f729e",
+    "template_ref": "prompt-template:chapter-generation-pack",
+    "template_version": "v13",
+    "template_hash": "sha256:454bdaa1a9adf5145f4c9465214d90785b8e4f157cbd7222afa003b3f2850a4a",
+    "compiler_version": "chapter-prompt-compiler:v13",
+    "input_schema_ref": "schema:chapter-generation-pack-input:v1",
+    "output_schema_ref": "schema:chapter-generation-pack-output:v1"
+  },
+  "workflow_template": {
+    "workflow_id": "chapter_authority_slice",
+    "workflow_version": "3.10.0",
+    "execution_mode": "SAGA",
+    "idempotency_scope": "project:chapter-slice",
+    "nodes": [
+      {
+        "node_id": "plan",
+        "operation_name": "chapter.plan.materialize",
+        "operation_definition_ref": "chapter.plan.materialize@3.10.0",
+        "operation_definition_hash": "sha256:a5c2864030928f8b0d2d2795e9fd02335612a6b278f8866ff5a0a257b8868ba7",
+        "handler_key": "novel_forge.chapter_authority.plan",
+        "stage": "plan",
+        "capability_id": "planning.chapter.generate",
+        "input_asset_types": [
+          "chapter_plan_version"
+        ],
+        "output_asset_types": [
+          "chapter_plan"
+        ],
+        "depends_on": [],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:planning-chapter-generate:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "execution_intent",
+        "operation_name": "chapter.execution_intent.prepare",
+        "operation_definition_ref": "chapter.execution_intent.prepare@3.10.0",
+        "operation_definition_hash": "sha256:2d67941c7c0673f0b71058a0e51b79057268eeee5ce7408171f23ed9e4eed6d5",
+        "handler_key": "novel_forge.chapter_authority.execution_intent",
+        "stage": "execution_intent",
+        "capability_id": "planning.chapter.generate",
+        "input_asset_types": [
+          "chapter_plan"
+        ],
+        "output_asset_types": [
+          "chapter_execution_intent"
+        ],
+        "depends_on": [
+          "plan"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:planning-chapter-generate:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "memo",
+        "operation_name": "chapter.memo.generate",
+        "operation_definition_ref": "chapter.memo.generate@3.10.0",
+        "operation_definition_hash": "sha256:4eb64c872f07509915d8dbe24f10a426e41a13315e315a06dacc6b4771c49d65",
+        "handler_key": "novel_forge.chapter_authority.memo",
+        "stage": "memo",
+        "capability_id": "planning.chapter.memo",
+        "input_asset_types": [
+          "chapter_plan",
+          "chapter_execution_intent"
+        ],
+        "output_asset_types": [
+          "chapter_memo"
+        ],
+        "depends_on": [
+          "execution_intent"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:planning-chapter-memo:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "retrieval",
+        "operation_name": "chapter.context.retrieve",
+        "operation_definition_ref": "chapter.context.retrieve@3.10.0",
+        "operation_definition_hash": "sha256:50148814831388519c0a2561c5a6db0b9c0862baf71555fd6ad98e7a47f124f9",
+        "handler_key": "novel_forge.chapter_authority.retrieval",
+        "stage": "retrieval",
+        "capability_id": "retrieval.embed",
+        "input_asset_types": [
+          "chapter_plan",
+          "chapter_execution_intent",
+          "chapter_memo"
+        ],
+        "output_asset_types": [
+          "retrieval_result"
+        ],
+        "depends_on": [
+          "memo"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:retrieval-embed:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "context",
+        "operation_name": "chapter.context.build",
+        "operation_definition_ref": "chapter.context.build@3.10.0",
+        "operation_definition_hash": "sha256:617f689d26a7926b0763ad21d87c835d7dfa3d46e42279d369e3eab36153b0cd",
+        "handler_key": "novel_forge.chapter_authority.context",
+        "stage": "context",
+        "capability_id": "context.task.compile",
+        "input_asset_types": [
+          "chapter_plan",
+          "chapter_execution_intent",
+          "chapter_memo",
+          "retrieval_result",
+          "production_input_manifest"
+        ],
+        "output_asset_types": [
+          "context_bundle"
+        ],
+        "depends_on": [
+          "retrieval"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:context-task-compile:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "draft",
+        "operation_name": "chapter.draft.generate",
+        "operation_definition_ref": "chapter.draft.generate@3.10.0",
+        "operation_definition_hash": "sha256:761215f648394a4aff76fe5735230d7d52abcac95a07ec4429b011c7783006d9",
+        "handler_key": "novel_forge.chapter_authority.draft",
+        "stage": "draft",
+        "capability_id": "prose.chapter.draft",
+        "input_asset_types": [
+          "chapter_plan",
+          "chapter_execution_intent",
+          "chapter_memo",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "draft_chapter"
+        ],
+        "depends_on": [
+          "context"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:prose-chapter-draft:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "review",
+        "operation_name": "chapter.review.evaluate",
+        "operation_definition_ref": "chapter.review.evaluate@3.10.0",
+        "operation_definition_hash": "sha256:52b4452a898005df3d74b2bb23692fa798343546ee1a534621e4948c49b48d65",
+        "handler_key": "novel_forge.chapter_authority.review",
+        "stage": "review",
+        "capability_id": "review.chapter.evaluate",
+        "input_asset_types": [
+          "draft_chapter",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "review_report"
+        ],
+        "depends_on": [
+          "draft"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:review-chapter-evaluate:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "revision",
+        "operation_name": "chapter.revision.apply",
+        "operation_definition_ref": "chapter.revision.apply@3.10.0",
+        "operation_definition_hash": "sha256:a9759110f68875770708073cb1e0a5f6be208bbbc083c25c29ae85f7bdc7b6a6",
+        "handler_key": "novel_forge.chapter_authority.revision",
+        "stage": "revision",
+        "capability_id": "revision.chapter.revise",
+        "input_asset_types": [
+          "draft_chapter",
+          "review_report",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "draft_version"
+        ],
+        "depends_on": [
+          "review"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:revision-chapter-revise:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "rereview",
+        "operation_name": "chapter.revision.review",
+        "operation_definition_ref": "chapter.revision.review@3.10.0",
+        "operation_definition_hash": "sha256:91a16693004da139cc3dc475325a79262e97bc880f60395dac63be8f3e2a9922",
+        "handler_key": "novel_forge.chapter_authority.rereview",
+        "stage": "rereview",
+        "capability_id": "review.chapter.evaluate",
+        "input_asset_types": [
+          "draft_chapter",
+          "review_report",
+          "draft_version",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "re_review_report"
+        ],
+        "depends_on": [
+          "revision"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:review-chapter-evaluate:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "best_candidate",
+        "operation_name": "chapter.candidate.select_best",
+        "operation_definition_ref": "chapter.candidate.select_best@3.10.0",
+        "operation_definition_hash": "sha256:a7c12e30c39b65863fd64a635d1949887c8689d5e40b7d735e63eed3ca57c740",
+        "handler_key": "novel_forge.chapter_authority.best_candidate",
+        "stage": "best_candidate",
+        "capability_id": "planning.chapter.generate",
+        "input_asset_types": [
+          "draft_chapter",
+          "review_report",
+          "draft_version",
+          "re_review_report"
+        ],
+        "output_asset_types": [
+          "best_draft_candidate",
+          "candidate_comparison",
+          "best_candidate_snapshot",
+          "re_review_report"
+        ],
+        "depends_on": [
+          "rereview"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:planning-chapter-generate:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "canon_extraction",
+        "operation_name": "chapter.canon.extract",
+        "operation_definition_ref": "chapter.canon.extract@3.10.0",
+        "operation_definition_hash": "sha256:7fbd33d27b3a48fe8a32e7d328025d4b636621b30aa48be8f4e315ff1bde187f",
+        "handler_key": "novel_forge.chapter_authority.canon_extraction",
+        "stage": "canon_extraction",
+        "capability_id": "canon.extract",
+        "input_asset_types": [
+          "best_draft_candidate",
+          "re_review_report",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "canon_extraction"
+        ],
+        "depends_on": [
+          "best_candidate"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:canon-extract:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "canon_proposal",
+        "operation_name": "chapter.canon.propose_changes",
+        "operation_definition_ref": "chapter.canon.propose_changes@3.10.0",
+        "operation_definition_hash": "sha256:831e2cffdadf81b4b29687cb205ea1762a4221b709db3b5af08440279b2ad2f0",
+        "handler_key": "novel_forge.chapter_authority.canon_proposal",
+        "stage": "canon_support",
+        "capability_id": "canon.extract",
+        "input_asset_types": [
+          "canon_extraction",
+          "best_draft_candidate",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "canon_change_proposal"
+        ],
+        "depends_on": [
+          "canon_extraction"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:canon-extract:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "canon",
+        "operation_name": "chapter.canon.update",
+        "operation_definition_ref": "chapter.canon.update@3.10.0",
+        "operation_definition_hash": "sha256:611df0688966d289da42c5daa3d382101b3992b63d3d0d4287d414e9af4fa06b",
+        "handler_key": "novel_forge.chapter_authority.canon",
+        "stage": "canon",
+        "capability_id": "canon.extract",
+        "input_asset_types": [
+          "best_draft_candidate",
+          "re_review_report",
+          "canon_extraction",
+          "canon_change_proposal",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "canon_patch",
+          "deterministic_continuity_report"
+        ],
+        "depends_on": [
+          "canon_proposal"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:canon-extract:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "quality_structural",
+        "operation_name": "chapter.quality.structural.evaluate",
+        "operation_definition_ref": "chapter.quality.structural.evaluate@3.10.0",
+        "operation_definition_hash": "sha256:63ed77a402f61711081957b05d4605f652d190e64278f5811a4ef2f474274389",
+        "handler_key": "novel_forge.chapter_authority.quality_structural",
+        "stage": "quality_structural",
+        "capability_id": "quality.intrinsic.judge",
+        "input_asset_types": [
+          "chapter_plan",
+          "best_draft_candidate",
+          "re_review_report",
+          "canon_patch",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "chapter_quality_group_report"
+        ],
+        "depends_on": [
+          "canon"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:quality-intrinsic-judge:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "quality_commercial",
+        "operation_name": "chapter.quality.commercial.evaluate",
+        "operation_definition_ref": "chapter.quality.commercial.evaluate@3.10.0",
+        "operation_definition_hash": "sha256:93ca2a7f91339d25d6195ac3c55b70f15569a48873317e7e6fa26bec202bb891",
+        "handler_key": "novel_forge.chapter_authority.quality_commercial",
+        "stage": "quality_commercial",
+        "capability_id": "quality.intrinsic.judge",
+        "input_asset_types": [
+          "chapter_plan",
+          "best_draft_candidate",
+          "re_review_report",
+          "canon_patch",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "chapter_quality_group_report",
+          "hook_analysis",
+          "pacing_observation"
+        ],
+        "depends_on": [
+          "canon"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:quality-intrinsic-judge:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "quality_source_originality",
+        "operation_name": "chapter.quality.source_originality.evaluate",
+        "operation_definition_ref": "chapter.quality.source_originality.evaluate@3.10.0",
+        "operation_definition_hash": "sha256:fc5cb10e0e9d2542925d488dbd6d754fdb6544e7450ea60885a3de17ee22a425",
+        "handler_key": "novel_forge.chapter_authority.quality_source_originality",
+        "stage": "quality_source_originality",
+        "capability_id": "quality.originality.judge",
+        "input_asset_types": [
+          "chapter_plan",
+          "best_draft_candidate",
+          "re_review_report",
+          "canon_patch",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "chapter_quality_group_report"
+        ],
+        "depends_on": [
+          "canon"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:quality-originality-judge:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "quality_longform",
+        "operation_name": "chapter.quality.longform.evaluate",
+        "operation_definition_ref": "chapter.quality.longform.evaluate@3.10.0",
+        "operation_definition_hash": "sha256:20265f4c76aff5135ef7e8259fddf407db8eb2de413fa224ee420107e08b36ff",
+        "handler_key": "novel_forge.chapter_authority.quality_longform",
+        "stage": "quality_longform",
+        "capability_id": "quality.intrinsic.judge",
+        "input_asset_types": [
+          "chapter_plan",
+          "best_draft_candidate",
+          "re_review_report",
+          "canon_patch",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "chapter_quality_group_report"
+        ],
+        "depends_on": [
+          "canon"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:quality-intrinsic-judge:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "quality_platform",
+        "operation_name": "chapter.quality.platform.evaluate",
+        "operation_definition_ref": "chapter.quality.platform.evaluate@3.10.0",
+        "operation_definition_hash": "sha256:271bfd252f475dc6f58b8bbea03377d2ccfa0e12f8e4ba314ccd53e8be7de06d",
+        "handler_key": "novel_forge.chapter_authority.quality_platform",
+        "stage": "quality_platform",
+        "capability_id": "quality.platform.judge",
+        "input_asset_types": [
+          "chapter_plan",
+          "best_draft_candidate",
+          "re_review_report",
+          "canon_patch",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "chapter_quality_group_report"
+        ],
+        "depends_on": [
+          "canon"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:quality-platform-judge:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "quality",
+        "operation_name": "chapter.quality.evaluate",
+        "operation_definition_ref": "chapter.quality.evaluate@3.10.0",
+        "operation_definition_hash": "sha256:649ad5fca1fa90902cbfd296cdf1e20aea588dbc0680fa5db50f37c9409c797e",
+        "handler_key": "novel_forge.chapter_authority.quality",
+        "stage": "quality",
+        "capability_id": "quality.aggregate",
+        "input_asset_types": [
+          "chapter_plan",
+          "best_draft_candidate",
+          "re_review_report",
+          "canon_patch",
+          "context_bundle",
+          "chapter_quality_group_report"
+        ],
+        "output_asset_types": [
+          "quality_score_report"
+        ],
+        "depends_on": [
+          "quality_structural",
+          "quality_commercial",
+          "quality_source_originality",
+          "quality_longform",
+          "quality_platform"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:quality-aggregate:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "publish_gate",
+        "operation_name": "chapter.publishing.prepare_release",
+        "operation_definition_ref": "chapter.publishing.prepare_release@3.10.0",
+        "operation_definition_hash": "sha256:e2427780fd786f2f31d797971d9c4bbe0d5a7096610124af1e3f8c1aca113bd4",
+        "handler_key": "novel_forge.chapter_authority.publish_gate",
+        "stage": "publish_gate",
+        "capability_id": "publishing.release.query",
+        "input_asset_types": [
+          "best_draft_candidate",
+          "re_review_report",
+          "canon_patch",
+          "quality_score_report",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "publish_gate_report"
+        ],
+        "depends_on": [
+          "quality"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:publishing-release-query:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "export",
+        "operation_name": "chapter.export.render",
+        "operation_definition_ref": "chapter.export.render@3.10.0",
+        "operation_definition_hash": "sha256:03eda0c72e23e87d77ff063e3bddd2369ac13eac246a4f6620b9f55af93ffef9",
+        "handler_key": "novel_forge.chapter_authority.export",
+        "stage": "export",
+        "capability_id": "storage.object.put",
+        "input_asset_types": [
+          "best_draft_candidate",
+          "publish_gate_report"
+        ],
+        "output_asset_types": [
+          "release_package"
+        ],
+        "depends_on": [
+          "publish_gate"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:storage-object-put:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      },
+      {
+        "node_id": "final_release_gate",
+        "operation_name": "chapter.publishing.finalize_release",
+        "operation_definition_ref": "chapter.publishing.finalize_release@3.10.0",
+        "operation_definition_hash": "sha256:f1fbfc7983b1c2c89be1fd816d0366e03f46c37b9e18370dd8c6e7e6009a9252",
+        "handler_key": "novel_forge.chapter_authority.final_release_gate",
+        "stage": "final_release_gate",
+        "capability_id": "publishing.release.query",
+        "input_asset_types": [
+          "release_package",
+          "publish_gate_report",
+          "quality_score_report",
+          "re_review_report",
+          "canon_patch",
+          "context_bundle"
+        ],
+        "output_asset_types": [
+          "final_release_gate_report"
+        ],
+        "depends_on": [
+          "export"
+        ],
+        "retry_policy": {
+          "max_attempts": 2,
+          "retryable_errors": [],
+          "dead_letter_on_exhausted": true
+        },
+        "timeout_policy_ref": "timeout:publishing-release-query:v1",
+        "approval": {
+          "required": false,
+          "policy_ref": "chapter-operation-admission:v1"
+        },
+        "compensation": {
+          "supported": false,
+          "policy_ref": "append-only-evidence:v1"
+        }
+      }
+    ],
+    "completion": {
+      "required_terminal_nodes": [
+        "final_release_gate"
+      ],
+      "required_evidence": [
+        "trace",
+        "audit",
+        "final_release_gate_report"
+      ],
+      "required_output_asset_types": [
+        "release_package",
+        "final_release_gate_report"
+      ]
+    }
+  },
+  "context_sources": {
+    "policy_id": "context-policy:chapter-generation-pack:v2",
+    "max_tokens": 512000,
+    "source_isolation": "ABSTRACT_ASSETS_ONLY",
+    "allowed_asset_types": [
+      "chapter_plan_version",
+      "chapter_plan",
+      "book_design",
+      "chapter_execution_intent",
+      "chapter_memo",
+      "context_bundle",
+      "knowledge_pack",
+      "canon_snapshot",
+      "story_state"
+    ],
+    "forbidden_asset_types": [
+      "raw_source_document",
+      "raw_source_chunk"
+    ],
+    "required_version_refs": [
+      "chapter_plan_asset_version_id",
+      "canon_snapshot_version_id"
+    ],
+    "priority": [
+      "chapter_plan",
+      "canon_snapshot",
+      "story_state",
+      "knowledge_pack"
+    ],
+    "freshness": {
+      "reject_stale": true,
+      "reject_cross_project": true,
+      "reject_unqualified": true
+    },
+    "longform_bindings": {
+      "book": "required",
+      "volume": "optional",
+      "arc": "optional",
+      "chapter_group": "required",
+      "chapter": "required",
+      "canon": "required",
+      "story_bible": "required",
+      "reader_feedback": "optional"
+    }
+  },
+  "tool_permissions": {
+    "policy_id": "tools:chapter-generation-pack:v2",
+    "default": "DENY",
+    "tools": [
+      {
+        "tool_ref": "model.provider.invoke",
+        "permission": "EXECUTE",
+        "allowed_operations": [
+          "context",
+          "memo",
+          "canon_proposal",
+          "retrieval",
+          "draft",
+          "review",
+          "revision",
+          "rereview",
+          "canon_extraction",
+          "quality_structural",
+          "quality_commercial",
+          "quality_source_originality",
+          "quality_longform",
+          "quality_platform"
+        ],
+        "risk_class": "HIGH",
+        "approval_required": false,
+        "audit_required": true,
+        "budget_policy_ref": "budget:chapter-generation-pack:v1"
+      },
+      {
+        "tool_ref": "storage.object.put",
+        "permission": "EXECUTE",
+        "allowed_operations": [
+          "export"
+        ],
+        "risk_class": "HIGH",
+        "approval_required": false,
+        "audit_required": true,
+        "budget_policy_ref": "budget:chapter-generation-pack:v1"
+      }
+    ],
+    "database": {
+      "read_allowed": false,
+      "write_allowed": false,
+      "allowed_tables": [],
+      "forbidden_tables": [
+        "legacy_assets"
+      ]
+    },
+    "files": {
+      "read_allowed": false,
+      "write_allowed": false,
+      "allowed_roots": []
+    },
+    "external_models": {
+      "allowed": true,
+      "route_policy_ref": "chapter.stage.route.policy:v1",
+      "context_substages": [
+        "context_compress",
+        "context_fidelity"
+      ]
+    },
+    "retrieval": {
+      "allowed": true,
+      "source_policy_ref": "source:chapter-generation-pack:v1"
+    }
+  },
+  "assets": {
+    "knowledge": {
+      "required_packs": [
+        "knowledge:chapter-causal-cost:v2"
+      ],
+      "allowed_usage_roles": [
+        "PRINCIPLE",
+        "CONSTRAINT",
+        "CHECK",
+        "REFERENCE"
+      ],
+      "project_knowledge_pack": {
+        "default_requirement": "OPTIONAL",
+        "required_stages": [],
+        "required_capability_ids": []
+      }
+    },
+    "rules": [
+      {
+        "rule_ref": "source-isolation-no-raw-expression",
+        "version": "v1",
+        "severity": "BLOCKING",
+        "hard_constraint": true
+      }
+    ],
+    "templates": [],
+    "source_policy": {
+      "allowed_eligibility": [
+        "PRODUCTION_ELIGIBLE",
+        "NOT_SOURCE_DERIVED"
+      ],
+      "raw_source_expression_allowed": false,
+      "requires_lineage": true
+    }
+  },
+  "evaluation": {
+    "evaluation_id": "chapter-generation-evaluation-v1",
+    "required_gates": [
+      {
+        "gate_id": "quality_aggregate",
+        "judge_capability_id": "quality.intrinsic.judge",
+        "blocking": true,
+        "threshold": 80,
+        "required_evidence": [
+          "quality_score_report"
+        ]
+      },
+      {
+        "gate_id": "source_originality",
+        "judge_capability_id": "quality.originality.judge",
+        "blocking": true,
+        "threshold": 1,
+        "required_evidence": [
+          "chapter_quality_group_report"
+        ]
+      },
+      {
+        "gate_id": "platform_fit",
+        "judge_capability_id": "quality.platform.judge",
+        "blocking": true,
+        "threshold": 80,
+        "required_evidence": [
+          "chapter_quality_group_report"
+        ]
+      }
+    ],
+    "metrics": [
+      {
+        "metric_id": "originality",
+        "type": "ORIGINALITY",
+        "target": "pass",
+        "aggregation": "RULE"
+      },
+      {
+        "metric_id": "quality_score",
+        "type": "QUALITY",
+        "target": 80,
+        "aggregation": "MINIMUM"
+      }
+    ],
+    "failure_policy": {
+      "acceptable_failures": [],
+      "retryable_failures": [
+        "PROVIDER_TIMEOUT",
+        "OBJECT_STORE_UNAVAILABLE"
+      ],
+      "terminal_failures": [
+        "CONTEXT_MANIFEST_CONSISTENCY_FAILED",
+        "SOURCE_LEAKAGE_DETECTED"
+      ]
+    }
+  },
+  "runtime_contract": {
+    "input_protocol_ref": "chapter-generation-input.v1",
+    "output_protocol_ref": "chapter-generation-output.v1",
+    "error_protocol_ref": "authority-error.v1",
+    "state_protocol_ref": "operation-saga-attempt-state.v1",
+    "event_protocol_ref": "authority-event.v1",
+    "audit_protocol_ref": "authority-audit.v1",
+    "rollback_protocol_ref": "append-only-supersede.v1",
+    "commit_policy_ref": "commit:chapter-generation-pack:v1",
+    "validation_policy_ref": "validation:chapter-generation-pack:v1",
+    "execution": {
+      "binds_authority_operation": true,
+      "binds_attempt_fence": true,
+      "external_effects_allowed": true,
+      "synchronous_fixture_allowed": false
+    }
+  },
+  "governance": {
+    "release_channel": "VALIDATION",
+    "approval_policy_ref": "domain-decision-record:v1",
+    "versioning": {
+      "compatibility": "BACKWARD_COMPATIBLE",
+      "migration_required": false,
+      "migration_policy_ref": null
+    },
+    "rollout": {
+      "mode": "OFF",
+      "canary_percent": 0
+    },
+    "rollback": {
+      "allowed": true,
+      "policy_ref": "append-only-supersede:v1"
+    },
+    "cost_tracking": {
+      "required": true,
+      "budget_policy_ref": "budget:chapter-generation-pack:v1"
+    },
+    "quality_tracking": {
+      "required": true,
+      "report_refs": [
+        "quality_score_report"
+      ]
+    },
+    "deprecation": {
+      "replacement_pack_id": null,
+      "retirement_deadline": null
+    }
+  },
+  "audit": {
+    "audit_level": "FULL",
+    "record_operation_snapshot": true,
+    "record_pack_manifest_hash": true,
+    "record_input_manifest": true,
+    "record_route_snapshot": true,
+    "record_tool_calls": true,
+    "record_cost_receipts": true,
+    "record_evaluation_results": true
+  },
+  "ext": {
+    "ui": {
+      "display_group": "chapter-production"
+    },
+    "enterprise": {},
+    "experiments": {},
+    "vendor": {}
+  }
+}

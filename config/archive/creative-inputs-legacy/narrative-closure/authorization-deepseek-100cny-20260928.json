@@ -1,0 +1,77 @@
+{
+  "contract_version": "narrative-closure-user-approval-amendment.v1",
+  "work_package": "WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02",
+  "authorization_ref": "user:WP02:20260928:deepseek-100cny:v1",
+  "parent_authorization_ref": "user:WP-NARRATIVE-CAPABILITY-AND-MODEL-ADMISSION-CLOSURE-02:20260927:bounded-model-scope-v1",
+  "user_instruction": "开始使用DeepSeek的API，现在有100元的额度",
+  "recorded_at": "2026-09-28T00:38:40.823650+00:00",
+  "expires_at": "2026-09-28T05:28:24Z",
+  "currency": "CNY",
+  "maximum_cumulative_amount": "100",
+  "maximum_tokens_per_call": 100000,
+  "first_batch": {
+    "provider": "deepseek",
+    "model": "deepseek-flash",
+    "model_revision": "DeepSeek-V4.1-Flash",
+    "reasoning_effort": "low",
+    "thinking": "enabled",
+    "task": "creative.candidates.generate",
+    "maximum_calls": 2,
+    "maximum_tokens": 200000,
+    "maximum_priced_usd_per_call": "0.15",
+    "maximum_priced_usd_batch": "0.30",
+    "native_campaign_priced_usd_ceiling": "1",
+    "native_calibration_priced_usd_ceiling": "0.30",
+    "native_calibration_total_calls_including_previous_codex": 4,
+    "native_calibration_total_tokens_including_previous_codex": 400000,
+    "purpose": "Bounded same-input comparison of Chinese creative output and cost; same Book, campaign and original independent groups; no production admission"
+  },
+  "pricing_snapshot": {
+    "verified_at": "2026-09-28T00:38:40.823758+00:00",
+    "expires_at": "2026-09-28T05:28:24Z",
+    "sources": [
+      "https://api-docs.deepseek.com/quick_start/pricing/",
+      "https://api-docs.deepseek.com/zh-cn/quick_start/pricing/"
+    ],
+    "model": "deepseek-flash",
+    "usd_peak_per_million": {
+      "cache_hit": "0.006",
+      "cache_miss": "0.3",
+      "output": "1.2"
+    },
+    "cny_peak_per_million": {
+      "cache_hit": "0.04",
+      "cache_miss": "2",
+      "output": "8"
+    },
+    "off_peak_multiplier": "0.5",
+    "cny_upper_bound_per_catalog_usd": "7",
+    "conversion_basis": "Conservative comparison of simultaneous official USD/CNY token price tables, not a foreign-exchange quote. Every Flash price ratio is 20/3 CNY per catalog USD, below 7. Native USD1 limit therefore bounds priced usage below CNY7 at the verified tariff, within CNY100 authorization and observed CNY99.99 balance. Recheck after expiry or tariff/model drift; actual CNY debit is separate."
+  },
+  "account": {
+    "credential_fingerprint": "sha256:6296a3e65391",
+    "credential_source": "EXISTING_PRIVATE_FILE_0600",
+    "models_endpoint": "HTTP_200",
+    "balance_endpoint": "HTTP_200",
+    "observed_available_cny": "99.99",
+    "purchase_or_topup_authorized": false
+  },
+  "budget_rules": {
+    "campaign_id": "narrative-closure-02-admission-20260927:independent-tasks:v1",
+    "sampling_pool_calls": 720,
+    "sampling_pool_tokens": 40108032,
+    "calls_and_tokens_not_increased": true,
+    "retain_prior_usage": true,
+    "cross_pool_transfer": false,
+    "production_and_effect_pools_not_enabled": true,
+    "money_cap_is_not_usage": true
+  },
+  "stop_conditions": [
+    "Stop this candidate/task on first failed sample or UNKNOWN; do not automatically repeat or upgrade.",
+    "Stop at two DeepSeek calls for initial diagnosis; review actual outputs and costs before any further sample allocation.",
+    "No dispatch after expiry, price/revision drift, missing credentials, insufficient balance or any native task/campaign cap.",
+    "Keep existing UNKNOWN effects and reservations; never silently fall back or move budget."
+  ],
+  "independent_editorial_evaluation": "NOT_PROVIDED; cross-vendor generation comparison does not establish calibrated independent review or literary benefit",
+  "publication_authorized": false
+}

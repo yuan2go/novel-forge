@@ -1,0 +1,439 @@
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, ConfigDict
+from novel_forge.modules.source_authority.public_catalog import CatalogCapture
+from novel_forge.modules.source_authority.public_catalog_application import CatalogCommand
+
+from novel_forge.api.authority_dependencies import build_trusted_principal_resolver
+from novel_forge.api.corpus_models import CorpusCommandRequest
+from novel_forge.api.models import (
+    AuthorityDeconstructionObservationCommitRequest,
+    AuthoritySourceDocumentRegisterRequest,
+    AuthoritySourceReprocessingPlanRequest,
+    AuthoritySourceTransformCommitRequest,
+)
+from novel_forge.api.routers.context import ProductRouterContext
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.source_authority.corpus_application import CorpusCommand
+from novel_forge.modules.source_authority import (
+    AnalyzerContract,
+    CommitDeconstructionObservationCommand,
+    CommitSourceTransformCommand,
+    ObservationEvidenceSpan,
+    ObservationScope,
+    PlanSourceReprocessingCommand,
+    RegisterSourceDocumentCommand,
+    ReprocessingTarget,
+    SourceChunkCandidate,
+)
+
+
+class CatalogCaptureRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str
+    workspace_id: str
+    idempotency_key: str
+    capture: CatalogCapture
+
+
+class CatalogResearchSelection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_id: str
+    workspace_id: str
+    snapshot_id: str
+    work_id: str
+    idempotency_key: str
+
+
+def create_router(ctx: ProductRouterContext) -> APIRouter:
+    router = APIRouter(tags=["source-authority"])
+    application = ctx.services.source_authority_application
+    query = ctx.services.source_authority_query
+
+    @router.post("/product/source-governance/public-catalog/captures", status_code=202)
+    def capture_catalog(request: CatalogCaptureRequest) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        try:
+            return application.admit_catalog(CatalogCommand(
+                project_id=request.project_id, workspace_id=request.workspace_id,
+                idempotency_key=request.idempotency_key, actor_id=principal.principal_id, capture=request.capture,
+                trace_id="trace:public-catalog:" + request.idempotency_key,
+                correlation_id="correlation:public-catalog:" + request.idempotency_key), principal=principal)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/public-catalog/captures/{operation_id}")
+    def catalog_capture(operation_id: str, project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return application.public_catalog.result(operation_id, project_id, replayed=True)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/public-catalog/snapshots")
+    def catalog_snapshots(project_id: str, after: str = "", limit: int = Query(default=20, ge=1, le=100)) -> list[dict[str, Any]]:
+        _authorize("source.authority.query", project_id)
+        return application.public_catalog.snapshots(project_id=project_id, after=after, limit=limit)
+
+    @router.get("/product/source-governance/public-catalog/works")
+    def catalog_works(project_id: str, snapshot_id: str, category: str = "", serial_status: str = "", keyword: str = "", after: str = "", limit: int = Query(default=20, ge=1, le=100)) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return application.public_catalog.works(project_id=project_id, snapshot_id=snapshot_id,
+                category=category, serial_status=serial_status, keyword=keyword, after=after, limit=limit)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.post("/product/source-governance/public-catalog/research-selections", status_code=202)
+    def select_catalog_work(request: CatalogResearchSelection) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        from novel_forge.modules.source_authority.corpus import RegisterCorpusSource
+        try:
+            page = application.public_catalog.works(project_id=request.project_id, snapshot_id=request.snapshot_id, limit=100)
+            if request.work_id not in {record["work_id"] for record in page["items"]}:
+                raise ValueError("PUBLIC_CATALOG_WORK_NOT_FOUND")
+            return application.admit_corpus(CorpusCommand(project_id=request.project_id, workspace_id=request.workspace_id,
+                actor_id=principal.principal_id, idempotency_key=request.idempotency_key,
+                trace_id="trace:catalog-selection:" + request.idempotency_key, correlation_id=request.snapshot_id,
+                action=RegisterCorpusSource(action="register_source", source_kind="public_catalog_research_candidate",
+                    external_identity="qidian:" + request.work_id + ":snapshot:" + page["content_hash"], purpose="RESEARCH")), principal=principal)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/market/ranks")
+    def market_ranks(project_id: str, category: str = "", definition_id: str = "", after: str = "", limit: int = Query(default=20, ge=1, le=100)) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        from novel_forge.modules.source_authority.market_query import query_ranks
+        try:
+            return query_ranks(query.database_url, project_id, category=category, definition_id=definition_id, after=after, limit=limit)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/market/works/{book_source_id}")
+    def market_work(book_source_id: str, project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        from novel_forge.modules.source_authority.market_query import query_market_work
+        try:
+            return query_market_work(query.database_url, project_id, book_source_id)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.post("/product/source-governance/corpus/commands", status_code=202)
+    def corpus_command(request: CorpusCommandRequest) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        try:
+            return application.admit_corpus(CorpusCommand(
+                project_id=request.project_id, workspace_id=request.workspace_id,
+                actor_id=principal.principal_id, idempotency_key=request.idempotency_key,
+                trace_id=request.trace_id or f"trace:corpus:{request.idempotency_key}",
+                correlation_id=request.correlation_id or f"correlation:corpus:{request.idempotency_key}",
+                action=request.action,
+            ), principal=principal)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/corpus/imports/{import_job_id}")
+    def corpus_import(import_job_id: str, project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return query.corpus_import(project_id=project_id, import_job_id=import_job_id)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/corpus/lineage/{edition_id}")
+    def corpus_lineage(edition_id: str, project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return query.corpus_lineage(project_id=project_id, edition_id=edition_id)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/corpus/records/{kind}")
+    def corpus_records(kind: str, project_id: str, parent_id: str = "", after: str = "", limit: int = Query(default=100, ge=1, le=100)) -> list[dict[str, Any]]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return query.corpus_records(kind=kind, project_id=project_id, parent_id=parent_id, after=after, limit=limit)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/corpus/operations/{operation_id}")
+    def corpus_operation(operation_id: str, project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return query.corpus_operation(project_id=project_id, operation_id=operation_id)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.post("/product/source-governance/documents", status_code=202)
+    def register(
+        request: AuthoritySourceDocumentRegisterRequest,
+    ) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        try:
+            return application.admit(
+                RegisterSourceDocumentCommand(
+                    project_id=request.project_id,
+                    workspace_id=request.workspace_id,
+                    blob_id=request.blob_id,
+                    title=request.title,
+                    source_kind=request.source_kind,
+                    source_uri=request.source_uri,
+                    rights_authorization=request.rights_authorization,
+                    license_name=request.license_name,
+                    copyright_boundary=request.copyright_boundary,
+                    actor_id=principal.principal_id,
+                    idempotency_key=request.idempotency_key,
+                    trace_id=(
+                        request.trace_id.strip()
+                        or f"trace:source-register:{request.idempotency_key}"
+                    ),
+                    correlation_id=(
+                        request.correlation_id.strip()
+                        or f"correlation:source-register:{request.idempotency_key}"
+                    ),
+                ),
+                principal=principal,
+            )
+        except (KernelError, ValueError) as exc:
+            if isinstance(exc, KernelError):
+                detail: Any = {"code": exc.code, "message": exc.message}
+            else:
+                detail = str(exc)
+            raise HTTPException(status_code=409, detail=detail) from exc
+
+    @router.get("/product/source-governance/documents")
+    def documents(
+        project_id: str,
+        governance_status: str = "",
+        limit: int = Query(default=100, ge=1, le=500),
+    ) -> list[dict[str, Any]]:
+        _authorize("source.authority.query", project_id)
+        return query.list_documents(
+            project_id=project_id,
+            governance_status=governance_status,
+            limit=limit,
+        )
+
+    @router.get("/product/source-governance/documents/{source_document_id}")
+    def document(source_document_id: str, project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return query.require_document(
+                project_id=project_id,
+                source_document_id=source_document_id,
+            )
+        except KernelError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @router.post(
+        "/product/source-governance/documents/{source_document_id}/transforms",
+        status_code=202,
+    )
+    def commit_transform(
+        source_document_id: str,
+        request: AuthoritySourceTransformCommitRequest,
+    ) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        try:
+            return application.admit_transform(
+                CommitSourceTransformCommand(
+                    project_id=request.project_id,
+                    workspace_id=request.workspace_id,
+                    source_document_id=source_document_id,
+                    normalization_version=request.normalization_version,
+                    chunking_version=request.chunking_version,
+                    chunking_policy_hash=request.chunking_policy_hash,
+                    chunks=tuple(
+                        SourceChunkCandidate(**chunk.model_dump())
+                        for chunk in request.chunks
+                    ),
+                    actor_id=principal.principal_id,
+                    idempotency_key=request.idempotency_key,
+                    trace_id=(
+                        request.trace_id.strip()
+                        or f"trace:source-transform:{request.idempotency_key}"
+                    ),
+                    correlation_id=(
+                        request.correlation_id.strip()
+                        or f"correlation:source-transform:{request.idempotency_key}"
+                    ),
+                ),
+                principal=principal,
+            )
+        except (KernelError, ValueError) as exc:
+            detail: Any = (
+                {"code": exc.code, "message": exc.message}
+                if isinstance(exc, KernelError)
+                else str(exc)
+            )
+            raise HTTPException(status_code=409, detail=detail) from exc
+
+    @router.get(
+        "/product/source-governance/documents/{source_document_id}/transforms"
+    )
+    def transforms(
+        source_document_id: str,
+        project_id: str,
+        limit: int = Query(default=100, ge=1, le=500),
+    ) -> list[dict[str, Any]]:
+        _authorize("source.authority.query", project_id)
+        return query.list_transforms(
+            project_id=project_id,
+            source_document_id=source_document_id,
+            limit=limit,
+        )
+
+    @router.get("/product/source-governance/transforms/{source_transform_id}/chunks")
+    def chunks(
+        source_transform_id: str,
+        project_id: str,
+        limit: int = Query(default=500, ge=1, le=10_000),
+    ) -> list[dict[str, Any]]:
+        _authorize("source.authority.query", project_id)
+        return query.list_chunks(
+            project_id=project_id,
+            source_transform_id=source_transform_id,
+            limit=limit,
+        )
+
+    @router.post(
+        "/product/source-governance/deconstruction-observations",
+        status_code=202,
+    )
+    def commit_observation(
+        request: AuthorityDeconstructionObservationCommitRequest,
+    ) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        try:
+            return application.admit_observation(
+                CommitDeconstructionObservationCommand(
+                    project_id=request.project_id,
+                    workspace_id=request.workspace_id,
+                    execution_asset_version_id=request.execution_asset_version_id,
+                    scope=ObservationScope(**request.scope.model_dump()),
+                    analyzer=AnalyzerContract(**request.analyzer.model_dump()),
+                    observation=request.observation,
+                    evidence_spans=tuple(
+                        ObservationEvidenceSpan(**span.model_dump())
+                        for span in request.evidence_spans
+                    ),
+                    input_observation_asset_version_ids=tuple(
+                        request.input_observation_asset_version_ids
+                    ),
+                    evidence_class=request.evidence_class,
+                    actor_id=principal.principal_id,
+                    idempotency_key=request.idempotency_key,
+                    trace_id=request.trace_id.strip()
+                    or f"trace:source-observation:{request.idempotency_key}",
+                    correlation_id=request.correlation_id.strip()
+                    or f"correlation:source-observation:{request.idempotency_key}",
+                ),
+                principal=principal,
+            )
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/deconstruction-observations")
+    def observations(
+        project_id: str,
+        dimension: str = "",
+        scale: str = "",
+        limit: int = Query(default=100, ge=1, le=1_000),
+    ) -> list[dict[str, Any]]:
+        _authorize("source.authority.query", project_id)
+        return query.list_observations(
+            project_id=project_id, dimension=dimension, scale=scale, limit=limit
+        )
+
+    @router.post(
+        "/product/source-governance/reprocessing-plans", status_code=202
+    )
+    def plan_reprocessing(
+        request: AuthoritySourceReprocessingPlanRequest,
+    ) -> dict[str, Any]:
+        principal = _authorize("source.authority.execute", request.project_id)
+        try:
+            return application.admit_reprocessing_plan(
+                PlanSourceReprocessingCommand(
+                    project_id=request.project_id,
+                    workspace_id=request.workspace_id,
+                    targets=tuple(
+                        ReprocessingTarget(
+                            scope=ObservationScope(**target.scope.model_dump()),
+                            analyzer=AnalyzerContract(**target.analyzer.model_dump()),
+                        )
+                        for target in request.targets
+                    ),
+                    cause_type=request.cause_type,
+                    source_transform_id=request.source_transform_id,
+                    actor_id=principal.principal_id,
+                    idempotency_key=request.idempotency_key,
+                    trace_id=request.trace_id.strip()
+                    or f"trace:source-reprocessing:{request.idempotency_key}",
+                    correlation_id=request.correlation_id.strip()
+                    or f"correlation:source-reprocessing:{request.idempotency_key}",
+                ),
+                principal=principal,
+            )
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    @router.get("/product/source-governance/reprocessing-plans")
+    def reprocessing_plans(
+        project_id: str,
+        limit: int = Query(default=100, ge=1, le=500),
+    ) -> list[dict[str, Any]]:
+        _authorize("source.authority.query", project_id)
+        return query.list_reprocessing_plans(project_id=project_id, limit=limit)
+
+    @router.get("/product/source-governance/invalidations")
+    def invalidations(
+        project_id: str,
+        status: str = "OPEN",
+        dimension: str = "",
+        limit: int = Query(default=100, ge=1, le=1_000),
+    ) -> list[dict[str, Any]]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return query.list_invalidations(
+                project_id=project_id,
+                status=status,
+                dimension=dimension,
+                limit=limit,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @router.get("/product/source-governance/data-import-admission")
+    def data_import_admission(project_id: str) -> dict[str, Any]:
+        _authorize("source.authority.query", project_id)
+        try:
+            return query.data_import_admission(project_id=project_id)
+        except (KernelError, ValueError) as exc:
+            raise _conflict(exc) from exc
+
+    return router
+
+
+def _authorize(permission: str, project_id: str):
+    principal = build_trusted_principal_resolver().resolve_api_principal()
+    try:
+        principal.require(permission, project_id)
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    return principal
+
+
+def _conflict(exc: KernelError | ValueError) -> HTTPException:
+    detail: Any = (
+        {"code": exc.code, "message": exc.message}
+        if isinstance(exc, KernelError)
+        else str(exc)
+    )
+    return HTTPException(status_code=409, detail=detail)
+
+
+__all__ = ["create_router"]

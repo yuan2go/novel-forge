@@ -1,0 +1,167 @@
+{
+  "schema_version": "postgresql-authority-architecture-contract.v1",
+  "contract_id": "postgresql-authority-backend-release-v1",
+  "evidence_model": {
+    "architecture_contract": "stable_checked_in_contract",
+    "implementation_tree_identity": "deterministic_semantic_input_identity",
+    "run_evidence": "github_actions_artifact_bound_to_tested_sha"
+  },
+  "requirements": {
+    "required_modules": [
+      "authority-api",
+      "book-authority",
+      "book-followup-authority",
+      "book-design-authority",
+      "capability-pack-authority",
+      "chapter-authority",
+      "command-kernel",
+      "database-runtime",
+      "legacy-migration",
+      "migration-registry",
+      "mkaos-authority",
+      "project-authority",
+      "provider-control",
+      "provider-qualification",
+      "runtime-job",
+      "source-authority",
+      "task-authority"
+    ],
+    "required_workers": [
+      "chapter-authority",
+      "content-authority",
+      "source-authority",
+      "mkaos-authority",
+      "book-authority",
+      "book-followup-authority",
+      "outbox-authority",
+      "maintenance-runtime-group"
+    ],
+    "required_migrations": [
+      "20260804_0058_authority_cutover_release_qualification",
+      "20260804_0059_migration_validation_authority",
+      "20260804_0060_migration_completion_semantics",
+      "20260804_0061_structured_migration_references",
+      "20260804_0062_runtime_job_execution_plane",
+      "20260804_0063_worker_fleet_operational_governance",
+      "20260804_0064_runtime_job_integrity_hardening",
+      "20260804_0065_runtime_job_lease_identity",
+      "20260804_0066_runtime_job_attempt_lease_existence",
+      "20260804_0067_activated_migration_archival_binding",
+      "20260805_0071_capability_pack_authority",
+      "20260806_0072_capability_pack_integrity_hardening",
+      "20260820_0093_book_liveness_critical_path_closure",
+      "20260824_0097_narrative_evaluator_codex_lineage",
+      "20261006_0157_creation_continuation_control",
+      "20261006_0158_planning_capacity_causation",
+      "20261007_0159_planning_dead_letter_result_recovery"
+    ],
+    "required_operation_definitions": [
+      "chapter.slice.run",
+      "creative.brief.create",
+      "book.production.coordinate",
+      "reader_outcome.evaluate",
+      "longform.recap",
+      "asset.create",
+      "external_effect.reconcile",
+      "canon.change.approve",
+      "migration.item.validate",
+      "migration.item.approve",
+      "migration.item.reject"
+    ],
+    "forbidden_dependencies": {
+      "domain": [
+        "fastapi",
+        "novel_forge.api",
+        "novel_forge.storage",
+        "openai",
+        "anthropic",
+        "httpx",
+        "requests",
+        "subprocess",
+        "celery"
+      ],
+      "production": [
+        "novel_forge.storage.local",
+        "novel_forge.api.legacy_app"
+      ]
+    },
+    "forbidden_production_reachable_paths": [
+      "src/novel_forge/storage/local.py",
+      "src/novel_forge/workers/runtime.py",
+      "src/novel_forge/workers/legacy_tasks.py",
+      "src/novel_forge/api/legacy_app.py",
+      "src/novel_forge/api/services/postgres_fallback_policy.py"
+    ],
+    "required_test_modules": [
+      "tests/architecture/test_head_integrity.py",
+      "tests/integration/test_authority_migrations_postgres.py",
+      "tests/integration/test_authority_schema_postgres.py",
+      "tests/integration/test_authority_legacy_migration_postgres.py",
+      "tests/integration/test_authority_runtime_job_postgres.py",
+      "tests/integration/test_outbox_authority_worker_postgres.py",
+      "tests/integration/test_maintenance_worker_postgres.py",
+      "tests/integration/test_worker_health_postgres.py",
+      "tests/integration/test_authority_query_plans_postgres.py",
+      "tests/integration/test_book_to_chapter_authority_vertical_postgres.py",
+      "tests/integration/test_source_document_authority_postgres.py",
+      "tests/integration/test_mkaos_authority_postgres.py",
+      "tests/integration/test_authority_book_design_postgres.py",
+      "tests/integration/test_capability_pack_registration_compilation_postgres.py",
+      "tests/integration/test_capability_pack_approval_policy_postgres.py",
+      "tests/integration/test_capability_pack_activation_concurrency_postgres.py",
+      "tests/integration/test_capability_pack_scope_resolution_postgres.py",
+      "tests/integration/test_capability_pack_rollout_postgres.py",
+      "tests/integration/test_capability_pack_runtime_snapshot_postgres.py",
+      "tests/integration/test_capability_pack_integrity_constraints_postgres.py",
+      "tests/integration/test_capability_pack_dependency_postgres.py"
+    ],
+    "required_schema_and_index_rules": [
+      {
+        "path": "tests/integration/test_authority_schema_postgres.py",
+        "token": "LATEST_MIGRATION_ID"
+      },
+      {
+        "path": "tests/integration/test_authority_migrations_postgres.py",
+        "token": "nf_schema_migrations"
+      },
+      {
+        "path": "scripts/qualify_authority_query_plans.py",
+        "token": "EXPLAIN"
+      }
+    ]
+  },
+  "thresholds": {
+    "coverage_summary_max": {
+      "dual_write": 0,
+      "unmapped_side_effects": 0
+    },
+    "minimum_mapped_side_effect_ratio": 1.0,
+    "maximum_false_positive_sample_rate": 0.05,
+    "minimum_test_counts": {
+      "architecture": 75,
+      "unit": 1191,
+      "acceptance": 2,
+      "integration": 250
+    },
+    "minimum_module_count": 15,
+    "minimum_worker_count": 7,
+    "minimum_migration_count": 67,
+    "maximum_forbidden_production_reachable_paths": 0
+  },
+  "run_evidence_contract": {
+    "storage": "github_actions_artifact",
+    "must_bind_tested_repository_sha": true,
+    "required_artifact_classes": [
+      "reality_inventory",
+      "test_result",
+      "migration_result",
+      "compose_evidence",
+      "query_plan_evidence",
+      "worker_fleet_evidence",
+      "docker_image_digest",
+      "environment_metadata"
+    ],
+    "checked_in_run_ids_forbidden": true,
+    "checked_in_remote_status_forbidden": true
+  }
+}

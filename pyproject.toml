@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "novel-forge"
+version = "6.0.0"
+description = "Local-first Novel OS runtime for traceable AI novel production"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.13.5,<3"]
+
+[project.optional-dependencies]
+provider-tokenization = ["tiktoken==0.12.0", "tokenizers==0.22.1"]
+api = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+]
+postgres = [
+    "psycopg[binary]>=3.2",
+    "psycopg_pool>=3.2",
+]
+provider-openai = [
+    "openai>=1.99.0,<2",
+]
+test = [
+    "tiktoken==0.12.0",
+    "tokenizers==0.22.1",
+    "fastapi>=0.115",
+    "httpx>=0.28,<1",
+    "httpx2>=0.1",
+    "pytest>=8.0",
+    "psycopg[binary]>=3.2",
+    "psycopg_pool>=3.2",
+    "PyYAML>=6.0",
+    "ruff==0.15.20",
+]
+object = [
+    "minio>=7.2",
+]
+ingestion = [
+  "opencc-python-reimplemented==0.1.7",
+    "pypdf>=4.0",
+    "python-docx>=1.1",
+    "ebooklib>=0.18",
+    "beautifulsoup4>=4.12,<5",
+    "defusedxml>=0.7,<1",
+    "ijson>=3.3,<4",
+    "pyarrow>=18,<26",
+]
+industrial = [
+    "tiktoken==0.12.0",
+    "tokenizers==0.22.1",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "psycopg[binary]>=3.2",
+    "psycopg_pool>=3.2",
+    "minio>=7.2",
+]
+
+[project.scripts]
+novel-forge = "novel_forge.cli.authority:main"
+novel-forge-migrate = "novel_forge.cli.migration:main"
+novel-forge-source-authority-worker = "novel_forge.workers.source_authority:cli"
+novel-forge-source-import-worker = "novel_forge.workers.source_import:main"
+novel-forge-mkaos-authority-worker = "novel_forge.workers.mkaos_authority:cli"
+novel-forge-book-authority-worker = "novel_forge.workers.book_authority:cli"
+novel-forge-book-followup-worker = "novel_forge.workers.book_followup_authority:cli"
+novel-forge-agent-authority-worker = "novel_forge.workers.agent_authority:main"
+novel-forge-outbox-worker = "novel_forge.workers.outbox_authority:cli"
+novel-forge-maintenance-worker = "novel_forge.workers.runtime_groups:maintenance_cli"
+novel-forge-d0-provider-worker = "novel_forge.workers.d0_provider_qualification:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"novel_forge.storage.migrations" = ["historical/*/manifest.json"]
+
+[tool.setuptools.data-files]
+"share/novel-forge/config/execution_templates" = ["config/execution_templates/author_first.json"]

@@ -1,0 +1,433 @@
+from __future__ import annotations
+from collections.abc import Mapping
+from typing import Any
+from novel_forge.modules.command_kernel.asset_commands import AuthorityAssetWriteCommand
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.external_effect_runtime import (
+    EffectCommandContext,
+    read_failed_operation_success,
+)
+from novel_forge.storage.authority_asset_store import (
+    AuthorityAssetQuery,
+    AuthorityAssetWriter,
+)
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from .domain import StoryPlanningGenerationCommand, canonical_hash
+from .foundation_generation import (
+    FOUNDATION_GENERATORS,
+    normalize_foundation_payload,
+    validate_foundation_payload,
+)
+
+RESULT_FAILURE_TYPE = "planning_generation_result_failure"
+MAXIMUM_RESULT_REPAIRS = 2
+
+
+def completed_result_repair_command(database_url, *, command, operation_id):
+    from dataclasses import replace
+    from .application import _command_from_payload, _command_payload
+
+    key = f"{command.idempotency_key}:result-repair:{command.repair_number + 1}"
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("""SELECT o.command_payload->'payload' FROM authority_story_planning_generation g
+            JOIN authority_operation o USING(operation_id)
+            JOIN authority_story_design_version_state s ON s.asset_version_id=g.candidate_asset_version_id
+                AND s.project_id=g.project_id AND s.book_id=g.book_id
+            WHERE g.project_id=%s AND g.book_id=%s AND g.repair_of_operation_id=%s
+              AND o.status='SUCCEEDED' AND s.lifecycle='ACTIVE'
+              AND o.idempotency_scope='book:story-planning-generation' AND o.idempotency_key=%s
+              AND EXISTS(SELECT 1 FROM authority_external_effect e
+                  JOIN authority_external_effect_dispatch d USING(external_effect_id)
+                  JOIN authority_external_receipt receipt USING(dispatch_id)
+                  JOIN authority_budget_reservation r USING(external_effect_id)
+                  WHERE e.operation_id=o.operation_id AND e.status='SUCCEEDED'
+                    AND e.request_payload->>'stage'=g.generator_operation_name
+                    AND d.status='SUCCEEDED' AND receipt.status='VERIFIED' AND r.status='SETTLED')
+              AND NOT EXISTS(SELECT 1 FROM authority_external_effect e
+                  WHERE e.operation_id IN (%s,o.operation_id) AND e.status<>'SUCCEEDED')
+              AND NOT EXISTS(SELECT 1 FROM authority_budget_reservation r
+                  WHERE r.operation_id IN (%s,o.operation_id) AND r.status<>'SETTLED')""",
+            [command.project_id, command.book_id, operation_id, key, operation_id, operation_id])
+        rows = uow.cursor.fetchall()
+    if not rows:
+        return None
+    if len(rows) != 1:
+        raise KernelError("PLANNING_RESULT_REPAIR_LINEAGE_INVALID", "Completed repair must have one exact successor")
+    successor = _command_from_payload(rows[0][0])
+    expected = replace(command, runtime_continuation_id="", repair_of_candidate_id="",
+        repair_of_operation_id=operation_id, repair_result_asset_version_id=successor.repair_result_asset_version_id,
+        repair_result_diagnostic=successor.repair_result_diagnostic, repair_reason=successor.repair_reason,
+        repair_number=command.repair_number + 1, parent_agent_session_operation_id="", idempotency_key=key)
+    if not successor.repair_result_asset_version_id or not successor.repair_result_diagnostic or _command_payload(expected) != rows[0][0]:
+        raise KernelError("PLANNING_RESULT_REPAIR_LINEAGE_INVALID", "Completed repair must retain its exact frozen source command")
+    return successor
+
+
+class PlanningResultValidationError(KernelError):
+    def __init__(
+        self,
+        error: KernelError,
+        *,
+        raw_result: Any,
+        execution_evidence: Mapping[str, Any],
+    ) -> None:
+        super().__init__("PLANNING_GENERATION_RESULT_INVALID", error.message)
+        self.raw_result = dict(raw_result) if isinstance(raw_result, Mapping) else raw_result
+        self.execution_evidence = dict(execution_evidence)
+        self.diagnostic = {
+            "status": "FAIL",
+            "validation_kind": "PRE_CANDIDATE_CONTRACT",
+            "error_code": error.code,
+            "message": error.message,
+            "fields": list(getattr(error, "diagnostics", ())),
+            **({"failure_class": "BUSINESS_REJECT" if error.code == "CRAFT_CONCRETE_REJECTED" else "CONTRACT_INVALID"}
+               if error.code.startswith(("CRAFT_", "PLANNING_KNOWLEDGE_")) else {}),
+        }
+
+
+def validate_raw_result(
+    generator: str, raw: Any, *, compiled_scope: str | None = None, work_requirements: bool = False, aligned_methods: bool = False, rfc6901_paths: bool = False, narrative_search: bool = False, generated_title: bool = False
+) -> dict[str, Any]:
+    if not isinstance(raw, Mapping):
+        raise KernelError(
+            "PLANNING_RESULT_OBJECT_REQUIRED",
+            f"$: expected object, actual {type(raw).__name__}",
+        )
+    objective = raw.get("objective")
+    if not isinstance(objective, str) or not objective.strip():
+        raise KernelError(
+            "PLANNING_RESULT_OBJECTIVE_INVALID",
+            f"$.objective: expected nonempty string, actual {type(objective).__name__}",
+        )
+    normalized = (
+        normalize_foundation_payload(
+            generator, raw, expected_compiled_scope=compiled_scope
+        )
+        if generator in FOUNDATION_GENERATORS
+        else dict(raw)
+    )
+    if generator in FOUNDATION_GENERATORS:
+        structural = {
+            key: value
+            for key, value in normalized.items()
+            if key not in {"author_design_decisions", "knowledge_translations"}
+        }
+        envelope = {"foundation_parent_bindings": {}, "contract_version": "foundation-generation.v4" if rfc6901_paths else "foundation-generation.v3" if aligned_methods else "foundation-generation.v2" if work_requirements else "foundation-generation.v1"}
+        if narrative_search:
+            envelope["contract_version"] = "foundation-generation.v5"
+        if generated_title:
+            envelope["generated_title_contract"] = "generated-book-title.v1"
+        if compiled_scope and generator == "world.design.generate":
+            envelope["world_compilation"] = {"compiled_scope": compiled_scope}
+        structural.update(constraint_envelope=envelope, foundation_parent_bindings={})
+        validate_foundation_payload(generator, {"candidate_payload": structural})
+    return normalized
+
+
+def persist_result_failure(
+    database_url: str,
+    *,
+    request: Any,
+    command: StoryPlanningGenerationCommand,
+    error: PlanningResultValidationError,
+) -> None:
+    content = {
+        "contract_version": "planning-result-failure.v1",
+        "project_id": command.project_id,
+        "workspace_id": command.workspace_id,
+        "book_id": command.book_id,
+        "operation_id": request.operation_id,
+        "attempt_id": request.attempt_id,
+        "fencing_token": request.fencing_token,
+        "generator_operation_name": command.generator_operation_name,
+        "logical_key": command.logical_key,
+        "execution_contract_version": command.execution_contract_version,
+        "input_versions": dict(command.input_versions),
+        "raw_result": error.raw_result,
+        "raw_result_hash": canonical_hash(error.raw_result),
+        "raw_result_hash_basis": "CANONICAL_PARSED_JSON",
+        "execution_evidence": error.execution_evidence,
+        "diagnostic": error.diagnostic,
+        "candidate_status": "NOT_MATERIALIZED",
+    }
+    AuthorityAssetWriter(database_url).materialize_output(
+        AuthorityAssetWriteCommand(
+            operation_id=request.operation_id,
+            project_id=command.project_id,
+            asset_id=f"planning-result-failure:{request.operation_id}:{request.attempt_id}",
+            asset_type=RESULT_FAILURE_TYPE,
+            schema_version="planning-result-failure.v1",
+            logical_ref=f"planning/result_failures/{request.operation_id}/{request.attempt_id}.json",
+            category="runs",
+            output_key="story_planning.result_failure",
+            role="diagnostic_evidence",
+            content=content,
+            qualification_policy="planning-result-failure-evidence-v1",
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+            eligibility="INELIGIBLE",
+        )
+    )
+
+
+def require_result_repair_source(
+    database_url: str,
+    *,
+    command: StoryPlanningGenerationCommand,
+    operation_id: str,
+    source_asset_version_id: str = "",
+    require_valid_result: bool = False,
+    result_validation_contract_version: str | None = None,
+) -> dict[str, Any]:
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute(
+            "SELECT op.status, op.project_id, op.workspace_id, g.book_id, op.command_payload->'payload', g.candidate_asset_version_id FROM authority_operation op JOIN authority_story_planning_generation g USING(operation_id) WHERE op.operation_id=%s",
+            [operation_id],
+        )
+        row = uow.cursor.fetchone()
+        if (
+            row is None
+            or row[0] not in {"FAILED_FINAL", "DEAD_LETTER"}
+            or row[5]
+            or tuple(map(str, row[1:4]))
+            != (command.project_id, command.workspace_id, command.book_id)
+        ):
+            raise KernelError(
+                "PLANNING_RESULT_REPAIR_SOURCE_INVALID",
+                "result repair requires this Book's failed terminal Operation with no Candidate",
+            )
+        uow.cursor.execute(
+            """SELECT 1 FROM authority_external_effect e WHERE operation_id=%s
+            AND status NOT IN ('SUCCEEDED','FAILED_FINAL','CANCELLED')
+            AND NOT EXISTS(SELECT 1 FROM authority_effect_reconciliation_evidence r
+              WHERE r.external_effect_id=e.external_effect_id
+                AND r.evidence->>'contract_version'='cli-original-reconciliation.v1'
+                AND r.evidence->>'request_hash'=e.request_hash
+                AND r.evidence->>'project_id'=e.project_id
+                AND r.evidence->>'operation_id'=e.operation_id) LIMIT 1""",
+            [operation_id],
+        )
+        if uow.cursor.fetchone():
+            raise KernelError(
+                "PLANNING_RESULT_REPAIR_RECONCILIATION_REQUIRED",
+                "Any unresolved original external outcome must reconcile before a result repair",
+            )
+        frozen = dict(row[4])
+        from .application import _command_payload
+
+        permitted_linkage_fields = {
+            "runtime_continuation_id",
+            "idempotency_key",
+            "repair_of_candidate_id",
+            "repair_of_operation_id",
+            "repair_result_asset_version_id",
+            "repair_result_diagnostic",
+            "repair_reason",
+            "repair_number",
+            "parent_agent_session_operation_id",
+        }
+        current_task = {
+            key: value
+            for key, value in _command_payload(command).items()
+            if key not in permitted_linkage_fields
+        }
+        frozen_task = {
+            key: value
+            for key, value in frozen.items()
+            if key not in permitted_linkage_fields
+        }
+        if current_task != frozen_task:
+            raise KernelError(
+                "PLANNING_RESULT_REPAIR_INPUT_DRIFT",
+                "result repair must retain the failed Operation's entire frozen task",
+            )
+        uow.cursor.execute(
+            "SELECT output.asset_version_id FROM authority_operation_output_asset output JOIN authority_asset asset USING(asset_id) JOIN authority_asset_version version USING(asset_version_id) WHERE output.operation_id=%s AND ((asset.asset_type=%s) OR asset.asset_type='world_preparation_generation' OR (asset.asset_type='model_call_log' AND version.content->>'stage'=%s)) ORDER BY CASE WHEN asset.asset_type=%s THEN 0 WHEN asset.asset_type='model_call_log' THEN 1 ELSE 2 END, version.created_at DESC, output.asset_version_id",
+            [
+                operation_id,
+                RESULT_FAILURE_TYPE,
+                command.generator_operation_name,
+                RESULT_FAILURE_TYPE,
+            ],
+        )
+        sources = [str(item[0]) for item in uow.cursor.fetchall()]
+    if source_asset_version_id and source_asset_version_id not in sources:
+        raise KernelError(
+            "PLANNING_RESULT_REPAIR_SOURCE_INVALID",
+            "repair source is not an output of the failed Operation",
+        )
+    if not sources:
+        raise KernelError(
+            "PLANNING_RESULT_REPAIR_EVIDENCE_MISSING",
+            "failed Operation has no durable Provider result; reconcile before any new request",
+        )
+    source = AuthorityAssetQuery(database_url).require(
+        project_id=command.project_id,
+        asset_version_id=source_asset_version_id or sources[0],
+    )
+    world_generation = source.asset_type == "world_preparation_generation"
+    if world_generation:
+        contract = source.content["contract"]
+        raw = contract["output"]
+        evidence = dict(contract["evidence"])
+        effect_id = str(evidence.get("external_receipt_ref") or "")
+    elif source.asset_type == RESULT_FAILURE_TYPE:
+        raw = source.content["raw_result"]
+        evidence = dict(source.content["execution_evidence"])
+        effect_id = str(evidence.get("external_receipt_ref") or "")
+    else:
+        raw = source.content.get("result")
+        production = source.content.get("production_execution") or {}
+        effect_id = str(source.content.get("external_effect_id") or "")
+        if not effect_id:
+            with AuthorityUnitOfWork(database_url) as uow:
+                uow.cursor.execute(
+                    "SELECT external_effect_id FROM authority_external_effect WHERE operation_id=%s AND project_id=%s AND effect_type='model.invoke'",
+                    [operation_id, command.project_id],
+                )
+                effects = uow.cursor.fetchall()
+            if len(effects) != 1:
+                raise KernelError(
+                    "PLANNING_RESULT_REPAIR_RECEIPT_AMBIGUOUS",
+                    "the retained result must identify exactly one Provider effect",
+                )
+            effect_id = str(effects[0][0])
+        evidence = {
+            "external_receipt_ref": effect_id,
+            "production_execution": production,
+        }
+    receipt = read_failed_operation_success(
+        database_url,
+        EffectCommandContext(
+            operation_id=operation_id,
+            project_id=command.project_id,
+            actor_id=command.actor_id,
+            trace_id=command.trace_id,
+            correlation_id=command.correlation_id,
+        ),
+        effect_id=effect_id,
+    )
+    if receipt is None or receipt["provider_evidence"].get("result") != raw:
+        raise KernelError(
+            "PLANNING_RESULT_REPAIR_RECEIPT_INVALID",
+            "raw result must match its verified succeeded Provider receipt",
+        )
+    if receipt["budget_reservation_status"] != "SETTLED":
+        raise KernelError(
+            "PLANNING_RESULT_REPAIR_BUDGET_UNSETTLED",
+            "settle the known original Provider usage before admitting a repair request",
+        )
+    with AuthorityUnitOfWork(database_url) as uow:
+        uow.cursor.execute("""SELECT output.asset_version_id,version.content_hash,version.content
+            FROM authority_operation_output_asset output
+            JOIN authority_asset asset ON asset.asset_id=output.asset_id
+            JOIN authority_asset_version version ON version.asset_version_id=output.asset_version_id
+            WHERE output.operation_id=%s AND asset.asset_type='context_bundle'""", [operation_id])
+        contexts = uow.cursor.fetchall()
+    context_ref = evidence.get("context_bundle_asset_version_id")
+    if context_ref:
+        contexts = [item for item in contexts if str(item[0]) == context_ref]
+    elif world_generation:
+        contexts = []
+    if (not world_generation or context_ref) and len(contexts) != 1:
+        raise KernelError("PLANNING_RESULT_REPAIR_CONTEXT_DRIFT", "Result repair requires the original Operation's exact frozen Context")
+    context_id, context_hash, context_content = contexts[0] if contexts else ("", "", {})
+    if ((evidence.get("context_bundle_asset_version_id") and evidence["context_bundle_asset_version_id"] != str(context_id))
+            or (evidence.get("context_bundle_hash") and evidence["context_bundle_hash"] != context_hash)):
+        raise KernelError("PLANNING_RESULT_REPAIR_CONTEXT_DRIFT", "Result repair cannot substitute another author projection")
+    validated_result = raw
+    try:
+        if command.execution_contract_version == "1.21.0" and not world_generation and command.generator_operation_name not in FOUNDATION_GENERATORS:
+            from .execution import bind_provider_realization_selectors
+            from .preparation_recovery import consumer_realization_catalog
+            validated_result = bind_provider_realization_selectors(raw, consumer_realization_catalog(database_url, command=command, operation_id=operation_id, context=context_content))
+        if world_generation:
+            from .world_preparation import PlanningWorldPreparation
+
+            PlanningWorldPreparation.validate_retained_generation(
+                database_url,
+                command=command,
+                generation=source,
+            )
+        else:
+            validate_raw_result(
+                command.generator_operation_name,
+                validated_result,
+                generated_title=context_content.get("generated_title_contract") == "generated-book-title.v1",
+                work_requirements=command.execution_contract_version
+                in {"1.17.0", "1.18.0", "1.19.0", "1.21.0"},
+                aligned_methods=command.execution_contract_version in {"1.18.0", "1.19.0", "1.21.0"},
+                rfc6901_paths=(result_validation_contract_version or command.execution_contract_version) in {"1.19.0", "1.21.0"},
+                narrative_search=bool(command.narrative_search_id) and command.execution_contract_version == "1.21.0",
+                compiled_scope="BOOK"
+                if command.generator_operation_name == "world.design.generate"
+                else None,
+            )
+        if not world_generation:
+            from novel_forge.modules.story_design_authority.author_input import validate_author_decisions
+            validate_author_decisions(validated_result, context_content.get("author_design_projection") or {})
+        selection = context_content.get("narrative_intelligence") or {}
+        candidate_review = selection.get("candidate_review", {}).get("contract_version") == "explicit-allowlist-craft-review.v1"
+        if candidate_review or source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"][
+            "error_code"
+        ].startswith(("CRAFT_", "PLANNING_KNOWLEDGE_")):
+            from novel_forge.modules.mkaos_authority.craft_reselection import (
+                validate_concrete_selection,
+            )
+            from novel_forge.modules.mkaos_authority.craft_selection import (
+                build_craft_strategy,
+            )
+
+            from .knowledge_translation import validate_knowledge_translations
+            context = AuthorityAssetQuery(database_url).require(project_id=command.project_id, asset_version_id=str(context_id))
+            selection = context.content["narrative_intelligence"]
+            digest = evidence.get("narrative_intelligence_selection_digest")
+            if (context.content_hash != context_hash
+                    or (digest != selection["selection_digest"] and not (
+                        candidate_review and source.asset_type == "model_call_log" and digest is None))):
+                raise KernelError("PLANNING_RESULT_REPAIR_CONTEXT_DRIFT", "Concrete failure must retain its exact frozen selection")
+            validate_knowledge_translations(validated_result, selection)
+            if not candidate_review or command.generator_operation_name == "chapter_plan.generate":
+                validate_concrete_selection(validated_result, selection)
+                build_craft_strategy(validated_result, selection)
+    except KernelError as error:
+        if require_valid_result:
+            raise KernelError("PLANNING_RESULT_ADMISSION_INVALID", error.message) from error
+        if world_generation and error.code.startswith(
+            (
+                "WORLD_REPAIR_",
+                "WORLD_PREPARATION_",
+                "AUTHORITY_",
+                "WORLD_ACTOR_PROPOSAL_DRIFT",
+            )
+        ):
+            raise
+        diagnostic = PlanningResultValidationError(
+            error, raw_result=raw, execution_evidence=evidence
+        ).diagnostic
+        if world_generation:
+            diagnostic["provider_stage"] = "world_candidates.generate"
+            if error.code == "WORLD_GENERATION_CAUSAL_REJECTED":
+                diagnostic["validation_kind"] = "WORLD_CAUSAL_GATE"
+    else:
+        if not require_valid_result:
+            raise KernelError(
+                "PLANNING_RESULT_REPAIR_NOT_REQUIRED",
+                "retained Provider result is valid; recover the original persistence failure without regenerating",
+            )
+        diagnostic = dict(source.content.get("diagnostic") or {})
+    if not require_valid_result and source.asset_type == RESULT_FAILURE_TYPE and source.content["diagnostic"] != diagnostic:
+        raise KernelError("PLANNING_RESULT_REPAIR_DIAGNOSTIC_DRIFT", "A replayed failure must match the recorded diagnosis exactly")
+    return {
+        "asset_version_id": source.asset_version_id,
+        "content_hash": source.content_hash,
+        "source_operation_id": operation_id,
+        "raw_result": raw,
+        **({"candidate_result": validated_result} if validated_result is not raw else {}),
+        "diagnostic": diagnostic,
+        "execution_evidence": evidence,
+        "schema_version": "planning-result-repair-context.v1",
+        "context_asset_version_id": str(context_id),
+        "context_hash": context_hash,
+        "context_content": context_content,
+    }

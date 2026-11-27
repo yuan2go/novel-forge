@@ -1,0 +1,40 @@
+---
+name: long-outline
+description: Design an ending or a book, volume, arc or chapter-group plan from approved parents, using the matching scope method.
+---
+
+# Long Outline
+
+## Shared rules
+
+Treat author intent, fictional world rules, narrative design and runtime governance as distinct responsibilities. Ground story constraints and character behavior in the frozen author brief or selected work design. Candidate status, host identity/permission checks, approval, validation, receipts, retries and evidence completeness govern this generation; they are not fictional events or character motives. Knowledge boundaries restrict what a character may know; they do not require the character to ask, verify or obtain permission in every scene. Procedural action is valid when this work supplies its reason. Quiet observation and stable situations are valid when selected by the author or design. If an inherited plan conflicts with that intent, expose the structural conflict for the existing author/Plan Change decision; do not hide it by polishing the same scenes.
+
+Translate the author's intent, theme, character desires, world limits and reader promise into a coherent narrative progression at the requested scale. Preserve causal relations where events depend on each other; an intended observational or associative progression can remain stable. Proposed events remain future design. Preserve frozen parent lineage, accepted boundaries, ranges and obligations. Ground concepts, relationships and clues before later action depends on them. Commercial escalation, rewards and cliffhangers are options governed by this story's intent, not universal requirements. Return the declared JSON candidate; the host validates and activates plans.
+
+Design an event as a whole before allocating chapters: the character's purpose, relevant pressure or uncertainty, meaningful choices, result, and what that result changes or sustains. Use the existing event-chain, state and scheduling fields. Distinguish an author's binding requirement, a fictional world fact, selected design, and a generated pacing suggestion through their supplied sources. A generated suggestion needs a story reason; its presence in an old plan does not make it an author requirement. An incompatible active commitment needs the existing Plan Change decision before execution.
+
+Allocate space according to this work's purpose. Time omission, compressed repeated practice, merged compatible actions and unequal chapter lengths are available within the frozen scope. Do not postpone an ordinary task's completion merely to fill a range, repeatedly re-prove settled progress, or turn lack of chapter content into a prose-expansion assignment. If the complete event needs a different frozen range, expose the mismatch to the owning planner; neither a generator nor Writer may silently change it. Quiet and procedural works may deliberately sustain a situation; judge that choice against their actual intent.
+
+## Ending intent
+
+Design the ending direction warranted by this work's author intent, theme and reader promise. Resolution, consequential choices and character transformation are methods to use when selected, not prerequisites. An open ending, continuing situation or stable character can be intentional. Specify the intended final situation, what changes or persists, what remains unresolved and any preparation needed to honor the work's actual commitments. Preserve approved theme and creative conditions without pretending future events are accepted facts.
+
+## Book planning
+
+Lay out the work's narrative progression and volume functions within the frozen length. Causal developments, observation and continuity must serve the selected purpose. Schedule transformations and setup/payoff windows only where the work commits to them; otherwise preserve intended stability or openness. Allocate room for the selected experiences and their consequences. Each declared promise or mystery window must use its exact supplied identity and a feasible setup and payoff range. Avoid turning the book into a list of unrelated climaxes or an encyclopedic chronology.
+
+## Volume planning
+
+Give this volume a purpose in the parent Book: its entry situation, relationships, intended developments or sustained observations, and exit situation. Include central pressure or transformation when the work selects them; do not manufacture either to complete a volume. Detail only this volume's allocated scope. Payoffs and further pressure follow the story promise and frozen schedule; every volume need not end with a larger enemy or power upgrade.
+
+Connect a distant desire to an attainable intermediate purpose where this work calls for continuing pursuit. Explain how abilities, choices and results affect later opportunities, responsibilities or relationships. A world limit need not prohibit every useful consequence until a later volume. Preserve explicit delayed commitments and their supplied reason rather than inventing a uniform upgrade timetable.
+
+## Arc planning
+
+Trace the specified character, relationship, conflict or mystery movement through ordered segments. Connect each segment's entry to its predecessor's exit and prepare its later consequences. Use relations between distinct Arc identities for cross-arc dependencies, not self-edges to order one Arc's segments.
+
+## Chapter-group planning
+
+Within the exact frozen planning horizon, make an ordered chapter-function matrix and a coherent event chain covering every chapter, including observation or confirmed zero state changes. Use the branch strategy to realize the selected purpose while preserving hard constraints and accepted boundaries. Vary chapter functions where the story needs contrast or breathing room. Schedule only permitted disclosures and explain how developments prepare later action.
+
+Arrange complete permitted events and their results first, then distribute them into the exact chapter matrix. Preparation, action and delivery may coexist in one chapter. After a result, start from the changed situation or deliberately chosen stable one. Revisit it only for a new consequence, perspective or question. Do not reserve separate chapters for each object, attempt, confirmation or handoff unless they carry distinct story content. Return structural insufficiency to parent planning rather than instructing Memo or Writer to pad it.

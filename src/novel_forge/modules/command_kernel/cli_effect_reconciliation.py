@@ -1,0 +1,275 @@
+from __future__ import annotations
+
+from typing import Any
+from uuid import uuid4
+
+from .errors import KernelError
+
+
+CONTRACT = "cli-original-reconciliation.v1"
+
+
+def original_cli_dispatch(cursor: Any, effect: dict[str, Any]) -> dict[str, Any] | None:
+    cursor.execute(
+        """SELECT dispatch_id,generation,evidence,payload_hash FROM authority_external_effect_dispatch
+        WHERE external_effect_id=%s
+          AND (%s<>'FAILED_RETRYABLE' OR (status='FAILED_RETRYABLE'
+            AND (evidence #>> '{production_execution,execution_result,outcome}' IN ('UNKNOWN','TIMED_OUT','CANCELLED','ORPHANED')
+              OR (evidence #>> '{production_execution,execution_result,outcome}'='RETRYABLE_FAILURE'
+                AND evidence #>> '{production_execution,process_evidence,failure_code}'='PROCESS_EXIT_FAILURE'))))
+          AND evidence #>> '{production_execution,execution_handle,transport}'='LOCAL_CLI_REMOTE_INFERENCE'
+          AND (evidence #>> '{production_execution,execution_result,outcome}' IN ('UNKNOWN','TIMED_OUT','CANCELLED','ORPHANED')
+            OR (status='FAILED_RETRYABLE'
+              AND evidence #>> '{production_execution,execution_result,outcome}'='RETRYABLE_FAILURE'
+              AND evidence #>> '{production_execution,process_evidence,failure_code}'='PROCESS_EXIT_FAILURE'))
+          AND (evidence #>> '{production_execution,execution_result,outcome}'='ORPHANED'
+            OR NULLIF(evidence #>> '{production_execution,execution_result,started_at}','') IS NOT NULL)
+          AND NULLIF(evidence #>> '{production_execution,execution_result,usage_receipt_ref}','') IS NULL
+        ORDER BY generation FOR UPDATE""", [effect["external_effect_id"], effect["status"]],
+    )
+    rows = cursor.fetchall()
+    if len(rows) > 1:
+        raise KernelError("EFFECT_CLI_GENERATION_REQUIRED", "Multiple original CLI generations require explicit reconciliation")
+    if not rows:
+        return None
+    row = dict(zip(("dispatch_id", "generation", "evidence", "payload_hash"), rows[0], strict=True))
+    from .external_effect_runtime import _hash
+    if row["payload_hash"] != effect["request_hash"] or _hash(effect["request_payload"]) != effect["request_hash"]:
+        raise KernelError("EFFECT_CLI_REMOTE_RECEIPT_INVALID", "Original dispatch request digest differs")
+    return row
+
+
+def historical_cli_dispatch(cursor: Any, effect: dict[str, Any]) -> dict[str, Any] | None:
+    if effect["status"] not in {"FAILED_RETRYABLE", "UNKNOWN", "RECONCILIATION_REQUIRED"}:
+        return None
+    return original_cli_dispatch(cursor, effect)
+
+
+def resolution(cursor: Any, effect_id: str) -> dict[str, Any] | None:
+    cursor.execute(
+        """SELECT evidence FROM authority_effect_reconciliation_evidence
+        WHERE external_effect_id=%s AND evidence->>'contract_version'=%s
+        ORDER BY reconciled_at DESC LIMIT 1""", [effect_id, CONTRACT],
+    )
+    row = cursor.fetchone()
+    return row[0] if row else None
+
+
+def _invalid(message: str) -> None:
+    raise KernelError("EFFECT_CLI_REMOTE_RECEIPT_INVALID", message)
+
+
+def _asset(cursor: Any, project_id: str, ref: str, *, kind: str | None = None) -> dict[str, Any]:
+    from .external_effect_runtime import _hash
+    if not isinstance(ref, str) or not ref.startswith("authority-asset-version:"):
+        _invalid("Require a persistent Authority AssetVersion")
+    cursor.execute(
+        """SELECT a.asset_type,v.schema_version,v.content,v.content_hash,v.eligibility,v.governance
+        FROM authority_asset_version v JOIN authority_asset a USING(asset_id)
+        WHERE a.project_id=%s AND v.asset_version_id=%s""", [project_id, ref.split(":", 1)[1]],
+    )
+    row = cursor.fetchone()
+    if (not row or (kind and row[0] != kind) or row[4:] != ("ELIGIBLE", "CLEAR")
+            or not isinstance(row[2], dict) or row[3] != _hash(row[2])
+            or (kind == "cli_remote_receipt" and row[1] != "cli-remote-receipt.v1")
+            or (kind == "cli_provider_record" and row[1] != "cli-provider-record.v1")):
+        _invalid("Original evidence asset failed scope, governance or hash verification")
+    content = row[2]
+    if content.get("contract_version") == "authority-execution-evidence.v1":
+        payload = content.get("payload")
+        if not isinstance(payload, dict) or content.get("payload_hash") != _hash(payload).removeprefix("sha256:"):
+            _invalid("Original execution payload digest differs")
+        return payload
+    return content
+
+
+def verify_receipt(cursor: Any, effect: dict[str, Any], dispatch: dict[str, Any], ref: str, actor_id: str) -> dict[str, Any]:
+    receipt = _asset(cursor, effect["project_id"], ref, kind="cli_remote_receipt")
+    if (receipt.get("contract_version") != "cli-remote-receipt.v1"
+            or receipt.get("verification_basis") != "AUTHORIZED_OPERATOR_ATTESTATION"
+            or receipt.get("verified_by") != actor_id or not receipt.get("source_ref")):
+        _invalid("Require the authorized operator's original remote evidence attestation")
+    source = _asset(cursor, effect["project_id"], receipt["source_ref"], kind="cli_provider_record")
+    if any(source.get(key) != receipt.get(key) for key in ("provider_request_id", "outcome", "input_sha256", "usage", "result")):
+        _invalid("Attested outcome differs from the preserved original remote record")
+    production = dispatch["evidence"]["production_execution"]
+    result = production["execution_result"]
+    process_ref = result.get("process_receipt_ref")
+    process = _asset(cursor, effect["project_id"], process_ref, kind="execution_evidence")
+    identity = {
+        "project_id": effect["project_id"], "operation_id": effect["operation_id"],
+        "external_effect_id": effect["external_effect_id"], "dispatch_id": dispatch["dispatch_id"],
+        "generation": dispatch["generation"], "request_hash": effect["request_hash"],
+        "execution_id": result.get("execution_id"), "attempt_id": result.get("attempt_id"),
+        "fencing_token": result.get("fencing_token"), "process_receipt_ref": process_ref,
+        "input_sha256": process.get("input_sha256"),
+    }
+    if any(value is None or receipt.get(key) != value for key, value in identity.items()):
+        _invalid("Remote receipt differs from the original Effect, request, execution or fence")
+    for key in ("execution_id", "operation_id", "attempt_id", "fencing_token"):
+        if process.get(key) != identity[key]:
+            _invalid("Original process receipt identity differs")
+    if not receipt.get("provider_request_id") or receipt.get("outcome") not in {"success", "not_found", "failed_final", "cancelled"}:
+        _invalid("Require the original remote request and a confirmed terminal outcome")
+    if any(type(receipt[key]) is not int or receipt[key] <= 0 for key in ("generation", "fencing_token")):
+        _invalid("Original generation and fence must be positive integers")
+    usage = receipt.get("usage")
+    if (not isinstance(usage, dict) or usage.get("measurement") != "PROVIDER_REPORTED"
+            or any(type(usage.get(key)) is not int or usage[key] < 0 for key in ("input_tokens", "output_tokens", "total_tokens"))
+            or usage["input_tokens"] + usage["output_tokens"] != usage["total_tokens"]):
+        _invalid("Require measured original usage with consistent nonnegative totals")
+    if receipt["outcome"] == "not_found" and (receipt.get("provider_not_executed") is not True or usage["total_tokens"] != 0):
+        _invalid("NOT_FOUND requires affirmative non-execution evidence and zero measured usage")
+    if receipt["outcome"] == "success":
+        if not isinstance(receipt.get("result"), dict) or not receipt["result"]:
+            _invalid("Original successful result is missing")
+        execution = receipt.get("provider_evidence")
+        if effect["request_payload"].get("_production_execution"):
+            if not isinstance(execution, dict):
+                _invalid("Production consumption requires original normalized execution manifests")
+            _verify_manifests(cursor, effect, production, receipt, execution)
+    return receipt
+
+
+def _verify_manifests(cursor, effect, production, receipt, evidence):
+    from .external_effect_runtime import _hash
+    project = effect["project_id"]
+    recovered = evidence.get("production_execution", {})
+    execution = recovered.get("execution_result", {})
+    for key in ("execution_id", "operation_id", "attempt_id", "fencing_token"):
+        if execution.get(key) != receipt[key]:
+            _invalid("Recovered result differs from original execution identity")
+    if (execution.get("outcome") != "SUCCEEDED" or execution.get("process_receipt_ref") != receipt["process_receipt_ref"]
+            or evidence.get("result") != receipt["result"] or evidence.get("usage") != receipt["usage"]
+            or recovered.get("execution_request") != production.get("execution_request")
+            or recovered.get("route_snapshot") != production.get("route_snapshot")
+            or recovered.get("input_manifest") != production.get("input_manifest")):
+        _invalid("Recovered execution must preserve original request, route and input manifests")
+    output = _asset(cursor, project, execution.get("output_manifest_ref"), kind="execution_evidence")
+    validation = _asset(cursor, project, execution.get("validation_report_ref"), kind="execution_evidence")
+    normalized = _asset(cursor, project, execution.get("normalized_output_ref"), kind="execution_evidence")
+    usage = _asset(cursor, project, execution.get("usage_receipt_ref"), kind="execution_evidence")
+    cost = _asset(cursor, project, execution.get("cost_receipt_ref"), kind="execution_evidence")
+    for manifest in (output, validation):
+        for key in ("operation_id", "attempt_id", "fencing_token"):
+            if manifest.get(key) != receipt[key]:
+                _invalid("Recovered manifest identity differs")
+    if (validation.get("validation_policy_ref") != production["execution_request"].get("validation_policy_ref")
+            or cost.get("availability") != "UNAVAILABLE" or cost.get("measurement") != "UNKNOWN"
+            or cost.get("amount") is not None):
+        _invalid("Original validation policy and UNKNOWN entitlement cost must be preserved")
+    if (normalized != receipt["result"] or output.get("output_hash") != _hash(normalized).removeprefix("sha256:")
+            or output.get("normalized_output_ref") != execution.get("normalized_output_ref")
+            or validation.get("output_manifest_ref") != execution.get("output_manifest_ref")
+            or validation.get("decision") != "ACCEPTED" or usage != receipt["usage"] or cost != evidence.get("cost")):
+        _invalid("Recovered manifests must bind the exact normalized result and measured usage")
+    schema = production.get("process_evidence", {}).get("output_schema")
+    if not isinstance(schema, dict):
+        _invalid("Original frozen output schema is missing")
+    from novel_forge.modules.chapter_authority.provider_output_contracts import validate_chapter_provider_output_against_schema, validate_native_world_schema_fragment
+    stage = production["process_evidence"].get("stage") or effect["request_payload"].get("stage") or ""
+    try:
+        if stage in {"world_candidates.generate", "world_candidates.evaluate"} and "$schema" not in schema:
+            validate_native_world_schema_fragment(stage, schema, normalized, output_schema_ref=production["process_evidence"]["output_schema_version"])
+        else:
+            validate_chapter_provider_output_against_schema(stage, schema, normalized)
+    except KernelError as exc:
+        _invalid(f"Original result does not satisfy its frozen output schema: {exc.code}")
+
+
+def append_resolution(uow: Any, effect: dict[str, Any], dispatch: dict[str, Any], command: Any) -> dict[str, Any]:
+    receipt_ref = command.evidence.get("original_remote_receipt_ref")
+    receipt = verify_receipt(uow.cursor, effect, dispatch, receipt_ref, command.actor_id)
+    expected = {"MARK_SUCCEEDED": "success", "MARK_NOT_FOUND": "not_found", "MARK_FAILED_FINAL": "failed_final", "MARK_CANCELLED": "cancelled"}
+    if expected.get(command.decision) != receipt["outcome"]:
+        _invalid("Manual decision differs from original confirmed outcome; retries remain separately admitted")
+    existing = resolution(uow.cursor, effect["external_effect_id"])
+    if existing is not None:
+        raise KernelError("EFFECT_CLI_ALREADY_RECONCILED", "Original generation already has an immutable reconciliation")
+    uow.cursor.execute(
+        """SELECT EXISTS(SELECT 1 FROM authority_lease_acquisition l JOIN authority_attempt a USING(attempt_id)
+            WHERE a.operation_id=%s AND l.status='HELD') OR EXISTS(SELECT 1 FROM authority_effect_dispatch_lease l
+            JOIN authority_external_effect_dispatch d USING(dispatch_id) WHERE d.external_effect_id=%s AND l.status='HELD')""",
+        [effect["operation_id"], effect["external_effect_id"]],
+    )
+    if uow.cursor.fetchone()[0]:
+        raise KernelError("EFFECT_CLI_ACTIVE_LEASE", "Original receipt reconciliation requires quiescent execution")
+    uow.cursor.execute(
+        """SELECT reservation_id,status,actual_tokens,accounting_basis,evidence FROM authority_budget_reservation
+        WHERE external_effect_id=%s AND project_id=%s FOR UPDATE""", [effect["external_effect_id"], effect["project_id"]],
+    )
+    budgets = uow.cursor.fetchall()
+    if (len(budgets) != 1 or budgets[0][1] not in {"SETTLED", "HELD_UNKNOWN"} or budgets[0][3] != "ACCOUNT_ENTITLEMENT"
+            or (budgets[0][1] == "SETTLED" and budgets[0][4].get("measurement_available") is not False)):
+        raise KernelError("EFFECT_CLI_BUDGET_CORRECTION_UNSUPPORTED", "Require the original held or unmeasured settled entitlement reservation")
+    body = {"contract_version": CONTRACT, "project_id": effect["project_id"], "operation_id": effect["operation_id"],
+        "dispatch_id": dispatch["dispatch_id"], "generation": dispatch["generation"], "request_hash": effect["request_hash"],
+        "original_remote_receipt_ref": receipt_ref, "verified_by": command.actor_id, "outcome": receipt["outcome"],
+        "budget_correction": {"mode": "HELD_SETTLEMENT" if budgets[0][1] == "HELD_UNKNOWN" else "APPEND_CORRECTION",
+            "reservation_id": budgets[0][0], "original_actual_tokens": budgets[0][2],
+            "actual_tokens": receipt["usage"]["total_tokens"], "accounting_basis": budgets[0][3]}}
+    uow.repositories.external_effects.record_reconciliation_evidence({
+        "reconciliation_id": str(uuid4()), "external_effect_id": effect["external_effect_id"],
+        "provider": effect["provider"], "stable_idempotency_key": effect["stable_idempotency_key"],
+        "outcome": receipt["outcome"], "evidence": body, "trace_id": command.trace_id, "correlation_id": command.correlation_id})
+    if budgets[0][1] == "HELD_UNKNOWN":
+        from .budget_runtime import settle_provider_budget_in_uow
+        settlement = settle_provider_budget_in_uow(uow, reservation_id=budgets[0][0],
+            project_id=effect["project_id"], actual_amount=None,
+            actual_tokens=receipt["usage"]["total_tokens"], evidence={
+                "measurement_available": True, "usage": receipt["usage"],
+                "original_remote_receipt_ref": receipt_ref,
+                "usage_settlement_basis": "ORIGINAL_RECEIPT_RECONCILIATION"})
+        if settlement.get("budget_breach"):
+            raise KernelError("EFFECT_CLI_BUDGET_RECONCILIATION_REQUIRED", "Original measured usage requires its existing budget policy reconciliation")
+    return body
+
+
+def read_success(uow: Any, effect: dict[str, Any]) -> dict[str, Any] | None:
+    resolved = resolution(uow.cursor, effect["external_effect_id"])
+    if resolved is None or resolved["outcome"] != "success":
+        return None
+    dispatch = original_cli_dispatch(uow.cursor, effect)
+    if dispatch is None or any(resolved[key] != dispatch[key] for key in ("dispatch_id", "generation")) or resolved["request_hash"] != effect["request_hash"]:
+        _invalid("Reconciled generation differs from the original dispatch")
+    receipt = verify_receipt(uow.cursor, effect, dispatch, resolved["original_remote_receipt_ref"], resolved["verified_by"])
+    original = dispatch["evidence"]
+    imported = receipt.get("provider_evidence") or {}
+    production = dict(original["production_execution"])
+    if imported:
+        production["execution_result"] = imported["production_execution"]["execution_result"]
+    evidence = {**original, "production_execution": production, "result": receipt["result"], "usage": receipt["usage"],
+        "production_verified": False, "original_receipt_reconciliation": {
+            "contract_version": CONTRACT, "receipt_ref": resolved["original_remote_receipt_ref"],
+            "verification_basis": receipt["verification_basis"]}}
+    if imported:
+        evidence["cost"] = imported["cost"]
+    return {"generation": dispatch["generation"], "provider_evidence": evidence, "budget_usage_correction": resolved["budget_correction"]}
+
+
+def corrected_settlement_replay(uow: Any, reservation: dict[str, Any], actual_tokens: int) -> bool:
+    resolved = resolution(uow.cursor, reservation["external_effect_id"])
+    if resolved is None:
+        return False
+    correction = resolved["budget_correction"]
+    receipt = _asset(uow.cursor, reservation["project_id"], resolved["original_remote_receipt_ref"], kind="cli_remote_receipt")
+    return (
+        correction.get("mode") != "HELD_SETTLEMENT"
+        and correction["reservation_id"] == reservation["reservation_id"]
+        and correction["original_actual_tokens"] == reservation["actual_tokens"]
+        and correction["accounting_basis"] == reservation["accounting_basis"] == "ACCOUNT_ENTITLEMENT"
+        and correction["actual_tokens"] == actual_tokens == receipt["usage"]["total_tokens"]
+        and receipt["external_effect_id"] == reservation["external_effect_id"]
+        and receipt["project_id"] == reservation["project_id"]
+        and receipt["operation_id"] == reservation["operation_id"]
+    )
+
+
+def confirmed_query_result(cursor, effect, dispatch):
+    resolved = resolution(cursor, effect["external_effect_id"])
+    if resolved is None:
+        return None
+    if dispatch is None or any(resolved[key] != dispatch[key] for key in ("dispatch_id", "generation")) or resolved["request_hash"] != effect["request_hash"]:
+        _invalid("Confirmed query must retain its exact original generation")
+    receipt = verify_receipt(cursor, effect, dispatch, resolved["original_remote_receipt_ref"], resolved["verified_by"])
+    return {"external_effect_id": effect["external_effect_id"], "outcome": receipt["outcome"], "replayed": True}

@@ -1,0 +1,221 @@
+{
+  "schema_version": "novel-forge.ai-instruction-surface.v2",
+  "forbidden_terms": [
+    "Agent Center",
+    "Editor-in-Chief Console",
+    "Evaluation Center",
+    "Loop Kernel"
+  ],
+  "sources": [
+    {
+      "id": "coding-agent-policy",
+      "patterns": [
+        "AGENTS.md",
+        "CLAUDE.md"
+      ],
+      "kind": "CODING_AGENT_POLICY",
+      "owner": "repository-governance",
+      "consumer": "coding-agent",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "runtime-skills",
+      "patterns": [
+        "skills/agent-loop-governance/SKILL.md",
+        "skills/analysis-to-asset-conversion/SKILL.md",
+        "skills/anti-copy-abstraction/SKILL.md",
+        "skills/canon-continuity-graph/SKILL.md",
+        "skills/chapter-outline/SKILL.md",
+        "skills/character-design/SKILL.md",
+        "skills/classic-literary-depth-analysis/SKILL.md",
+        "skills/context-builder-source-isolation/SKILL.md",
+        "skills/evidence-fact-verification/SKILL.md",
+        "skills/hot-novel-business-deconstruction/SKILL.md",
+        "skills/hot-novel-deconstruction/SKILL.md",
+        "skills/long-outline/SKILL.md",
+        "skills/longform-temporal-query/SKILL.md",
+        "skills/material-curation/SKILL.md",
+        "skills/mkaos-knowledge-asset-os/SKILL.md",
+        "skills/multi-scale-pacing/SKILL.md",
+        "skills/multidisciplinary-knowledge/SKILL.md",
+        "skills/multidisciplinary-knowledge/writing-theory-methods-v1.md",
+        "skills/multidisciplinary-knowledge/writing-theory-methods-v2.md",
+        "skills/narrative-beat-design/SKILL.md",
+        "skills/novel-os-engineering-audit/SKILL.md",
+        "skills/platform-strategy-os/SKILL.md",
+        "skills/project-planning/SKILL.md",
+        "skills/prose-generation/SKILL.md",
+        "skills/provider-runtime-policy/SKILL.md",
+        "skills/publish-release-gate-os/SKILL.md",
+        "skills/published-fiction-craft-analysis/SKILL.md",
+        "skills/quality-review/SKILL.md",
+        "skills/reader-feedback/SKILL.md",
+        "skills/review-issue-gate/SKILL.md",
+        "skills/skill-governance/SKILL.md",
+        "skills/topic-development/SKILL.md",
+        "skills/training-exercise/SKILL.md",
+        "skills/world-consequence-modeling/SKILL.md",
+        "skills/worldbuilding/SKILL.md",
+        "skills/*/legacy-v1.md",
+        "skills/prose-generation/legacy-v2.md",
+        "skills/quality-review/legacy-v3.md",
+        "skills/*/legacy-calibration-20261003.md",
+        "skills/anti-copy-abstraction/legacy-v1.0.0.md",
+        "skills/hot-novel-business-deconstruction/legacy-v1.0.0.md",
+        "skills/hot-novel-deconstruction/legacy-v2.0.0.md",
+        "skills/chapter-outline/legacy-narrative-intent-20261010.md",
+        "skills/character-design/legacy-narrative-intent-20261010.md",
+        "skills/long-outline/legacy-narrative-intent-20261010.md",
+        "skills/long-outline/legacy-event-planning-20261011.md",
+        "skills/narrative-beat-design/legacy-narrative-intent-20261010.md",
+        "skills/topic-development/legacy-narrative-intent-20261010.md",
+        "skills/worldbuilding/legacy-narrative-intent-20261010.md",
+        "skills/quality-review/legacy-v3.md",
+        "skills/prose-generation/legacy-v4.md",
+        "skills/quality-review/legacy-v4.md"
+      ],
+      "kind": "RUNTIME_SKILL_SOURCE",
+      "owner": "skill-governance",
+      "consumer": "coding-agent-and-agent-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "mattpocock-coding-skills",
+      "patterns": [
+        "skills/ask-matt/**",
+        "skills/code-review/**",
+        "skills/codebase-design/**",
+        "skills/diagnosing-bugs/**",
+        "skills/domain-modeling/**",
+        "skills/grill-with-docs/**",
+        "skills/implement/**",
+        "skills/implement-spec/**",
+        "skills/improve-codebase-architecture/**",
+        "skills/pr/**",
+        "skills/prototype/**",
+        "skills/research/**",
+        "skills/retro/**",
+        "skills/setup-matt-pocock-skills/**",
+        "skills/tdd/**",
+        "skills/to-spec/**",
+        "skills/to-tickets/**",
+        "skills/triage/**",
+        "skills/wayfinder/**",
+        "skills/wizard/**",
+        "skills/chief-of-staff/**",
+        "skills/claude-handoff/**",
+        "skills/loop-me/**",
+        "skills/setup-ts-deep-modules/**",
+        "skills/writing-beats/**",
+        "skills/writing-fragments/**",
+        "skills/writing-shape/**",
+        "skills/git-guardrails-claude-code/**",
+        "skills/migrate-to-shoehorn/**",
+        "skills/scaffold-exercises/**",
+        "skills/setup-pre-commit/**",
+        "skills/grill-me/**",
+        "skills/grilling/**",
+        "skills/handoff/**",
+        "skills/teach/**",
+        "skills/to-questionnaire/**",
+        "skills/wait-what/**",
+        "skills/writing-for-agents/**"
+      ],
+      "kind": "CODING_AGENT_SKILL_SOURCE",
+      "owner": "repository-governance",
+      "consumer": "coding-agent",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "capability-pack-prompts",
+      "patterns": [
+        "config/capability_packs/artifacts/*.md"
+      ],
+      "kind": "MODEL_INSTRUCTION",
+      "owner": "capability-pack-authority",
+      "consumer": "provider-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "capability-pack-instruction-bindings",
+      "patterns": [
+        "config/capability_packs/*_pack.json"
+      ],
+      "kind": "INSTRUCTION_BINDING",
+      "owner": "capability-pack-authority",
+      "consumer": "provider-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "runtime-embedded-instructions",
+      "patterns": [
+        "src/novel_forge/modules/provider_qualification/runner.py",
+        "src/novel_forge/modules/source_authority/deconstruction.py",
+        "src/novel_forge/modules/source_import/execution.py",
+        "src/novel_forge/modules/story_planning_runtime/execution.py",
+        "src/novel_forge/modules/chapter_authority/provider_views.py",
+        "src/novel_forge/modules/chapter_authority/domain_handlers.py",
+        "src/novel_forge/modules/chapter_authority/execution_gateway.py",
+        "src/novel_forge/modules/chapter_authority/realization_composition.py",
+        "src/novel_forge/modules/mkaos_authority/craft_context_projection.py",
+        "src/novel_forge/modules/source_import/corpus_ingestion/narrative_contracts.py",
+        "src/novel_forge/modules/review/craft.py",
+        "src/novel_forge/modules/review/prose_comparison.py",
+        "src/novel_forge/modules/revision/domain.py",
+        "src/novel_forge/modules/worldbuilding/actor_isolation.py",
+        "src/novel_forge/modules/story_planning_runtime/knowledge_translation.py",
+        "src/novel_forge/modules/book_followup_authority/screenplay_execution.py",
+        "src/novel_forge/modules/book_followup_authority/memory_execution.py",
+        "src/novel_forge/modules/book_followup_authority/prose_recovery.py",
+        "src/novel_forge/modules/story_planning_runtime/world_preparation.py",
+        "src/novel_forge/modules/chapter_authority/candidate_repair.py",
+        "src/novel_forge/modules/chapter_authority/canon_output_recovery.py",
+        "src/novel_forge/modules/chapter_authority/current_quote_recovery.py",
+        "src/novel_forge/modules/chapter_authority/current_semantic_recovery.py",
+        "src/novel_forge/modules/chapter_authority/canon_support_coverage.py",
+        "src/novel_forge/modules/book_authority/working_prose.py"
+      ],
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "runtime-authorities",
+      "consumer": "provider-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "admin-embedded-instructions",
+      "patterns": [
+        "web/admin/app/features/evaluation/api.ts"
+      ],
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "admin-runtime",
+      "consumer": "provider-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "mkaos-selection-candidate-guidance",
+      "patterns": [
+        "src/novel_forge/modules/mkaos_authority/domain.py"
+      ],
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "mkaos-authority",
+      "consumer": "planning-provider-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    },
+    {
+      "id": "reader-manuscript-reading-instructions",
+      "patterns": [
+        "src/novel_forge/modules/reader_calibration/manuscript_blind.py"
+      ],
+      "kind": "CODE_EMBEDDED_MODEL_INSTRUCTION",
+      "owner": "reader-calibration",
+      "consumer": "reader-and-provider-runtime",
+      "qualification_invalidation": "IMPLEMENTATION_AND_QUALIFICATION"
+    }
+  ],
+  "generated_copies": [
+    {
+      "source": "skills",
+      "target": ".claude/skills",
+      "generator": "scripts/sync_claude_skills.py"
+    }
+  ]
+}

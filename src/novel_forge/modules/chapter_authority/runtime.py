@@ -1,0 +1,325 @@
+from __future__ import annotations
+from collections.abc import Callable
+from dataclasses import dataclass
+from novel_forge.modules.authority_handler_runtime import (
+    AuthorityAuxiliaryOutput,
+    AuthorityExecutionResult,
+    AuthorityHandlerOutput,
+    AuthorityHandlerRegistration,
+    AuthorityHandlerRequest,
+    execute_authority_handler,
+)
+from novel_forge.modules.chapter_authority.contracts import (
+    ChapterHandlerRegistry,
+    ChapterHandlerRequest,
+    ChapterInputAsset,
+    ChapterNode,
+)
+from novel_forge.modules.chapter_authority.definitions import (
+    CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION,
+    CHAPTER_FIXTURE_AUTHOR_INPUT_VERSION,
+    CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS,
+    CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION,
+    chapter_definition_version,
+)
+from novel_forge.modules.command_kernel.attempt_runtime import WorkerLeaseCommand
+from novel_forge.modules.command_kernel.errors import KernelError
+from novel_forge.modules.command_kernel.routing_bootstrap import (
+    CHAPTER_SAMPLE_DEFINITION_VERSION, chapter_sample_definition_name, chapter_sample_definition_supported, load_bootstrap_authorization,
+)
+from novel_forge.storage.authority_uow import AuthorityUnitOfWork
+from .definitions import CHAPTER_SAMPLE_COMPLETION_TOPIC, CHAPTER_SAMPLE_OUTPUT_KEY
+
+
+ChapterExecutionResult = AuthorityExecutionResult
+
+
+def bind_working_context_sources(request: ChapterHandlerRequest, node: ChapterNode) -> ChapterHandlerRequest:
+    from novel_forge.modules.book_authority.working_prose import TASK_POLICY_VERSIONS, working_auxiliary_source_refs
+    working = (request.command.get("preparation_report") or {}).get("working_manuscript")
+    if (node not in {ChapterNode.CONTEXT, ChapterNode.EXECUTION_INTENT}
+            or not working or (working.get("projection_policy") or {}).get("version") not in TASK_POLICY_VERSIONS):
+        return request
+    from dataclasses import replace
+    references = working_auxiliary_source_refs(working)
+    actual = {item.asset_version_id: item.content_hash for item in request.inputs}
+    if any(actual.get(row["asset_version_id"]) != row["content_hash"] for row in references):
+        raise KernelError("WORKING_AUXILIARY_SOURCE_INVALID", "Every working task and annotation source must retain its exact native input binding")
+    candidates = {row["asset_version_id"] for row in request.command.get("context_candidates", [])
+                  if str(row.get("asset_type") or "") != "chapter_plan"}
+    auxiliary = {row["asset_version_id"] for row in references} - candidates
+    rebound = replace(request, inputs=tuple(
+        replace(item, input_role="working_context_source") if item.asset_version_id in auxiliary else item
+        for item in request.inputs))
+    plan = rebound.require_input("chapter_plan")
+    sources = [row for row in working["retrieval_task"]["sources"] if row["plan_kind"] == "chapter_plan"]
+    if (len(sources) != 1 or plan.content.get("source_chapter_plan_asset_version_id") != sources[0]["asset_version_id"]
+            or plan.content.get("source_chapter_plan_content_hash") != sources[0]["content_hash"]):
+        raise KernelError("WORKING_TASK_SOURCE_SCOPE_INVALID", "The active Chapter plan must derive from the same frozen task source")
+    return rebound
+
+
+def bind_working_revision_inputs(request: ChapterHandlerRequest) -> ChapterHandlerRequest:
+    working = (request.command.get("preparation_report") or {}).get("working_revision")
+    if not working:
+        return request
+    from dataclasses import replace
+    from .working_revision import require_working_revision_frontier
+    from .author_editor import source_draft_content
+    with AuthorityUnitOfWork(request.database_url) as uow:
+        uow.cursor.execute("SELECT to_jsonb(o) FROM authority_operation o WHERE operation_id=%s", [request.command["chapter_root_operation_id"]])
+        root = uow.cursor.fetchone()[0]
+        if working != (root["command_payload"].get("preparation_report") or {}).get("working_revision"):
+            raise KernelError("MANUSCRIPT_REVISION_SCOPE_INVALID", "A child cannot replace the Root's frozen working source")
+        require_working_revision_frontier(uow, root=root)
+    return replace(request, inputs=tuple(
+        replace(item, input_role="draft_chapter", content=source_draft_content(item))
+        if item.asset_version_id == working["source_asset_version_id"] else item
+        for item in request.inputs))
+
+
+def _handler_definition_version(
+    database_url: str,
+    *,
+    command: WorkerLeaseCommand,
+    node: ChapterNode,
+    registry: ChapterHandlerRegistry,
+    author_input: bool,
+) -> str:
+    expected = (
+        (CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION if registry.model_effects_required else CHAPTER_FIXTURE_AUTHOR_INPUT_VERSION)
+        if author_input and node is ChapterNode.DRAFT
+        else "3.9.16" if registry.model_effects_required and node is ChapterNode.PLAN
+        else "3.9.14" if registry.model_effects_required and node is ChapterNode.EXPORT
+        else "3.9.15" if registry.model_effects_required and node is ChapterNode.FINAL_RELEASE_GATE
+        else "3.9.11" if registry.model_effects_required and node is ChapterNode.QUALITY
+        else "3.9.12" if registry.model_effects_required and node is ChapterNode.QUALITY_LONGFORM
+        else "3.9.13" if registry.model_effects_required and node is ChapterNode.PUBLISH_GATE
+        else "3.9.10" if registry.model_effects_required and node is ChapterNode.CANON
+        else "3.9.9" if registry.model_effects_required and node in {ChapterNode.QUALITY_STRUCTURAL,ChapterNode.QUALITY_COMMERCIAL,ChapterNode.QUALITY_SOURCE_ORIGINALITY,ChapterNode.QUALITY_LONGFORM,ChapterNode.QUALITY_PLATFORM}
+        else "3.9.8" if registry.model_effects_required and node is ChapterNode.CANON_PROPOSAL
+        else "3.9.7" if registry.model_effects_required and node is ChapterNode.CANON_EXTRACTION
+        else "3.9.4" if registry.model_effects_required and node is ChapterNode.REVISION
+        else "3.9.3" if registry.model_effects_required and node in {ChapterNode.REVIEW, ChapterNode.REREVIEW}
+        else "3.9.2" if registry.model_effects_required and node is ChapterNode.DRAFT
+        else chapter_definition_version(registry.model_effects_required)
+    )
+    if registry.model_effects_required:
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute(
+                """SELECT operation.definition_version FROM authority_operation operation
+                JOIN authority_attempt attempt USING(operation_id) WHERE attempt.attempt_id=%s AND operation.project_id=%s""",
+                [command.attempt_id, command.project_id],
+            )
+            row = uow.cursor.fetchone()
+        recoverable = (
+            {"3.10.0-author-input.v3", CHAPTER_AUTHOR_INPUT_DEFINITION_VERSION, CHAPTER_LEGACY_AUTHOR_INPUT_DEFINITION_VERSION, "3.6.0-author-input.v2", "3.7.0-author-input.v2", "3.8.0-author-input.v2"}
+            if author_input and node is ChapterNode.DRAFT
+            else CHAPTER_RECOVERABLE_MODEL_DEFINITION_VERSIONS | {"3.10.0", "3.9.0", "3.9.1", "3.9.5", "3.9.6", "3.9.7", "3.9.8", "3.9.9", "3.9.10", "3.9.11", "3.9.12", "3.9.13", "3.9.14", "3.9.15", "3.9.16"}
+        )
+        if node in {ChapterNode.MEMO, ChapterNode.DRAFT}:
+            recoverable = recoverable | ({"3.10.1", "3.10.2"} if node is ChapterNode.MEMO else {"3.10.1", "3.10.3"})
+        if node is ChapterNode.EXECUTION_INTENT:
+            recoverable = recoverable | {"3.10.1"}
+        if row is not None and str(row[0]) in recoverable:
+            return str(row[0])
+    return expected
+
+
+@dataclass(frozen=True, slots=True)
+class _ChapterHandlerAdapter:
+    node: ChapterNode
+    registry: ChapterHandlerRegistry
+    attempt_id: str
+    fencing_token: int
+    worker_id: str
+    database_url: str
+    sampling: bool = False
+
+    def execute(self, request: AuthorityHandlerRequest) -> AuthorityHandlerOutput:
+        stage = "canon_support" if self.node is ChapterNode.CANON_PROPOSAL else self.node.value
+        snapshot = None
+        source_version = ""
+        if self.sampling:
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                snapshot = load_bootstrap_authorization(uow.cursor, project_id=request.project_id,
+                                                       operation_id=request.operation_id, check_expiry=False)
+            if snapshot is None:
+                raise KernelError("CHAPTER_SAMPLE_AUTHORIZATION_REQUIRED", "sample materialization requires its frozen authorization")
+            if request.definition_version in {"2.2.0", "2.3.0", "2.4.0", "2.5.0", "2.6.0", "2.7.0"}:
+                from novel_forge.modules.command_kernel.routing_bootstrap import validate_chapter_sample_origin
+                payload = request.command["payload"]
+                with AuthorityUnitOfWork(self.database_url) as uow:
+                    uow.cursor.execute("""SELECT definition_name,definition_version,command_payload,input_asset_snapshot
+                        FROM authority_operation WHERE project_id=%s AND operation_id=%s""",
+                        [request.project_id, payload["chapter_sampling"]["source_operation_id"]])
+                    source = uow.cursor.fetchone()
+                validate_chapter_sample_origin(payload, source, project_id=request.project_id)
+                allowed_sources = {"3.4.1", "3.8.0", "3.8.0-author-input.v2", "3.9.0", "3.9.0-author-input.v2"}
+                if request.definition_version in {"2.6.0", "2.7.0"}:
+                    allowed_sources |= {"3.10.0", "3.10.0-author-input.v3"}
+                if source[1] not in allowed_sources:
+                    raise KernelError("CHAPTER_SAMPLE_SOURCE_CONTRACT_INVALID", "New samples require an explicitly declared frozen source contract")
+                source_version = source[1]
+        chapter_request = ChapterHandlerRequest(
+            operation_id=request.operation_id,
+            project_id=request.project_id,
+            workspace_id=request.workspace_id,
+            trace_id=request.trace_id,
+            correlation_id=request.correlation_id,
+            command=request.command["payload"] if self.sampling else request.command,
+            inputs=tuple(
+                ChapterInputAsset(
+                    asset_version_id=item.asset_version_id,
+                    asset_type=item.asset_type,
+                    content_hash=item.content_hash,
+                    content=item.content,
+                    blobs=item.blobs,
+                )
+                for item in request.inputs
+            ),
+            attempt_id=self.attempt_id,
+            fencing_token=self.fencing_token,
+            worker_id=self.worker_id,
+            database_url=self.database_url,
+            definition_version=request.definition_version,
+            source_definition_version=source_version,
+        )
+        chapter_request = bind_working_revision_inputs(chapter_request)
+        chapter_request = bind_working_context_sources(chapter_request, self.node)
+        from .capacity_continuation import bind_context_capacity_upgrade, rebuild_frozen_capacity_context
+        chapter_request = bind_context_capacity_upgrade(chapter_request)
+        chapter_request = rebuild_frozen_capacity_context(chapter_request, self.registry)
+        reference = None
+        if snapshot is not None and snapshot["authorization"]["purpose"] == "REFERENCE_EVALUATION":
+            from novel_forge.modules.chapter_quality_authority.reference_sampling import require_chapter_reference
+            from novel_forge.modules.chapter_quality_authority.reference_subject import require_chapter_sample_target
+
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                subject = require_chapter_sample_target(uow.cursor, project_id=request.project_id, payload=chapter_request.command) if (
+                    chapter_request.command["chapter_sampling"].get("generation_sample") is not None) else None
+                reference = require_chapter_reference(uow.cursor, project_id=request.project_id, stage=stage,
+                    input_versions=chapter_request.command["input_versions"],
+                    binding=chapter_request.command["reference_evaluation"], evaluator_actor_id=request.actor_id,
+                    chapter=chapter_request.command["chapter"], generation_sample=subject)
+        output = self.registry.require(self.node).execute(chapter_request)
+        from .receipt_recovery import completed_result_proof
+        retained_proof = completed_result_proof(chapter_request)
+        if retained_proof is not None:
+            from dataclasses import replace
+            output = replace(output, content={**output.content, "completed_result_revalidation": retained_proof})
+        agreement = None
+        if reference is not None:
+            from novel_forge.modules.chapter_quality_authority.reference_sampling import (
+                chapter_reference_agreement, reference_provider_result,
+            )
+
+            with AuthorityUnitOfWork(self.database_url) as uow:
+                provider = reference_provider_result(uow.cursor, project_id=request.project_id,
+                    operation_id=request.operation_id, attempt_id=self.attempt_id, stage=stage)
+            agreement = {**chapter_reference_agreement(reference, stage=stage, result=provider["result"]),
+                         **{key: value for key, value in provider.items() if key != "result"}}
+        if snapshot is not None:
+            grant = snapshot["authorization"]
+            return AuthorityHandlerOutput(
+                asset_type="chapter_provider_sample", output_key=CHAPTER_SAMPLE_OUTPUT_KEY, role="primary",
+                content={
+                    "schema_version": "chapter-provider-sample.v1", "routing_eligibility": "BENCHMARK_ONLY",
+                    "production_eligible": False, "stage": stage,
+                    "source_operation_id": chapter_request.command["chapter_sampling"]["source_operation_id"],
+                    **({"source_definition_version": source_version, "sample_definition_version": request.definition_version}
+                       if source_version else {}),
+                    "authorization_id": grant["authorization_id"], "campaign": grant["campaign"],
+                    "sampled_asset_type": output.asset_type, "sampled_output": output.content,
+                    **({"reference_evaluation": agreement} if agreement is not None else {}),
+                    "uncommitted_auxiliary_candidates": [
+                        {"asset_type": item.asset_type, "output_key": item.output_key, "content": item.content}
+                        for item in output.auxiliary_outputs if item.role != "execution_commit_evidence"
+                    ],
+                },
+                qualification_policy="chapter-provider-sample.v1", eligibility="INELIGIBLE",
+                reference_asset_version_ids=tuple(item.asset_version_id for item in request.inputs) + (
+                    tuple(item["asset_version_id"] for item in reference["binding"]["adjudications"]) if reference is not None else ()
+                ),
+                evidence={"authority_family": "chapter", "production_eligible": False},
+            )
+        return AuthorityHandlerOutput(
+            asset_type=output.asset_type,
+            output_key=output.output_key,
+            role=output.role,
+            content=output.content,
+            qualification_policy=output.qualification_policy,
+            reference_asset_version_ids=tuple(
+                item.asset_version_id for item in request.inputs
+            ),
+            evidence={"authority_family": "chapter"},
+            auxiliary_outputs=tuple(
+                AuthorityAuxiliaryOutput(
+                    asset_type=item.asset_type,
+                    output_key=item.output_key,
+                    role=item.role,
+                    content=item.content,
+                    qualification_policy=item.qualification_policy,
+                    reference_asset_version_ids=(
+                        item.reference_asset_version_ids
+                        or tuple(input_item.asset_version_id for input_item in request.inputs)
+                    ),
+                    evidence=item.evidence or {"authority_family": "chapter"},
+                )
+                for item in output.auxiliary_outputs
+            ),
+        )
+
+
+def execute_chapter_handler(
+    database_url: str,
+    *,
+    command: WorkerLeaseCommand,
+    node: ChapterNode,
+    registry: ChapterHandlerRegistry,
+    author_input: bool = False,
+    execution_probe: Callable[[], object] | None = None,
+    sampling: bool = False,
+) -> ChapterExecutionResult:
+    stage = "canon_support" if node is ChapterNode.CANON_PROPOSAL else node.value
+    sample_version = CHAPTER_SAMPLE_DEFINITION_VERSION
+    if sampling:
+        with AuthorityUnitOfWork(database_url) as uow:
+            uow.cursor.execute("""SELECT operation.definition_version FROM authority_operation operation
+                JOIN authority_attempt attempt USING(operation_id) WHERE attempt.attempt_id=%s AND operation.project_id=%s""",
+                [command.attempt_id, command.project_id])
+            sample_version = uow.cursor.fetchone()[0]
+        if not chapter_sample_definition_supported(chapter_sample_definition_name(stage), sample_version):
+            raise KernelError("AUTHORITY_HANDLER_CONTRACT_STALE", "sample definition version is not supported by the runtime codec")
+    from .receipt_recovery import guard_scope_draft_materialization
+    return execute_authority_handler(
+        database_url,
+        command=command,
+        execution_probe=execution_probe,
+        materialization_guard=guard_scope_draft_materialization,
+        registration=AuthorityHandlerRegistration(
+            definition_name=chapter_sample_definition_name(stage) if sampling else node.definition_name,
+            definition_version=sample_version if sampling else _handler_definition_version(
+                database_url, command=command, node=node, registry=registry,
+                author_input=author_input,
+            ),
+            handler_key="novel_forge.chapter_authority.sample." + stage if sampling else node.handler_key,
+            handler_contract_version="chapter-provider-sample.v1" if sampling else "chapter-authority-handler-v2",
+            output_asset_type="chapter_provider_sample" if sampling else node.asset_type,
+            output_key=CHAPTER_SAMPLE_OUTPUT_KEY if sampling else node.output_key,
+            role="primary",
+            completion_topic=CHAPTER_SAMPLE_COMPLETION_TOPIC if sampling else node.completion_topic,
+            handler=_ChapterHandlerAdapter(
+                node,
+                registry,
+                command.attempt_id,
+                command.fencing_token,
+                command.worker_id,
+                database_url,
+                sampling=sampling,
+            ),
+        ),
+    )
+
+
+__all__ = ["ChapterExecutionResult", "execute_chapter_handler"]

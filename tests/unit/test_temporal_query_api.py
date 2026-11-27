@@ -1,0 +1,154 @@
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from novel_forge.api.routers.context import ProductRouterContext
+from novel_forge.api.routers.temporal_query import create_router
+from novel_forge.infrastructure.settings import IndustrialSettings
+from novel_forge.modules.authority_security import TrustedPrincipalResolver
+
+
+class TemporalQueryApiTests(unittest.TestCase):
+    def _client(
+        self, *, scope: frozenset[str]
+    ) -> tuple[object, TestClient, Mock, TrustedPrincipalResolver]:
+        root = tempfile.TemporaryDirectory()
+        settings = IndustrialSettings(
+            root=Path(root.name),
+            environment="test",
+            storage_authority="postgresql",
+            database_url="postgresql://fixture",
+        )
+        service = Mock()
+        service.relationship_at.return_value = {"status": "FOUND"}
+        service.character_believes_at.return_value = {"status": "FOUND"}
+        service.obligations_at.return_value = {"status": "FOUND", "obligations": []}
+        app = FastAPI()
+        app.include_router(
+            create_router(
+                ProductRouterContext(
+                    settings,
+                    {},
+                    SimpleNamespace(temporal_query_service=service),
+                )
+            )
+        )
+        resolver = TrustedPrincipalResolver(
+            environment="test",
+            configured_local_operator_id="trusted-operator",
+            configured_project_scope=scope,
+        )
+        return root, TestClient(app), service, resolver
+
+    def test_relationship_query_dispatches_only_after_scope_authorization(self) -> None:
+        root, client, service, resolver = self._client(scope=frozenset({"project-a"}))
+        with (
+            root,
+            patch(
+                "novel_forge.api.routers.temporal_query.build_trusted_principal_resolver",
+                return_value=resolver,
+            ),
+        ):
+            response = client.post(
+                "/product/temporal-query",
+                json={
+                    "project_id": "project-a",
+                    "book_id": "book-a",
+                    "query": "relationship_at",
+                    "source_id": "character-a",
+                    "target_id": "character-b",
+                    "chapter": 35,
+                },
+            )
+        self.assertEqual(response.status_code, 200, response.text)
+        service.relationship_at.assert_called_once_with(
+            "project-a", "book-a", "character-a", "character-b", 35
+        )
+
+    def test_cross_project_and_incomplete_queries_fail_closed(self) -> None:
+        root, client, service, resolver = self._client(scope=frozenset({"project-a"}))
+        with (
+            root,
+            patch(
+                "novel_forge.api.routers.temporal_query.build_trusted_principal_resolver",
+                return_value=resolver,
+            ),
+        ):
+            denied = client.post(
+                "/product/temporal-query",
+                json={
+                    "project_id": "project-b",
+                    "book_id": "book-b",
+                    "query": "pending_promises_at",
+                    "chapter": 20,
+                },
+            )
+            invalid = client.post(
+                "/product/temporal-query",
+                json={
+                    "project_id": "project-a",
+                    "book_id": "book-a",
+                    "query": "character_knows_at",
+                    "chapter": 20,
+                    "character_id": "character-a",
+                },
+            )
+        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(invalid.status_code, 422)
+        service.character_knows_at.assert_not_called()
+
+    def test_belief_and_obligation_queries_expose_typed_temporal_contracts(self) -> None:
+        root, client, service, resolver = self._client(scope=frozenset({"project-a"}))
+        with (
+            root,
+            patch(
+                "novel_forge.api.routers.temporal_query.build_trusted_principal_resolver",
+                return_value=resolver,
+            ),
+        ):
+            belief = client.post(
+                "/product/temporal-query",
+                json={
+                    "project_id": "project-a",
+                    "book_id": "book-a",
+                    "query": "character_believes_at",
+                    "character_id": "hero",
+                    "proposition_id": "proposition:traitor",
+                    "chapter": 12,
+                },
+            )
+            obligations = client.post(
+                "/product/temporal-query",
+                json={
+                    "project_id": "project-a",
+                    "book_id": "book-a",
+                    "query": "obligations_at",
+                    "obligation_type": "MYSTERY",
+                    "unresolved_only": True,
+                    "chapter": 12,
+                },
+            )
+
+        self.assertEqual(belief.status_code, 200, belief.text)
+        self.assertEqual(obligations.status_code, 200, obligations.text)
+        service.character_believes_at.assert_called_once_with(
+            "project-a", "book-a", "hero", "proposition:traitor", 12
+        )
+        service.obligations_at.assert_called_once_with(
+            "project-a",
+            "book-a",
+            12,
+            obligation_types=("MYSTERY",),
+            unresolved_only=True,
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

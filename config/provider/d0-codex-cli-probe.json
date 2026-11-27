@@ -1,0 +1,17 @@
+{
+  "schema_version": "d0-provider-probe-config.v1",
+  "provider": "codex-cli",
+  "backend_id": "codex-cli",
+  "model_env": "NOVEL_FORGE_D0_MODEL",
+  "model_version_env": "NOVEL_FORGE_D0_MODEL_VERSION",
+  "route_policy_version": "chapter.retrieval.route@1",
+  "timeout_seconds": 600,
+  "auth_secret_ref": "env://NOVEL_FORGE_PROVIDER_AUTH_PROFILE",
+  "capability": "model.retrieval",
+  "prompt_version": "prompt-system:chapter-generation-pack@v1",
+  "prompt_hash": "sha256:5a8ccec99d1c1bf0a28870f1cb608169974f78529b0552119dbfbe5c790b22c0",
+  "instruction_version": "prompt-system:chapter-generation-pack@v1:system",
+  "instruction_hash": "sha256:56ca60948dbfee8de94e233307604f3a178e0b61c3f3082803a38cce0830ba20",
+  "skill_version": "context-builder-source-isolation@context-builder-source-isolation-v1",
+  "skill_hash": "sha256:953c21770114b27df36e21273b93106f1d236e968a55cb865b0a26d17df3f341"
+}

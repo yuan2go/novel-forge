@@ -1,0 +1,39 @@
+# Canonical documentation
+
+Novel Forge documentation is a projection of executable repository facts. Source code,
+schema, migrations, runtime composition and tests outrank every sentence in this
+directory.
+
+The canonical prose set is intentionally limited to:
+
+- `README.md` — thin repository entry point.
+- `docs/README.md` — this allowlist and evidence policy.
+- `docs/current-system.md` — current architecture, ownership and evidence ceiling.
+- `docs/runtime-operations.md` — executable setup, migration, runtime and recovery
+  procedures.
+- `docs/development.md` — repository, documentation, comment and validation rules.
+
+`architecture/reality-evidence.json` is the separately governed machine-readable
+code-reality projection. It records capability topology, Authority ownership, narrative
+relationships, runtime-chain edges, semantic-constraint classes and evidence ceilings.
+It is checked evidence for the prose set, not an independent design Authority.
+
+`python -m novel_forge.tools.documentation_reality --repo-root .` validates this
+allowlist, referenced files and symbols, evidence status, and comment policy. Any other
+file under `docs/` fails the repository gate.
+
+## Evidence rules
+
+Capability status uses only `CODE_EXISTS`, `WIRED`, `EXECUTABLE`, `QUALIFIED`, and
+`PRODUCTION_PROVEN`. Lower states never imply higher states. A class, fixture, test, or
+scripted Provider route is not production evidence.
+
+Design candidates are not current documentation. Repository-local proposals stay outside
+this directory and declare `PROPOSAL`, `NOT_RUNTIME_AUTHORITY` and their checked lifecycle
+status. `NOT_IMPLEMENTED` is invalid once implementation evidence exists. The inline
+lifecycle record binds the reviewed source baseline and unresolved decisions or work;
+terminal proposals must be projected where applicable and deleted.
+
+Historical audit exports under `reports/audits/` are evidence snapshots and proposals,
+not additional canonical docs. Their frozen source SHA and evidence ceiling must be
+kept separate from subsequent implementation and validation.

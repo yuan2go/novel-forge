@@ -1,0 +1,188 @@
+{
+  "schema_version": "novel-forge.historical-reality-policy.v1",
+  "fact_types": {
+    "current_runtime": "CURRENT_RUNTIME_FACT",
+    "current_qualification": "CURRENT_QUALIFICATION_EVIDENCE",
+    "historical_compatibility": "HISTORICAL_COMPATIBILITY_FACT",
+    "product_narrative_roadmap": "NOT_REPOSITORY_AUTHORITY"
+  },
+  "current_capabilities": [
+    "runtime-composition",
+    "project-workspace-authority",
+    "command-attempt-lease-fence",
+    "capability-pack-instruction-runtime",
+    "external-effect-provider-control",
+    "source-import-and-knowledge",
+    "book-design-and-story-formation",
+    "story-design-authority",
+    "hierarchical-planning",
+    "narrative-realization",
+    "plan-change-authority",
+    "book-opening-workflow",
+    "book-production-coordination",
+    "chapter-group-coordination",
+    "context-and-retrieval",
+    "chapter-production-saga",
+    "review-revision-quality",
+    "book-chapter-acceptance",
+    "whole-book-completion-cases",
+    "canon-and-narrative-state",
+    "reader-and-followup-evidence",
+    "agent-runtime",
+    "postgresql-persistence-and-migrations",
+    "retry-recovery-and-replay",
+    "narrative-craft-intelligence",
+    "creative-validation-bounded-recovery"
+  ],
+  "allowed_proof_ceilings": [
+    "LOCAL_BACKEND_ENGINEERING",
+    "LOCAL_POSTGRESQL_ENGINEERING",
+    "LOCAL_RECOVERY_ENGINEERING",
+    "SCRIPTED_PROVIDER_BACKEND_ENGINEERING",
+    "REAL_PROVIDER_RUNTIME"
+  ],
+  "allowed_unestablished_evidence_classes": [
+    "ADMIN_UI_EXECUTION",
+    "CREDENTIALED_PROVIDER_EXECUTION",
+    "CHAPTER_ACCEPTED_ACTUAL",
+    "HUMAN_EDITORIAL_EVIDENCE",
+    "LONGITUDINAL_NARRATIVE_STABILITY",
+    "PRODUCTION_OPERATION"
+  ],
+  "backend_proof_scope": {
+    "schema_version": "novel-forge.qualification-proof-scope.v1",
+    "fact_type": "CURRENT_QUALIFICATION_EVIDENCE",
+    "proves": [
+      "runtime-composition",
+      "project-workspace-authority",
+      "command-attempt-lease-fence",
+      "capability-pack-instruction-runtime",
+      "external-effect-provider-control",
+      "source-import-and-knowledge",
+      "book-design-and-story-formation",
+      "story-design-authority",
+      "hierarchical-planning",
+      "narrative-realization",
+      "plan-change-authority",
+      "book-opening-workflow",
+      "book-production-coordination",
+      "chapter-group-coordination",
+      "context-and-retrieval",
+      "chapter-production-saga",
+      "review-revision-quality",
+      "book-chapter-acceptance",
+      "whole-book-completion-cases",
+      "canon-and-narrative-state",
+      "reader-and-followup-evidence",
+      "agent-runtime",
+      "postgresql-persistence-and-migrations",
+      "retry-recovery-and-replay",
+      "narrative-craft-intelligence"
+    ],
+    "ceiling": "LOCAL_BACKEND_ENGINEERING",
+    "does_not_establish": [
+      "ADMIN_UI_EXECUTION",
+      "CREDENTIALED_PROVIDER_EXECUTION",
+      "HUMAN_EDITORIAL_EVIDENCE",
+      "LONGITUDINAL_NARRATIVE_STABILITY",
+      "PRODUCTION_OPERATION"
+    ]
+  },
+  "forbidden_machine_fields": [
+    "evidence_ceilings",
+    "next_wp",
+    "pending_work_packages",
+    "proof_flags",
+    "qualification_stage",
+    "roadmap_stage",
+    "work_package"
+  ],
+  "retired_current_ontology": [
+    "EIGHT_CHAPTER",
+    "novel-forge.bounded-quality-campaign-profile.v1",
+    "novel-forge.bounded-quality-book-contract.v1",
+    "novel-forge.bounded-quality-runtime-state.v1",
+    "novel-forge.bounded-quality-campaign-result.v1",
+    "short_longform_runtime_proof"
+  ],
+  "retired_paths": [
+    "config/proof_campaigns/quality_qualification_book_v1.json",
+    "config/proof_campaigns/quality_qualification_v1.json",
+    "scripts/run_bounded_quality_qualification.py",
+    "scripts/run_real_capability_codex_proof.py",
+    "scripts/run_longform_12ch_pressure.py",
+    "scripts/run_short_longform_runtime_proof.py",
+    "scripts/run_short_longform_runtime_proof_orchestrator.py",
+    "src/novel_forge/modules/runtime_proof/__init__.py",
+    "src/novel_forge/modules/runtime_proof/quality_campaign.py",
+    "src/novel_forge/modules/runtime_proof/quality_campaign_postgres.py",
+    "src/novel_forge/modules/runtime_proof/quality_preparation.py",
+    "src/novel_forge/modules/runtime_proof/short_longform.py",
+    "tests/integration/test_bounded_quality_campaign_postgres.py",
+    "tests/integration/test_quality_campaign_preparation_postgres.py",
+    "tests/unit/test_bounded_quality_campaign.py",
+    "tests/unit/test_bounded_quality_campaign_cli.py",
+    "tests/unit/test_quality_book_contract.py",
+    "tests/unit/test_short_longform_proof_evaluator.py",
+    "tests/unit/test_short_longform_runtime_proof.py"
+  ],
+  "authority_surface_roots": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    ".github",
+    ".claude",
+    "Makefile",
+    "architecture/manifests",
+    "architecture/reality-evidence.json",
+    "config",
+    "docs",
+    "scripts",
+    "skills",
+    "src",
+    "tests",
+    "web"
+  ],
+  "authority_surface_exclusions": [
+    "architecture/evidence/**",
+    "architecture/live-evidence/**",
+    "architecture/manifests/historical-reality-policy.yaml",
+    "src/novel_forge/tools/historical_reality.py",
+    "src/novel_forge/storage/migrations/versions/**",
+    "tests/architecture/test_retired_compatibility_runtime.py",
+    "tests/unit/test_historical_reality.py"
+  ],
+  "immutable_historical_authorization_evidence": {
+    "config/archive/creative-inputs-legacy/narrative-closure/authorization-amendment-token100k-20260928.json": {
+      "sha256": "d96f4776f48f5e12ed87b235f386ac7362477ffb82f4a43a8f0dbf7ddc1b07c6",
+      "disposition": "EXPIRED_AUTHORIZATION"
+    },
+    "config/archive/creative-inputs-legacy/narrative-closure/authorization-approved-p0-20260927.json": {
+      "sha256": "3fe3d4504eda79e57807d7b61cd0887f4c7bdca51a9d38214aa00ec716494893",
+      "disposition": "EXPIRED_AUTHORIZATION"
+    },
+    "config/archive/creative-inputs-legacy/narrative-closure/authorization-completion-continuation-20260928.json": {
+      "sha256": "8c4a905b156c55ffd7befb5b44af9d5daf441a1b8c2c9c6c777e9881bb4921b8",
+      "disposition": "EXPIRED_AUTHORIZATION"
+    },
+    "config/archive/creative-inputs-legacy/narrative-closure/authorization-deepseek-100cny-20260928.json": {
+      "sha256": "6c74071a4f498b85dabd25da70e7682a1c2cfe3b3d6db31015de8e5d934611fa",
+      "disposition": "EXPIRED_AUTHORIZATION"
+    },
+    "config/archive/creative-inputs-legacy/narrative-closure/authorization-deepseek-docs-20260928.json": {
+      "sha256": "b99f7a96bfdcb84be9b41a57798b15f250aaf771956bf98327a64775ea782b5f",
+      "disposition": "EXPIRED_AUTHORIZATION"
+    },
+    "config/archive/creative-inputs-legacy/narrative-closure/authorization-request-p0-20260927.json": {
+      "sha256": "e8c5a3fcae552d38eef8ba2a5cbf70040d3a9fc32c60028ebfe2949acc4e604a",
+      "disposition": "NON_AUTHORIZATION_REQUEST"
+    },
+    "config/archive/creative-inputs-legacy/narrative-closure/authorization-strict-output-20260928.json": {
+      "sha256": "fec4a85e5ee53d9d6cb623f6b2cd75103818a481c7c79f68fd57e4cc779acd04",
+      "disposition": "EXPIRED_AUTHORIZATION"
+    }
+  },
+  "immutable_coding_tool_examples": {
+    "skills/improve-codebase-architecture/SKILL.md": "552240a5ab5cec6b67c15dd1ad6e9f6962b1bca6ce870059a8c2713760c20392",
+    "skills/setup-matt-pocock-skills/domain.md": "593a7042218689f1d24df89df14eaf0a20e19e0d0a7d479a01947ac78f0784b9"
+  }
+}

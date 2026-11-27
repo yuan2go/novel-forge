@@ -1,0 +1,38 @@
+{
+  "source": {
+    "kind": "LOCAL",
+    "location": "examples/sample_inputs/corpus-chinese-structure.txt"
+  },
+  "parser": {
+    "version": "corpus-parser.v3",
+    "format": "txt",
+    "encoding": "utf-8-sig",
+    "constants": {
+      "work_id": "operator-selected-work",
+      "work_title": "Operator-selected Chinese work"
+    },
+    "completeness": "UNKNOWN",
+    "normalization": {
+      "version": "chinese-longform.v2",
+      "segmentation": "CHINESE_HEADINGS",
+      "min_body_chars": 80
+    }
+  },
+  "purpose": "RESEARCH",
+  "rights": {
+    "dataset_license": "UNKNOWN",
+    "scope": "ALL_WORKS_IN_SNAPSHOT",
+    "underlying_rights": "UNKNOWN",
+    "allowed_purposes": [
+      "RESEARCH"
+    ],
+    "allowed_uses": [
+      "LOCAL_PROCESSING"
+    ],
+    "evidence_refs": [
+      "operator:local-deterministic-processing-only"
+    ],
+    "copyright_boundary": "No authorization for Source model analysis or generation; declare verified rights separately."
+  },
+  "analyze": false
+}

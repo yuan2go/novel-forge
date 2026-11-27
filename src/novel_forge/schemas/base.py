@@ -1,0 +1,2310 @@
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field, fields
+from typing import Any, TypeVar
+
+from novel_forge.core.ids import make_id, utc_now
+
+T = TypeVar("T", bound="BaseAsset")
+
+COMMON_FIELDS = [
+    "id",
+    "type",
+    "title",
+    "name",
+    "source",
+    "tags",
+    "created_at",
+    "updated_at",
+    "version",
+    "content",
+    "metadata",
+    "references",
+]
+
+CONTENT_REQUIRED_FIELDS: dict[str, list[str]] = {
+    "source_document": ["text"],
+    "source_policy": [
+        "policy_id",
+        "source_ref",
+        "risk_tier",
+        "risk_level",
+        "allowed_pipeline",
+        "forbidden_pipeline",
+        "generation_context_allowed",
+        "evidence_only",
+        "review_status",
+    ],
+    "source_sync_job": ["job_id", "source_ref", "status", "sync_mode", "policy_ref", "checkpoint", "created_at"],
+    "source_snapshot": ["snapshot_id", "source_ref", "source_type", "content_hash", "source_path", "captured_at", "source_policy_ref", "risk_report_ref"],
+    "license_check_result": [
+        "check_id",
+        "source_ref",
+        "license_name",
+        "authorization",
+        "risk_tier",
+        "risk_level",
+        "allowed_pipeline",
+        "generation_context_allowed",
+        "evidence_refs",
+        "checked_at",
+    ],
+    "source_risk_report": [
+        "report_id",
+        "source_ref",
+        "risk_tier",
+        "risk_level",
+        "risk_flags",
+        "generation_context_allowed",
+        "evidence_only",
+        "structure_only",
+        "quarantine",
+        "recommendation",
+        "created_at",
+    ],
+    "mkaos_selector_governance_report": ["selector_governance_report_id", "selector_policy_patch", "refresh_contract", "generated_at"],
+    "mkaos_selector_governance_diff_report": ["selector_governance_diff_report_id", "base_report_path", "diff_contract", "generated_at"],
+    "mkaos_selector_governance_binding_proposal": ["binding_proposal_id", "selector_governance_report_path", "recommended_context_builder_payload_patch", "binding_contract", "generated_at"],
+    "mkaos_selector_governance_binding_application_report": ["binding_application_id", "binding_proposal_path", "context_builder_payload_patch", "application_contract", "created_at"],
+    "source_refresh_report": [
+        "refresh_report_id",
+        "source_ref",
+        "refresh_mode",
+        "decision",
+        "stale_flags",
+        "connector_execution_allowed",
+        "approval_required",
+        "governance_refs",
+        "created_at",
+    ],
+    "cleaned_text": ["text"],
+    "decomposition_report": [
+        "summary",
+        "commercial_patterns",
+        "narrative_patterns",
+        "character_mechanisms",
+        "conflict_patterns",
+        "emotion_curve",
+        "hook_patterns",
+    ],
+    "common_novel_analysis_report": [
+        "source_asset_id",
+        "analysis_scope",
+        "structure_map",
+        "character_map",
+        "conflict_map",
+        "theme_map",
+        "risk_boundary",
+        "reusable_findings",
+    ],
+    "web_fiction_business_analysis_report": [
+        "source_asset_id",
+        "platform_pattern",
+        "reader_promise",
+        "hook_system",
+        "payoff_loop",
+        "pacing_model",
+        "monetization_nodes",
+        "abstraction_boundary",
+        "reusable_assets",
+    ],
+    "published_fiction_analysis_report": [
+        "source_asset_id",
+        "craft_dimensions",
+        "scene_design",
+        "character_arc",
+        "narrative_distance",
+        "language_texture",
+        "transferable_techniques",
+        "do_not_copy",
+    ],
+    "classic_literary_analysis_report": [
+        "source_asset_id",
+        "deep_structure",
+        "theme_system",
+        "symbol_system",
+        "social_relation_model",
+        "fate_curve",
+        "non_transferable_elements",
+        "transferable_abstractions",
+    ],
+    "analysis_conversion_report": [
+        "source_report_id",
+        "source_report_type",
+        "conversion_targets",
+        "created_assets",
+        "rejected_items",
+        "reuse_scope",
+        "copyright_risk",
+        "abstraction_level",
+    ],
+    "knowledge_card": ["principles"],
+    "source_chunk": ["source_document_id", "chunk_index", "clean_text", "content_hash"],
+    "knowledge_usage_binding": ["knowledge_id", "flow", "usage_type", "usage_granularity", "input_role", "output_form"],
+    "rule_card": ["rule_name", "rule_type", "trigger_condition", "check_items", "severity", "blocking", "applicable_flows", "enabled"],
+    "template_card": ["template_name", "template_type", "structure", "usage_constraints", "enabled"],
+    "knowledge_pack": [
+        "knowledge_pack_id",
+        "task_id",
+        "project_id",
+        "flow",
+        "required_knowledge",
+        "optional_knowledge",
+        "forbidden_knowledge",
+        "generation_constraints",
+        "review_rules",
+        "knowledge_budget",
+        "output_contract",
+    ],
+    "knowledge_pack_item": ["knowledge_pack_id", "item_role", "flow", "payload"],
+    "knowledge_usage_event": ["event_id", "knowledge_id", "knowledge_pack_id", "project_id", "flow", "agent_name", "used_as", "created_at"],
+    "knowledge_quality_score": ["score_id", "knowledge_id", "flow", "delta", "reason", "created_at"],
+    "knowledge_graph_snapshot": ["graph_id", "project_id", "nodes", "edges", "summary", "source_isolation"],
+    "knowledge_learning_snapshot": ["learning_id", "project_id", "learning_items", "recommendations", "applied_updates", "source_metrics"],
+    "material_card": ["usable_patterns", "do_not_copy"],
+    "material_usage_event": ["event_id", "material_id", "project_id", "flow", "target_artifact_id", "used_as", "created_at"],
+    "asset_collection": ["purpose", "asset_paths"],
+    "platform_profile": [
+        "platform_id",
+        "platform_name",
+        "business_model",
+        "reader_expectation",
+        "chapter_length_range",
+        "update_frequency",
+        "review_risks",
+        "genre_fit",
+        "style_tendency",
+    ],
+    "platform_rhythm_rule": ["rule_id", "platform_id", "scope", "strategy_axes", "beat_cadence", "hook_policy", "priority"],
+    "platform_opening_gate": ["gate_id", "platform_id", "required_signals", "score_thresholds", "fail_conditions", "revision_hints"],
+    "platform_chapter_gate": ["gate_id", "platform_id", "required_beats", "density_targets", "ending_hook", "blocking_rules"],
+    "platform_retention_risk": ["risk_id", "platform_id", "project_id", "risk_level", "risk_score", "signals", "mitigation_plan", "created_at"],
+    "platform_publish_adapter": ["adapter_id", "platform_id", "package_rules", "metadata_rules", "release_cadence", "checklist", "export_contract"],
+    "platform_feedback_backflow": ["backflow_id", "platform_id", "project_id", "signal_mapping", "plan_adjustments", "weight_updates", "created_at"],
+    "platform_strategy_pack": ["pack_id", "platform_id", "project_id", "topic", "genre", "outline_strategy", "chapter_strategy", "prose_strategy", "validation_policy", "created_at"],
+    "genre_market_profile": [
+        "genre",
+        "platform_id",
+        "reader_promise",
+        "common_hooks",
+        "common_conflicts",
+        "fatigue_points",
+        "differentiation_axes",
+        "chapter_rhythm_template",
+    ],
+    "genre_profile": ["genre_id", "genre_name", "reader_promises", "core_pleasures", "required_systems", "common_risks", "status"],
+    "subgenre_mechanic": ["subgenre_id", "genre_id", "mechanics", "opening_requirements", "chapter_beats", "longform_risks", "anti_patterns", "innovation_axes"],
+    "genre_strategy_pack": [
+        "pack_id",
+        "project_id",
+        "platform_id",
+        "genre_id",
+        "subgenre_id",
+        "core_pleasures",
+        "reader_promise",
+        "required_systems",
+        "worldbuilding_requirements",
+        "character_requirements",
+        "opening_signals",
+        "chapter_beat_policy",
+        "longform_risks",
+        "platform_fit",
+        "review_rules",
+        "context_contract",
+    ],
+    "genre_risk_gate": ["gate_id", "target_asset_id", "target_asset_type", "genre_id", "risks", "blocking_issue_count", "recommendation"],
+    "platform_genre_fit": ["fit_id", "platform_id", "genre_id", "subgenre_id", "fit_score", "fit_reasons", "risk_controls"],
+    "genre_template_binding": ["binding_id", "genre_id", "subgenre_id", "template_bindings", "review_rule_refs", "context_refs"],
+    "creative_strategy_profile": [
+        "strategy_id",
+        "reader_promise",
+        "volume_goals",
+        "pleasure_rhythm",
+        "long_hooks",
+        "platform_pacing",
+        "verification_rules",
+    ],
+    "topic_seed": ["logline", "reader_attraction", "differentiation"],
+    "topic_fit_report": ["topic_seed_id", "platform_id", "genre", "scores", "recommendation", "must_adjust"],
+    "world_bible": ["setting", "rules", "conflict_system"],
+    "character_card": ["role", "external_goal", "internal_need", "motivation_chain"],
+    "continuity_bible": ["project_id", "worldview_rules", "timeline", "entities", "open_threads", "constraints"],
+    "foreshadowing_thread": ["thread_id", "setup", "payoff_plan", "status", "related_chapters"],
+    "power_scale_rule": ["scale_id", "levels", "constraints", "violation_checks"],
+    "style_profile": [
+        "style_id",
+        "name",
+        "scope",
+        "source_boundary",
+        "language_parameters",
+        "narrative_parameters",
+        "emotion_parameters",
+        "forbidden_patterns",
+    ],
+    "style_sample": ["sample_id", "project_id", "rights", "source_policy", "sample_text"],
+    "style_fingerprint": [
+        "fingerprint_id",
+        "source_sample_id",
+        "avg_sentence_length",
+        "sentence_length_distribution",
+        "dialogue_ratio",
+        "description_ratio",
+        "psychological_ratio",
+        "rhetoric_density",
+        "emotion_distribution",
+        "narrative_distance",
+        "pov",
+        "rhythm_profile",
+        "ai_flavor_markers",
+        "confidence",
+    ],
+    "style_generation_policy": ["policy_id", "style_id", "generation_controls", "forbidden_patterns", "context_contract"],
+    "style_review_rule": ["rule_id", "style_id", "checks", "thresholds", "blocking_policy"],
+    "style_drift_report": ["target_style_id", "target_asset_id", "observed_fingerprint", "drift_scores", "drift_level", "issues", "rewrite_task_candidate"],
+    "style_rewrite_task": ["task_id", "source_drift_report_id", "target_asset_id", "instructions", "human_gate"],
+    "style_decomposition_report": [
+        "source_asset_id",
+        "extract_level",
+        "style_features",
+        "usable_parameters",
+        "do_not_copy",
+        "risk_level",
+    ],
+    "style_blend_preset": ["name", "components", "conflict_resolution"],
+    "quality_standard_profile": ["standard_id", "name", "dimensions", "hard_gates"],
+    "review_rule_pack": ["rule_pack_id", "name", "dimensions", "checks", "severity_policy"],
+    "quality_score_report": ["target_asset_id", "standard_id", "overall_score", "scores", "gate_results", "recommendation"],
+    "style_review_report": [
+        "target_draft_id",
+        "expected_style_profile_id",
+        "style_match_score",
+        "drift_points",
+        "ai_taste_points",
+        "rewrite_suggestions",
+        "copyright_style_risk",
+    ],
+    "chapter_audit_report": [
+        "target_asset_id",
+        "dimension_scores",
+        "issues",
+        "gate_results",
+        "linked_reports",
+        "recommendation",
+    ],
+    "originality_report": [
+        "target_asset_id",
+        "source_asset_ids",
+        "similarity_checks",
+        "forbidden_element_hits",
+        "plot_skeleton_risk",
+        "character_setup_risk",
+        "style_expression_risk",
+        "risk_level",
+        "recommendation",
+        "human_gate_required",
+    ],
+    "publish_gate_report": [
+        "target_asset_id",
+        "gates",
+        "decision",
+        "blocking_issues",
+        "required_reports",
+        "human_override",
+    ],
+    "release_package": [
+        "target_asset_id",
+        "publish_gate_report_id",
+        "title_candidates",
+        "summary",
+        "tags",
+        "channel",
+        "status",
+    ],
+    "production_governance_report": [
+        "report_id",
+        "operation",
+        "environment",
+        "target_asset_id",
+        "target_asset_path",
+        "required_gates",
+        "gate_statuses",
+        "status",
+        "blocking",
+        "blocking_issues",
+        "rollback_plan",
+        "created_at",
+    ],
+    "fallback_decision": [
+        "decision_id",
+        "fallback_type",
+        "mode",
+        "allowed",
+        "approval_required",
+        "silent_fallback_allowed",
+        "reason",
+        "rollback_plan",
+        "created_at",
+    ],
+    "writing_template": ["template_id", "name", "template_kind", "structure", "usage_constraints", "anti_copy_rules"],
+    "craft_template": ["template_id", "name", "craft_domain", "pattern", "use_cases", "risks"],
+    "long_form_macro_plan": [
+        "plan_id",
+        "project_id",
+        "target_word_count",
+        "volume_plans",
+        "mainline_matrix",
+        "subplot_matrix",
+        "character_arc_curves",
+        "climax_ladder",
+        "commercial_pacing_table",
+        "verification_gates",
+    ],
+    "longform_recap_report": [
+        "recap_report_id",
+        "project_id",
+        "trigger",
+        "chapter_range",
+        "stage_summary",
+        "continuity_risks",
+        "character_drift_report",
+        "foreshadowing_report",
+        "pacing_report",
+        "commercial_rhythm_report",
+        "revision_suggestions",
+        "memory_update_package",
+        "writeback",
+        "created_at",
+    ],
+    "context_build_plan": [
+        "target_asset_id",
+        "target_asset_type",
+        "target_path",
+        "query",
+        "token_budget",
+        "selection_policy",
+        "candidate_assets",
+        "exclusions",
+    ],
+    "context_bundle": [
+        "build_plan_id",
+        "target_asset_id",
+        "selected_assets",
+        "compressed_context",
+        "token_budget",
+        "token_estimate",
+        "actual_context",
+        "source_asset_ids",
+    ],
+    "rag_quality_report": [
+        "target_asset_id",
+        "retrieval_backend",
+        "recall_explanation",
+        "omission_check",
+        "copyright_filter",
+        "context_budget_score",
+        "recommendation",
+    ],
+    "outline": ["acts"],
+    "outline_version": ["outline_id", "version_index", "base_outline_id", "acts", "change_summary", "status"],
+    "chapter_plan": ["chapter", "objective", "beats", "hook"],
+    "chapter_plan_version": [
+        "chapter_plan_id",
+        "version_index",
+        "base_chapter_plan_id",
+        "chapter",
+        "objective",
+        "beats",
+        "hook",
+        "word_budget",
+        "conflict",
+        "information_points",
+        "status",
+    ],
+    "generation_run": [
+        "run_id",
+        "input_asset_id",
+        "input_asset_path",
+        "context_bundle_id",
+        "output_asset_id",
+        "provider",
+        "model",
+        "prompt_version",
+        "status",
+        "started_at",
+        "finished_at",
+    ],
+    "chapter_production_run": [
+        "run_id",
+        "status",
+        "current_step",
+        "chapter",
+        "step_order",
+        "steps",
+        "timeline",
+        "created_at",
+        "updated_at",
+    ],
+    "draft_chapter": ["chapter", "text", "copyright_boundary"],
+    "draft_version": ["draft_id", "version_index", "chapter", "text", "source_draft_id", "change_summary", "status"],
+    "editor_patch": ["target_draft_id", "target_draft_path", "operations", "status", "created_at"],
+    "draft_diff_report": ["base_draft_id", "target_draft_id", "diff_summary", "operations", "created_at"],
+    "review_report": ["rubric", "summary"],
+    "review_issue": ["issue_id", "issue_type", "severity", "blocking", "status", "target_asset_id", "message", "created_at"],
+    "loop_run": ["loop_run_id", "loop_type", "status", "budget", "stop_conditions", "created_at"],
+    "loop_step": ["loop_step_id", "loop_run_id", "step_index", "step_type", "operation", "status", "started_at", "finished_at"],
+    "loop_checkpoint": ["loop_run_id", "checkpoint_id", "status", "state", "created_at"],
+    "loop_report": ["loop_run_id", "status", "loop_type", "stop_condition", "steps", "checkpoint_ids", "budget_used", "created_at"],
+    "revision_task": ["task_id", "review_path", "source_draft_path", "issue_indexes", "issues", "status", "created_at"],
+    "revision_plan": ["steps", "target_score", "must_preserve"],
+    "reader_feedback": ["rows"],
+    "feedback_cluster": ["cluster_id", "signals", "target_action", "affected_assets", "created_at"],
+    "feedback_backflow_plan": ["plan_id", "clusters", "proposals", "human_gate", "status", "created_at"],
+    "plan_adjustment_proposal": ["proposal_id", "cluster_id", "target_scope", "proposed_changes", "human_gate", "status", "created_at"],
+    "review_rule_update_proposal": ["proposal_id", "cluster_id", "rule_dimension", "proposed_rule", "human_gate", "status", "created_at"],
+    "feedback_kg_patch": ["patch_id", "cluster_id", "kg_targets", "proposed_updates", "human_gate", "status", "created_at"],
+    "feedback_import_batch": ["batch_id", "source", "rows", "row_count", "columns", "status", "imported_at"],
+    "feedback_insight": ["signals", "average_rating", "next_generation_constraints"],
+    "reader_sentiment_report": [
+        "feedback_asset_ids",
+        "sentiment_distribution",
+        "clusters",
+        "reader_expectations",
+        "poison_points",
+        "sweet_points",
+        "recommendations",
+        "confidence",
+    ],
+    "reader_simulation_report": ["simulation_id", "project_id", "personas", "aggregate", "created_at"],
+    "project_metric_snapshot": [
+        "project_id",
+        "snapshot_at",
+        "throughput",
+        "quality",
+        "task_health",
+        "agent_health",
+        "storage_health",
+        "recommendations",
+    ],
+    "local_settings_profile": ["profile_id", "local_mode", "model_routing", "storage", "agent_defaults", "validation", "status"],
+    "training_exercise": ["objective", "prompt", "rubric"],
+    "image_prompt": ["prompt"],
+    "claude_code_handoff": [
+        "operation",
+        "runtime",
+        "runtime_model",
+        "skill",
+        "status",
+        "input_files",
+        "expected_output_type",
+        "expected_output_dir",
+        "instructions",
+        "acceptance_checks",
+    ],
+    "workflow_run": ["status"],
+    "workflow_definition": ["workflow_id", "name", "version", "nodes", "entry_node_id", "status"],
+    "workflow_node": ["node_id", "workflow_id", "node_type", "operation", "input_types", "output_types", "processor", "quality_gate"],
+    "node_run": [
+        "run_id",
+        "node_id",
+        "node_type",
+        "operation",
+        "status",
+        "input_assets",
+        "output_assets",
+        "processor",
+        "started_at",
+        "finished_at",
+    ],
+    "task_status": ["status", "step"],
+    "task_dead_letter": ["task_name", "task_id", "error_message", "payload"],
+    "batch_task_item": ["batch_id", "item_index", "source_path", "status"],
+    "project_workspace_state": [
+        "project_id",
+        "memory",
+        "chapter_states",
+        "continuity_threads",
+        "open_issues",
+    ],
+    "change_impact_report": ["target_asset_id", "target_path", "impacted_assets", "impact_edges", "severity_summary", "recommendation"],
+    "agent_contract": [
+        "contract_id",
+        "agent_type",
+        "operation",
+        "input_types",
+        "output_types",
+        "permissions",
+        "tool_allowlist",
+        "allowed_write_types",
+        "quality_gates",
+    ],
+    "agent_task": ["task_id", "agent_type", "operation", "status", "input_assets", "output_targets", "created_at"],
+    "agent_run": [
+        "run_id",
+        "agent_type",
+        "operation",
+        "status",
+        "input_assets",
+        "output_assets",
+        "contract_id",
+        "permissions",
+        "started_at",
+    ],
+    "agent_checkpoint": ["agent_run_id", "checkpoint_id", "status", "state", "created_at"],
+    "agent_event": ["agent_run_id", "event_type", "status", "message", "created_at"],
+    "agent_budget": ["agent_run_id", "token_budget", "token_used", "cost_estimate", "status"],
+    "agent_gate": ["agent_run_id", "gate_id", "gate_type", "status", "result", "created_at"],
+    "agent_metric": ["agent_run_id", "metric_name", "value", "created_at"],
+    "agent_failure_report": ["agent_run_id", "error_type", "error_message", "recovery_instruction", "created_at"],
+    "agent_sla_report": ["agent_run_id", "status", "started_at", "deadline_at", "elapsed_seconds", "sla_seconds", "breach"],
+    "agent_rollback_report": ["agent_run_id", "rollback_id", "target_asset_paths", "rollback_strategy", "status", "created_at"],
+    "agent_dispatch_queue": ["dispatch_id", "idempotency_key", "status", "agent_run_id", "agent_run_path", "operation", "attempt_count"],
+    "agent_registry_entry": ["agent_id", "agent_type", "display_name", "lifecycle_state", "capabilities", "operation_coverage", "scheduler_enabled"],
+    "agent_version": ["agent_id", "version", "status", "created_at"],
+    "agent_capability": ["agent_id", "capability_id", "capability_type", "status"],
+    "agent_lifecycle_event": ["agent_id", "from_state", "to_state", "reason", "created_at"],
+    "agent_evaluation_binding": ["binding_id", "agent_id", "evaluation_suite_id", "status", "created_at"],
+    "agent_registry_snapshot": ["snapshot_id", "entries", "coverage", "created_at"],
+    "operation_transaction": ["transaction_id", "operation", "created_assets", "updated_assets", "rollback_status", "created_at"],
+    "production_operation": [
+        "operation_id",
+        "operation",
+        "state_owner",
+        "status",
+        "idempotency_key",
+        "request_digest",
+        "execution_envelope",
+        "input_refs",
+        "expected_output_types",
+        "created_at",
+        "updated_at",
+    ],
+    "production_operation_reconciliation_report": ["report_id", "project_id", "rows", "summary", "created_at"],
+    "production_operation_runtime_coverage_report": ["report_id", "project_id", "rows", "summary", "created_at"],
+    "rollback_plan": ["plan_id", "transaction_id", "strategy", "actions", "rollback_status", "created_at"],
+    "rollback_result": ["result_id", "plan_id", "transaction_id", "status", "applied_actions", "created_at"],
+    "scheduler_lease": ["lease_key", "owner", "status", "acquired_at", "expires_at"],
+    "trace_span": ["trace_id", "span_id", "parent_span_id", "span_type", "name", "status", "started_at"],
+    "gate_result": ["gate_id", "gate_kind", "status", "target_paths", "created_at"],
+    "model_call_log": ["call_id", "provider", "model", "operation", "status", "usage", "cost", "created_at"],
+    "cost_ledger": ["ledger_id", "scope", "amount", "currency", "source_type", "source_id", "created_at"],
+    "budget_policy": ["policy_id", "scope", "limits", "status"],
+    "cost_alert": ["alert_id", "scope", "severity", "message", "status", "created_at"],
+    "project_cost_snapshot": ["snapshot_id", "scope", "total_cost", "currency", "created_at"],
+    "agent_cost_snapshot": ["snapshot_id", "scope", "total_cost", "currency", "created_at"],
+    "chapter_cost_snapshot": ["snapshot_id", "scope", "total_cost", "currency", "created_at"],
+    "cost_quality_dashboard": ["dashboard_id", "scope", "summary", "snapshots", "recommendations", "created_at"],
+    "audit_log": ["event_id", "event_type", "actor_type", "action", "target", "trace_id", "project_id", "created_at"],
+    "audit_trail_report": ["report_id", "trace_id", "project_id", "events", "evidence_refs", "created_at"],
+    "audit_export_package": ["export_id", "trace_id", "project_id", "events", "source_isolation", "created_at"],
+    "model_route": ["model_route_id", "task_type", "provider", "model_name", "fallbacks", "selection_rule", "status"],
+    "model_route_resolution": ["resolution_id", "task_type", "provider", "model_name", "fallbacks", "selection_rule", "created_at"],
+    "chapter_continuity_report": ["target_asset_id", "chapter", "continuity_checks", "violations", "recommendation"],
+    "continuity_graph_snapshot": ["project_id", "nodes", "edges", "summary", "created_at"],
+    "canon_graph_snapshot": ["snapshot_id", "project_id", "entities", "relationships", "state_machines", "lifecycle_threads", "event_graph", "violations"],
+    "fantasy_power_scale_report": ["report_id", "target_asset_id", "project_id", "chapter_no", "conflicts", "issue_candidates", "blocking_issue_count", "evidence_refs"],
+    "mystery_evidence_chain_report": ["report_id", "target_asset_id", "project_id", "chapter_no", "conflicts", "issue_candidates", "blocking_issue_count", "evidence_refs"],
+    "romance_relationship_state_report": ["report_id", "target_asset_id", "project_id", "chapter_no", "conflicts", "issue_candidates", "blocking_issue_count", "evidence_refs"],
+    "historical_faction_network_report": ["report_id", "target_asset_id", "project_id", "chapter_no", "conflicts", "issue_candidates", "blocking_issue_count", "evidence_refs"],
+    "sci_fi_rule_consistency_report": ["report_id", "target_asset_id", "project_id", "chapter_no", "conflicts", "issue_candidates", "blocking_issue_count", "evidence_refs"],
+    "horror_rule_contamination_report": ["report_id", "target_asset_id", "project_id", "chapter_no", "conflicts", "issue_candidates", "blocking_issue_count", "evidence_refs"],
+    "novel_kg_snapshot": [
+        "kg_id",
+        "ontology_version",
+        "project_id",
+        "entities",
+        "relations",
+        "events",
+        "rules",
+        "timelines",
+        "foreshadowing",
+        "factions",
+        "locations",
+        "props",
+        "power_scales",
+        "review_rules",
+        "templates",
+        "summary",
+        "built_at",
+    ],
+    "semantic_extraction_report": [
+        "report_id",
+        "target_path",
+        "semantic_model",
+        "semantic_entities",
+        "foreshadowing_tracking",
+        "character_motivation_drift",
+        "power_scale_conflicts",
+        "chapter_pleasure_toxicity",
+        "issues",
+        "recommendation",
+        "created_at",
+    ],
+    "kg_identity_resolution": ["resolution_id", "snapshot_path", "candidates", "merge_queue", "status", "created_at"],
+    "canon_patch": ["patch_id", "target_draft_id", "status", "proposed_events", "entity_updates", "thread_updates", "relationship_updates", "apply_plan", "human_gate"],
+    "canon_database": ["canon_id", "entities", "rules", "created_at"],
+    "chapter_state": [
+        "state_id",
+        "chapter_no",
+        "active_arc",
+        "active_characters",
+        "active_organizations",
+        "active_locations",
+        "confirmed_facts",
+        "open_clues",
+        "unresolved_debts",
+        "character_liabilities",
+        "forbidden_next",
+    ],
+    "chapter_pattern_report": ["report_id", "chapter_no", "fingerprint", "similarity_checks", "recommendation", "created_at"],
+    "fact_ledger": ["ledger_id", "chapter_no", "facts", "created_at"],
+    "arc_plan": ["arc_id", "title", "chapter_range", "arc_question", "protagonist_goal", "villain_goal", "required_payoffs", "forbidden_expansion"],
+    "foreshadowing_graph": ["graph_id", "clues", "edges", "created_at"],
+    "reader_promise": [
+        "promise_id",
+        "project_id",
+        "chapter_opened",
+        "promise_text",
+        "promise_type",
+        "status",
+        "payoff_due_chapter",
+        "evidence_refs",
+        "created_at",
+    ],
+    "reader_promise_ledger": [
+        "ledger_id",
+        "project_id",
+        "chapter_no",
+        "promises",
+        "open_count",
+        "overdue_count",
+        "broken_count",
+        "paid_off_count",
+        "recommendation",
+        "created_at",
+    ],
+    "pleasure_point": ["point_id", "project_id", "chapter_no", "kind", "signal", "evidence", "score", "created_at"],
+    "chapter_economy_report": [
+        "report_id",
+        "project_id",
+        "chapter_no",
+        "pleasure_points",
+        "reward_count",
+        "cost_count",
+        "scene_value_score",
+        "repetition_risk",
+        "water_risk",
+        "recommendation",
+        "created_at",
+    ],
+    "protagonist_charm_report": [
+        "report_id",
+        "project_id",
+        "chapter_no",
+        "agency_score",
+        "charm_score",
+        "evidence",
+        "issues",
+        "recommendation",
+        "created_at",
+    ],
+    "antagonist_pressure_report": [
+        "report_id",
+        "project_id",
+        "chapter_no",
+        "pressure_score",
+        "visible_agent",
+        "active_move",
+        "protagonist_cost",
+        "issues",
+        "recommendation",
+        "created_at",
+    ],
+    "mobile_reading_report": [
+        "report_id",
+        "project_id",
+        "chapter_no",
+        "mobile_score",
+        "paragraph_count",
+        "long_paragraph_count",
+        "max_paragraph_chars",
+        "findings",
+        "recommendation",
+        "created_at",
+    ],
+    "motif_budget_report": ["report_id", "chapter_no", "motif_usage", "budget", "recommendation", "created_at"],
+    "character_state_ledger": ["ledger_id", "chapter_no", "characters", "created_at"],
+    "villain_operation_plan": ["operation_id", "arc_id", "visible_agent", "hidden_goal", "signatures", "operations", "created_at"],
+    "reader_fatigue_report": ["report_id", "chapter_no", "fatigue_score", "risk", "recommendations", "created_at"],
+    "style_control_plan": ["plan_id", "chapter_no", "chapter_function", "style_profile", "forbidden_patterns", "created_at"],
+    "platform_adapter_report": ["report_id", "platform_id", "fit", "adjustments", "created_at"],
+    "reward_ledger": ["ledger_id", "chapter_no", "rewards", "costs", "created_at"],
+    "review_score_system_report": ["report_id", "target_asset_id", "scores", "thresholds", "recommendation", "created_at"],
+    "model_profile": ["provider", "model_name", "capabilities", "cost_profile", "status"],
+    "model_benchmark_task": ["task_id", "task_type", "input_assets", "rubric", "expected_output_type"],
+    "model_benchmark_run": ["task_id", "provider", "model_name", "scores", "latency_ms", "status", "created_at"],
+    "model_comparison_report": ["task_type", "runs", "winner", "score_summary", "recommendation"],
+    "prompt_template": ["prompt_id", "task_type", "template", "variables", "output_schema", "status"],
+    "prompt_version": ["prompt_id", "version", "task_type", "template", "status"],
+    "prompt_release": ["prompt_id", "version", "task_type", "status", "released_at"],
+    "prompt_node_binding": ["binding_id", "prompt_id", "workflow_node_id", "task_type", "status"],
+    "prompt_regression_report": ["prompt_id", "baseline_version", "candidate_version", "benchmark_runs", "recommendation"],
+    "model_routing_policy": ["policy_id", "task_routes", "fallbacks", "cost_quality_tradeoffs", "effective_from", "status"],
+    "evaluation_suite": ["suite_id", "name", "target_asset_types", "metrics", "status", "created_at"],
+    "evaluation_case": ["case_id", "suite_id", "target_asset_path", "expected", "status", "created_at"],
+    "evaluation_run": ["run_id", "suite_id", "target_asset_path", "status", "result_paths", "created_at"],
+    "evaluation_result": ["result_id", "target_asset_id", "target_asset_type", "scores", "recommendation", "created_at"],
+    "evaluation_metric": ["metric_id", "dimension", "score", "status", "created_at"],
+    "evaluation_gate": ["gate_id", "target_asset_id", "status", "blocking", "created_at"],
+    "evaluation_regression_report": ["report_id", "baseline_path", "candidate_path", "recommendation", "created_at"],
+    "evaluation_dashboard_snapshot": ["snapshot_id", "summary", "quality_trends", "created_at"],
+    "quality_rubric_pack": ["rubric_id", "platform_id", "genre_id", "scope", "dimensions", "weights", "thresholds", "judge_policy"],
+    "opening_3_report": ["report_id", "suite_id", "target_asset_ids", "overall_score", "scores", "recommendation", "review_issue_paths"],
+    "golden_10_report": ["report_id", "suite_id", "target_asset_ids", "overall_score", "scores", "recommendation", "review_issue_paths"],
+    "volume_30_report": ["report_id", "suite_id", "target_asset_ids", "overall_score", "scores", "recommendation", "review_issue_paths"],
+    "longform_100_report": ["report_id", "suite_id", "target_asset_ids", "overall_score", "scores", "recommendation", "review_issue_paths"],
+    "quality_regression_report": ["suite_id", "case_count", "passed_count", "failed_count", "score_delta", "blocked_assets", "recommendation"],
+    "model_judge_result": ["judge_id", "target_asset_id", "rubric_id", "scores", "recommendation", "provider_evidence"],
+    "external_provider_proof_report": ["proof_id", "proof_type", "status", "external_provider_evidence", "credential_boundary", "evidence_refs"],
+    "content_quality_loop_report": ["loop_id", "target_asset_id", "stage", "status", "steps", "evidence_paths", "blocking_issues"],
+    "human_annotation": ["annotation_id", "target_asset_id", "rubric_id", "scores", "annotator", "recommendation"],
+    "tool_definition": ["tool_id", "name", "tool_kind", "input_schema", "output_schema", "status"],
+    "tool_invocation": ["invocation_id", "tool_id", "status", "input", "output", "created_at"],
+    "tool_permission_policy": ["policy_id", "tool_id", "agent_types", "status"],
+    "approval_request": ["request_id", "status", "scope", "action", "subject", "target", "risk_level", "environment", "blocking", "evidence_refs", "decision", "created_at"],
+    "mcp_server_registry": ["server_id", "name", "transport", "tools", "status"],
+    "state_event": ["event_id", "stream", "subject_id", "event_type", "payload", "created_at"],
+    "state_snapshot": ["snapshot_id", "stream", "subject_id", "state", "event_count", "created_at"],
+    "state_replay": ["replay_id", "stream", "subject_id", "events", "replayed_state", "created_at"],
+    "state_conflict_report": ["report_id", "stream", "subject_id", "conflicts", "status", "created_at"],
+    "outbox_event": ["outbox_id", "event_ref", "status", "attempt_count", "created_at"],
+    "agent_message": ["message_id", "sender_agent", "recipient_agent", "topic", "payload", "status", "created_at"],
+    "agent_inbox": ["inbox_id", "agent_type", "messages", "created_at"],
+    "agent_outbox": ["outbox_id", "agent_type", "messages", "created_at"],
+    "agent_handoff": ["handoff_id", "from_agent", "to_agent", "payload", "status", "created_at"],
+    "agent_conversation_trace": ["conversation_id", "agents", "messages", "status", "created_at"],
+    "memory_record": ["memory_id", "project_id", "level", "memory_type", "title", "summary", "content", "status"],
+    "memory_selection": ["selection_id", "target_node", "selected_memory_ids", "levels", "created_at"],
+    "memory_retrieval_report": ["report_id", "query", "backend", "results", "created_at"],
+    "memory_chunk": ["chunk_id", "memory_id", "text", "embedding", "metadata"],
+    "knowledge_chunk": ["chunk_id", "source_asset_id", "text", "embedding", "metadata"],
+    "artifact_embedding": ["embedding_id", "source_asset_id", "backend", "embedding", "metadata"],
+    "review_memory_chunk": ["chunk_id", "source_asset_id", "text", "embedding", "metadata"],
+    "entity_memory_chunk": ["chunk_id", "entity_id", "text", "embedding", "metadata"],
+    "pgvector_schema_plan": ["plan_id", "tables", "ddl", "status", "created_at"],
+    "embedding_job": ["job_id", "source_paths", "backend", "status", "created_at"],
+    "hybrid_retrieval_report": ["report_id", "query", "retrieval_backend", "results", "created_at"],
+    "analytics_event": ["event_id", "event_type", "source_asset_id", "source_asset_type", "project_id", "occurred_at"],
+    "analytics_sync_job": ["job_id", "status", "project_id", "event_count", "created_at"],
+    "analytics_dashboard_snapshot": ["snapshot_id", "project_id", "metrics", "created_at"],
+    "analytics_metric_definition": ["metric_id", "name", "query", "status"],
+    "operational_metric_snapshot": ["project_id", "snapshot_at", "read_metrics", "engagement_metrics", "character_heat", "chapter_dropoffs", "recommendations"],
+    "reader_feedback_backflow_report": ["backflow_report_id", "project_id", "metric_snapshot_path", "target_updates", "created_at"],
+    "publishing_plan": ["plan_id", "project_id", "calendar", "chapter_queue", "platform_targets", "gate_policy", "status"],
+    "publishing_log": ["log_id", "release_package_id", "channel", "status", "published_at", "rollback_plan"],
+    "local_ops_drill_report": ["drill_id", "scenarios", "results", "recovery_actions", "status", "created_at"],
+    "long_chain_run": ["run_id", "project_id", "mode", "target_chapter_count", "status", "current_chapter", "checkpoints", "trace_id"],
+    "long_chain_checkpoint": ["checkpoint_id", "run_id", "chapter_no", "coverage", "resume_token", "rollback_refs"],
+    "long_chain_acceptance_report": ["run_id", "chapter_count", "checks", "quality_trends", "canon_conflicts", "publish_gate_summary", "recommendation"],
+    "long_chain_failure_report": ["failure_id", "run_id", "chapter_no", "failure_type", "message", "recovery_instruction"],
+    "canon_state_machine_snapshot": ["snapshot_id", "project_id", "machines", "source_report_paths", "status"],
+    "canon_state_machine_diff_report": ["diff_id", "status", "before_snapshot_id", "after_snapshot_id", "added_machines", "removed_machines", "changed_machines"],
+    "canon_state_machine_ledger": ["ledger_id", "project_id", "entries", "source_report_path", "status"],
+    "chapter_quality_trend": ["trend_id", "run_id", "points", "summary"],
+    "canon_conflict_trend": ["trend_id", "run_id", "points", "summary"],
+    "style_drift_trend": ["trend_id", "run_id", "points", "summary"],
+    "reader_fatigue_trend": ["trend_id", "run_id", "points", "summary"],
+    "cost_quality_trend": ["trend_id", "run_id", "points", "summary"],
+    "platform_upload_package": ["package_id", "platform_id", "release_package_path", "book_metadata", "chapter_payloads", "manual_upload_steps", "checklist", "status"],
+    "platform_publish_receipt": ["receipt_id", "platform_id", "platform_book_id", "platform_chapter_id", "submitted_at", "review_status", "receipt_raw", "operator_note"],
+    "platform_review_status": ["status_id", "platform_id", "receipt_id", "review_status", "blocking_reasons", "updated_at"],
+    "platform_metric_snapshot": ["snapshot_id", "platform_id", "chapter_metrics", "book_metrics", "collected_at"],
+    "platform_comment_batch": ["batch_id", "platform_id", "comments", "imported_at"],
+    "comment_cluster_report": ["report_id", "source_comment_batch_id", "clusters", "pain_points", "pleasure_points", "character_heat", "dropoff_reasons"],
+    "chapter_dropoff_report": ["report_id", "platform_metric_snapshot_id", "dropoff_points", "risk_level", "recommendations"],
+    "feedback_plan_mutation_proposal": ["proposal_id", "source_feedback_paths", "target_assets", "proposed_changes", "risk_assessment", "human_gate"],
+    "feedback_mutation_application_report": ["application_id", "proposal_id", "status", "patch_plan", "invalidation_results", "regeneration_tasks", "re_review_required"],
+    "feedback_mutation_patch": ["patch_id", "proposal_id", "domain", "status", "target_assets", "proposed_changes", "human_gate"],
+}
+
+TOP_LEVEL_REQUIRED_FIELDS: dict[str, list[str]] = {
+    "review_report": [
+        "score",
+        "strengths",
+        "weaknesses",
+        "issues",
+        "risk_level",
+        "revision_suggestions",
+        "next_action",
+    ],
+}
+
+_REFERENCE_DERIVED_ASSET_TYPES = {
+    "decomposition_report",
+    "common_novel_analysis_report",
+    "web_fiction_business_analysis_report",
+    "published_fiction_analysis_report",
+    "classic_literary_analysis_report",
+    "analysis_conversion_report",
+    "knowledge_card",
+    "material_card",
+    "style_decomposition_report",
+    "style_profile",
+    "style_blend_preset",
+    "writing_template",
+    "craft_template",
+}
+
+_ANALYSIS_ASSET_TYPES = {
+    "common_novel_analysis_report",
+    "web_fiction_business_analysis_report",
+    "published_fiction_analysis_report",
+    "classic_literary_analysis_report",
+    "analysis_conversion_report",
+}
+
+
+@dataclass
+class BaseAsset:
+    id: str = ""
+    type: str = "asset"
+    title: str = ""
+    name: str = ""
+    source: str = ""
+    tags: list[str] = field(default_factory=list)
+    created_at: str = field(default_factory=utc_now)
+    updated_at: str = field(default_factory=utc_now)
+    version: str = "0.1.0"
+    content: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    references: list[str] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if not self.title and self.name:
+            self.title = self.name
+        if not self.name and self.title:
+            self.name = self.title
+        if not self.id:
+            self.id = make_id(self.type, self.title or self.name or self.type)
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        data["type"] = self.type
+        return data
+
+    @classmethod
+    def from_dict(cls: type[T], data: dict[str, Any]) -> T:
+        allowed = {field.name for field in fields(cls)}
+        filtered = {key: value for key, value in data.items() if key in allowed}
+        return cls(**filtered)
+
+
+def validate_common_fields(data: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    for key in COMMON_FIELDS:
+        if key not in data:
+            errors.append(f"missing common field: {key}")
+    if errors:
+        return errors
+
+    if not isinstance(data.get("tags"), list):
+        errors.append("tags must be a list")
+    if not isinstance(data.get("content"), dict):
+        errors.append("content must be an object")
+    if not isinstance(data.get("metadata"), dict):
+        errors.append("metadata must be an object")
+    if not isinstance(data.get("references"), list):
+        errors.append("references must be a list")
+    if not data.get("id"):
+        errors.append("id must not be empty")
+    if not data.get("type"):
+        errors.append("type must not be empty")
+    if not data.get("title") and not data.get("name"):
+        errors.append("title or name must not be empty")
+
+    if data.get("type") == "source_document" and not data.get("source"):
+        errors.append("source_document must keep original source path")
+    if data.get("type") == "source_document":
+        errors.extend(_validate_source_rights(data.get("metadata", {})))
+    if data.get("type") in _REFERENCE_DERIVED_ASSET_TYPES:
+        boundary = data.get("metadata", {}).get("copyright_boundary", "")
+        if "abstract" not in boundary.lower() and "structure" not in boundary.lower():
+            errors.append("reference-derived assets must declare abstract structure copyright boundary")
+
+    asset_type = data.get("type", "")
+    content = data.get("content", {})
+    if isinstance(content, dict):
+        for key in CONTENT_REQUIRED_FIELDS.get(asset_type, []):
+            if _is_missing(content.get(key)):
+                errors.append(f"{asset_type} content missing required field: {key}")
+
+    for key in TOP_LEVEL_REQUIRED_FIELDS.get(asset_type, []):
+        if _is_missing(data.get(key)):
+            errors.append(f"{asset_type} missing required field: {key}")
+    if asset_type == "workflow_run" and isinstance(content, dict):
+        errors.extend(_validate_workflow_run_content(content))
+    if asset_type == "production_operation" and isinstance(content, dict):
+        errors.extend(_validate_production_operation_content(content))
+    if asset_type == "production_operation_reconciliation_report" and isinstance(content, dict):
+        errors.extend(_validate_production_operation_reconciliation_report_content(content))
+    if asset_type == "production_operation_runtime_coverage_report" and isinstance(content, dict):
+        errors.extend(_validate_production_operation_reconciliation_report_content(content))
+    if asset_type == "state_event" and isinstance(content, dict):
+        errors.extend(_validate_state_event_content(content))
+    if asset_type == "outbox_event" and isinstance(content, dict):
+        errors.extend(_validate_outbox_event_content(content))
+    if asset_type in {"workflow_definition", "workflow_node", "node_run"} and isinstance(content, dict):
+        errors.extend(_validate_workflow_contract_content(asset_type, content))
+    if asset_type == "claude_code_handoff" and isinstance(content, dict):
+        errors.extend(_validate_claude_code_handoff_content(content))
+    if asset_type == "task_status" and isinstance(content, dict):
+        errors.extend(_validate_task_status_content(content))
+    if asset_type == "task_dead_letter" and isinstance(content, dict):
+        errors.extend(_validate_task_dead_letter_content(content))
+    if asset_type == "batch_task_item" and isinstance(content, dict):
+        errors.extend(_validate_batch_task_item_content(content))
+    if asset_type in {"feedback_import_batch", "feedback_insight", "reader_sentiment_report"} and isinstance(content, dict):
+        errors.extend(_validate_feedback_content(asset_type, content))
+    if asset_type == "project_metric_snapshot" and isinstance(content, dict):
+        errors.extend(_validate_project_metric_snapshot_content(content))
+    if asset_type == "local_settings_profile" and isinstance(content, dict):
+        errors.extend(_validate_local_settings_profile_content(content))
+    if asset_type == "project_workspace_state" and isinstance(content, dict):
+        errors.extend(_validate_project_workspace_state_content(content))
+    if asset_type == "review_report" and isinstance(content, dict):
+        errors.extend(_validate_review_report_content(content))
+    if asset_type == "review_issue" and isinstance(content, dict):
+        errors.extend(_validate_review_issue_content(content))
+    if asset_type == "revision_task" and isinstance(content, dict):
+        errors.extend(_validate_revision_task_content(content))
+    if asset_type == "platform_profile" and isinstance(content, dict):
+        errors.extend(_validate_platform_profile_content(content))
+    if asset_type.startswith("platform_") and isinstance(content, dict):
+        errors.extend(_validate_platform_strategy_content(asset_type, content))
+    if asset_type == "topic_fit_report" and isinstance(content, dict):
+        errors.extend(_validate_topic_fit_report_content(content))
+    if asset_type == "creative_strategy_profile" and isinstance(content, dict):
+        errors.extend(_validate_creative_strategy_profile_content(content))
+    if asset_type in {"quality_standard_profile", "review_rule_pack"} and isinstance(content, dict):
+        errors.extend(_validate_quality_dimensions_content(asset_type, content))
+    if asset_type == "quality_score_report" and isinstance(content, dict):
+        errors.extend(_validate_quality_score_report_content(content))
+    if asset_type in {"style_profile", "style_decomposition_report", "style_blend_preset", "style_review_report"} and isinstance(content, dict):
+        errors.extend(_validate_style_asset_content(asset_type, content, data.get("metadata", {})))
+    if asset_type in {"continuity_bible", "foreshadowing_thread", "power_scale_rule"} and isinstance(content, dict):
+        errors.extend(_validate_continuity_asset_content(asset_type, content))
+    if asset_type in {"chapter_audit_report", "originality_report", "publish_gate_report", "release_package"} and isinstance(content, dict):
+        errors.extend(_validate_release_gate_content(asset_type, content))
+    if asset_type in _ANALYSIS_ASSET_TYPES and isinstance(content, dict):
+        errors.extend(_validate_analysis_asset_content(asset_type, content, data.get("metadata", {})))
+    if asset_type in {"context_build_plan", "context_bundle"} and isinstance(content, dict):
+        errors.extend(_validate_context_asset_content(asset_type, content))
+    if asset_type == "rag_quality_report" and isinstance(content, dict):
+        errors.extend(_validate_rag_quality_report_content(content))
+    if asset_type in {"outline_version", "chapter_plan_version", "draft_version", "generation_run", "chapter_production_run"} and isinstance(content, dict):
+        errors.extend(_validate_versioned_production_content(asset_type, content))
+    if asset_type in {"editor_patch", "draft_diff_report"} and isinstance(content, dict):
+        errors.extend(_validate_editor_asset_content(asset_type, content))
+    if asset_type == "change_impact_report" and isinstance(content, dict):
+        errors.extend(_validate_change_impact_report_content(content))
+    if asset_type.startswith("agent_") and isinstance(content, dict):
+        errors.extend(_validate_agent_asset_content(asset_type, content))
+    if asset_type in {"scheduler_lease", "trace_span", "gate_result", "model_call_log", "cost_ledger", "budget_policy", "cost_alert", "project_cost_snapshot", "agent_cost_snapshot", "chapter_cost_snapshot", "cost_quality_dashboard"} and isinstance(content, dict):
+        errors.extend(_validate_runtime_observability_content(asset_type, content))
+    if asset_type in {"chapter_continuity_report", "continuity_graph_snapshot", "canon_graph_snapshot", "canon_patch"} and isinstance(content, dict):
+        errors.extend(_validate_deep_continuity_content(asset_type, content))
+    if asset_type in {"model_profile", "model_benchmark_task", "model_benchmark_run", "model_comparison_report", "prompt_version", "prompt_regression_report", "model_routing_policy"} and isinstance(content, dict):
+        errors.extend(_validate_model_evaluation_content(asset_type, content))
+    if asset_type in {
+        "long_form_macro_plan",
+        "operational_metric_snapshot",
+        "publishing_plan",
+        "publishing_log",
+        "local_ops_drill_report",
+        "long_chain_acceptance_report",
+    } and isinstance(content, dict):
+        errors.extend(_validate_industrial_extension_content(asset_type, content))
+    if asset_type in {
+        "source_chunk",
+        "knowledge_usage_binding",
+        "rule_card",
+        "template_card",
+        "knowledge_pack",
+        "knowledge_pack_item",
+        "knowledge_usage_event",
+        "knowledge_quality_score",
+        "knowledge_graph_snapshot",
+        "knowledge_learning_snapshot",
+    } and isinstance(content, dict):
+        errors.extend(_validate_mkaos_content(asset_type, content))
+
+    return errors
+
+
+def _is_missing(value: Any) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return value.strip() == ""
+    return False
+
+
+def _validate_mkaos_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    flows = {"outline", "chapter_outline", "prose", "review", "revision", "recap", "publish", "feedback"}
+    item_roles = {
+        "required",
+        "optional",
+        "forbidden",
+        "constraint",
+        "review_rule",
+        "canon_context",
+        "style_constraint",
+        "risk_warning",
+    }
+    if asset_type in {"knowledge_usage_binding", "knowledge_pack", "knowledge_pack_item", "knowledge_usage_event", "knowledge_quality_score"}:
+        flow = str(content.get("flow", "") or "")
+        if flow and flow not in flows:
+            errors.append("MKAOS flow must be outline, chapter_outline, prose, review, revision, recap, publish, or feedback")
+    if asset_type == "knowledge_pack_item" and str(content.get("item_role", "")) not in item_roles:
+        errors.append("knowledge_pack_item item_role is invalid")
+    if asset_type == "rule_card":
+        if str(content.get("severity", "")) not in {"info", "low", "medium", "high", "critical"}:
+            errors.append("rule_card severity is invalid")
+        if not isinstance(content.get("blocking"), bool):
+            errors.append("rule_card blocking must be a boolean")
+        if not isinstance(content.get("enabled"), bool):
+            errors.append("rule_card enabled must be a boolean")
+        applicable = content.get("applicable_flows")
+        if not isinstance(applicable, list):
+            errors.append("rule_card applicable_flows must be a list")
+        elif any(str(item) not in flows for item in applicable):
+            errors.append("rule_card applicable_flows contains an invalid flow")
+    if asset_type == "template_card" and not isinstance(content.get("enabled"), bool):
+        errors.append("template_card enabled must be a boolean")
+    if asset_type == "knowledge_pack":
+        for key in ["required_knowledge", "optional_knowledge", "forbidden_knowledge", "review_rules"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"knowledge_pack {key} must be a list")
+        if content.get("flow") == "prose" and _contains_key(content, "raw_text"):
+            errors.append("prose knowledge_pack must not contain source chunk raw_text")
+    if asset_type == "knowledge_graph_snapshot":
+        for key in ["nodes", "edges"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"knowledge_graph_snapshot {key} must be a list")
+        if not isinstance(content.get("summary"), dict):
+            errors.append("knowledge_graph_snapshot summary must be an object")
+        source_isolation = content.get("source_isolation")
+        if not isinstance(source_isolation, dict):
+            errors.append("knowledge_graph_snapshot source_isolation must be an object")
+        elif source_isolation.get("raw_source_text_included") is not False:
+            errors.append("knowledge_graph_snapshot must not include raw source text")
+        if _contains_key(content, "raw_text"):
+            errors.append("knowledge_graph_snapshot must not contain source chunk raw_text")
+    if asset_type == "knowledge_learning_snapshot":
+        for key in ["learning_items", "recommendations", "applied_updates"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"knowledge_learning_snapshot {key} must be a list")
+        if not isinstance(content.get("source_metrics"), dict):
+            errors.append("knowledge_learning_snapshot source_metrics must be an object")
+        if _contains_key(content, "raw_text"):
+            errors.append("knowledge_learning_snapshot must not contain source chunk raw_text")
+    return errors
+
+
+def _contains_key(value: Any, key: str) -> bool:
+    if isinstance(value, dict):
+        return any(str(item_key) == key or _contains_key(item_value, key) for item_key, item_value in value.items())
+    if isinstance(value, list):
+        return any(_contains_key(item, key) for item in value)
+    return False
+
+
+def _validate_workflow_run_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    status = content.get("status", "")
+    outputs = content.get("outputs")
+    if status not in {"pending", "running", "paused", "completed", "failed", "cancelled", "superseded"}:
+        errors.append("workflow_run status must be pending, running, paused, completed, failed, cancelled, or superseded")
+    if "outputs" not in content:
+        errors.append("workflow_run content missing required field: outputs")
+    elif not isinstance(outputs, list):
+        errors.append("workflow_run outputs must be a list")
+    elif status == "completed" and not outputs:
+        errors.append("completed workflow_run must include output paths")
+    if "run_log" in content and not isinstance(content.get("run_log"), list):
+        errors.append("workflow_run run_log must be a list")
+    if status == "failed":
+        if _is_missing(content.get("error_message")):
+            errors.append("failed workflow_run must include error_message")
+        if _is_missing(content.get("recovery_instruction")):
+            errors.append("failed workflow_run must include recovery_instruction")
+        if _is_missing(content.get("run_log")):
+            errors.append("failed workflow_run must include run_log")
+    return errors
+
+
+def _validate_production_operation_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    statuses = {
+        "planned",
+        "running",
+        "checkpointed",
+        "needs_review",
+        "accepted",
+        "needs_revision",
+        "failed",
+        "recovering",
+        "cancelled",
+        "completed",
+    }
+    if content.get("status") not in statuses:
+        errors.append("production_operation status is invalid")
+    if not isinstance(content.get("execution_envelope"), dict):
+        errors.append("production_operation execution_envelope must be an object")
+    envelope = content.get("execution_envelope", {}) if isinstance(content.get("execution_envelope"), dict) else {}
+    for key in ["project_id", "operation", "idempotency_key", "trace_id", "environment"]:
+        if not str(envelope.get(key, "") or "").strip():
+            errors.append(f"production_operation execution_envelope missing {key}")
+    for key in ["input_refs", "expected_output_types"]:
+        if not isinstance(content.get(key), list):
+            errors.append(f"production_operation {key} must be a list")
+    if not isinstance(content.get("child"), dict):
+        errors.append("production_operation child must be an object")
+    return errors
+
+
+def _validate_production_operation_reconciliation_report_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(content.get("rows"), list):
+        errors.append("production_operation_reconciliation_report rows must be a list")
+    if not isinstance(content.get("summary"), dict):
+        errors.append("production_operation_reconciliation_report summary must be an object")
+    return errors
+
+
+def _validate_runtime_observability_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "scheduler_lease":
+        if content.get("status") not in {"active", "released", "expired", "stolen"}:
+            errors.append("scheduler_lease status must be active, released, expired, or stolen")
+    if asset_type == "trace_span":
+        if content.get("status") not in {"running", "succeeded", "failed", "cancelled", "skipped"}:
+            errors.append("trace_span status must be running, succeeded, failed, cancelled, or skipped")
+    if asset_type == "gate_result":
+        if content.get("status") not in {"passed", "failed", "warning", "skipped"}:
+            errors.append("gate_result status must be passed, failed, warning, or skipped")
+        if not isinstance(content.get("target_paths"), list):
+            errors.append("gate_result target_paths must be a list")
+    if asset_type == "model_call_log":
+        if content.get("status") not in {"succeeded", "failed", "skipped"}:
+            errors.append("model_call_log status must be succeeded, failed, or skipped")
+        if not isinstance(content.get("usage"), dict):
+            errors.append("model_call_log usage must be an object")
+        if not isinstance(content.get("cost"), dict):
+            errors.append("model_call_log cost must be an object")
+    if asset_type == "cost_ledger":
+        if not isinstance(content.get("amount"), (int, float)) or float(content.get("amount", 0)) < 0:
+            errors.append("cost_ledger amount must be a non-negative number")
+    if asset_type == "budget_policy":
+        if content.get("status") not in {"active", "disabled", "archived"}:
+            errors.append("budget_policy status must be active, disabled, or archived")
+        if not isinstance(content.get("limits"), dict):
+            errors.append("budget_policy limits must be an object")
+    if asset_type == "cost_alert":
+        if content.get("severity") not in {"info", "warning", "critical"}:
+            errors.append("cost_alert severity must be info, warning, or critical")
+        if content.get("status") not in {"open", "acknowledged", "resolved"}:
+            errors.append("cost_alert status must be open, acknowledged, or resolved")
+    if asset_type in {"project_cost_snapshot", "agent_cost_snapshot", "chapter_cost_snapshot"}:
+        if not isinstance(content.get("total_cost"), (int, float)) or float(content.get("total_cost", 0)) < 0:
+            errors.append(f"{asset_type} total_cost must be a non-negative number")
+        if not isinstance(content.get("ledger_paths"), list):
+            errors.append(f"{asset_type} ledger_paths must be a list")
+        if not isinstance(content.get("by_provider"), dict):
+            errors.append(f"{asset_type} by_provider must be an object")
+    if asset_type == "cost_quality_dashboard":
+        if not isinstance(content.get("summary"), dict):
+            errors.append("cost_quality_dashboard summary must be an object")
+        if not isinstance(content.get("snapshots"), dict):
+            errors.append("cost_quality_dashboard snapshots must be an object")
+        if not isinstance(content.get("recommendations"), list):
+            errors.append("cost_quality_dashboard recommendations must be a list")
+    return errors
+
+
+def _validate_workflow_contract_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "workflow_definition":
+        nodes = content.get("nodes")
+        if not isinstance(nodes, list):
+            errors.append("workflow_definition nodes must be a list")
+        elif not nodes:
+            errors.append("workflow_definition nodes must not be empty")
+        if content.get("status") not in {"draft", "active", "archived"}:
+            errors.append("workflow_definition status must be draft, active, or archived")
+    if asset_type == "workflow_node":
+        for key in ["input_types", "output_types"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"workflow_node {key} must be a list")
+        if not isinstance(content.get("processor"), dict):
+            errors.append("workflow_node processor must be an object")
+        if not isinstance(content.get("quality_gate"), dict):
+            errors.append("workflow_node quality_gate must be an object")
+    if asset_type == "node_run":
+        if content.get("status") not in {
+            "planned",
+            "prepared",
+            "running",
+            "checkpointed",
+            "waiting_human",
+            "verifying",
+            "succeeded",
+            "needs_revision",
+            "failed",
+            "dead_letter",
+            "recovered",
+            "cancelled",
+        }:
+            errors.append("node_run status is invalid")
+        for key in ["input_assets", "output_assets"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"node_run {key} must be a list")
+        if not isinstance(content.get("processor"), dict):
+            errors.append("node_run processor must be an object")
+        if "quality_gate" in content and not isinstance(content.get("quality_gate"), dict):
+            errors.append("node_run quality_gate must be an object")
+    return errors
+
+
+def _validate_claude_code_handoff_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    status = content.get("status", "")
+    if status not in {"pending", "in_progress", "completed", "failed", "superseded"}:
+        errors.append("claude_code_handoff status must be pending, in_progress, completed, failed, or superseded")
+    if content.get("runtime") != "claude-code":
+        errors.append("claude_code_handoff runtime must be claude-code")
+    if _is_missing(content.get("runtime_model")):
+        errors.append("claude_code_handoff runtime_model must not be empty")
+    if not isinstance(content.get("input_files"), list):
+        errors.append("claude_code_handoff input_files must be a list")
+    else:
+        for index, item in enumerate(content.get("input_files", [])):
+            if not isinstance(item, dict):
+                errors.append(f"claude_code_handoff input_files[{index}] must be an object")
+                continue
+            if _is_missing(item.get("path")):
+                errors.append(f"claude_code_handoff input_files[{index}].path must not be empty")
+            if _is_missing(item.get("role")):
+                errors.append(f"claude_code_handoff input_files[{index}].role must not be empty")
+    for key in ["instructions", "acceptance_checks"]:
+        value = content.get(key)
+        if not isinstance(value, list):
+            errors.append(f"claude_code_handoff {key} must be a list")
+        elif not value:
+            errors.append(f"claude_code_handoff {key} must not be empty")
+    return errors
+
+
+def _validate_state_event_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if content.get("schema_version") != "state-event-v1":
+        return errors
+    for key in ["event_id", "stream", "subject_id", "event_type", "payload", "recorded_at", "correlation_id", "causation_id"]:
+        if key not in content:
+            errors.append(f"state_event typed content missing required field: {key}")
+    if not isinstance(content.get("payload"), dict):
+        errors.append("state_event payload must be an object")
+    confidence = content.get("confidence")
+    if confidence is not None and (not isinstance(confidence, (int, float)) or confidence < 0 or confidence > 1):
+        errors.append("state_event confidence must be between 0 and 1")
+    required_by_type = {
+        "CharacterStateChanged": "character_ref",
+        "TimelineAdvanced": "timeline_ref",
+        "SceneOccurred": "scene_ref",
+        "CanonFactCreated": "fact_ref",
+        "ForeshadowCreated": "foreshadow_ref",
+        "ArcStarted": "arc_ref",
+        "WorldRuleIntroduced": "rule_ref",
+        "PowerChanged": "subject_ref",
+        "ResourceChanged": "subject_ref",
+        "ItemTransferred": "item_ref",
+        "OrganizationChanged": "organization_ref",
+    }
+    event_type = str(content.get("event_type") or "")
+    required = required_by_type.get(event_type)
+    payload = content.get("payload", {}) if isinstance(content.get("payload"), dict) else {}
+    if required and not str(payload.get(required) or "").strip():
+        errors.append(f"{event_type} requires {required}")
+    return errors
+
+
+def _validate_outbox_event_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if content.get("status") not in {"queued", "claimed", "acked", "failed"}:
+        errors.append("outbox_event status must be queued, claimed, acked, or failed")
+    if _is_missing(content.get("event_ref")):
+        errors.append("outbox_event event_ref must not be empty")
+    if not isinstance(content.get("attempt_count"), int) or int(content.get("attempt_count", 0)) < 0:
+        errors.append("outbox_event attempt_count must be a non-negative integer")
+    return errors
+
+
+def _validate_task_status_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    status = content.get("status", "")
+    if status not in {"pending", "running", "completed", "failed", "paused", "cancelled"}:
+        errors.append("task_status status must be pending, running, completed, failed, paused, or cancelled")
+    for key in ["input_paths", "output_paths"]:
+        if key not in content:
+            errors.append(f"task_status content missing required field: {key}")
+        elif not isinstance(content.get(key), list):
+            errors.append(f"task_status {key} must be a list")
+    if "error_message" not in content:
+        errors.append("task_status content missing required field: error_message")
+    if status == "completed" and not content.get("output_paths"):
+        errors.append("completed task_status must include output_paths")
+    if status == "failed" and _is_missing(content.get("error_message")):
+        errors.append("failed task_status must include error_message")
+    return errors
+
+
+def _validate_task_dead_letter_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if _is_missing(content.get("task_name")):
+        errors.append("task_dead_letter task_name must not be empty")
+    if _is_missing(content.get("task_id")):
+        errors.append("task_dead_letter task_id must not be empty")
+    if _is_missing(content.get("error_message")):
+        errors.append("task_dead_letter error_message must not be empty")
+    if not isinstance(content.get("payload"), dict):
+        errors.append("task_dead_letter payload must be an object")
+    return errors
+
+
+def _validate_batch_task_item_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    status = content.get("status", "")
+    if status not in {"pending", "running", "waiting_handoff", "completed", "failed"}:
+        errors.append("batch_task_item status must be pending, running, waiting_handoff, completed, or failed")
+    if not isinstance(content.get("item_index"), int):
+        errors.append("batch_task_item item_index must be an integer")
+    for key in ["steps", "output_paths"]:
+        if key not in content:
+            errors.append(f"batch_task_item content missing required field: {key}")
+        elif not isinstance(content.get(key), list):
+            errors.append(f"batch_task_item {key} must be a list")
+    if "error_message" not in content:
+        errors.append("batch_task_item content missing required field: error_message")
+    if status == "completed" and not content.get("output_paths"):
+        errors.append("completed batch_task_item must include output_paths")
+    if status == "failed" and _is_missing(content.get("error_message")):
+        errors.append("failed batch_task_item must include error_message")
+    return errors
+
+
+def _validate_source_rights(metadata: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    rights = metadata.get("rights")
+    if not isinstance(rights, dict):
+        return ["source_document metadata.rights must be recorded"]
+    authorization = rights.get("authorization")
+    allowed = {"owned", "licensed", "public_domain", "permission_granted", "test_fixture", "unknown"}
+    if authorization not in allowed:
+        errors.append("source_document metadata.rights.authorization is invalid or missing")
+    if _is_missing(rights.get("copyright_boundary")):
+        errors.append("source_document metadata.rights.copyright_boundary must not be empty")
+    if not isinstance(rights.get("allow_downstream_generation"), bool):
+        errors.append("source_document metadata.rights.allow_downstream_generation must be boolean")
+    return errors
+
+
+def _validate_feedback_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "feedback_import_batch":
+        if content.get("status") not in {"imported", "failed", "partial"}:
+            errors.append("feedback_import_batch status must be imported, failed, or partial")
+        if not isinstance(content.get("rows"), list):
+            errors.append("feedback_import_batch rows must be a list")
+        if not isinstance(content.get("row_count"), int) or content.get("row_count", 0) < 0:
+            errors.append("feedback_import_batch row_count must be a non-negative integer")
+        if not isinstance(content.get("columns"), list):
+            errors.append("feedback_import_batch columns must be a list")
+    if asset_type == "feedback_insight":
+        errors.extend(_validate_feedback_insight_content(content))
+    if asset_type == "reader_sentiment_report":
+        distribution = content.get("sentiment_distribution")
+        if not isinstance(distribution, dict):
+            errors.append("reader_sentiment_report sentiment_distribution must be an object")
+        else:
+            for key in ["positive", "neutral", "negative"]:
+                if key in distribution and (not isinstance(distribution.get(key), int) or distribution.get(key, 0) < 0):
+                    errors.append(f"reader_sentiment_report sentiment_distribution.{key} must be a non-negative integer")
+        clusters = content.get("clusters")
+        if not isinstance(clusters, list):
+            errors.append("reader_sentiment_report clusters must be a list")
+        else:
+            for index, cluster in enumerate(clusters):
+                if not isinstance(cluster, dict):
+                    errors.append(f"reader_sentiment_report clusters[{index}] must be an object")
+                    continue
+                if _is_missing(cluster.get("label")):
+                    errors.append(f"reader_sentiment_report clusters[{index}].label must not be empty")
+                if "count" in cluster and (not isinstance(cluster.get("count"), int) or cluster.get("count", 0) < 0):
+                    errors.append(f"reader_sentiment_report clusters[{index}].count must be a non-negative integer")
+        for key in ["feedback_asset_ids", "reader_expectations", "poison_points", "sweet_points", "recommendations"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"reader_sentiment_report {key} must be a list")
+        if content.get("confidence") not in {"none", "low", "medium", "high"}:
+            errors.append("reader_sentiment_report confidence must be none, low, medium, or high")
+    return errors
+
+
+def _validate_feedback_insight_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    chapter_trends = content.get("chapter_trends")
+    if chapter_trends is not None:
+        if not isinstance(chapter_trends, list):
+            errors.append("feedback_insight chapter_trends must be a list")
+        else:
+            for index, trend in enumerate(chapter_trends):
+                if not isinstance(trend, dict):
+                    errors.append(f"feedback_insight chapter_trends[{index}] must be an object")
+                    continue
+                if not isinstance(trend.get("chapter"), int):
+                    errors.append(f"feedback_insight chapter_trends[{index}].chapter must be an integer")
+                if not isinstance(trend.get("average_rating"), (int, float)):
+                    errors.append(f"feedback_insight chapter_trends[{index}].average_rating must be numeric")
+    retention_risk = content.get("retention_risk")
+    if retention_risk is not None:
+        if not isinstance(retention_risk, dict):
+            errors.append("feedback_insight retention_risk must be an object")
+        elif retention_risk.get("level") not in {"low", "medium", "high", "unknown"}:
+            errors.append("feedback_insight retention_risk.level must be low, medium, high, or unknown")
+    sentiment_signals = content.get("sentiment_signals")
+    if sentiment_signals is not None and not isinstance(sentiment_signals, dict):
+        errors.append("feedback_insight sentiment_signals must be an object")
+    trend_metrics = content.get("trend_metrics")
+    if trend_metrics is not None:
+        if not isinstance(trend_metrics, dict):
+            errors.append("feedback_insight trend_metrics must be an object")
+        else:
+            for key in ["rating_slope", "rating_volatility", "low_rating_ratio"]:
+                if key in trend_metrics and not isinstance(trend_metrics.get(key), (int, float)):
+                    errors.append(f"feedback_insight trend_metrics.{key} must be numeric")
+            confidence = trend_metrics.get("confidence")
+            if confidence is not None and confidence not in {"none", "low", "medium", "high"}:
+                errors.append("feedback_insight trend_metrics.confidence must be none, low, medium, or high")
+    plot_adjustment_plan = content.get("plot_adjustment_plan")
+    if plot_adjustment_plan is not None:
+        if not isinstance(plot_adjustment_plan, dict):
+            errors.append("feedback_insight plot_adjustment_plan must be an object")
+        elif not isinstance(plot_adjustment_plan.get("next_generation_constraints", []), list):
+            errors.append("feedback_insight plot_adjustment_plan.next_generation_constraints must be a list")
+    return errors
+
+
+def _validate_project_metric_snapshot_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    for key in ["throughput", "quality", "task_health", "agent_health", "storage_health"]:
+        if not isinstance(content.get(key), dict):
+            errors.append(f"project_metric_snapshot {key} must be an object")
+    recommendations = content.get("recommendations")
+    if not isinstance(recommendations, list):
+        errors.append("project_metric_snapshot recommendations must be a list")
+    quality = content.get("quality") if isinstance(content.get("quality"), dict) else {}
+    for score_key in ["average_review_score", "review_pass_rate", "originality_risk_rate"]:
+        if score_key in quality and not isinstance(quality.get(score_key), (int, float)):
+            errors.append(f"project_metric_snapshot quality.{score_key} must be numeric")
+    task_health = content.get("task_health") if isinstance(content.get("task_health"), dict) else {}
+    for count_key in ["failed", "running", "waiting_handoff", "dead_letters"]:
+        if count_key in task_health and (not isinstance(task_health.get(count_key), int) or task_health.get(count_key, 0) < 0):
+            errors.append(f"project_metric_snapshot task_health.{count_key} must be a non-negative integer")
+    return errors
+
+
+def _validate_local_settings_profile_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(content.get("local_mode"), bool):
+        errors.append("local_settings_profile local_mode must be boolean")
+    for key in ["model_routing", "storage", "agent_defaults", "validation"]:
+        if not isinstance(content.get(key), dict):
+            errors.append(f"local_settings_profile {key} must be an object")
+    if content.get("status") not in {"draft", "active", "archived"}:
+        errors.append("local_settings_profile status must be draft, active, or archived")
+    model_routing = content.get("model_routing") if isinstance(content.get("model_routing"), dict) else {}
+    if "default_provider" in model_routing and _is_missing(model_routing.get("default_provider")):
+        errors.append("local_settings_profile model_routing.default_provider must not be empty when present")
+    validation = content.get("validation") if isinstance(content.get("validation"), dict) else {}
+    if "strict_local_prod" in validation and not isinstance(validation.get("strict_local_prod"), bool):
+        errors.append("local_settings_profile validation.strict_local_prod must be boolean")
+    return errors
+
+
+def _validate_project_workspace_state_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(content.get("memory"), dict):
+        errors.append("project_workspace_state memory must be an object")
+    chapter_states = content.get("chapter_states")
+    if not isinstance(chapter_states, list):
+        errors.append("project_workspace_state chapter_states must be a list")
+    else:
+        for index, chapter_state in enumerate(chapter_states):
+            if not isinstance(chapter_state, dict):
+                errors.append(f"project_workspace_state chapter_states[{index}] must be an object")
+                continue
+            if not isinstance(chapter_state.get("chapter"), int):
+                errors.append(f"project_workspace_state chapter_states[{index}].chapter must be an integer")
+            if _is_missing(chapter_state.get("status")):
+                errors.append(f"project_workspace_state chapter_states[{index}].status must not be empty")
+            if _is_missing(chapter_state.get("asset_id")):
+                errors.append(f"project_workspace_state chapter_states[{index}].asset_id must not be empty")
+    if not isinstance(content.get("continuity_threads"), dict):
+        errors.append("project_workspace_state continuity_threads must be an object")
+    if not isinstance(content.get("open_issues"), list):
+        errors.append("project_workspace_state open_issues must be a list")
+    return errors
+
+
+def _validate_review_report_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    model_reviews = content.get("model_reviews")
+    if model_reviews is not None and not isinstance(model_reviews, list):
+        errors.append("review_report model_reviews must be a list")
+    score_summary = content.get("score_summary")
+    if score_summary is not None:
+        if not isinstance(score_summary, dict):
+            errors.append("review_report score_summary must be an object")
+        else:
+            for key in ["average", "minimum", "maximum", "spread"]:
+                if key in score_summary and not isinstance(score_summary.get(key), (int, float)):
+                    errors.append(f"review_report score_summary.{key} must be numeric")
+    return errors
+
+
+def _validate_review_issue_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if content.get("issue_type") not in {
+        "mkaos_conflict",
+        "canon_conflict",
+        "character_drift",
+        "foreshadowing_drop",
+        "plot_logic_gap",
+        "pacing_collapse",
+        "ai_style",
+        "repetition",
+        "platform_policy_risk",
+        "source_leakage",
+        "context_budget_overflow",
+        "genre_risk",
+        "style_drift",
+        "quality_gate",
+        "canon_plugin_conflict",
+        "feedback_mutation_risk",
+        "reader_promise_drop",
+        "chapter_economy_gap",
+        "protagonist_charm_drop",
+        "antagonist_pressure_drop",
+        "mobile_reading_friction",
+        "source_snapshot_drift",
+    }:
+        errors.append("review_issue issue_type is not allowed")
+    if content.get("severity") not in {"info", "low", "medium", "high", "critical"}:
+        errors.append("review_issue severity must be info, low, medium, high, or critical")
+    if content.get("status") not in {"open", "acknowledged", "in_revision", "resolved", "waived", "closed"}:
+        errors.append("review_issue status must be open, acknowledged, in_revision, resolved, waived, or closed")
+    if not isinstance(content.get("blocking"), bool):
+        errors.append("review_issue blocking must be a boolean")
+    evidence_refs = content.get("evidence_refs", [])
+    if evidence_refs is not None and not isinstance(evidence_refs, list):
+        errors.append("review_issue evidence_refs must be a list")
+    return errors
+
+
+def _validate_revision_task_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if content.get("status") not in {"open", "running", "applied", "reviewed", "publish_ready", "needs_revision", "blocked", "failed", "cancelled"}:
+        errors.append("revision_task status must be open, running, applied, reviewed, publish_ready, needs_revision, blocked, failed, or cancelled")
+    if not isinstance(content.get("issue_indexes"), list) or any(not isinstance(item, int) for item in content.get("issue_indexes", [])):
+        errors.append("revision_task issue_indexes must be a list of integers")
+    if not isinstance(content.get("issues"), list) or any(not isinstance(item, dict) for item in content.get("issues", [])):
+        errors.append("revision_task issues must be a list of objects")
+    outputs = content.get("outputs", {})
+    if outputs is not None and not isinstance(outputs, dict):
+        errors.append("revision_task outputs must be an object")
+    return errors
+
+
+def _validate_platform_profile_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    business_model = content.get("business_model")
+    if business_model not in {"paid_serial", "free_ad", "ip_publish", "mixed", "custom"}:
+        errors.append("platform_profile business_model must be paid_serial, free_ad, ip_publish, mixed, or custom")
+    length_range = content.get("chapter_length_range")
+    if not isinstance(length_range, dict):
+        errors.append("platform_profile chapter_length_range must be an object")
+    else:
+        values: dict[str, float] = {}
+        for key in ["min", "max", "ideal"]:
+            value = length_range.get(key)
+            if not isinstance(value, (int, float)):
+                errors.append(f"platform_profile chapter_length_range.{key} must be numeric")
+            else:
+                values[key] = float(value)
+        if len(values) == 3 and not (values["min"] <= values["ideal"] <= values["max"]):
+            errors.append("platform_profile chapter_length_range must satisfy min <= ideal <= max")
+    for key in ["reader_expectation", "review_risks", "genre_fit", "style_tendency"]:
+        if key in content and not isinstance(content.get(key), list):
+            errors.append(f"platform_profile {key} must be a list")
+    return errors
+
+
+def _validate_platform_strategy_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "platform_profile":
+        return errors
+    list_fields = {
+        "platform_rhythm_rule": ["strategy_axes", "beat_cadence", "prohibited_patterns"],
+        "platform_opening_gate": ["required_signals", "fail_conditions", "revision_hints"],
+        "platform_chapter_gate": ["required_beats", "blocking_rules"],
+        "platform_retention_risk": ["signals", "mitigation_plan"],
+        "platform_publish_adapter": ["checklist"],
+        "platform_feedback_backflow": ["plan_adjustments", "weight_updates"],
+    }
+    dict_fields = {
+        "platform_opening_gate": ["score_thresholds"],
+        "platform_chapter_gate": ["density_targets"],
+        "platform_publish_adapter": ["package_rules", "metadata_rules", "export_contract"],
+        "platform_feedback_backflow": ["signal_mapping"],
+        "platform_strategy_pack": ["outline_strategy", "chapter_strategy", "prose_strategy", "validation_policy"],
+    }
+    for key in list_fields.get(asset_type, []):
+        if not isinstance(content.get(key), list):
+            errors.append(f"{asset_type} {key} must be a list")
+    for key in dict_fields.get(asset_type, []):
+        if not isinstance(content.get(key), dict):
+            errors.append(f"{asset_type} {key} must be an object")
+    if asset_type == "platform_retention_risk":
+        if content.get("risk_level") not in {"low", "medium", "high", "critical", "unknown"}:
+            errors.append("platform_retention_risk risk_level must be low, medium, high, critical, or unknown")
+        if not isinstance(content.get("risk_score"), (int, float)) or content.get("risk_score") < 0 or content.get("risk_score") > 100:
+            errors.append("platform_retention_risk risk_score must be between 0 and 100")
+    if asset_type == "platform_strategy_pack":
+        for key in ["opening_gate", "chapter_gate", "publish_adapter", "feedback_backflow"]:
+            if key in content and not isinstance(content.get(key), dict):
+                errors.append(f"platform_strategy_pack {key} must be an object")
+    return errors
+
+
+def _validate_topic_fit_report_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    scores = content.get("scores")
+    if not isinstance(scores, dict):
+        errors.append("topic_fit_report scores must be an object")
+    else:
+        for key, value in scores.items():
+            if not isinstance(value, (int, float)):
+                errors.append(f"topic_fit_report scores.{key} must be numeric")
+            elif value < 0 or value > 100:
+                errors.append(f"topic_fit_report scores.{key} must be between 0 and 100")
+    if not isinstance(content.get("must_adjust"), list):
+        errors.append("topic_fit_report must_adjust must be a list")
+    return errors
+
+
+def _validate_creative_strategy_profile_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if not str(content.get("reader_promise", "")).strip():
+        errors.append("creative_strategy_profile reader_promise must not be empty")
+    for key in ["volume_goals", "pleasure_rhythm", "long_hooks", "platform_pacing", "verification_rules"]:
+        if not isinstance(content.get(key), (dict, list)):
+            errors.append(f"creative_strategy_profile {key} must be an object or list")
+    return errors
+
+
+def _validate_quality_dimensions_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    dimensions = content.get("dimensions")
+    if not isinstance(dimensions, dict):
+        errors.append(f"{asset_type} dimensions must be an object")
+    elif not dimensions:
+        errors.append(f"{asset_type} dimensions must not be empty")
+    else:
+        total_weight = 0.0
+        for name, dimension in dimensions.items():
+            if not isinstance(dimension, dict):
+                errors.append(f"{asset_type} dimensions.{name} must be an object")
+                continue
+            weight = dimension.get("weight")
+            threshold = dimension.get("threshold")
+            if not isinstance(weight, (int, float)) or weight < 0:
+                errors.append(f"{asset_type} dimensions.{name}.weight must be a non-negative number")
+            else:
+                total_weight += float(weight)
+            if threshold is not None and (not isinstance(threshold, (int, float)) or threshold < 0 or threshold > 100):
+                errors.append(f"{asset_type} dimensions.{name}.threshold must be between 0 and 100")
+        if total_weight <= 0:
+            errors.append(f"{asset_type} dimensions total weight must be greater than zero")
+    for key in ["hard_gates", "checks"]:
+        if key in content and not isinstance(content.get(key), list):
+            errors.append(f"{asset_type} {key} must be a list")
+    return errors
+
+
+def _validate_quality_score_report_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    score = content.get("overall_score")
+    if not isinstance(score, (int, float)) or score < 0 or score > 100:
+        errors.append("quality_score_report overall_score must be between 0 and 100")
+    scores = content.get("scores")
+    if not isinstance(scores, dict):
+        errors.append("quality_score_report scores must be an object")
+    else:
+        for key, value in scores.items():
+            if not isinstance(value, (int, float)) or value < 0 or value > 100:
+                errors.append(f"quality_score_report scores.{key} must be between 0 and 100")
+    gate_results = content.get("gate_results")
+    if not isinstance(gate_results, dict):
+        errors.append("quality_score_report gate_results must be an object")
+    return errors
+
+
+def _validate_style_asset_content(asset_type: str, content: dict[str, Any], metadata: Any) -> list[str]:
+    errors: list[str] = []
+    if _contains_author_imitation_request({"content": content, "metadata": metadata}):
+        errors.append(f"{asset_type} must not request specific author imitation")
+    if asset_type == "style_profile":
+        if content.get("scope") not in {"platform", "genre", "project", "blend"}:
+            errors.append("style_profile scope must be platform, genre, project, or blend")
+        source_boundary = content.get("source_boundary")
+        if not isinstance(source_boundary, dict):
+            errors.append("style_profile source_boundary must be an object")
+        else:
+            if source_boundary.get("allowed_usage") not in {"parameter_only", "abstract_reference_only"}:
+                errors.append("style_profile source_boundary.allowed_usage must be parameter_only or abstract_reference_only")
+            if not isinstance(source_boundary.get("derived_from_protected_text"), bool):
+                errors.append("style_profile source_boundary.derived_from_protected_text must be boolean")
+            if source_boundary.get("copyright_risk") not in {"low", "medium", "high", "unknown"}:
+                errors.append("style_profile source_boundary.copyright_risk must be low, medium, high, or unknown")
+        if not isinstance(content.get("forbidden_patterns"), list) or not content.get("forbidden_patterns"):
+            errors.append("style_profile forbidden_patterns must be a non-empty list")
+    if asset_type == "style_decomposition_report":
+        if content.get("extract_level") != "abstract_parameters_only":
+            errors.append("style_decomposition_report extract_level must be abstract_parameters_only")
+        if content.get("risk_level") not in {"low", "medium", "high", "unknown"}:
+            errors.append("style_decomposition_report risk_level must be low, medium, high, or unknown")
+        if not isinstance(content.get("do_not_copy"), list):
+            errors.append("style_decomposition_report do_not_copy must be a list")
+    if asset_type == "style_blend_preset":
+        components = content.get("components")
+        if not isinstance(components, list) or not components:
+            errors.append("style_blend_preset components must be a non-empty list")
+        else:
+            for index, component in enumerate(components):
+                if not isinstance(component, dict):
+                    errors.append(f"style_blend_preset components[{index}] must be an object")
+                    continue
+                weight = component.get("weight")
+                if not isinstance(weight, (int, float)) or weight <= 0:
+                    errors.append(f"style_blend_preset components[{index}].weight must be greater than zero")
+    if asset_type == "style_review_report":
+        score = content.get("style_match_score")
+        if not isinstance(score, (int, float)) or score < 0 or score > 100:
+            errors.append("style_review_report style_match_score must be between 0 and 100")
+        if content.get("copyright_style_risk") not in {"low", "medium", "high", "unknown"}:
+            errors.append("style_review_report copyright_style_risk must be low, medium, high, or unknown")
+    return errors
+
+
+def _validate_continuity_asset_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "continuity_bible":
+        for key in ["worldview_rules", "timeline", "entities", "open_threads", "constraints"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"continuity_bible {key} must be a list")
+    if asset_type == "foreshadowing_thread":
+        if content.get("status") not in {"planned", "seeded", "developing", "paid_off", "abandoned"}:
+            errors.append("foreshadowing_thread status must be planned, seeded, developing, paid_off, or abandoned")
+        if not isinstance(content.get("related_chapters"), list):
+            errors.append("foreshadowing_thread related_chapters must be a list")
+    if asset_type == "power_scale_rule":
+        for key in ["levels", "constraints", "violation_checks"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"power_scale_rule {key} must be a list")
+    return errors
+
+
+def _validate_release_gate_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "chapter_audit_report":
+        scores = content.get("dimension_scores")
+        if not isinstance(scores, dict):
+            errors.append("chapter_audit_report dimension_scores must be an object")
+        else:
+            for key, value in scores.items():
+                if not isinstance(value, (int, float)) or value < 0 or value > 100:
+                    errors.append(f"chapter_audit_report dimension_scores.{key} must be between 0 and 100")
+        if not isinstance(content.get("issues"), list):
+            errors.append("chapter_audit_report issues must be a list")
+        if not isinstance(content.get("gate_results"), dict):
+            errors.append("chapter_audit_report gate_results must be an object")
+        if not isinstance(content.get("linked_reports"), dict):
+            errors.append("chapter_audit_report linked_reports must be an object")
+        if content.get("recommendation") not in {"pass", "revise", "block_publish"}:
+            errors.append("chapter_audit_report recommendation must be pass, revise, or block_publish")
+    if asset_type == "originality_report":
+        for key in ["plot_skeleton_risk", "character_setup_risk", "style_expression_risk", "risk_level"]:
+            if content.get(key) not in {"low", "medium", "high", "unknown"}:
+                errors.append(f"originality_report {key} must be low, medium, high, or unknown")
+        if content.get("recommendation") not in {"pass", "revise_before_publish", "block_publish"}:
+            errors.append("originality_report recommendation must be pass, revise_before_publish, or block_publish")
+        if not isinstance(content.get("human_gate_required"), bool):
+            errors.append("originality_report human_gate_required must be boolean")
+        for key in ["source_asset_ids", "similarity_checks", "forbidden_element_hits"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"originality_report {key} must be a list")
+        for index, item in enumerate(content.get("similarity_checks", []) if isinstance(content.get("similarity_checks"), list) else []):
+            if not isinstance(item, dict):
+                errors.append(f"originality_report similarity_checks[{index}] must be an object")
+                continue
+            score = item.get("similarity")
+            if not isinstance(score, (int, float)) or score < 0 or score > 1:
+                errors.append(f"originality_report similarity_checks[{index}].similarity must be between 0 and 1")
+    if asset_type == "publish_gate_report":
+        if not isinstance(content.get("gates"), dict):
+            errors.append("publish_gate_report gates must be an object")
+        if content.get("decision") not in {"ready", "needs_revision", "blocked"}:
+            errors.append("publish_gate_report decision must be ready, needs_revision, or blocked")
+        if not isinstance(content.get("blocking_issues"), list):
+            errors.append("publish_gate_report blocking_issues must be a list")
+        if not isinstance(content.get("required_reports"), dict):
+            errors.append("publish_gate_report required_reports must be an object")
+        if not isinstance(content.get("human_override"), bool):
+            errors.append("publish_gate_report human_override must be boolean")
+    if asset_type == "release_package":
+        if not isinstance(content.get("title_candidates"), list) or not content.get("title_candidates"):
+            errors.append("release_package title_candidates must be a non-empty list")
+        if not isinstance(content.get("tags"), list):
+            errors.append("release_package tags must be a list")
+        if content.get("status") not in {"draft", "ready", "blocked", "published"}:
+            errors.append("release_package status must be draft, ready, blocked, or published")
+    return errors
+
+
+def _validate_analysis_asset_content(asset_type: str, content: dict[str, Any], metadata: Any) -> list[str]:
+    errors: list[str] = []
+    metadata_dict = metadata if isinstance(metadata, dict) else {}
+    risk = content.get("copyright_risk", metadata_dict.get("copyright_risk", metadata_dict.get("risk_level", "unknown")))
+    if risk not in {"low", "medium", "high", "unknown"}:
+        errors.append(f"{asset_type} copyright_risk must be low, medium, high, or unknown")
+    abstraction_level = content.get("abstraction_level", metadata_dict.get("abstraction_level", "abstract"))
+    if abstraction_level not in {"abstract", "mechanism", "template"}:
+        errors.append(f"{asset_type} abstraction_level must be abstract, mechanism, or template")
+    if metadata_dict.get("use_in_generation_rag") is True and asset_type != "analysis_conversion_report":
+        errors.append(f"{asset_type} must not enter generation RAG directly; convert to abstract assets first")
+    if asset_type != "analysis_conversion_report":
+        for key in ["structure_map", "character_map", "conflict_map", "theme_map", "craft_dimensions", "scene_design"]:
+            if key in content and not isinstance(content.get(key), (dict, list)):
+                errors.append(f"{asset_type} {key} must be an object or list")
+        for key in ["reusable_findings", "reusable_assets", "transferable_techniques", "transferable_abstractions"]:
+            if key in content and not isinstance(content.get(key), list):
+                errors.append(f"{asset_type} {key} must be a list")
+    if asset_type == "analysis_conversion_report":
+        if content.get("source_report_type") not in _ANALYSIS_ASSET_TYPES - {"analysis_conversion_report"}:
+            errors.append("analysis_conversion_report source_report_type must be an analysis report type")
+        if not isinstance(content.get("conversion_targets"), list):
+            errors.append("analysis_conversion_report conversion_targets must be a list")
+        if not isinstance(content.get("created_assets"), list):
+            errors.append("analysis_conversion_report created_assets must be a list")
+        if not isinstance(content.get("rejected_items"), list):
+            errors.append("analysis_conversion_report rejected_items must be a list")
+        if content.get("reuse_scope") not in {"project", "global", "research_only"}:
+            errors.append("analysis_conversion_report reuse_scope must be project, global, or research_only")
+    return errors
+
+
+def _validate_context_asset_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    token_budget = content.get("token_budget")
+    if not isinstance(token_budget, dict):
+        errors.append(f"{asset_type} token_budget must be an object")
+    else:
+        max_tokens = token_budget.get("max_tokens")
+        if not isinstance(max_tokens, int) or max_tokens <= 0:
+            errors.append(f"{asset_type} token_budget.max_tokens must be a positive integer")
+    if asset_type == "context_build_plan":
+        if not isinstance(content.get("selection_policy"), dict):
+            errors.append("context_build_plan selection_policy must be an object")
+        for key in ["candidate_assets", "exclusions"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"context_build_plan {key} must be a list")
+        top_k = content.get("top_k")
+        if top_k is not None and (not isinstance(top_k, int) or top_k <= 0):
+            errors.append("context_build_plan top_k must be a positive integer")
+    if asset_type == "context_bundle":
+        selected_assets = content.get("selected_assets")
+        if not isinstance(selected_assets, list):
+            errors.append("context_bundle selected_assets must be a list")
+        source_asset_ids = content.get("source_asset_ids")
+        if not isinstance(source_asset_ids, list):
+            errors.append("context_bundle source_asset_ids must be a list")
+        token_estimate = content.get("token_estimate")
+        if not isinstance(token_estimate, (int, float)) or token_estimate < 0:
+            errors.append("context_bundle token_estimate must be a non-negative number")
+        if not isinstance(content.get("compressed_context"), (dict, list, str)):
+            errors.append("context_bundle compressed_context must be an object, list, or string")
+    return errors
+
+
+def _validate_rag_quality_report_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    for key in ["recall_explanation", "omission_check", "copyright_filter", "context_budget_score"]:
+        if not isinstance(content.get(key), dict):
+            errors.append(f"rag_quality_report {key} must be an object")
+    score = (content.get("context_budget_score") or {}).get("score") if isinstance(content.get("context_budget_score"), dict) else None
+    if not isinstance(score, (int, float)) or score < 0 or score > 100:
+        errors.append("rag_quality_report context_budget_score.score must be between 0 and 100")
+    if content.get("recommendation") not in {"pass", "pass_with_warnings", "revise", "block"}:
+        errors.append("rag_quality_report recommendation must be pass, pass_with_warnings, revise, or block")
+    return errors
+
+
+def _validate_versioned_production_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    status = content.get("status")
+    allowed_version_status = {"draft", "active", "superseded", "archived"}
+    if asset_type in {"outline_version", "chapter_plan_version", "draft_version"}:
+        version_index = content.get("version_index")
+        if not isinstance(version_index, int) or version_index < 0:
+            errors.append(f"{asset_type} version_index must be a non-negative integer")
+        if status not in allowed_version_status:
+            errors.append(f"{asset_type} status must be draft, active, superseded, or archived")
+    if asset_type == "outline_version" and not isinstance(content.get("acts"), list):
+        errors.append("outline_version acts must be a list")
+    if asset_type == "chapter_plan_version":
+        if not isinstance(content.get("beats"), list):
+            errors.append("chapter_plan_version beats must be a list")
+        if not isinstance(content.get("information_points"), list):
+            errors.append("chapter_plan_version information_points must be a list")
+        word_budget = content.get("word_budget")
+        if not isinstance(word_budget, (dict, int, float)):
+            errors.append("chapter_plan_version word_budget must be an object or number")
+    if asset_type == "generation_run":
+        if status not in {"planned", "prepared", "running", "succeeded", "failed", "cancelled"}:
+            errors.append("generation_run status must be planned, prepared, running, succeeded, failed, or cancelled")
+        for key in ["input_asset_path", "context_bundle_id", "provider", "model", "prompt_version", "started_at", "finished_at"]:
+            if not isinstance(content.get(key), str):
+                errors.append(f"generation_run {key} must be a string")
+        if "source_asset_ids" in content and not isinstance(content.get("source_asset_ids"), list):
+            errors.append("generation_run source_asset_ids must be a list")
+        if "metrics" in content and not isinstance(content.get("metrics"), dict):
+            errors.append("generation_run metrics must be an object")
+    if asset_type == "chapter_production_run":
+        if status not in {"planned", "running", "paused", "waiting_human", "succeeded", "failed", "cancelled", "recovered"}:
+            errors.append("chapter_production_run status must be planned, running, paused, waiting_human, succeeded, failed, cancelled, or recovered")
+        if not isinstance(content.get("chapter"), int) or content.get("chapter", 0) < 1:
+            errors.append("chapter_production_run chapter must be a positive integer")
+        for key in ["step_order", "timeline"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"chapter_production_run {key} must be a list")
+        if not isinstance(content.get("steps"), dict):
+            errors.append("chapter_production_run steps must be an object")
+        if not isinstance(content.get("current_step"), str):
+            errors.append("chapter_production_run current_step must be a string")
+        if "outputs" in content and not isinstance(content.get("outputs"), dict):
+            errors.append("chapter_production_run outputs must be an object")
+    return errors
+
+
+def _validate_editor_asset_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "editor_patch":
+        operations = content.get("operations")
+        if not isinstance(operations, list) or not operations:
+            errors.append("editor_patch operations must be a non-empty list")
+        elif any(not isinstance(item, dict) for item in operations):
+            errors.append("editor_patch operations must contain objects")
+        if content.get("status") not in {"proposed", "applied", "partially_applied", "rejected", "rolled_back"}:
+            errors.append("editor_patch status must be proposed, applied, partially_applied, rejected, or rolled_back")
+    if asset_type == "draft_diff_report":
+        operations = content.get("operations")
+        if not isinstance(operations, list):
+            errors.append("draft_diff_report operations must be a list")
+        summary = content.get("diff_summary")
+        if not isinstance(summary, dict):
+            errors.append("draft_diff_report diff_summary must be an object")
+    return errors
+
+
+def _validate_change_impact_report_content(content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    impacted = content.get("impacted_assets")
+    if not isinstance(impacted, list):
+        errors.append("change_impact_report impacted_assets must be a list")
+    else:
+        for index, item in enumerate(impacted):
+            if not isinstance(item, dict):
+                errors.append(f"change_impact_report impacted_assets[{index}] must be an object")
+                continue
+            if item.get("severity") not in {"low", "medium", "high", "blocking"}:
+                errors.append(f"change_impact_report impacted_assets[{index}].severity must be low, medium, high, or blocking")
+            if _is_missing(item.get("path")):
+                errors.append(f"change_impact_report impacted_assets[{index}].path must not be empty")
+    edges = content.get("impact_edges")
+    if not isinstance(edges, list):
+        errors.append("change_impact_report impact_edges must be a list")
+    summary = content.get("severity_summary")
+    if not isinstance(summary, dict):
+        errors.append("change_impact_report severity_summary must be an object")
+    if content.get("recommendation") not in {"no_action", "review_impacts", "regenerate_downstream", "block_until_resolved"}:
+        errors.append("change_impact_report recommendation must be no_action, review_impacts, regenerate_downstream, or block_until_resolved")
+    return errors
+
+
+def _validate_agent_asset_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "agent_contract":
+        for key in ["input_types", "output_types", "tool_allowlist", "allowed_write_types", "quality_gates"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"agent_contract {key} must be a list")
+        for key in ["permissions"]:
+            if not isinstance(content.get(key), dict):
+                errors.append(f"agent_contract {key} must be an object")
+    if asset_type == "agent_run":
+        if content.get("status") not in {
+            "planned",
+            "prepared",
+            "running",
+            "checkpointed",
+            "waiting_human",
+            "verifying",
+            "succeeded",
+            "needs_revision",
+            "failed",
+            "dead_letter",
+            "recovered",
+            "cancelled",
+        }:
+            errors.append("agent_run status is invalid")
+        for key in ["input_assets", "output_assets"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"agent_run {key} must be a list")
+        if not isinstance(content.get("permissions"), dict):
+            errors.append("agent_run permissions must be an object")
+    if asset_type == "agent_checkpoint" and not isinstance(content.get("state"), dict):
+        errors.append("agent_checkpoint state must be an object")
+    if asset_type == "agent_event" and content.get("status") not in {
+        "info",
+        "warning",
+        "planned",
+        "prepared",
+        "running",
+        "checkpointed",
+        "waiting_human",
+        "verifying",
+        "succeeded",
+        "needs_revision",
+        "failed",
+        "dead_letter",
+        "recovered",
+        "cancelled",
+    }:
+        errors.append("agent_event status is invalid")
+    if asset_type == "agent_budget":
+        for key in ["token_budget", "token_used", "cost_estimate"]:
+            value = content.get(key)
+            if not isinstance(value, (int, float)) or value < 0:
+                errors.append(f"agent_budget {key} must be a non-negative number")
+        if content.get("status") not in {"within_budget", "near_limit", "exceeded"}:
+            errors.append("agent_budget status must be within_budget, near_limit, or exceeded")
+    if asset_type == "agent_gate":
+        if content.get("status") not in {"pending", "passed", "failed", "waived", "needs_human"}:
+            errors.append("agent_gate status must be pending, passed, failed, waived, or needs_human")
+        if not isinstance(content.get("result"), dict):
+            errors.append("agent_gate result must be an object")
+    if asset_type == "agent_metric":
+        if not isinstance(content.get("value"), (int, float, str, bool)):
+            errors.append("agent_metric value must be scalar")
+    if asset_type == "agent_sla_report":
+        if content.get("status") not in {"within_sla", "breached", "unknown"}:
+            errors.append("agent_sla_report status must be within_sla, breached, or unknown")
+        for key in ["elapsed_seconds", "sla_seconds"]:
+            value = content.get(key)
+            if not isinstance(value, (int, float)) or value < 0:
+                errors.append(f"agent_sla_report {key} must be a non-negative number")
+        if not isinstance(content.get("breach"), bool):
+            errors.append("agent_sla_report breach must be boolean")
+    if asset_type == "agent_rollback_report":
+        if not isinstance(content.get("target_asset_paths"), list):
+            errors.append("agent_rollback_report target_asset_paths must be a list")
+        if content.get("status") not in {"planned", "applied", "failed", "not_required"}:
+            errors.append("agent_rollback_report status must be planned, applied, failed, or not_required")
+    if asset_type == "agent_dispatch_queue":
+        if content.get("status") not in {"queued", "claimed", "running", "waiting_human", "acked", "retry_scheduled", "dead_letter", "cancelled"}:
+            errors.append("agent_dispatch_queue status is invalid")
+        for key in ["attempt_count", "max_attempts", "priority"]:
+            value = content.get(key)
+            if value is not None and (not isinstance(value, int) or value < 0):
+                errors.append(f"agent_dispatch_queue {key} must be a non-negative integer")
+        if not isinstance(content.get("result", {}), dict):
+            errors.append("agent_dispatch_queue result must be an object")
+        if not isinstance(content.get("trace", {}), dict):
+            errors.append("agent_dispatch_queue trace must be an object")
+    return errors
+
+
+def _validate_deep_continuity_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "chapter_continuity_report":
+        if not isinstance(content.get("continuity_checks"), list):
+            errors.append("chapter_continuity_report continuity_checks must be a list")
+        if not isinstance(content.get("violations"), list):
+            errors.append("chapter_continuity_report violations must be a list")
+        if content.get("recommendation") not in {"pass", "revise", "block"}:
+            errors.append("chapter_continuity_report recommendation must be pass, revise, or block")
+    if asset_type == "continuity_graph_snapshot":
+        for key in ["nodes", "edges"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"continuity_graph_snapshot {key} must be a list")
+        if not isinstance(content.get("summary"), dict):
+            errors.append("continuity_graph_snapshot summary must be an object")
+    if asset_type == "canon_graph_snapshot":
+        for key in ["entities", "relationships", "state_machines", "lifecycle_threads", "event_graph", "violations"]:
+            if not isinstance(content.get(key), (dict, list)):
+                errors.append(f"canon_graph_snapshot {key} must be an object or list")
+    if asset_type == "novel_kg_snapshot":
+        for key in ["entities", "relations", "events", "rules", "timelines", "foreshadowing", "factions", "locations", "props", "power_scales", "review_rules", "templates"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"novel_kg_snapshot {key} must be a list")
+        if not isinstance(content.get("summary"), dict):
+            errors.append("novel_kg_snapshot summary must be an object")
+        ontology_version = str(content.get("ontology_version", ""))
+        if ontology_version and not ontology_version.startswith("novel-kg-"):
+            errors.append("novel_kg_snapshot ontology_version must start with novel-kg-")
+    if asset_type == "canon_patch":
+        for key in ["proposed_events", "entity_updates", "thread_updates", "relationship_updates"]:
+            if not isinstance(content.get(key), list):
+                errors.append(f"canon_patch {key} must be a list")
+        if not isinstance(content.get("apply_plan"), dict):
+            errors.append("canon_patch apply_plan must be an object")
+        if not isinstance(content.get("human_gate"), dict):
+            errors.append("canon_patch human_gate must be an object")
+        if content.get("status") not in {"proposed", "accepted", "applied", "rejected"}:
+            errors.append("canon_patch status must be proposed, accepted, applied, or rejected")
+    return errors
+
+
+def _validate_model_evaluation_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if asset_type == "model_profile":
+        for key in ["capabilities", "cost_profile"]:
+            if not isinstance(content.get(key), dict):
+                errors.append(f"model_profile {key} must be an object")
+        if content.get("status") not in {"active", "candidate", "disabled", "failed"}:
+            errors.append("model_profile status must be active, candidate, disabled, or failed")
+    if asset_type == "model_benchmark_task":
+        if not isinstance(content.get("input_assets"), list):
+            errors.append("model_benchmark_task input_assets must be a list")
+        if not isinstance(content.get("rubric"), dict):
+            errors.append("model_benchmark_task rubric must be an object")
+    if asset_type == "model_benchmark_run":
+        if not isinstance(content.get("scores"), dict):
+            errors.append("model_benchmark_run scores must be an object")
+        latency = content.get("latency_ms")
+        if not isinstance(latency, (int, float)) or latency < 0:
+            errors.append("model_benchmark_run latency_ms must be a non-negative number")
+        if content.get("status") not in {"succeeded", "failed", "skipped"}:
+            errors.append("model_benchmark_run status must be succeeded, failed, or skipped")
+    if asset_type == "model_comparison_report":
+        if not isinstance(content.get("runs"), list):
+            errors.append("model_comparison_report runs must be a list")
+        if not isinstance(content.get("score_summary"), dict):
+            errors.append("model_comparison_report score_summary must be an object")
+    if asset_type == "prompt_version":
+        if content.get("status") not in {"draft", "active", "archived"}:
+            errors.append("prompt_version status must be draft, active, or archived")
+    if asset_type == "prompt_regression_report":
+        if not isinstance(content.get("benchmark_runs"), list):
+            errors.append("prompt_regression_report benchmark_runs must be a list")
+        if content.get("recommendation") not in {"promote", "keep_baseline", "needs_revision"}:
+            errors.append("prompt_regression_report recommendation must be promote, keep_baseline, or needs_revision")
+    if asset_type == "model_routing_policy":
+        for key in ["task_routes", "fallbacks", "cost_quality_tradeoffs"]:
+            if not isinstance(content.get(key), dict):
+                errors.append(f"model_routing_policy {key} must be an object")
+        if content.get("status") not in {"draft", "active", "archived"}:
+            errors.append("model_routing_policy status must be draft, active, or archived")
+    return errors
+
+
+def _validate_industrial_extension_content(asset_type: str, content: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    list_fields = {
+        "long_form_macro_plan": [
+            "volume_plans",
+            "mainline_matrix",
+            "subplot_matrix",
+            "character_arc_curves",
+            "climax_ladder",
+            "commercial_pacing_table",
+            "verification_gates",
+        ],
+        "operational_metric_snapshot": ["character_heat", "chapter_dropoffs", "recommendations"],
+        "publishing_plan": ["calendar", "chapter_queue", "platform_targets"],
+        "local_ops_drill_report": ["scenarios", "results", "recovery_actions"],
+        "long_chain_acceptance_report": ["checks", "canon_conflicts"],
+    }
+    for key in list_fields.get(asset_type, []):
+        if not isinstance(content.get(key), list):
+            errors.append(f"{asset_type} {key} must be a list")
+    if asset_type == "publishing_plan":
+        if not isinstance(content.get("gate_policy"), dict):
+            errors.append("publishing_plan gate_policy must be an object")
+        if content.get("status") not in {"draft", "active", "archived"}:
+            errors.append("publishing_plan status must be draft, active, or archived")
+    if asset_type == "publishing_log":
+        if not isinstance(content.get("rollback_plan"), dict):
+            errors.append("publishing_log rollback_plan must be an object")
+        if content.get("status") not in {"planned", "published", "failed", "rolled_back"}:
+            errors.append("publishing_log status must be planned, published, failed, or rolled_back")
+    if asset_type == "operational_metric_snapshot":
+        for key in ["read_metrics", "engagement_metrics"]:
+            if not isinstance(content.get(key), dict):
+                errors.append(f"operational_metric_snapshot {key} must be an object")
+    if asset_type == "local_ops_drill_report" and content.get("status") not in {"passed", "warning", "failed"}:
+        errors.append("local_ops_drill_report status must be passed, warning, or failed")
+    if asset_type == "long_chain_acceptance_report":
+        if not isinstance(content.get("quality_trends"), dict):
+            errors.append("long_chain_acceptance_report quality_trends must be an object")
+        if not isinstance(content.get("publish_gate_summary"), dict):
+            errors.append("long_chain_acceptance_report publish_gate_summary must be an object")
+        if content.get("recommendation") not in {"pass", "revise", "block"}:
+            errors.append("long_chain_acceptance_report recommendation must be pass, revise, or block")
+    return errors
+
+
+def _contains_author_imitation_request(value: Any) -> bool:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            lowered_key = str(key).lower()
+            if lowered_key in {"author", "author_name", "target_author", "source_author", "imitate_author"} and not _is_missing(item):
+                return True
+            if _contains_author_imitation_request(item):
+                return True
+        return False
+    if isinstance(value, list):
+        return any(_contains_author_imitation_request(item) for item in value)
+    if not isinstance(value, str):
+        return False
+    lowered = value.lower()
+    blocked = [
+        "imitate author",
+        "author imitation",
+        "copy author style",
+        "specific author style",
+        "write like ",
+        "模仿作者",
+        "仿写作者",
+        "复刻作者",
+        "照着作者",
+    ]
+    return any(token in lowered for token in blocked)

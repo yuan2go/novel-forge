@@ -1,0 +1,441 @@
+"""INVARIANT: candidate selection never treats the newest Revision as the best candidate."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import math
+from collections.abc import Mapping
+from dataclasses import dataclass
+from enum import StrEnum
+from typing import Any
+
+from novel_forge.modules.command_kernel.errors import KernelError
+
+
+class CandidateStopReason(StrEnum):
+    QUALITY_SATISFIED = "QUALITY_SATISFIED"
+    COMPARISON_SUPPORTED = "COMPARISON_SUPPORTED"
+    MARGINAL_IMPROVEMENT = "MARGINAL_IMPROVEMENT"
+    DETERMINISTIC_BLOCKER = "DETERMINISTIC_BLOCKER"
+    MAX_CORRECTION_BUDGET = "MAX_CORRECTION_BUDGET"
+    CONTINUE_CORRECTION = "CONTINUE_CORRECTION"
+    ESCALATION_REQUIRED = "ESCALATION_REQUIRED"
+
+
+@dataclass(frozen=True, slots=True)
+class CandidateEvidence:
+    asset_version_id: str
+    content: dict[str, Any]
+    score: float
+    blocker_codes: tuple[str, ...]
+    review_asset_version_id: str
+    diagnostic_contract_version: str = ""
+    resolution_checks: tuple[dict[str, Any], ...] = ()
+    workspace_asset_version_id: str = ""
+    cross_chapter_review: bool = False
+    preservation_checks: tuple[dict[str, Any], ...] = ()
+    quality_resolution_checks: tuple[dict[str, Any], ...] = ()
+    resolved_issue_codes: tuple[str, ...] = ()
+    remaining_issue_codes: tuple[str, ...] = ()
+    review_target_text_hash: str = ""
+    review_report_type: str = ""
+    review_content: dict[str, Any] | None = None
+    review_content_hash: str = ""
+
+
+def retained_candidate_evidence(workspace_id: str, content: dict[str, Any]) -> CandidateEvidence:
+    from novel_forge.modules.review.diagnostics import blocking_diagnosis_codes, require_review_score
+    comparison = content.get("candidate_comparison")
+    selected_id = content.get("selected_source_asset_version_id")
+    review = content.get("selected_review")
+    if (not isinstance(comparison, dict) or not selected_id or not isinstance(review, dict)
+        or any(not isinstance(comparison.get(key), dict) for key in ("previous", "challenger"))
+        or comparison.get("selected_asset_version_id") != selected_id):
+        raise KernelError("BEST_CANDIDATE_EVIDENCE_REQUIRED", "retained workspace requires exact prose, review and comparison identities")
+    matches = [comparison[key] for key in ("previous", "challenger") if comparison[key].get("asset_version_id") == selected_id]
+    if len(matches) != 1:
+        raise KernelError("BEST_CANDIDATE_EVIDENCE_REQUIRED", "selected prose must identify one comparison subject")
+    selected = matches[0]
+    blockers = selected.get("blocker_codes")
+    review_id = selected.get("review_asset_version_id")
+    if (not isinstance(blockers, list) or any(not isinstance(code, str) or not code for code in blockers)
+        or not review_id or review.get("selection_review_source_asset_version_id") != review_id
+        or not set(blocking_diagnosis_codes(review)).issubset(blockers)):
+        raise KernelError("BEST_CANDIDATE_EVIDENCE_REQUIRED", "retained blockers and selected review must remain traceable")
+    score = require_review_score(selected)
+    if score != require_review_score(review):
+        raise KernelError("BEST_CANDIDATE_EVIDENCE_REQUIRED", "comparison score must match its immutable selected review")
+    bind_selected_review(candidate=content, candidate_id=str(selected_id), review=review, review_id=str(review_id))
+    return CandidateEvidence(str(selected_id), content, score, tuple(blockers), str(review_id),
+                             workspace_asset_version_id=workspace_id)
+
+
+def _supported_resolution(check, text):
+    if (check.get('status') != 'SATISFIED' or check.get('preservation') != 'PRESERVED'
+        or not str(check.get('reason') or '').strip() or not isinstance(check.get('evidence'), dict)):
+        return False
+    from novel_forge.modules.review.diagnostics import validate_location
+    try:
+        validate_location(check['evidence'], text)
+    except KernelError:
+        return False
+    return True
+
+
+def _empty_history_applicability(previous, challenger, length_repair_scope):
+    from novel_forge.modules.review.diagnostics import prose_hash
+    source_review_fields = ("review_version_id", "initial_review_version_id", "selected_review",
+        "candidate_comparison", "selected_source_asset_version_id", "source_draft_version_id",
+        "revision_contract_version", "prior_review_evidence")
+    source_ledger_fields = ("issues", "unresolved_issues", "resolved_issue_codes", "remaining_issue_codes",
+        "issue_lineage", "resolution_checks", "quality_resolution_checks", "resolution_claimed_issue_codes",
+        "issue_resolutions", "new_issues", "regression_issue_codes")
+    if ((previous.workspace_asset_version_id and previous.workspace_asset_version_id != previous.asset_version_id)
+            or previous.resolved_issue_codes or previous.remaining_issue_codes
+            or previous.resolution_checks or previous.quality_resolution_checks
+            or any(field in previous.content for field in source_review_fields)
+            or any(field in previous.content and previous.content[field] != [] for field in source_ledger_fields)
+            or previous.content.get("resolution_summary")):
+        return None
+    initial, reviewed = previous.review_content, challenger.review_content
+    if (length_repair_scope is None or not isinstance(initial, dict) or not isinstance(reviewed, dict)
+            or not previous.review_content_hash or not challenger.review_content_hash
+            or initial.get("diagnostic_contract_version") != "actionable-diagnostics.v1"
+            or reviewed.get("diagnostic_contract_version") != "actionable-diagnostics.v1"
+            or initial.get("report_type") != "ReviewReport" or reviewed.get("report_type") != "ReReviewReport"
+            or initial.get("issues") != [] or reviewed.get("issues") != []
+            or previous.blocker_codes or challenger.blocker_codes
+            or challenger.resolution_checks or challenger.quality_resolution_checks
+            or challenger.resolved_issue_codes or challenger.remaining_issue_codes
+            or initial.get("target_asset_version_id") != previous.asset_version_id
+            or initial.get("target_text_hash") != prose_hash(str(previous.content.get("text") or ""))
+            or reviewed.get("initial_review_version_id") != previous.review_asset_version_id
+            or reviewed.get("original_draft_version_id") != previous.asset_version_id
+            or reviewed.get("revision_version_id") != challenger.asset_version_id
+            or reviewed.get("target_text_hash") != prose_hash(str(challenger.content.get("text") or ""))
+            or initial.get("context_bundle_version_id") != length_repair_scope.get("context_asset_version_id")
+            or reviewed.get("context_bundle_version_id") != initial.get("context_bundle_version_id")):
+        return None
+    ledger_fields = ("unresolved_issues", "resolved_issue_codes", "remaining_issue_codes", "issue_lineage",
+        "resolution_checks", "new_issues", "regression_issue_codes")
+    for report in (initial, reviewed):
+        if any(field in report and report[field] != [] for field in ledger_fields) or report.get("prior_review_evidence"):
+            return None
+        summary = report.get("resolution_summary") or {}
+        if any(summary.get(field, []) != [] for field in ("denominator_issue_codes", "resolved_issue_codes",
+                "unresolved_issue_codes", "new_regression_issue_codes")):
+            return None
+    window = initial.get("cross_chapter_window")
+    if (not isinstance(window, dict) or not window.get("source_window_hash")
+            or reviewed.get("cross_chapter_window") != window
+            or window.get("target_candidate_asset_version_id") != previous.asset_version_id
+            or window.get("target_candidate_text_hash") != initial["target_text_hash"]):
+        return None
+    return {"contract_version": "preservation-applicability.v1", "dimension": "RESOLVED_ISSUES",
+        "status": "NOT_APPLICABLE", "evidence_class": "HOST_VERIFIED_EMPTY_DIAGNOSIS_LEDGER",
+        "initial_review_asset_version_id": previous.review_asset_version_id,
+        "initial_review_content_hash": previous.review_content_hash,
+        "rereview_asset_version_id": challenger.review_asset_version_id,
+        "rereview_content_hash": challenger.review_content_hash,
+        "source_asset_version_id": previous.asset_version_id, "source_text_hash": initial["target_text_hash"],
+        "revision_asset_version_id": challenger.asset_version_id, "revision_text_hash": reviewed["target_text_hash"],
+        "context_asset_version_id": initial["context_bundle_version_id"], "source_window_hash": window["source_window_hash"]}
+
+
+def compare_candidates(
+    *,
+    project_id: str,
+    chapter_root_operation_id: str,
+    previous: CandidateEvidence,
+    challenger: CandidateEvidence,
+    minimum_net_improvement: float,
+    length_repair_scope: dict[str, Any] | None = None,
+    correction_generation: int = 0,
+    maximum_correction_generations: int = 1,
+) -> dict[str, Any]:
+    previous_baseline = previous.content.get("creative_baseline")
+    challenger_baseline = challenger.content.get("creative_baseline")
+    if previous_baseline is not None or challenger_baseline is not None:
+        from .chapter_plan_views import validate_creative_baseline
+
+        if validate_creative_baseline(previous_baseline) != validate_creative_baseline(
+            challenger_baseline
+        ):
+            raise KernelError(
+                "BEST_CANDIDATE_BASELINE_DRIFT",
+                "Candidate comparison requires the same effective work contract; changed requirements need fresh evaluation",
+            )
+    if (not math.isfinite(minimum_net_improvement) or minimum_net_improvement < 0
+        or not previous.asset_version_id or not challenger.asset_version_id
+        or previous.asset_version_id == challenger.asset_version_id
+        or any(type(item.score) not in {float, int} or not math.isfinite(item.score)
+               or not 0 <= item.score <= 100 or not item.review_asset_version_id for item in (previous, challenger))):
+        raise KernelError(
+            "BEST_CANDIDATE_INPUT_INVALID",
+            "candidate selection requires immutable candidate and policy identities",
+        )
+    new_blockers = sorted(set(challenger.blocker_codes) - set(previous.blocker_codes))
+    resolved_blockers = sorted(
+        set(previous.blocker_codes) - set(challenger.blocker_codes)
+    )
+    net_improvement = challenger.score - previous.score
+    length_measurement = None
+    if length_repair_scope is not None:
+        from novel_forge.modules.revision.domain import han_characters, validate_chapter_length_scope
+        validate_chapter_length_scope(length_repair_scope, previous.content,
+            str(challenger.content.get("text") or ""), source_asset_version_id=previous.asset_version_id,
+            context_asset_version_id=str(length_repair_scope.get("context_asset_version_id") or ""))
+        length_measurement = {"unit": "HAN_CHARACTERS_V1", "source_asset_version_id": previous.asset_version_id,
+            "challenger_asset_version_id": challenger.asset_version_id,
+            "previous": han_characters(str(previous.content.get("text") or "")),
+            "challenger": han_characters(str(challenger.content.get("text") or "")),
+            "minimum": length_repair_scope["minimum"], "maximum": length_repair_scope["maximum"],
+            "evidence_class": "HOST_MEASURED_REQUIREMENT_CORRECTION"}
+    diagnostic_selection = challenger.diagnostic_contract_version == "actionable-diagnostics.v1"
+    supported_improvement = any(
+        check.get("code") in challenger.resolved_issue_codes
+        and check.get("code") not in challenger.remaining_issue_codes
+        and _supported_resolution(check, str(challenger.content.get("text") or ""))
+        for check in challenger.resolution_checks
+    )
+    from novel_forge.modules.review.diagnostics import prose_hash
+
+    quality_supported = (bool(challenger.quality_resolution_checks)
+        and {check.get("observation") for check in challenger.quality_resolution_checks} == set(challenger.content.get("quality_action_observations") or [])
+        and all(check.get("status") == "SATISFIED" and check.get("preservation") == "PRESERVED"
+            and check.get("target_asset_version_id") == challenger.asset_version_id
+            and check.get("target_text_hash") == prose_hash(str(challenger.content.get("text") or ""))
+            and check.get("source_quality_asset_version_id") == challenger.content.get("source_quality_asset_version_id")
+            and check.get("source_quality_asset_version_id")
+            for check in challenger.quality_resolution_checks))
+    supported_improvement = supported_improvement or quality_supported or length_measurement is not None
+    from novel_forge.modules.review.diagnostics import scope_proposal_preserved
+    proposal = challenger.content.get("prose_scope_proposal") or {}
+    scope_preserved = bool(proposal) and scope_proposal_preserved(proposal, str(challenger.content.get("text") or ""),
+        target_text_hash=challenger.review_target_text_hash, report_type=challenger.review_report_type,
+        resolution_checks=challenger.resolution_checks, preservation_checks=challenger.preservation_checks)
+    if scope_preserved:
+        supported_improvement = supported_improvement or any(check.get("code") in proposal["issue_codes"]
+            and check.get("status") in {"SATISFIED", "PARTIALLY_RESOLVED"}
+            and check.get("preservation") == "PRESERVED" for check in challenger.resolution_checks)
+    preservation_regressed = any(check.get("preservation") != "PRESERVED"
+        for check in (*challenger.resolution_checks, *challenger.quality_resolution_checks))
+    if scope_preserved:
+        preservation_regressed = any(check.get("preservation") == "REGRESSED"
+            for check in challenger.resolution_checks) or any(check.get("preservation") != "PRESERVED"
+                for check in challenger.quality_resolution_checks)
+    from novel_forge.modules.review.prose_window import PRESERVATION_DIMENSIONS
+
+    applicability = _empty_history_applicability(previous, challenger, length_repair_scope)
+    def preservation_failed(check):
+        return check.get("status") != "PRESERVED" and not (applicability
+            and check.get("dimension") == "RESOLVED_ISSUES" and check.get("status") == "UNCERTAIN")
+
+    if previous.content.get("text") == challenger.content.get("text"):
+        selected = previous
+        reason = CandidateStopReason.MARGINAL_IMPROVEMENT
+        improved = False
+    elif proposal and not scope_preserved:
+        selected = previous
+        reason = CandidateStopReason.ESCALATION_REQUIRED
+        improved = False
+    elif challenger.cross_chapter_review and (
+        set(previous.blocker_codes) & set(challenger.blocker_codes)
+        or not scope_preserved and any(preservation_failed(check) for check in challenger.preservation_checks)
+        or len(challenger.preservation_checks) != len(PRESERVATION_DIMENSIONS)
+        or {check.get("dimension") for check in challenger.preservation_checks} != set(PRESERVATION_DIMENSIONS)
+    ):
+        selected = previous
+        reason = CandidateStopReason.ESCALATION_REQUIRED
+        improved = False
+    elif challenger.quality_resolution_checks and not quality_supported:
+        selected = previous
+        reason = CandidateStopReason.ESCALATION_REQUIRED
+        improved = False
+    elif diagnostic_selection and (not supported_improvement or preservation_regressed):
+        selected = previous
+        reason = CandidateStopReason.ESCALATION_REQUIRED if preservation_regressed else CandidateStopReason.MARGINAL_IMPROVEMENT
+        improved = False
+    elif new_blockers:
+        selected = previous
+        reason = CandidateStopReason.DETERMINISTIC_BLOCKER
+        improved = False
+    elif length_measurement is not None:
+        selected = challenger
+        improved = True
+        reason = CandidateStopReason.COMPARISON_SUPPORTED if not challenger.blocker_codes else CandidateStopReason.CONTINUE_CORRECTION
+    elif resolved_blockers:
+        selected = challenger
+        improved = True
+        reason = (
+            CandidateStopReason.COMPARISON_SUPPORTED
+            if not challenger.blocker_codes
+            else CandidateStopReason.CONTINUE_CORRECTION
+        )
+    elif supported_improvement:
+        selected = challenger
+        improved = True
+        reason = CandidateStopReason.COMPARISON_SUPPORTED if not challenger.blocker_codes else CandidateStopReason.CONTINUE_CORRECTION
+    elif net_improvement + 1e-9 < minimum_net_improvement:
+        selected = previous
+        reason = CandidateStopReason.MARGINAL_IMPROVEMENT
+        improved = False
+    else:
+        selected = challenger
+        improved = True
+        if not challenger.blocker_codes:
+            reason = CandidateStopReason.COMPARISON_SUPPORTED
+        else:
+            reason = CandidateStopReason.CONTINUE_CORRECTION
+    identity = "|".join(
+        (
+            project_id,
+            chapter_root_operation_id,
+            previous.asset_version_id,
+            challenger.asset_version_id,
+            str(correction_generation),
+        )
+    )
+    comparison = {
+        "type": "CandidateComparison",
+        "contract_version": "candidate-comparison-v2",
+        "comparison_id": "candidate-comparison:"
+        + hashlib.sha256(identity.encode()).hexdigest(),
+        "project_id": project_id,
+        "chapter_root_operation_id": chapter_root_operation_id,
+        "previous": _evidence(previous),
+        "challenger": _evidence(challenger),
+        "diagnostic_contract_version": challenger.diagnostic_contract_version,
+        "resolution_checks": list(challenger.resolution_checks),
+        "minimum_net_improvement": minimum_net_improvement,
+        "net_improvement": net_improvement,
+        "score_evidence_class": "MODEL_JUDGMENT",
+        "literary_quality_proven": False,
+        "length_measurement": length_measurement,
+        **({"preservation_applicability": applicability} if applicability else {}),
+        "new_blocker_codes": new_blockers,
+        "resolved_blocker_codes": resolved_blockers,
+        "selected_asset_version_id": selected.asset_version_id,
+        "improved": improved,
+        "stop_reason": reason.value,
+        "correction_generation": correction_generation,
+        "maximum_correction_generations": maximum_correction_generations,
+    }
+    comparison["comparison_hash"] = "sha256:" + hashlib.sha256(
+        json.dumps(comparison, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    return comparison
+
+
+def bind_selected_review(
+    *,
+    candidate: Mapping[str, Any],
+    candidate_id: str,
+    review: Mapping[str, Any],
+    review_id: str,
+) -> dict[str, Any]:
+    from novel_forge.modules.review.diagnostics import prose_hash
+
+    expected = prose_hash(str(candidate.get("text") or ""))
+    if "creative_baseline" in candidate:
+        from .chapter_plan_views import validate_creative_baseline
+
+        if (
+            review.get("creative_baseline_digest")
+            != validate_creative_baseline(candidate["creative_baseline"])[
+                "baseline_digest"
+            ]
+        ):
+            raise KernelError(
+                "SELECTED_REVIEW_BASELINE_DRIFT",
+                "Selected prose must retain its exact reviewed work contract",
+            )
+    if review.get("diagnostic_contract_version") == "actionable-diagnostics.v1" and (
+        review.get("target_text_hash") != expected
+        or (review.get("revision_version_id") or review.get("target_asset_version_id")) != candidate_id
+    ):
+        raise KernelError("SELECTED_REVIEW_STALE", "selected candidate must retain its exact reviewed prose")
+    return {
+        **dict(review), "revision_version_id": candidate_id,
+        "target_text_hash": expected,
+        "selection_review_source_asset_version_id": review_id,
+        "selection_review_contract": "immutable-review-projection.v1",
+        "resolved_issue_codes": list(review.get("resolved_issue_codes") or []),
+    }
+
+
+def build_best_candidate(
+    *, comparison: Mapping[str, Any], candidates: Mapping[str, Mapping[str, Any]]
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    selected_id = str(comparison.get("selected_asset_version_id") or "")
+    selected = candidates.get(selected_id)
+    if selected is None:
+        raise KernelError(
+            "BEST_CANDIDATE_SELECTION_INVALID",
+            "comparison selected a candidate outside the immutable input set",
+        )
+    snapshot = {
+        "type": "BestCandidateSnapshot",
+        "contract_version": "best-candidate-snapshot-v1",
+        "best_candidate_snapshot_id": "best-candidate:"
+        + hashlib.sha256(
+            f"{comparison['comparison_id']}:{selected_id}".encode()
+        ).hexdigest(),
+        "selected_asset_version_id": selected_id,
+        "previous_best_asset_version_id": str(
+            (comparison.get("previous") or {}).get("workspace_asset_version_id")
+            or (comparison.get("previous") or {}).get("asset_version_id") or ""
+        ),
+        "comparison_id": str(comparison["comparison_id"]),
+        "comparison_hash": str(comparison["comparison_hash"]),
+        "minimum_net_improvement": float(comparison["minimum_net_improvement"]),
+        "stop_reason": str(comparison["stop_reason"]),
+        "rollback_asset_version_id": str(
+            (comparison.get("previous") or {}).get("workspace_asset_version_id")
+            or (comparison.get("previous") or {}).get("asset_version_id") or ""
+        ),
+        "selection_policy_ref": "minimum-net-improvement-v1",
+    }
+    best = {
+        **dict(selected),
+        "best_candidate_snapshot": snapshot,
+        "selected_source_asset_version_id": selected_id,
+        "candidate_comparison": dict(comparison),
+    }
+    return best, snapshot
+
+
+def _evidence(value: CandidateEvidence) -> dict[str, Any]:
+    return {
+        "asset_version_id": value.asset_version_id,
+        "workspace_asset_version_id": value.workspace_asset_version_id
+        or value.asset_version_id,
+        "score": value.score,
+        "blocker_codes": list(value.blocker_codes),
+        "review_asset_version_id": value.review_asset_version_id,
+        "resolved_issue_codes": list(value.resolved_issue_codes),
+        "remaining_issue_codes": list(value.remaining_issue_codes),
+        **(
+            {
+                "creative_baseline_digest": value.content["creative_baseline"][
+                    "baseline_digest"
+                ]
+            }
+            if "creative_baseline" in value.content
+            else {}
+        ),
+        **(
+            {"quality_resolution_checks": list(value.quality_resolution_checks)}
+            if value.quality_resolution_checks
+            else {}
+        ),
+    }
+
+
+__all__ = [
+    "CandidateEvidence",
+    "CandidateStopReason",
+    "build_best_candidate",
+    "compare_candidates",
+]

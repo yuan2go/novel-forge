@@ -1,0 +1,53 @@
+{
+  "contract_version": "creative-experiment-budget.v1",
+  "experiment_id": "yu-xian-zhi-wai-first-arc-v1",
+  "accounting_basis": "ACCOUNT_ENTITLEMENT",
+  "shared_total": {
+    "calls": 480,
+    "tokens": 12000000
+  },
+  "arms": [
+    {
+      "arm": "A",
+      "project_id": "first-novel-pilot-20260912",
+      "book_id": "first-novel-pilot-a",
+      "project_total": {
+        "calls": 270,
+        "tokens": 6750000
+      },
+      "source_allocation": {
+        "calls": 60,
+        "tokens": 1500000
+      },
+      "creation_allocation": {
+        "calls": 180,
+        "tokens": 4500000
+      },
+      "repair_allocation": {
+        "calls": 30,
+        "tokens": 750000
+      }
+    },
+    {
+      "arm": "B",
+      "project_id": "first-novel-control-20260912",
+      "book_id": "first-novel-pilot-b",
+      "project_total": {
+        "calls": 210,
+        "tokens": 5250000
+      },
+      "source_allocation": {
+        "calls": 0,
+        "tokens": 0
+      },
+      "creation_allocation": {
+        "calls": 180,
+        "tokens": 4500000
+      },
+      "repair_allocation": {
+        "calls": 30,
+        "tokens": 750000
+      }
+    }
+  ]
+}
